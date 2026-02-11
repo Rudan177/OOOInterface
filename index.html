@@ -1,40 +1,193 @@
-<style>
-    h1 {
-        text-align: center;
-        height: 0px;
-        padding: 50px;
-        color: #000;
-    }
-    p {
-        text-align: center;
-        color: #222;
-        font-size: 18px;
-    }
-    footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: rgba(0, 0, 0, 0.3);
-        padding: 1px;
-        text-align: center;
-        font-size: 14px;
-        color: rgba(255, 255, 255, 0.8);
-        line-height: 1.5;
-    }
-</style>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OOOInterface</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, rgba(0, 174, 0, 0.1) 0%, rgba(16, 191, 144, 0.1) 100%), 
+                        radial-gradient(circle at 20% 50%, rgba(0, 174, 0, 0.05) 0%, transparent 50%), 
+                        radial-gradient(circle at 80% 80%, rgba(16, 191, 144, 0.05) 0%, transparent 50%), 
+                        radial-gradient(circle at 40% 20%, rgba(0, 174, 0, 0.03) 0%, transparent 30%), 
+                        radial-gradient(circle at 60% 70%, rgba(16, 191, 144, 0.03) 0%, transparent 30%);
+            background-size: 200% 200%;
+            animation: gradientMove 15s ease infinite;
+            overflow-y: auto;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .dakuang {
+            width: 75%;
+            margin: 50px auto;
+            padding: 100px 0;
+            border-radius: 12px;
+            background: rgba(0, 174, 144, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ultra {
+            display: block;
+            text-align: center;
+            font-family: serif, sans-serif;
+            font-size: 50px;
+            font-weight: 800;
+            color: #000000;
+            padding: 10px 10px;
+        }
+
+        .pro {
+            display: inline-block;
+            text-align: center;
+            font-family: serif, sans-serif;
+            font-size: 22px;
+            color: #000000;
+            padding: 10px 10px;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+            color: #000;
+            margin: 0;
+            font-size: 24px;
+        }
+
+        p {
+            text-align: center;
+            color: #333;
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .xiaozi {
+            text-align: center;
+            color : #666;
+            font-size: 10px;
+            margin-top: 20px;
+
+        }
+        .zhengwen-container {
+            width: 75%;
+            margin: 0 auto 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .zhengwen {
+            background: rgba(255, 255, 255, 0.115);
+            border: 2px solid #000000;
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: left;
+        }
+
+        .zhengwen h1 {
+            font-size: 28px;
+            color: #000;
+            margin-bottom: 5px;
+            text-align: left;
+            font-family: serif, sans-serif;
+            font-weight: bold;
+        }
+
+        .zhengwen p {
+            font-size: 24px;
+            color: #333;
+            text-indent: 2em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            text-align: left;
+            font-family: serif, sans-serif;
+        }
+
+        .zhengwen .xiaozi {
+            font-size: 10px;
+            color: #666;
+            text-align: center;
+            margin-top: 20px;
+            line-height: 12px;
+            font-family: Arial, sans-serif;
+        }
+
+        footer {
+            width: 25%;
+            background: rgba(0, 0, 0, 0.1);
+            margin: 0 auto;
+            border-radius: 12px;
+            padding: 10px 0;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+        }
+
+        .footp {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            color: rgba(0, 0, 0, 0.5);
+            line-height: 1.4;
+            letter-spacing: 0px;
+        }
+
+
+
+        footer p {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>当前版本暂不支持使用此功能</h1>
-    <p>敬请期待！</p>
+    <div class="dakuang">
+        <div class="ultra">ByRUDAN的公告</div>
+        <div class="pro">和大家分享一些有关OOOInterface、RUD文件的信息，和我个人的一些见闻。</div>
+    </div>
+    <div class="zhengwen-container">
+        <div class="zhengwen">
+            <h1>2026年2月10日 星期二</h1>
+            <p>最近更新比较少，不是在肝5.1就是在与人交谈有关OOOInterface的事宜，不然就是吃饭睡觉作业原神（崩铁都没咋玩了）。</p>
+            <p>今天是5.1发布的日子（昨天晚上睡着了，忘记发了）。非常高兴能看到5.1能拥有如此高的下载量。</p>
+            <p>5.2功能建议可以投了，最近应该不太多Bug反馈的，会收集一些功能建议，用反馈页面的程序填写完成后发送到邮箱wyjcrtu@proton.me。不要用微信或者QQ，这样真的很乱，很多内容我会记录不到。</p>
+            <p>5.2将正式推出InterfacePro，有需要的可以期待下。</p>
+            <div class="xiaozi">Style Version: 1.0.3<br>未使用人工智能</div>
+        </div>
+        <div class="zhengwen">
+            <h1>2026年2月9日 星期一</h1>
+            <p>当前版本暂不支持展示</p>
+        </div>
+        <div class="zhengwen">
+            <h1>2026年2月8日 知更鸟哥哥</h1>
+            <p>当前版本暂不支持展示</p>
+        </div>
+        <div class="zhengwen">
+            <h1>2026年2月7日 星期六</h1>
+            <p>当前版本暂不支持展示</p>
+        </div>
+        <div class="zhengwen">
+            <h1>2026年2月6日 星期五</h1>
+            <p>当前版本暂不支持展示</p>
+        </div>
+    </div>
+    <footer>
+        <div class="footp">
+            许可证：ABCD-26W08A<br>
+            最后一次更新：2026年2月10日<br>
+            © 2026 ByRUDAN 保留所有权利。
+        </div>
+    </footer>
 </body>
-<footer>
-    <p>如果您有任何问题，请联系wyjcrtu@proton.me</p>
-</footer>
 </html>
