@@ -25,6 +25,29 @@
             100% { background-position: 0% 50%; }
         }
 
+        @keyframes ULTRA {
+            0% { opacity: 0; font-size: 53px;}
+            50% { opacity: 0.5; font-size: 52px;}
+            90% { opacity: 0.9; font-size: 50.0001px;}
+            100% { opacity: 1; font-size: 50px;}
+        }
+
+        @keyframes PRO {
+            0% { opacity: 0; font-size: 19px;}
+            50% { opacity: 0.5; font-size: 20px;}
+            90% { opacity: 0.9; font-size: 21.9999px;}
+            100% { opacity: 1; font-size: 22px;}
+        }
+
+        @keyframes kuangjia {
+            0% { border-radius: 100px;}
+            50% { border-radius: 40px;}
+            75% { border-radius: 18px;}
+            85% { border-radius: 14px;}
+            90% { border-radius: 13px;}
+            100% { border-radius: 12px;}
+        }
+
         .dakuang {
             width: 75%;
             margin: 50px auto;
@@ -36,9 +59,11 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            animation: kuangjia 0.5s steps(150) 1;
         }
 
         .ultra {
+
             display: block;
             text-align: center;
             font-family: serif, sans-serif;
@@ -46,6 +71,7 @@
             font-weight: 800;
             color: #000000;
             padding: 10px 10px;
+            animation: ULTRA 0.5s steps(150) 1;
         }
 
         .pro {
@@ -55,6 +81,7 @@
             font-size: 22px;
             color: #000000;
             padding: 10px 10px;
+            animation: PRO 0.5s steps(150) 1;
         }
 
         h1 {
@@ -94,6 +121,7 @@
             border-radius: 12px;
             padding: 30px;
             text-align: left;
+            animation: kuangjia 0.5s steps(150) 1;
         }
 
         .zhengwen h1 {
@@ -113,6 +141,28 @@
             margin-bottom: 15px;
             text-align: left;
             font-family: serif, sans-serif;
+        }
+
+        .zhengwen li {
+            font-size: 24px;
+            color: #333;
+            text-indent: 0em;
+            line-height: 1;
+            list-style-type: decimal;
+            margin-left: 80px;
+            margin-bottom: 15px;
+            text-align: left;
+            font-family: serif, sans-serif;
+        }
+
+        .zhengwen a {
+            color: #000000;
+            text-decoration: none;
+        }
+
+        .zhengwen a:hover {
+            color:blue;
+            text-decoration: underline;
         }
 
         .zhengwen .xiaozi {
@@ -158,6 +208,21 @@
     </div>
     <div class="zhengwen-container">
         <div class="zhengwen">
+            <h1>2026年2月11日 星期三</h1>
+            <p>这是新版网页的首次展示！（首次展示可能有些许不足，如果视觉体验受到影响，可以随时反馈到我的邮箱）</p>
+            <p>鉴于老版本网站限制极为严格，若未开通会员基本无法正常使用，故而我毅然转向GitHub。此网页是我和大家分享一些有关OOOInterface、RUD文件的信息和我个人的一些见闻的平台。（目前）其并非OOOInterface的下载平台，若需下载URL= <a href="https://wwbkd.lanzoum.com/iSIXz3i5lpxg" target="_blank">OOOInterface下载</a> 。</p>
+            <p>在此新版网页上，我拥有了相对更多的自主性。我能够自主上传HTML格式的网页文件，从而实现自由排版，并可自由增添功能（关于是否能够实现让访客上传文件等功能，例如评论功能能否实现，目前尚不确定，只能说值得期待）。</p>
+            <p>目前此版本旧内容尚未全部更新完毕，如有需求仍可前往老版网页查看（URL= <a href="https://byrudan.carrd.co/" target="_blank">旧版网页</a>） 。但后续定会将老版本内容同步至此。需要说明的是，老版本网页将不再进行更新，今后所有内容均以本页面为准。该网站的容量限制为1GB，也就是说我每日发布（含图片）一坤兆（2.5MB）的内容，足够持续发布一年！若想可持续发展，删除时间过久的图片即可。 </p>
+            <p>说实话，InterfaceDesktop（OOOInterface桌面版）制作有不少困难，我只能不断测试。最近事情比较多，可能得稍微搁置一会儿了。但是，画饼这件事我还是能做的。</p>
+            <p>InterfaceDesktop Package 0.2:02-AS07是目前的最新版本。目前版本已经具备的功能如下：</p>
+            <li>OOOInterface5.1:24-RS42功能全方面兼容</li>
+            <li>全新自研右键菜单和搜索页面，降低操作门槛，提升界面易用性</li>
+            <li>全新自研高效引擎，减少内存占用，提升设备流畅性</li>
+            <p>详细解释下吧。所谓“右键菜单”，样式可以参考InterfaceExtensions（现在的版本）里“关于”页面（about.html）和“欢迎”页面（welc.html）的外观。搜索页面的修改，主要是顶部加了一行操作栏，样式可以参考macOS顶部的操作栏。“高效引擎”的实现方法是将用户数据单独存储（Bug还有亿点多），缓解JS屎山的压力（Extension版本做不了，傻逼Chrome有限制）。</p>
+            <p>桌面版的制作起来有些地方限制会少一点，所以后面功能大概率会多不少。如果只是专门搜索内容的话，InterfaceDesktop将来一定是个不错的选择。</p>
+            <div class="xiaozi">Style Version: 1.0.4<br>未使用人工智能</div>
+        </div>
+        <div class="zhengwen">
             <h1>2026年2月10日 星期二</h1>
             <p>最近更新比较少，不是在肝5.1就是在与人交谈有关OOOInterface的事宜，不然就是吃饭睡觉作业原神（崩铁都没咋玩了）。</p>
             <p>今天是5.1发布的日子（昨天晚上睡着了，忘记发了）。非常高兴能看到5.1能拥有如此高的下载量。</p>
@@ -168,24 +233,28 @@
         <div class="zhengwen">
             <h1>2026年2月9日 星期一</h1>
             <p>当前版本暂不支持展示</p>
+            <div class="xiaozi">Style Version: 0.0.0<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月8日 知更鸟哥哥</h1>
             <p>当前版本暂不支持展示</p>
+            <div class="xiaozi">Style Version: 0.0.0<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月7日 星期六</h1>
             <p>当前版本暂不支持展示</p>
+            <div class="xiaozi">Style Version: 0.0.0<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月6日 星期五</h1>
             <p>当前版本暂不支持展示</p>
+            <div class="xiaozi">Style Version: 0.0.0<br>未使用人工智能</div>
         </div>
     </div>
     <footer>
         <div class="footp">
             许可证：ABCD-26W08A<br>
-            最后一次更新：2026年2月10日<br>
+            最后一次更新：2026年2月11日<br>
             © 2026 ByRUDAN 保留所有权利。
         </div>
     </footer>
