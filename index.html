@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OOOInterface</title>
+    <title>ByRUDAN</title>
     <style>
         body {
             margin: 0;
@@ -18,6 +18,23 @@
             animation: gradientMove 15s ease infinite;
             overflow-y: auto;
         }
+
+        .snowflake {
+            position: fixed;
+            top: -20px;
+            color: gold;
+            font-size: 24px;
+            user-select: none;
+            pointer-events: none;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(105vh) rotate(360deg);
+            }
+        }
+
 
         @keyframes gradientMove {
             0% { background-position: 0% 50%; }
@@ -48,8 +65,36 @@
             100% { border-radius: 12px;}
         }
 
+        @keyframes titlePulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.05); }
+            0% { text-shadow: 0 0 10px #ffd700; }
+            100% { text-shadow: 0 0 20px #ffd700, 0 0 30px #ff0000; }
+            0% { text-shadow: none; }
+            100% { text-shadow: 0 0 10px #ffd700; }
+            0%, 100% { transform: translateX(0); }
+            12.5%,87.5% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            25%,75% { transform: translateX(-5px); }
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .hover-effect {
+            transition: all 0.3s ease;
+        }
+
+        .hover-effect:hover {
+            transform: scale(1.1) rotate(5deg);
+            text-shadow: 0 0 20px #ffd700;
+            cursor: pointer;
+        }
+
         .dakuang {
             width: 75%;
+            height:0px; 
             margin: 50px auto;
             padding: 100px 0;
             border-radius: 12px;
@@ -62,6 +107,34 @@
             animation: kuangjia 0.5s steps(150) 1;
         }
 
+        .xibao {
+            width: 75%;
+            height:400px; 
+            margin: 50px auto;
+            padding: 100px 0;
+            border-radius: 12px;
+            background: rgba(255, 0, 0, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: kuangjia 0.5s steps(150) 1;
+        }
+
+        .xibao .xibaozi {
+            font-family: 'LiSu', cursive, 'STXingkai', serif;
+            font-size: 50px;
+            text-align: center;
+            color: #ffd700;
+            text-shadow: 
+                0 0 10px #ff0000,
+                0 0 20px #ff0000,
+                0 0 30px #ff0000,
+                0 0 40px #ffd700,
+                0 0 70px #ffd700,
+                0 0 90px #ffd700;
+            animation: titlePulse 1s infinite alternate;
+        }
         .ultra {
 
             display: block;
@@ -109,8 +182,8 @@
         .zhengwen-container {
             width: 75%;
             margin: 0 auto 50px;
-            display: flex;
-            flex-direction: column;
+            display: flex; 
+            flex-direction: column; 
             gap: 20px;
         }
 
@@ -118,8 +191,8 @@
             background: rgba(255, 255, 255, 0.115);
             border: 2px solid #000000;
             backdrop-filter: blur(10px);
-            border-radius: 12px;
-            padding: 30px;
+            border-radius: 12px; 
+            padding: 30px; 
             text-align: left;
             animation: kuangjia 0.5s steps(150) 1;
         }
@@ -133,6 +206,38 @@
             font-weight: bold;
         }
 
+        .zhengwen h2 {
+            font-size: 26px;
+            color: #222;
+            text-indent: 0.5em;
+            margin-top: -10px;
+            margin-bottom: 5px;
+            text-align: left;
+            font-family: serif, sans-serif;
+            font-weight: bold;
+        }
+
+        .zhengwen h3 {
+            font-size: 24px;
+            color: #333;
+            text-indent: 2em;
+            margin-top: -5px;
+            margin-bottom: -2px;
+            text-align: left;
+            font-family: serif, sans-serif;
+            font-weight: normal;
+        }
+
+        .zhengwen .se{
+            font-size: 12px;
+            color: #999;
+            text-indent: 0em;
+            margin-top:-12px; 
+            margin-bottom: 2px;
+            text-align: left;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: light;
+        }
         .zhengwen p {
             font-size: 24px;
             color: #333;
@@ -141,6 +246,7 @@
             margin-bottom: 15px;
             text-align: left;
             font-family: serif, sans-serif;
+            font-weight: normal;
         }
 
         .zhengwen li {
@@ -178,6 +284,7 @@
             width: 25%;
             background: rgba(0, 0, 0, 0.1);
             margin: 0 auto;
+            backdrop-filter: blur(10px);
             border-radius: 12px;
             padding: 10px 0;
             color: rgba(255, 255, 255, 0.9);
@@ -199,16 +306,64 @@
             color: rgba(255, 255, 255, 0.8);
             margin: 0;
         }
+
+        .decoration {
+            position: fixed;
+            font-size: 3rem;
+            z-index: -1;
+            opacity: 0.3;
+            animation: rotate 20s linear infinite;
+        }
+
+        .decoration:nth-child(1) { top: 10%; left: 5%; }
+        .decoration:nth-child(2) { top: 20%; right: 5%; animation-delay: -5s; }
+        .decoration:nth-child(3) { bottom: 15%; left: 10%; animation-delay: -10s; }
+        .decoration:nth-child(4) { bottom: 25%; right: 15%; animation-delay: -15s; }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
     </style>
 </head>
 <body>
+    <div class="decoration"><img src="https://www.huawei.com/-/media/hcomponent-header/1.0.1.20251208095539/component/img/huawei_logo.png" alt="华为图标" class="chrome-icon"></div>
+    <div class="decoration"><img src="https://www.gstatic.com/marketing-cms/assets/images/66/ac/14b165e647fd85c824bfbe5d6bc5/gmail.webp=s96-fcrop64=1,00000000ffffffff-rw" alt="Gmail图标" class="chrome-icon"></div>
+    <div class="decoration"><img src="https://lf-flow-web-cdn.doubao.com/obj/flow-doubao/samantha/logo-icon-white-bg.png" alt="豆包转转图标" class="chrome-icon" Style="width: 200px; height: 200px;"></div>
+    <div class="decoration"><img src="https://www.gstatic.com/marketing-cms/assets/images/aa/d2/356851cc4224bc17a230a98e6000/chrome.webp=s96-fcrop64=1,00000000ffffffff-rw" alt="Chrome图标" class="chrome-icon"></div>
+
+    <div class="xibao">
+        <div class="xibaozi">🎉热烈庆祝🎉<br>🎉本网站1.1.0版本顺利发布！🎉</div>
+    </div>
     <div class="dakuang">
         <div class="ultra">ByRUDAN的公告</div>
         <div class="pro">和大家分享一些有关OOOInterface、RUD文件的信息，和我个人的一些见闻。</div>
     </div>
     <div class="zhengwen-container">
         <div class="zhengwen">
+            <h1>2026年2月12日 星期四</h1>
+            <h2>ByRUDAN Style Version 1.1.0 Update</h2>
+            <p>Description: 伴随着新版网页的发布，网页的设计将要迎来更新。这次的版本带来了阅读效率更高的界面——增大字体和调整间距，老内容同步更新的功能——此后新版样式更新时老版本内容将同步更新。新版网页完全由RUDAN自主研发，未使用任何AI；代码完全开源（可以在浏览器中按CTRL/Command+S下载源代码）。</p>
+            <h2>开发相关</h2>
+            <h3>功能建议：</h3>
+            <p>优化开发者模式设计（开发者模式的设计确实有点乱）</p>
+            <h3>其他：</h3>
+            <p>老版本网页的内容后面一定会加上的，别催了我真的求你了。</p>
+            <p>目前看来，评论功能好像加不了了。我有另一种办法，我在这个网站做一个展示板，把你的发言用邮箱投稿给我，我展示在下面。这是一个完全可行的办法。</p>
+            <p>不断倾听用户声音，让OOOInterface变得更好。</p>
+            <h2>记录</h2>
+            <p>你妈的我今天在写网站，然后这个手表突然报警问我是不是死了。“？”我承认我写的时候可能发了下癫，也可能能手脚冰凉，但是起码不至于死了好吗？再怎么说起码不需要急救！</p>
+            <p>我让千问给我设计了个新年祝福页面（他生成主体不到三分钟，我给做修改花了半个多小时）。风格还是很优美的。</p>
+            <p class="se">具体效果请以实际为准。</p>
+            <p>说到千问——千问免费点奶茶是真的没错，但是体验一般，Bug很多。（最关键的是，千问点的奶茶上不了岛！）我说实话，真的会有人用AI点外卖甚至买快递吗？</p>
+            <p class="se">使用的是鸿蒙6，淘宝、千问最新版。正常点淘宝闪购是有岛的但这个没有。</p>
+            <div class="xiaozi">Style Version: 1.1.0<br>未使用人工智能</div>
+        </div>
+        <div class="zhengwen">
             <h1>2026年2月11日 星期三</h1>
+            <h2>开发相关</h2>
             <p>这是新版网页的首次展示！（首次展示可能有些许不足，如果视觉体验受到影响，可以随时反馈到我的邮箱）</p>
             <p>鉴于老版本网站限制极为严格，若未开通会员基本无法正常使用，故而我毅然转向GitHub。此网页是我和大家分享一些有关OOOInterface、RUD文件的信息和我个人的一些见闻的平台。（目前）其并非OOOInterface的下载平台，若需下载URL= <a href="https://wwbkd.lanzoum.com/iSIXz3i5lpxg" target="_blank">OOOInterface下载</a> 。</p>
             <p>在此新版网页上，我拥有了相对更多的自主性。我能够自主上传HTML格式的网页文件，从而实现自由排版，并可自由增添功能（关于是否能够实现让访客上传文件等功能，例如评论功能能否实现，目前尚不确定，只能说值得期待）。</p>
@@ -220,15 +375,16 @@
             <li>全新自研高效引擎，减少内存占用，提升设备流畅性</li>
             <p>详细解释下吧。所谓“右键菜单”，样式可以参考InterfaceExtensions（现在的版本）里“关于”页面（about.html）和“欢迎”页面（welc.html）的外观。搜索页面的修改，主要是顶部加了一行操作栏，样式可以参考macOS顶部的操作栏。“高效引擎”的实现方法是将用户数据单独存储（Bug还有亿点多），缓解JS屎山的压力（Extension版本做不了，傻逼Chrome有限制）。</p>
             <p>桌面版的制作起来有些地方限制会少一点，所以后面功能大概率会多不少。如果只是专门搜索内容的话，InterfaceDesktop将来一定是个不错的选择。</p>
-            <div class="xiaozi">Style Version: 1.0.4<br>未使用人工智能</div>
+            <div class="xiaozi">Style Version: 1.1.0<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月10日 星期二</h1>
+            <h2>开发相关</h2>
             <p>最近更新比较少，不是在肝5.1就是在与人交谈有关OOOInterface的事宜，不然就是吃饭睡觉作业原神（崩铁都没咋玩了）。</p>
             <p>今天是5.1发布的日子（昨天晚上睡着了，忘记发了）。非常高兴能看到5.1能拥有如此高的下载量。</p>
             <p>5.2功能建议可以投了，最近应该不太多Bug反馈的，会收集一些功能建议，用反馈页面的程序填写完成后发送到邮箱wyjcrtu@proton.me。不要用微信或者QQ，这样真的很乱，很多内容我会记录不到。</p>
             <p>5.2将正式推出InterfacePro，有需要的可以期待下。</p>
-            <div class="xiaozi">Style Version: 1.0.3<br>未使用人工智能</div>
+            <div class="xiaozi">Style Version: 1.1.0<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月9日 星期一</h1>
@@ -254,9 +410,27 @@
     <footer>
         <div class="footp">
             许可证：ABCD-26W08A<br>
-            最后一次更新：2026年2月11日<br>
+            最后一次更新：2026年2月12日<br>
             © 2026 ByRUDAN 保留所有权利。
         </div>
     </footer>
+    
+    <script>
+        function createSnowflakes() {
+            const snowflakes = ['🎉', '💩', '👏', '🍰', '🏮', '⭐'];
+            // 一次性生成20朵雪花（数量可改）
+            for (let i = 0; i < 100; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snowflake');
+                snowflake.innerHTML = snowflakes[Math.floor(Math.random() * snowflakes.length)];
+                snowflake.style.left = Math.random() * 100 + 'vw';
+                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                snowflake.style.fontSize = (Math.random() * 20 + 10) + 'px';
+        
+                document.body.appendChild(snowflake);
+            }
+        }
+        window.onload = createSnowflakes;
+    </script>
 </body>
 </html>
