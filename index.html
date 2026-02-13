@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+Style Version: 1.1.1
+<language="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -65,36 +66,9 @@
             100% { border-radius: 12px;}
         }
 
-        @keyframes titlePulse {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.05); }
-            0% { text-shadow: 0 0 10px #ffd700; }
-            100% { text-shadow: 0 0 20px #ffd700, 0 0 30px #ff0000; }
-            0% { text-shadow: none; }
-            100% { text-shadow: 0 0 10px #ffd700; }
-            0%, 100% { transform: translateX(0); }
-            12.5%,87.5% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            25%,75% { transform: translateX(-5px); }
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-        }
-
-        .hover-effect {
-            transition: all 0.3s ease;
-        }
-
-        .hover-effect:hover {
-            transform: scale(1.1) rotate(5deg);
-            text-shadow: 0 0 20px #ffd700;
-            cursor: pointer;
-        }
-
         .dakuang {
             width: 75%;
-            height:0px; 
+            height:50px; 
             margin: 50px auto;
             padding: 100px 0;
             border-radius: 12px;
@@ -135,6 +109,7 @@
                 0 0 90px #ffd700;
             animation: titlePulse 1s infinite alternate;
         }
+
         .ultra {
 
             display: block;
@@ -280,6 +255,81 @@
             font-family: Arial, sans-serif;
         }
 
+        .pinglun-container {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .pinglun {
+            background: rgba(255, 255, 255, 0);
+            border: 2px solid #000000;
+            backdrop-filter: blur(10px);
+            border-radius: 12px; 
+            padding: 10px; 
+            text-align: left;
+            animation: kuangjia 0.5s steps(150) 1;
+        }
+
+        .pinglun h1 {
+            font-size: 20px;
+            color: #000;
+            margin-top:-18px;
+            margin-bottom: -18px;
+            text-align: center;
+            font-family: serif, sans-serif;
+            font-weight: bold;
+        }
+
+        .pinglun h2 {
+            font-size: 14px;
+            color: #222;
+            text-indent: 0.5em;
+            margin-top: 2px;
+            margin-bottom: 2px;
+            text-align: left;
+            font-family: serif, sans-serif;
+            font-weight: normal;
+        }
+
+        .pinglun p {
+            font-size: 18px;
+            color: #333;
+            line-height: 1;
+            text-indent: 1em;
+            margin-bottom: 10px;
+            text-align: left;
+            font-family: serif, sans-serif;
+        }
+
+        .pinglun .pb {
+            font-size: 16px;
+            color: #333;
+            line-height: 1;
+            text-indent: 2em;
+            margin-bottom: 10px;
+            text-align: left;
+            font-family: serif, sans-serif;
+        }
+
+        .pinglun .se{
+            font-size: 12px;
+            color: #999;
+            margin-top:0px; 
+            margin-bottom: 2px;
+            line-height: 1;
+            text-indent: 2em;
+            margin-bottom: 10px;
+            text-align: left;
+            text-align: left;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: light;
+        }
+        
+        .pinglun .line {
+            border-top: 1px solid #ccc;
+            margin: 10px 0;
+        }
+
         footer {
             width: 25%;
             background: rgba(0, 0, 0, 0.1);
@@ -307,41 +357,33 @@
             margin: 0;
         }
 
-        .decoration {
-            position: fixed;
-            font-size: 3rem;
-            z-index: -1;
-            opacity: 0.3;
-            animation: rotate 20s linear infinite;
-        }
-
-        .decoration:nth-child(1) { top: 10%; left: 5%; }
-        .decoration:nth-child(2) { top: 20%; right: 5%; animation-delay: -5s; }
-        .decoration:nth-child(3) { bottom: 15%; left: 10%; animation-delay: -10s; }
-        .decoration:nth-child(4) { bottom: 25%; right: 15%; animation-delay: -15s; }
-
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-
     </style>
 </head>
 <body>
-    <div class="decoration"><img src="https://www.huawei.com/-/media/hcomponent-header/1.0.1.20251208095539/component/img/huawei_logo.png" alt="华为图标" class="chrome-icon"></div>
-    <div class="decoration"><img src="https://www.gstatic.com/marketing-cms/assets/images/66/ac/14b165e647fd85c824bfbe5d6bc5/gmail.webp=s96-fcrop64=1,00000000ffffffff-rw" alt="Gmail图标" class="chrome-icon"></div>
-    <div class="decoration"><img src="https://lf-flow-web-cdn.doubao.com/obj/flow-doubao/samantha/logo-icon-white-bg.png" alt="豆包转转图标" class="chrome-icon" Style="width: 200px; height: 200px;"></div>
-    <div class="decoration"><img src="https://www.gstatic.com/marketing-cms/assets/images/aa/d2/356851cc4224bc17a230a98e6000/chrome.webp=s96-fcrop64=1,00000000ffffffff-rw" alt="Chrome图标" class="chrome-icon"></div>
-
-    <div class="xibao">
-        <div class="xibaozi">🎉热烈庆祝🎉<br>🎉本网站1.1.0版本顺利发布！🎉</div>
-    </div>
     <div class="dakuang">
         <div class="ultra">ByRUDAN的公告</div>
         <div class="pro">和大家分享一些有关OOOInterface、RUD文件的信息，和我个人的一些见闻。</div>
     </div>
     <div class="zhengwen-container">
+        <div class="zhengwen">
+            <h1>2026年2月13日 星期五</h1>
+            <h2>ByRUDAN Style Version 1.1.1 Update</h2>
+            <p>Description: 将“开发相关”内“其他”替换为“信息”（旧内容已同步更新）；<a href="https://byrudan.carrd.co/" target="_blank">旧版网页</a>内容全部迁移完成。</p>
+            <h2>开发相关</h2>
+            <h3>信息</h3>
+            <p>昨天被骂惨了。现在已经把那些乱七八糟的删光了。昨日评论展示板已更新，可前往查看。</p>
+            <p>看了下，评论功能确实是有可能的，但不好做。我做展示板而不加入完整的评论区不是为了偷懒吗◥◤</p>
+            <h2>记录</h2>
+            <p>我已经不在家了，找我“线下对峙”的不用找了。给您带来的不便，我深感痛快。这几天（从今天到二十二号左右）晚上睡眠时间（大概是十点半过后到次日八点；除夕为次日零点到次日十点）我不会回复信息，请不要轰炸我。</p>
+            <p>但不得不说我现在体验很糟糕。我的音箱没带，这个破电脑外放音质跟屎一样。这个椅子很矮，桌子又高，打字都费劲。</p>
+            <p>崩铁4.0今天不更新了吗，之前说要提高设备要求，我还担心电脑带不动；实际下载下来完全能玩好么，三十来帧还是有的。不过存储是真的崩了，可用空间不到60GB了！（还是我东清西删出来的，光米家就200GB，根本不够用，硬盘又贵的死，买不起）</p>
+            <h2>近日新闻</h2>
+            <p>Apple智能又延期了。<br>没事，国内本来就用不上。</p>
+            <p>魅族要倒闭了。<br>跟你我没关系。</p>
+            <p>千问赶超豆包。<br>点奶茶免单是真的。</p>
+            <p class="se">这是不愿透露名字和性别的人类建议我加入的一个内容，目前还没对评论页面做专门的优化，先看看反响如何吧。</p>
+            <div class="xiaozi">Style Version: 1.1.1<br>未使用人工智能</div>
+        </div>
         <div class="zhengwen">
             <h1>2026年2月12日 星期四</h1>
             <h2>ByRUDAN Style Version 1.1.0 Update</h2>
@@ -349,7 +391,7 @@
             <h2>开发相关</h2>
             <h3>功能建议：</h3>
             <p>优化开发者模式设计（开发者模式的设计确实有点乱）</p>
-            <h3>其他：</h3>
+            <h3>信息：</h3>
             <p>老版本网页的内容后面一定会加上的，别催了我真的求你了。</p>
             <p>目前看来，评论功能好像加不了了。我有另一种办法，我在这个网站做一个展示板，把你的发言用邮箱投稿给我，我展示在下面。这是一个完全可行的办法。</p>
             <p>不断倾听用户声音，让OOOInterface变得更好。</p>
@@ -359,11 +401,33 @@
             <p class="se">具体效果请以实际为准。</p>
             <p>说到千问——千问免费点奶茶是真的没错，但是体验一般，Bug很多。（最关键的是，千问点的奶茶上不了岛！）我说实话，真的会有人用AI点外卖甚至买快递吗？</p>
             <p class="se">使用的是鸿蒙6，淘宝、千问最新版。正常点淘宝闪购是有岛的但这个没有。</p>
-            <div class="xiaozi">Style Version: 1.1.0<br>未使用人工智能</div>
+            <div class="pinglun">
+                <h1>评论</h1>
+                <div class="line" style="color: #000;"></div>
+                <h2>开花者</h2>
+                <p>这是第一条评论！</p>
+                <div class="line"></div>
+                <h2>饷频灰カラ</h2>
+                <p>请输入文本</p>
+                <div class="line"></div>
+                <h2>卷卷卷</h2>
+                <p>iPhone也没有岛。</p>
+                <p class="se">中译中：使用千问点奶茶时iPhone不会有灵动岛提示</p>
+                <div class="line"></div>
+                <h2 Style="color:rgb(255, 166, 0);">ZSCC</h2>
+                <p>其实GitHub可以加评论，有那种开源项目，可以试试。</p>
+                <p class="pb">回复：我不是懒吗◥◤</p>
+                <div class="line"></div>
+                <h2>lsa</h2>
+                <p>这 文明CiviLang文明语言™️ 是啥啊？</p>
+                <p class="se">出于文明考虑，我将屏蔽脏话。CiviLang文明语言™️ 是文明用语公益组织的商标，该组织由学生组成，成立于2022年8月。</p>
+            </div>
+            <div class="xiaozi">Style Version: 1.1.1<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月11日 星期三</h1>
             <h2>开发相关</h2>
+            <h3>信息</h3>
             <p>这是新版网页的首次展示！（首次展示可能有些许不足，如果视觉体验受到影响，可以随时反馈到我的邮箱）</p>
             <p>鉴于老版本网站限制极为严格，若未开通会员基本无法正常使用，故而我毅然转向GitHub。此网页是我和大家分享一些有关OOOInterface、RUD文件的信息和我个人的一些见闻的平台。（目前）其并非OOOInterface的下载平台，若需下载URL= <a href="https://wwbkd.lanzoum.com/iSIXz3i5lpxg" target="_blank">OOOInterface下载</a> 。</p>
             <p>在此新版网页上，我拥有了相对更多的自主性。我能够自主上传HTML格式的网页文件，从而实现自由排版，并可自由增添功能（关于是否能够实现让访客上传文件等功能，例如评论功能能否实现，目前尚不确定，只能说值得期待）。</p>
@@ -375,36 +439,69 @@
             <li>全新自研高效引擎，减少内存占用，提升设备流畅性</li>
             <p>详细解释下吧。所谓“右键菜单”，样式可以参考InterfaceExtensions（现在的版本）里“关于”页面（about.html）和“欢迎”页面（welc.html）的外观。搜索页面的修改，主要是顶部加了一行操作栏，样式可以参考macOS顶部的操作栏。“高效引擎”的实现方法是将用户数据单独存储（Bug还有亿点多），缓解JS屎山的压力（Extension版本做不了，傻逼Chrome有限制）。</p>
             <p>桌面版的制作起来有些地方限制会少一点，所以后面功能大概率会多不少。如果只是专门搜索内容的话，InterfaceDesktop将来一定是个不错的选择。</p>
-            <div class="xiaozi">Style Version: 1.1.0<br>未使用人工智能</div>
+            <div class="xiaozi">Style Version: 1.1.1<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月10日 星期二</h1>
             <h2>开发相关</h2>
+            <h3>信息</h3>
             <p>最近更新比较少，不是在肝5.1就是在与人交谈有关OOOInterface的事宜，不然就是吃饭睡觉作业原神（崩铁都没咋玩了）。</p>
             <p>今天是5.1发布的日子（昨天晚上睡着了，忘记发了）。非常高兴能看到5.1能拥有如此高的下载量。</p>
             <p>5.2功能建议可以投了，最近应该不太多Bug反馈的，会收集一些功能建议，用反馈页面的程序填写完成后发送到邮箱wyjcrtu@proton.me。不要用微信或者QQ，这样真的很乱，很多内容我会记录不到。</p>
             <p>5.2将正式推出InterfacePro，有需要的可以期待下。</p>
-            <div class="xiaozi">Style Version: 1.1.0<br>未使用人工智能</div>
+            <div class="xiaozi">Style Version: 1.1.1<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月9日 星期一</h1>
-            <p>当前版本暂不支持展示</p>
-            <div class="xiaozi">Style Version: 0.0.0<br>未使用人工智能</div>
+            <h2>开发相关</h2>
+            <h3>信息</h3>
+            <p>请期待：明天零点。</p>
+            <p>OOOInterface将会有这样的产品线</p>
+            <li style="list-style-type: disc;">InterfaceExtensions</li>
+            <li style="list-style-type: disc;">InterfaceDesktop</li>
+            <p>InterfacePro</p>
+            <li style="list-style-type: disc;">InterfacePro Tuner</li>
+            <li style="list-style-type: disc;">InterfacePro Weaver</li>
+            <li style="list-style-type: disc;">InterfacePro Refiner</li>
+
+            <div class="xiaozi">Style Version: 1.1.1<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月8日 知更鸟哥哥</h1>
-            <p>当前版本暂不支持展示</p>
-            <div class="xiaozi">Style Version: 0.0.0<br>未使用人工智能</div>
+            <h2>开发相关</h2>
+            <h3>信息</h3>
+            <p>一些事情被发生了，正式版本将命名为RS42，发布时间不变。桌面版公测于10日发布，正式版时间待定。</p>
+            <h2>记录</h2>
+            <p>昨天和今天，我与OOOInterface的共创伙伴们进行了一些线下深度交流。在10日，InterfacePro邀约计划将正式开始。</p>
+            <p>InterfacePro共分为三个版本。</p>
+            <li style="list-style-type: disc;">InterfacePro Tuner（粉色版本）：提供个性化定制服务。收费标准待定。</li>
+            <li style="list-style-type: disc;">InterfacePro Weaver（蓝色版本）：提供新功能优先体验和测试服务。您需要发现和反馈Bug。</li>
+            <li style="list-style-type: disc;">InterfacePro Refiner（紫色版本）：提供个性化定制服务和功能优先体验服务。收费标准待定。</li>
+            <p>在5.2版本中，将带来全新的InterfacePro。届时会发送账户注册表单，填写完成后将导出的RUD文件以指定格式发送给wyjcrtu@proton.me即可。</p>
+            <p class="se">这目前只是一个计划，具体实施敬请期待。</p>
+            <div class="xiaozi">Style Version: 1.1.1<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月7日 星期六</h1>
-            <p>当前版本暂不支持展示</p>
-            <div class="xiaozi">Style Version: 0.0.0<br>未使用人工智能</div>
+            <h2>记录</h2>
+            <p>宝了个贝的，今天正在外面跟别人讨论OOOInterface何去何从呢，突然收到一条通知发现这网页还没更新，再一次懵逼了。</p>
+            <p>38版本还是有比较多的问题的，不过已经修复了。今日晚些时候会发布39版本，需要的可以获取。为解决之前改了文件结构之后有的一些问题，再次修改了文件结构，这次应该是没有问题了。</p>
+            <p>10号将发布正式版本。</p>
+            <div class="xiaozi">Style Version: 1.1.1<br>未使用人工智能</div>
         </div>
         <div class="zhengwen">
             <h1>2026年2月6日 星期五</h1>
-            <p>当前版本暂不支持展示</p>
-            <div class="xiaozi">Style Version: 0.0.0<br>未使用人工智能</div>
+            <h2>开发相关</h2>
+            <h3>信息</h3>
+            <p>今天汇报好消息，今日成了！</p>
+            <p>公元2026年2月6日，星期五，这一天在时间的长河中注定留下浓墨重彩的一笔。按照传统农历纪年法，此时正处于乙巳年腊月十九，具体时间来到了当日的十八时三十分，一个历史性的时刻就此诞生。就在这一特殊瞬间，OOOInterface桌面版的首个公测版本成功问世，标志着其在软件发展历程中迈出了具有里程碑意义的一步，开启了与广大用户互动、接受检验的全新阶段。</p>
+            <p>另外，版本号5.1:24 - BS38的相关任务已于今日完成。如有需要，请自行获取，获取邮箱为wyjcrtu@proton.com 。</p>
+            <h2>记录</h2>
+            <h3>小说《社会主义的败类》</h3>
+            <p>美国人的技术卡我的脖子！美国微软公司邪恶的资本主义阻碍我们中国自主知识产权的浏览器启动页插件的技术进步！美国人凭借其掌握的技术，如同无情地卡住了我们的脖子！尤其是美国微软公司，这家具有代表性的资本主义企业，以其邪恶的行径，严重阻碍了我们中国在拥有自主知识产权的浏览器启动页插件技术领域的进步。他们凭借自身在技术和市场上的优势地位，不择手段地打压和限制我们中国相关技术的发展，试图维持自身的垄断地位，全然不顾公平竞争的市场原则，给我们中国自主知识产权的浏览器启动页插件技术的前行之路设置重重障碍。</p>
+            <p>还有谷歌也是。美国人仗着手中握有的技术，毫不留情地卡住了我们的脖子！特别是美国微软公司，这个典型的邪恶资本主义企业，其种种恶劣行径，严重阻碍了我们中国在自主知识产权的浏览器启动页插件技术方面的进步。微软凭借自身在技术层面的领先以及在市场上占据的优势地位，采取各种不正当手段，肆意打压和限制我们中国相关技术的发展。他们这么做的目的，无非是妄图维持自身在该领域的垄断地位，完全无视公平竞争这一基本的市场原则，给中国自主知识产权的浏览器启动页插件技术的发展道路上设置了数不清的障碍。不仅如此，谷歌这家公司同样如此。谷歌也利用自身的技术与市场影响力，对中国自主知识产权的浏览器启动页插件技术的进步进行干扰，同样是为了巩固自身利益，全然不顾市场公平与行业健康发展，其行为同样给中国在该技术领域的探索与突破带来诸多阻碍。</p>
+            <p class="se">*内容由AI生成，纯属娱乐，请仔细甄别（太懒了不想写新的了）。</p>
+            <div class="xiaozi">Style Version: 1.1.1<br>使用的AI：Doubao Seed 1.8</div>
         </div>
     </div>
     <footer>
@@ -414,23 +511,5 @@
             © 2026 ByRUDAN 保留所有权利。
         </div>
     </footer>
-    
-    <script>
-        function createSnowflakes() {
-            const snowflakes = ['🎉', '💩', '👏', '🍰', '🏮', '⭐'];
-            // 一次性生成20朵雪花（数量可改）
-            for (let i = 0; i < 100; i++) {
-                const snowflake = document.createElement('div');
-                snowflake.classList.add('snowflake');
-                snowflake.innerHTML = snowflakes[Math.floor(Math.random() * snowflakes.length)];
-                snowflake.style.left = Math.random() * 100 + 'vw';
-                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
-                snowflake.style.fontSize = (Math.random() * 20 + 10) + 'px';
-        
-                document.body.appendChild(snowflake);
-            }
-        }
-        window.onload = createSnowflakes;
-    </script>
 </body>
 </html>
