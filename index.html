@@ -1,59 +1,146 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OOO Index</title>
     <style>
-
         @keyframes ULTRA {
-            0% { opacity: 0; font-size: 53px;} 
-            50% { opacity: 0.5; font-size: 52px;}
-            90% { opacity: 0.9; font-size: 50.0001px;}
-            100% { opacity: 1; font-size: 50px;}
+            0% {
+                opacity: 0;
+                font-size: 53px;
+            }
+
+            50% {
+                opacity: 0.5;
+                font-size: 52px;
+            }
+
+            90% {
+                opacity: 0.9;
+                font-size: 50.0001px;
+            }
+
+            100% {
+                opacity: 1;
+                font-size: 50px;
+            }
         }
 
         @keyframes PRO {
-            0% { opacity: 0; font-size: 19px;}
-            50% { opacity: 0.5; font-size: 20px;}
-            90% { opacity: 0.9; font-size: 21.9999px;}
-            100% { opacity: 1; font-size: 22px;}
+            0% {
+                opacity: 0;
+                font-size: 19px;
+            }
+
+            50% {
+                opacity: 0.5;
+                font-size: 20px;
+            }
+
+            90% {
+                opacity: 0.9;
+                font-size: 21.9999px;
+            }
+
+            100% {
+                opacity: 1;
+                font-size: 22px;
+            }
         }
 
         @keyframes IMG {
-            0% { width: 155px;}
-            50% { width: 152px;}
-            90% { width: 150.5px;}
-            100% { width: 150px;}
+            0% {
+                width: 155px;
+            }
+
+            50% {
+                width: 152px;
+            }
+
+            90% {
+                width: 150.5px;
+            }
+
+            100% {
+                width: 150px;
+            }
         }
 
         @keyframes kuangjia {
-            0% { border-radius: 100px;}
-            50% { border-radius: 40px;}
-            75% { border-radius: 18px;}
-            85% { border-radius: 14px;}
-            90% { border-radius: 13px;}
-            100% { border-radius: 12px;}
+            0% {
+                border-radius: 100px;
+            }
+
+            50% {
+                border-radius: 40px;
+            }
+
+            75% {
+                border-radius: 18px;
+            }
+
+            85% {
+                border-radius: 14px;
+            }
+
+            90% {
+                border-radius: 13px;
+            }
+
+            100% {
+                border-radius: 12px;
+            }
         }
 
         @keyframes lianjie {
-            0% { color: #00AE00; background-color: transparent; border-radius: 60px; padding: 60px;}
-            10% { color: #00AE0099; background-color: transparent; border-radius: 4px; padding: 0.5px 0.5px;}
-            50% { color: #00AE0099; background-color: transparent; border-radius: 6px; padding: 6px 2px;}
-            90% { color: #00AE0050; background-color: #00AE0050; border-radius: 10px; padding: 8px 4px;}
-            100% { color: white; background-color: #00AE00; border-radius: 12px; padding: 10px 6px;}
+            0% {
+                color: #00AE00;
+                background-color: transparent;
+                border-radius: 60px;
+                padding: 60px;
+            }
+
+            10% {
+                color: #00AE0099;
+                background-color: transparent;
+                border-radius: 4px;
+                padding: 0.5px 0.5px;
+            }
+
+            50% {
+                color: #00AE0099;
+                background-color: transparent;
+                border-radius: 6px;
+                padding: 6px 2px;
+            }
+
+            90% {
+                color: #00AE0050;
+                background-color: #00AE0050;
+                border-radius: 10px;
+                padding: 8px 4px;
+            }
+
+            100% {
+                color: white;
+                background-color: #00AE00;
+                border-radius: 12px;
+                padding: 10px 6px;
+            }
         }
 
         body {
             font-family: serif, sans-serif;
-            margin: 0; 
-            padding: 0px; 
+            margin: 0;
+            padding: 0px;
             background-color: #f4f4f4;
         }
 
         .dakuang {
             width: 75%;
-            height:150px; 
+            height: 150px;
             margin: 50px auto;
             padding: 100px 0;
             border-radius: 12px;
@@ -92,21 +179,21 @@
             margin: 0 auto 20px;
             width: 150px;
             animation: IMG 0.5s steps(150) 1;
-        }   
+        }
 
         .tishikuang {
             width: 75%;
             margin: 0 auto 50px;
-            display: flex; 
-            flex-direction: column; 
-            gap: 20px; 
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
             background: rgba(255, 255, 255, 0.115);
-            border: 2px solid #000000; 
-            backdrop-filter: blur(10px); 
-            border-radius: 12px; 
-            padding: 10px ; 
+            border: 2px solid #000000;
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 10px;
             padding-bottom: 50px;
-            text-align: left; 
+            text-align: left;
             animation: kuangjia 0.5s steps(150) 1;
         }
 
@@ -137,7 +224,7 @@
 
         p {
             font-size: 18px;
-            margin-bottom: -20px; 
+            margin-bottom: -20px;
             text-align: center;
         }
 
@@ -147,21 +234,21 @@
         }
 
         a:hover {
-            color:blue;
+            color: blue;
             text-decoration: underline;
         }
 
         footer {
-            flex: 1; 
+            flex: 1;
             color: white;
             width: 25%;
-            margin: -10px auto 50px auto; 
+            margin: -10px auto 50px auto;
             background: rgba(0, 0, 0, 0.1);
-            display: flex; 
+            display: flex;
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(10px);
-            border-radius: 12px; 
+            border-radius: 12px;
             padding: 10px 0;
             color: rgba(255, 255, 255, 0.9);
         }
@@ -174,9 +261,9 @@
             line-height: 1.4;
             letter-spacing: 0px;
         }
-
     </style>
 </head>
+
 <body>
     <div class="dakuang">
         <img src="images/icon.png" alt="OOO Logo" style="width: 150px; display: block; margin-bottom: 20px;">
@@ -185,7 +272,10 @@
     </div>
     <div class="tishikuang">
         <p>此前这是ByRUDAN的网页。</p>
-        <p><a class="linshilianjie" href="https://rudan177.github.io/ByRUDAN/index.html" target="_blank">点击前往ByRUDAN</a></p>
+        <p><a class="linshilianjie" href="https://rudan177.github.io/ByRUDAN/index.html" target="_blank">点击前往ByRUDAN</a>
+        </p>
+        <p><a class="linshilianjie" href="https://rudan177.github.io/OOOInterface/about/about.html"
+                target="_blank">全新历史版本页！</a></p>
     </div>
     <footer>
         <div class="footp">
