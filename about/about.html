@@ -2,7 +2,11 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" container="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="format-detection" content="telephone=no">
     <title>About OOO Interface</title>
 </head>
 <body>
@@ -340,6 +344,364 @@
         .back-to-top svg {
             width: 20px;
             height: 20px;
+        }
+
+        @media (max-width: 768px), (max-device-width: 768px) {
+            body.mobile-device,
+            html.mobile body {
+                --mobile-active: 1;
+            }
+
+            .version-container {
+                width: 94%;
+                margin: 0 auto 30px;
+                gap: 12px;
+            }
+
+            .dakuang {
+                margin-top: 15px;
+                margin-bottom: 12px;
+                padding: 50px 0;
+                border-radius: 16px;
+            }
+
+            .ultra {
+                font-size: 32px;
+                padding: 6px 8px;
+            }
+
+            @keyframes ULTRA {
+                0% { opacity: 0; font-size: 35px; }
+                50% { opacity: 0.5; font-size: 34px; }
+                90% { opacity: 0.9; font-size: 32.0001px; }
+                100% { opacity: 1; font-size: 32px; }
+            }
+
+            .pro {
+                font-size: 14px;
+                padding: 6px 8px;
+            }
+
+            @keyframes PRO {
+                0% { opacity: 0; font-size: 12px; }
+                50% { opacity: 0.5; font-size: 13px; }
+                90% { opacity: 0.9; font-size: 13.9999px; }
+                100% { opacity: 1; font-size: 14px; }
+            }
+
+            .search-box {
+                padding: 12px 14px;
+                margin-bottom: 8px;
+                border-radius: 14px;
+                top: 8px;
+            }
+
+            .search-box input {
+                font-size: 15px;
+            }
+
+            .search-box.sticky {
+                width: 90%;
+                margin-left: 5%;
+                margin-right: 5%;
+                padding: 10px 12px;
+                border-radius: 22px;
+            }
+
+            .verson {
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            .verson:hover {
+                transform: none;
+            }
+
+            h1 {
+                font-size: 22px;
+                margin-top: 30px;
+                margin-bottom: -5px;
+            }
+
+            h2 {
+                font-size: 17px;
+            }
+
+            h3 {
+                font-size: 15px;
+                margin-top: 14px;
+                margin-bottom: -10px;
+            }
+
+            p {
+                font-size: 14px;
+                margin-top: 14px;
+                margin-bottom: -10px;
+                line-height: 1.5;
+            }
+
+            li {
+                font-size: 14px;
+                margin-top: 12px;
+                margin-bottom: -8px;
+                line-height: 1.5;
+            }
+
+            ol {
+                padding-left: 20px;
+            }
+
+            .ver-num {
+                font-size: 11px;
+                padding: 2px 6px;
+                border-radius: 5px;
+            }
+
+            .support-section {
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            .support-image {
+                margin-top: 10px;
+            }
+
+            .support-image img {
+                width: 100%;
+            }
+
+            .no-result {
+                padding: 25px 15px;
+                font-size: 14px;
+            }
+
+            .footer {
+                padding: 15px 15px;
+                font-size: 12px;
+            }
+
+            .footer p {
+                margin: 3px 0;
+            }
+
+            .back-to-top {
+                bottom: 20px;
+                right: 20px;
+                padding: 10px 18px;
+                border-radius: 20px;
+                font-size: 13px;
+            }
+
+            .back-to-top svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            @keyframes kuangjia {
+                0% {
+                    opacity: 0;
+                    transform: translateY(25px);
+                    filter: blur(2px);
+                }
+                100% {
+                    opacity: 1;
+                    transform: translateY(0);
+                    filter: blur(0);
+                }
+            }
+        }
+
+        @media (max-width: 480px) {
+            .version-container {
+                width: 96%;
+                margin: 0 auto 20px;
+                gap: 10px;
+            }
+
+            .dakuang {
+                margin-top: 10px;
+                margin-bottom: 10px;
+                padding: 35px 0;
+                border-radius: 14px;
+            }
+
+            .ultra {
+                font-size: 26px;
+            }
+
+            @keyframes ULTRA {
+                0% { opacity: 0; font-size: 29px; }
+                50% { opacity: 0.5; font-size: 28px; }
+                90% { opacity: 0.9; font-size: 26.0001px; }
+                100% { opacity: 1; font-size: 26px; }
+            }
+
+            .pro {
+                font-size: 12px;
+            }
+
+            @keyframes PRO {
+                0% { opacity: 0; font-size: 10px; }
+                50% { opacity: 0.5; font-size: 11px; }
+                90% { opacity: 0.9; font-size: 11.9999px; }
+                100% { opacity: 1; font-size: 12px; }
+            }
+
+            .search-box {
+                padding: 10px 12px;
+                margin-bottom: 6px;
+                border-radius: 12px;
+                top: 6px;
+            }
+
+            .search-box input {
+                font-size: 14px;
+            }
+
+            .search-icon {
+                width: 18px;
+                height: 18px;
+            }
+
+            .verson {
+                padding: 14px;
+                border-radius: 12px;
+            }
+
+            h1 {
+                font-size: 19px;
+                margin-top: 24px;
+                margin-bottom: -4px;
+            }
+
+            h2 {
+                font-size: 15px;
+            }
+
+            h3 {
+                font-size: 14px;
+                margin-top: 12px;
+                margin-bottom: -8px;
+            }
+
+            p {
+                font-size: 13px;
+                margin-top: 12px;
+                margin-bottom: -8px;
+            }
+
+            li {
+                font-size: 13px;
+                margin-top: 10px;
+                margin-bottom: -6px;
+            }
+
+            ol {
+                padding-left: 18px;
+            }
+
+            .ver-num {
+                font-size: 10px;
+                padding: 2px 5px;
+            }
+
+            .support-section {
+                padding: 14px;
+                border-radius: 12px;
+            }
+
+            .back-to-top {
+                bottom: 15px;
+                right: 15px;
+                padding: 8px 14px;
+                border-radius: 18px;
+            }
+
+            .back-to-top svg {
+                width: 16px;
+                height: 16px;
+            }
+        }
+
+        body.mobile-device .version-container {
+            width: 94% !important;
+            margin: 0 auto 20px !important;
+            gap: 10px !important;
+        }
+
+        body.mobile-device .dakuang {
+            margin-top: 10px !important;
+            margin-bottom: 10px !important;
+            padding: 35px 0 !important;
+            border-radius: 14px !important;
+        }
+
+        body.mobile-device .ultra {
+            font-size: 26px !important;
+            padding: 6px 8px !important;
+        }
+
+        body.mobile-device .pro {
+            font-size: 12px !important;
+            padding: 6px 8px !important;
+        }
+
+        body.mobile-device .search-box {
+            padding: 10px 12px !important;
+            margin-bottom: 6px !important;
+            border-radius: 12px !important;
+            top: 6px !important;
+        }
+
+        body.mobile-device .search-box input {
+            font-size: 14px !important;
+        }
+
+        body.mobile-device .verson {
+            padding: 14px !important;
+            border-radius: 12px !important;
+        }
+
+        body.mobile-device h1 {
+            font-size: 19px !important;
+            margin-top: 24px !important;
+        }
+
+        body.mobile-device h2 {
+            font-size: 15px !important;
+        }
+
+        body.mobile-device h3 {
+            font-size: 14px !important;
+            margin-top: 12px !important;
+        }
+
+        body.mobile-device p {
+            font-size: 13px !important;
+            margin-top: 12px !important;
+            line-height: 1.5 !important;
+        }
+
+        body.mobile-device li {
+            font-size: 13px !important;
+            margin-top: 10px !important;
+            line-height: 1.5 !important;
+        }
+
+        body.mobile-device .ver-num {
+            font-size: 10px !important;
+            padding: 2px 5px !important;
+        }
+
+        body.mobile-device .support-section {
+            padding: 14px !important;
+            border-radius: 12px !important;
+        }
+
+        body.mobile-device .back-to-top {
+            bottom: 15px !important;
+            right: 15px !important;
+            padding: 8px 14px !important;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -709,6 +1071,24 @@
     </button>
 
     <script>
+        (function() {
+            var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent);
+            var isSmallScreen = window.innerWidth <= 768;
+            if (isMobile || isSmallScreen) {
+                document.documentElement.classList.add('mobile');
+                document.body.classList.add('mobile-device');
+            }
+            window.addEventListener('resize', function() {
+                if (window.innerWidth <= 768) {
+                    document.documentElement.classList.add('mobile');
+                    document.body.classList.add('mobile-device');
+                } else {
+                    document.documentElement.classList.remove('mobile');
+                    document.body.classList.remove('mobile-device');
+                }
+            });
+        })();
+
         const searchInput = document.getElementById('searchInput');
         const noResult = document.getElementById('noResult');
         const versions = document.querySelectorAll('.verson[data-version]');
