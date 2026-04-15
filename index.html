@@ -279,6 +279,49 @@
             text-align: center;
         }
 
+        h3 {
+            color: #000000;
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+
+        hr {
+            width: 100%;
+            border: 1px solid #00000030;
+            margin: 5px 0;
+        }
+
+        .zhengwen {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            background: rgba(255, 255, 255, 0.115);
+            border: 2px solid #00000050;
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px;
+            animation: kuangjia 0.5s ease-out 1;
+        }
+
+        .zhengwen p {
+            text-align: left;
+            margin-top: 6px;
+            margin-bottom: 6px;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .zhengwen .date {
+            font-size: 14px;
+            color: #666;
+            margin-top: -30px;
+            margin-bottom: 0px;
+            text-align: right;
+        }
+
         p {
             font-size: 16px;
             font-weight: regular;
@@ -697,6 +740,23 @@
                 color: #ffffff;
             }
 
+            body:not(.light-theme) h3 {
+                color: #ffffff;
+            }
+
+            body:not(.light-theme) hr {
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+
+            body:not(.light-theme) .zhengwen {
+                background: rgba(30, 30, 30, 0.6);
+                border-color: rgba(255, 255, 255, 0.15);
+            }
+
+            body:not(.light-theme) .zhengwen .date {
+                color: #888;
+            }
+
             body:not(.light-theme) p {
                 color: #e0e0e0;
             }
@@ -752,6 +812,23 @@
             color: #ffffff;
         }
 
+        body.dark-theme h3 {
+            color: #ffffff;
+        }
+
+        body.dark-theme hr {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        body.dark-theme .zhengwen {
+            background: rgba(30, 30, 30, 0.6);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        body.dark-theme .zhengwen .date {
+            color: #888;
+        }
+
         body.dark-theme p {
             color: #e0e0e0;
         }
@@ -784,7 +861,7 @@
         <div class="dakuang">
             <img src="images/icon.png" alt="OOO Logo">
             <div class="ultra">OOOInterface</div>
-            <div class="pro">这里是OOOInterface官方网站，用于分享OOOInterface的相关信息。</div>
+            <div class="pro">这里是OOOInterface 方网站，用于分享OOOInterface的相关信息。</div>
         </div>
         <div class="tishikuang">
             <p>此前这是CHAPTER网页。</p>
@@ -792,6 +869,16 @@
                 <a class="linshilianjie" href="https://CAIYUNZHOU.github.io/SpecialCHAPTER/index.html" target="_blank">点击前往ByRUDAN</a>
                 <a class="linshilianjie" href="https://rudan177.github.io/OOOInterface/about/about.html" target="_blank">全新历史版本页！</a>
             </div>
+        </div>
+        <div class="zhengwen">
+            <h3><strong>来自ByRUDAN的电子邮件</strong></h3>
+            <p class="date">2026年4月15日</p>
+            <hr>
+            <p>近期有人给提建议，说可以去 GitHub 上面找一些有用的功能的插件（加入到OOOInterface来，以丰富（花里胡哨的）功能。</p>
+            <p>这确实是一个好想法。</p>
+            <hr>
+            <p>那么你如何看待呢？</p>
+            <p>（你可以通过电子邮件发表你的观点）</p>
         </div>
     </div>
     <footer>
