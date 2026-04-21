@@ -40,6 +40,29 @@
         color: var(--text-color);
         transition: all 0.3s ease;
         box-sizing: border-box;
+        position: relative;
+    }
+
+    .info-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .info-container::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.1), transparent);
+        border-radius: 0 0 28px 28px;
+        pointer-events: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .info-container::after {
+            background: linear-gradient(to top, rgba(255, 255, 255, 0.1), transparent);
+        }
     }
 
     .info-container h1 {
@@ -49,19 +72,28 @@
         margin-left: 8px;
         line-height: 40px;
         flex: 0 0 auto;
+        border-right: 1px solid var(--border-color);
+        padding-right: 8px;
+    }
+
+    .info-container .scrollable-content {
+        flex: 1;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        margin: 0 8px;
+    }
+
+    .info-container .scrollable-content::-webkit-scrollbar {
+        display: none;
     }
 
     .info-container p {
         font-size: 24px;
         margin: 0;
         line-height: 40px;
-        border-left: 1px solid var(--border-color);
-        padding-left: 8px;
         text-align: left;
-        margin-left: 8px;
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
     }
 
@@ -73,10 +105,22 @@
         color: var(--close-color);
         transition: color 0.3s;
         line-height: 40px;
-        margin-left: 8px;
+        margin-left: 12px;
         margin-right: 8px;
         flex: 0 0 auto;
         padding: 0;
+        position: relative;
+    }
+
+    .info-close-btn::before {
+        content: '';
+        position: absolute;
+        left: -12px;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 80%;
+        width: 1px;
+        background-color: var(--border-color);
     }
 
     .info-close-btn:hover {
@@ -92,20 +136,26 @@
             font-size: 28px;
             line-height: 35px;
             margin-left: 6px;
+            border-right: 1px solid var(--border-color);
+            padding-right: 6px;
         }
 
         .info-container p {
             font-size: 18px;
             line-height: 35px;
-            margin-left: 6px;
-            padding-left: 6px;
+            flex: 0 0 auto;
         }
 
         .info-close-btn {
             font-size: 24px;
             line-height: 35px;
-            margin-left: 6px;
+            margin-left: 9px;
             margin-right: 6px;
+            padding: 0;
+        }
+
+        .info-close-btn::before {
+            left: -9px;
         }
     }
 
@@ -118,27 +168,35 @@
             font-size: 24px;
             line-height: 30px;
             margin-left: 4px;
+            border-right: 1px solid var(--border-color);
+            padding-right: 4px;
         }
 
         .info-container p {
             font-size: 16px;
             line-height: 30px;
-            margin-left: 4px;
-            padding-left: 4px;
+            flex: 0 0 auto;
         }
 
         .info-close-btn {
             font-size: 20px;
             line-height: 30px;
-            margin-left: 4px;
+            margin-left: 6px;
             margin-right: 4px;
+            padding: 0;
+        }
+
+        .info-close-btn::before {
+            left: -6px;
         }
     }
 </style>
 
 <div class="info-container">
-    <h1>泥嚎！</h1>
-    <p>欢迎参加OOOInterface InterfacePro(Refiner)测试活动！</p>
+    <h1>提示</h1>
+    <div class="scrollable-content">
+        <p>欢迎参加OOOInterface InterfacePro(Refiner)测试活动！</p>
+    </div>
     <button class="info-close-btn" onclick="closeInfo()">&times;</button>
 </div>
 
@@ -161,5 +219,13 @@
                 document.querySelector('.info-container').style.display = 'none';
             }
         }
+
+        // 添加鼠标滚轮左右滑动功能
+        var container = document.querySelector('.scrollable-content');
+        container.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            // 同时考虑 deltaY 和 deltaX，确保滚轮和触控板都能正常工作
+            container.scrollLeft += e.deltaY || e.deltaX;
+        });
     };
 </script>
