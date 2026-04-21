@@ -210,20 +210,25 @@
     } 
  
     window.onload = function() { 
-        var h1Text = document.querySelector('.info-container h1').textContent.trim(); 
-        var pText = document.querySelector('.info-container p').textContent.trim(); 
+        var h1Element = document.querySelector('.info-container h1');
+        var pElement = document.querySelector('.info-container p');
+        var h1Text = h1Element ? h1Element.textContent.trim() : '';
+        var pText = pElement ? pElement.textContent.trim() : '';
+        
         if (h1Text === '' && pText === '') { 
             if (window.parent !== window) { 
-                window.parent.postMessage('closeInfoIframe', '*'); 
+                window.parent.postMessage('noContent', '*'); 
             } else { 
                 document.querySelector('.info-container').style.display = 'none'; 
             } 
         } 
  
         var container = document.querySelector('.scrollable-content'); 
-        container.addEventListener('wheel', function(e) { 
-            e.preventDefault(); 
-            container.scrollLeft += e.deltaY || e.deltaX; 
-        }); 
+        if (container) {
+            container.addEventListener('wheel', function(e) { 
+                e.preventDefault(); 
+                container.scrollLeft += e.deltaY || e.deltaX; 
+            }); 
+        }
     }; 
 </script>
