@@ -203,6 +203,7 @@
 <script>
     function closeInfo() {
         if (window.frameElement) {
+            window.parent.postMessage('closeInfoIframe', '*');
             window.frameElement.style.display = 'none';
         } else {
             document.querySelector('.info-container').style.display = 'none';
