@@ -200,33 +200,30 @@
     <button class="info-close-btn" onclick="closeInfo()">&times;</button>
 </div>
 
-<script>
-    function closeInfo() {
-        if (window.frameElement) {
-            window.parent.postMessage('closeInfoIframe', '*');
-            window.frameElement.style.display = 'none';
-        } else {
-            document.querySelector('.info-container').style.display = 'none';
-        }
-    }
-
-    window.onload = function() {
-        var h1Text = document.querySelector('.info-container h1').textContent.trim();
-        var pText = document.querySelector('.info-container p').textContent.trim();
-        if (h1Text === '' && pText === '') {
-            if (window.frameElement) {
-                window.frameElement.style.display = 'none';
-            } else {
-                document.querySelector('.info-container').style.display = 'none';
-            }
-        }
-
-        // 添加鼠标滚轮左右滑动功能
-        var container = document.querySelector('.scrollable-content');
-        container.addEventListener('wheel', function(e) {
-            e.preventDefault();
-            // 同时考虑 deltaY 和 deltaX，确保滚轮和触控板都能正常工作
-            container.scrollLeft += e.deltaY || e.deltaX;
-        });
-    };
+<script> 
+    function closeInfo() { 
+        if (window.parent !== window) { 
+            window.parent.postMessage('closeInfoIframe', '*'); 
+        } else { 
+            document.querySelector('.info-container').style.display = 'none'; 
+        } 
+    } 
+ 
+    window.onload = function() { 
+        var h1Text = document.querySelector('.info-container h1').textContent.trim(); 
+        var pText = document.querySelector('.info-container p').textContent.trim(); 
+        if (h1Text === '' && pText === '') { 
+            if (window.parent !== window) { 
+                window.parent.postMessage('closeInfoIframe', '*'); 
+            } else { 
+                document.querySelector('.info-container').style.display = 'none'; 
+            } 
+        } 
+ 
+        var container = document.querySelector('.scrollable-content'); 
+        container.addEventListener('wheel', function(e) { 
+            e.preventDefault(); 
+            container.scrollLeft += e.deltaY || e.deltaX; 
+        }); 
+    }; 
 </script>
