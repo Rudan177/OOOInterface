@@ -97,6 +97,16 @@
         white-space: nowrap;
     }
 
+    .info-container a {
+        color: var(--text-color);
+        text-decoration: none;
+    }
+
+    .info-container a:hover {
+        color: var(--close-color);
+        text-decoration: underline;
+    }
+
     .info-close-btn {
         background: none;
         border: none;
@@ -193,9 +203,9 @@
 </style>
 
 <div class="info-container">
-    <h1></h1>
+    <h1>测试</h1>
     <div class="scrollable-content">
-        <p></p>
+        <p>测试内容。OOOInterface。<span><a href="https://rudan177.github.io/ooointerface/testpage.html" target="_blank">效果测试：https://rudan177.github.io/ooointerface/testpage.html</a></span></p>
     </div>
     <button class="info-close-btn" onclick="closeInfo()">&times;</button>
 </div>
