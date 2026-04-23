@@ -24,27 +24,19 @@
             animation: gradientMove 15s ease infinite;
             overflow-y: auto;
         }
-        /* 浅色模式滚动条 */
+        /* 隐藏滚动条 */
         ::-webkit-scrollbar {
-            width: 8px;
+            display: none;
         }
 
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        /* 兼容Firefox */
+        body {
+            scrollbar-width: none;
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 4px;
-        }   
-
-/* 深色模式滚动条 */
-        body.dark-theme::-webkit-scrollbar-track {
-            background: #2a2a2a;
-        }
-
-        body.dark-theme::-webkit-scrollbar-thumb {
-            background: #555;   
+        /* 兼容IE/Edge */
+        body {
+            -ms-overflow-style: none;
         }
 
 /* 字体 */
