@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="format-detection" content="telephone=no">
+    <title>OOOInterface 5.2 Public Beta 1</title>
+    <style>
+        :root {
+            --bg-primary: #f4f4f4;
+            --bg-secondary: rgba(255, 255, 255, 0.115);
+            --bg-card: rgba(0, 174, 144, 0.2);
+            --text-primary: #000000;
+            --text-secondary: #333333;
+            --text-muted: #666666;
+            --border-color: #000000;
+            --menu-bg: rgba(0, 174, 144, 0.2);
+            --menu-hover: rgba(0, 174, 144, 0.3);
+            --menu-text: #000000;
+            --menu-icon-color: #000000;
+            --link-color: #000000;
+            --link-hover: blue;
+            --footer-text: rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: rgba(255, 255, 255, 0.05);
+            --bg-card: rgba(0, 174, 144, 0.15);
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+            --text-muted: #b0b0b0;
+            --border-color: rgba(255, 255, 255, 0.2);
+            --menu-bg: rgba(0, 174, 144, 0.25);
+            --menu-hover: rgba(0, 174, 144, 0.4);
+            --menu-text: #ffffff;
+            --menu-icon-color: #ffffff;
+            --link-color: #ffffff;
+            --link-hover: #00AE00;
+            --footer-text: rgba(255, 255, 255, 0.6);
+        }
+
+        @font-face {
+            font-family: 'HMPro';
+            src: url('../font/RUDAN.otf') format('opentype');
+            font-style: normal;
+            font-weight: 900;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'HMOS';
+            src: url('../font/HMOS.otf') format('opentype');
+            font-style: normal;
+            font-weight: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Harmony';
+            src: url('../font/HarmonyOS_SansSC.ttf') format('truetype');
+            font-style: normal;
+            font-weight: normal;
+            font-display: swap;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: var(--bg-primary);
+            background-image: linear-gradient(135deg, rgba(0, 174, 0, 0.1) 0%, rgba(16, 191, 144, 0.1) 100%),
+                radial-gradient(circle at 20% 50%, rgba(0, 174, 0, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(16, 191, 144, 0.05) 0%, transparent 50%);
+            background-attachment: fixed;
+            overflow-y: auto;
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        body {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        @keyframes kuangjia {
+            0% {
+                opacity: 0;
+                transform: translateY(40px);
+                filter: blur(4px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes ULTRA {
+            0% {
+                opacity: 0;
+                font-size: 51px;
+            }
+            50% {
+                opacity: 0.5;
+                font-size: 50px;
+            }
+            90% {
+                opacity: 0.9;
+                font-size: 48px;
+            }
+            100% {
+                opacity: 1;
+                font-size: 48px;
+            }
+        }
+
+        @keyframes PRO {
+            0% {
+                opacity: 0;
+                font-size: 17px;
+            }
+            50% {
+                opacity: 0.5;
+                font-size: 18px;
+            }
+            90% {
+                opacity: 0.9;
+                font-size: 20px;
+            }
+            100% {
+                opacity: 1;
+                font-size: 20px;
+            }
+        }
+
+        .version-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 0 20px;
+        }
+
+        .dakuang {
+            width: 100%;
+        }
+
+        .decoration {
+            position: fixed;
+            z-index: -1;
+            opacity: 1;
+            color: gray;
+            font-size: 20px;
+            font-weight: 900;
+            font-family: 'HMPro';
+            top: 1.2%;
+            left: 0%;
+            width: 100%;
+            text-align: center;
+        }
+
+        .dakuang {
+            width: 100%;
+            height: auto;
+            margin-top: 45px;
+            margin-bottom: 18px;
+            padding: 50px 0;
+            border-radius: 14px;
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: kuangjia 0.6s cubic-bezier(0.22, 1, 0.36, 1) 1;
+        }
+
+        .dakuang-icon {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 15px;
+        }
+
+        .dakuang-title {
+            font-family: 'HMPro', 'Harmony';
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--text-primary);
+            letter-spacing: 3px;
+            animation: ULTRA 0.5s steps(150) 1;
+        }
+
+        .pro {
+            display: inline-flex;
+            align-items: center;
+            text-align: center;
+            font-family: 'Harmony';
+            font-size: 20px;
+            color: #000000;
+            padding: 8px 8px;
+            animation: PRO 0.5s steps(150) 1;
+        }
+
+        .download-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            border-radius: 14px;
+            padding: 30px;
+            text-align: center;
+            opacity: 0;
+            animation: kuangjia 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation-delay: calc(var(--i, 0) * 0.08s + 0.3s);
+        }
+
+        .download-btn {
+            display: inline-block;
+            background: #00AE00;
+            color: white;
+            font-family: 'Harmony';
+            font-size: 18px;
+            font-weight: 600;
+            padding: 14px 40px;
+            border-radius: 10px;
+            text-decoration: none;
+            margin-top: 15px;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .download-btn:hover {
+            transform: scale(1.05);
+            background: #00c900;
+            text-decoration: none;
+            color: white;
+        }
+
+        .file-info {
+            font-family: 'Harmony';
+            font-size: 14px;
+            color: #666;
+            margin-top: 12px;
+        }
+
+        .section-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            border-radius: 14px;
+            padding: 27px;
+            text-align: left;
+            opacity: 0;
+            animation: kuangjia 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation-delay: calc(var(--i, 0) * 0.08s + 0.3s);
+        }
+
+        .section-card:hover {
+            transform: scale(1.01);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .info-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .info-row .section-card {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .info-row {
+                flex-direction: column;
+            }
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-top: 45px;
+            margin-bottom: -10px;
+            font-weight: bold;
+            font-family: 'Harmony';
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 600;
+            font-family: 'Harmony';
+            margin-top: 0px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            font-family: 'Harmony';
+            margin-top: 16px;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .ver-num {
+            display: inline-block;
+            vertical-align: middle;
+            font-size: 13px;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-weight: 500;
+            color: white;
+            background-color: #00A846;
+            border-radius: 9px;
+            text-decoration: none;
+            padding: 3px 12px;
+            margin-left: 6px;
+            letter-spacing: 1px;
+        }
+
+        p {
+            font-size: 16px;
+            font-weight: normal;
+            font-family: 'Harmony';
+            margin-top: 10px;
+            margin-bottom: 8px;
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+
+        a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        a:hover {
+            color: #00AE00;
+            text-decoration: underline;
+        }
+
+        li {
+            font-size: 16px;
+            font-weight: normal;
+            font-family: 'Harmony';
+            margin-top: 8px;
+            margin-bottom: 6px;
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+
+        ul {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        .changelog-item {
+            margin-bottom: 20px;
+        }
+
+        .changelog-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .nav-links {
+            text-align: center;
+            margin: 10px 0;
+            opacity: 0;
+            animation: kuangjia 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation-delay: 1.5s;
+        }
+
+        .nav-links a {
+            font-family: 'Harmony';
+            font-size: 15px;
+            margin: 0 15px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 9px 18px;
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+            font-family: 'Harmony';
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        @media (max-width: 768px), (max-device-width: 768px) {
+            .version-container {
+                padding: 0 15px;
+            }
+
+            .dakuang {
+                margin-top: 15px;
+                margin-bottom: 12px;
+                padding: 30px 15px;
+                border-radius: 14px;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .dakuang-title {
+                font-size: 31px;
+            }
+
+            @keyframes ULTRA {
+                0% { opacity: 0; font-size: 34px; }
+                50% { opacity: 0.5; font-size: 32px; }
+                90% { opacity: 0.9; font-size: 31px; }
+                100% { opacity: 1; font-size: 31px; }
+            }
+
+            .pro {
+                font-size: 14px;
+            }
+
+            @keyframes PRO {
+                0% { opacity: 0; font-size: 11px; }
+                50% { opacity: 0.5; font-size: 13px; }
+                90% { opacity: 0.9; font-size: 14px; }
+                100% { opacity: 1; font-size: 14px; }
+            }
+
+            .section-card {
+                padding: 15px;
+                border-radius: 12px;
+            }
+
+            .section-card:hover {
+                transform: none;
+            }
+
+            .download-card {
+                padding: 20px;
+                border-radius: 12px;
+            }
+
+            .download-btn {
+                padding: 12px 30px;
+                font-size: 16px;
+            }
+
+            h1 {
+                font-size: 21px;
+                margin-top: 30px;
+                margin-bottom: -6px;
+            }
+
+            h2 {
+                font-size: 18px;
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+            }
+
+            h3 {
+                font-size: 16px;
+                margin-top: 12px;
+                margin-bottom: 8px;
+            }
+
+            p, li {
+                font-size: 15px;
+                line-height: 1.7;
+            }
+
+            .ver-num {
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: 6px;
+            }
+
+            .footer {
+                padding: 14px 15px;
+                margin-top: 30px;
+                font-size: 11px;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body:not(.light-theme) {
+                --bg-primary: #1a1a2e;
+                --bg-secondary: rgba(255, 255, 255, 0.05);
+                --bg-card: rgba(0, 174, 144, 0.15);
+                --text-primary: #ffffff;
+                --text-secondary: #e0e0e0;
+                --text-muted: #b0b0b0;
+                --border-color: rgba(255, 255, 255, 0.2);
+                --menu-bg: rgba(0, 174, 144, 0.25);
+                --menu-hover: rgba(0, 174, 144, 0.4);
+                --menu-text: #ffffff;
+                --menu-icon-color: #ffffff;
+                --link-color: #ffffff;
+                --link-hover: #00AE00;
+                --footer-text: rgba(255, 255, 255, 0.6);
+            }
+
+            body:not(.light-theme) .dakuang {
+                background: var(--bg-card);
+            }
+
+            body:not(.light-theme) .ver-num {
+                background-color: #007a35;
+            }
+
+            body:not(.light-theme) .download-btn {
+                background: #007a35;
+            }
+
+            body:not(.light-theme) .download-btn:hover {
+                background: #008f40;
+                color: white;
+            }
+
+            body:not(.light-theme) .nav-links a {
+                color: var(--text-primary);
+            }
+
+            body:not(.light-theme) a {
+                color: var(--text-primary);
+            }
+
+            body:not(.light-theme) a:hover {
+                color: #00AE00;
+            }
+
+            body:not(.light-theme) .footer {
+                color: var(--footer-text);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="version-container">
+        <div class="decoration">ByRUDAN OOOInterface</div>
+
+        <div class="dakuang">
+            <img src="../images/icon.png" alt="icon" class="dakuang-icon">
+            <div class="dakuang-title">OOOInterface新版本！</div>
+        </div>
+
+        <div class="download-card" style="--i:0">
+            <h2>立即下载</h2>
+            <a href="OOOInterface5.1.2.zip" class="download-btn">下载 OOOInterface 5.1.2</a>
+            <p class="file-info">文件大小：约 70MB | 需要 Chromium 内核浏览器</p>
+        </div>
+
+        <div class="info-row">
+            <div class="section-card" style="--i:1">
+                <h2>版本信息</h2>
+                <ul>
+                    <li><strong>版本号：</strong><a href="../about/about.html">5.1.1.2:24-RS42.2</a></li>
+                    <li><strong>发布日期：</strong>2026年5月3日</li>
+                    <li><strong>许可证：</strong>ABCD-26W08A</li>
+                </ul>
+            </div>
+
+            <div class="section-card" style="--i:2">
+                <h2>系统要求</h2>
+                <ul>
+                    <li><strong>浏览器：</strong>Chromium 内核浏览器</li>
+                    <li><strong>存储空间：</strong>至少 200MB 可用空间</li>
+                    <li><strong>网络环境：</strong>能够连通全球互联网</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section-card" style="--i:3">
+            <h2>更新日志</h2>
+
+            <div class="changelog-item">
+                <h3>修复漏洞</h3>
+                <ul>
+                    <li>加入全新云图标。</li>
+                    <li>引入全新反馈系统。</li>
+                    <li>修复内存占用和流畅性问题。</li>
+                    <li>修复了一些已知Bug。</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <nav class="nav-links">
+            <a href="../index.html">返回首页</a>
+            <a href="#">历史版本</a>
+            <a href="#">帮助文档</a>
+        </nav>
+    </div>
+
+    <footer class="footer">
+        <p>© 2026 ByRUDAN 保留所有权利。</p>
+        <p>许可证：ABCD-26W08A</p>
+    </footer>
+</body>
+</html>
