@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>告示</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #10BF9025;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .notification-box {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(80px);
+            -webkit-backdrop-filter: blur(80px);
+            border-radius: 28px;
+            padding: 80px 90px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .title {
+            font-size: 40px;
+            font-weight: 600;
+            margin-bottom: 50px;
+            letter-spacing: 8px;
+            color: #1a1a1a;
+        }
+
+        .message {
+            font-size: 24px;
+            line-height: 2;
+            margin-bottom: 50px;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            color: #333;
+            text-align: center;
+            width: 100%;
+        }
+
+        .message p {
+            margin: 0;
+            opacity: 0;
+            transform: translateY(15px);
+            transition: all 0.5s ease;
+            font-weight: 600;
+            width: 100%;
+        }
+
+        .message p.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .space-hint {
+            font-size: 16px;
+            color: #666;
+            margin-top: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .space-hint::before {
+            content: '␣';
+            font-size: 22px;
+            font-weight: 600;
+            color: #666;
+            width: 80px;
+            height: 32px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 24px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .notification-box {
+                padding: 40px 30px;
+            }
+
+            .title {
+                font-size: 26px;
+                margin-bottom: 30px;
+            }
+
+            .message {
+                font-size: 16px;
+                min-height: 120px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .notification-box {
+                padding: 30px 24px;
+            }
+
+            .title {
+                font-size: 22px;
+            }
+
+            .message {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="notification-box">
+            <h1 class="title">告 示</h1>
+            <div class="message" id="message">
+                <p>近期更新频率较高，故推荐导入时专门使用一个单独文件夹，在更新内容时，将旧内容替换为新内容，避免重复操作。</p>
+                <p>本次更新内容：修复设置页面异常闪烁问题；新增底部名牌触发设置页面相关设置；修复高级视觉效果下展开搜索历史框快速访问链接按钮显示问题。</p>
+            </div>
+            <div class="space-hint">按空格键继续</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        版本 <span id="version"></span> · © 2026 ByRUDAN
+    </div>
+    <script src="../version.js"></script>
+    <script src="welc.js"></script>
+</body>
+
+</html>
