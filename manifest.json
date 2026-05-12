@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "OOOInterface",
+  "version": "5.1",
+  "description": "RUDAN开发的浏览器首页插件。Release版本 5.1.2:24-RS42.2",
+  "chrome_url_overrides": {
+    "newtab": "main/index.html"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    },
+    "default_title": "OOOInterface"
+  }
+}

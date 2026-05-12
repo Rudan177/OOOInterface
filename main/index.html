@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OOOInterface</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <div class="logo-section">
+            <img id="logo" src="images/gll.png" alt="Logo" class="logo">
+            <div id="text-logo" class="text-logo" style="display: none;"></div>
+        </div>
+        
+        <div class="search-section">
+            <div class="search-container">
+                <div class="search-icon">
+                    <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                    </svg>
+                </div>
+                <input type="text" id="search-input" class="search-input" placeholder="">
+
+            </div>
+        </div>
+        
+        <!-- 搜索历史显示区域 -->
+        <div id="search-history-container" class="search-history-container" style="display: none;">
+            <div class="search-history-list"></div>
+        </div>
+
+        <div class="engine-buttons">
+            <button id="google-engine" class="engine-btn active">Google</button>
+            <button id="bing-engine" class="engine-btn">Bing</button>
+        </div>
+        
+        <!-- 快速访问链接按钮容器 -->
+        <div id="quick-access-links" class="quick-access-links">
+            <!-- 快速访问链接按钮将动态生成 -->
+        </div>
+
+        <!-- 信息iframe容器 -->
+        <iframe id="info-iframe" src="" class="info-iframe-container" frameborder="0" scrolling="no"></iframe>
+
+        <div class="footer">
+            <div id="ooo-badge" class="ooo-badge">
+                <span>OOOInterface</span>
+                <div id="info-indicator" class="info-indicator"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>设置</h2>
+                <button id="close-modal" class="close-btn">&times;</button>
+            </div>
+            
+            <!-- 左右分栏布局容器 -->
+            <div class="settings-layout">
+                <!-- 左侧设置选项区域 -->
+                <div class="settings-left-panel">
+                    <div class="modal-body">
+                        <div class="setting-group">
+                            <label for="font-select">选择字体:</label>
+                            <div class="custom-select">
+                                <!-- 自定义下拉菜单 -->
+                                <div class="custom-select">
+                                    <div class="select-selected" id="font-select-selected">Sans Flex</div>
+                                    <div class="select-items select-hide" id="font-select-items">
+                                        <div class="select-item" data-value="Sans Flex">Sans Flex</div>
+                                        <div class="select-item" data-value="Ginto">Ginto</div>
+                                        <div class="select-item" data-value="Josefin">Josefin</div>
+                                        <div class="select-item" data-value="Code">Code</div>
+                                    </div>
+                                    <select id="font-select" style="display: none;">
+                                        <option value="Sans Flex" selected>Sans Flex</option>
+                                        <option value="Ginto">Ginto</option>
+                                        <option value="Josefin">Josefin</option>
+                                        <option value="Code">Code</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <input type="file" id="font-upload" accept=".ttf,.otf" style="display: none;">
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label for="logo-select">选择 Logo:</label>
+                            <div class="custom-select">
+                                <!-- 自定义下拉菜单 -->
+                                <div class="custom-select">
+                                    <div class="select-selected" id="logo-select-selected">Google</div>
+                                    <div class="select-items select-hide" id="logo-select-items">
+                                        <div class="select-item" data-value="default">默认</div>
+                                        <div class="select-item" data-value="auto">自动</div>
+                                        <div class="select-item" data-value="Google">Google</div>
+                                        <div class="select-item" data-value="Microsoft">Microsoft</div>
+                                        <div class="select-item" data-value="Apple">Apple</div>
+                                        <div class="select-item" data-value="HUAWEI">HUAWEI</div>
+                                        <div class="select-item" data-value="text-logo">自定义文字Logo</div>
+                                    </div>
+                                    <select id="logo-select" style="display: none;">
+                                        <option value="default">默认</option>
+                                        <option value="auto">自动</option>
+                                        <option value="Google" selected>Google</option>
+                                        <option value="Microsoft">Microsoft</option>
+                                        <option value="Apple">Apple</option>
+                                        <option value="HUAWEI">HUAWEI</option>
+                                        <option value="text-logo">自定义文字Logo</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <input type="file" id="logo-upload" accept="image/*" style="display: none;">
+                        </div>
+                        
+                        <div class="setting-group" id="text-logo-group" style="display: none;">
+                            <label for="text-logo-input">文字 Logo:</label>
+                            <div class="text-logo-input-group">
+                                <input type="text" id="text-logo-input" class="setting-input" placeholder="输入文字作为Logo">
+                                <button id="set-text-logo" class="text-logo-btn">应用</button>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group" id="custom-logos-group" style="display: none;">
+                            <label>自定义 Logo:</label>
+                            <div id="custom-logos-list" class="custom-logos-list">
+                                <!-- 自定义Logo列表将动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group" id="dark-logo-upload-group" style="display: none;">
+                            <label>暗色模式 Logo:</label>
+                            <button id="dark-logo-upload-btn" class="text-logo-btn">上传暗色Logo</button>
+                            <input type="file" id="dark-logo-upload" accept="image/*" style="display: none;">
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label for="wallpaper-select">选择壁纸:</label>
+                            <div class="custom-select">
+                                <!-- 自定义下拉菜单 -->
+                                <div class="custom-select">
+                                    <div class="select-selected" id="wallpaper-select-selected">默认壁纸</div>
+                                    <div class="select-items select-hide" id="wallpaper-select-items">
+                                        <div class="select-item" data-value="default">默认壁纸</div>
+                                        <div class="select-item" data-value="url">URL链接</div>
+                                    </div>
+                                    <select id="wallpaper-select" style="display: none;">
+                                        <option value="default" selected>默认壁纸</option>
+                                        <option value="url">URL链接</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <input type="file" id="wallpaper-upload" accept="image/*" style="display: none;">
+                            <div id="wallpaper-url-group" class="wallpaper-url-group" style="display: none;">
+                                <input type="text" id="wallpaper-url-input" class="setting-input" placeholder="输入壁纸图片URL链接">
+                                <button id="apply-wallpaper-url" class="text-logo-btn">应用</button>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label for="context-menu-style">右键菜单样式:</label>
+                            <div class="custom-select">
+                                <div class="select-selected" id="context-menu-style-selected">默认</div>
+                                <div class="select-items select-hide" id="context-menu-style-items">
+                                    <div class="select-item" data-value="default">默认</div>
+                                    <div class="select-item" data-value="compact">紧凑</div>
+                                </div>
+                                <select id="context-menu-style" style="display: none;">
+                                    <option value="default">默认</option>
+                                    <option value="compact" selected>紧凑</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 新增的设置选项 -->
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">高级视觉效果</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="dynamic-blur-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">壁纸常显示</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="persistent-wallpaper-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">搜索历史</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="search-history-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>快速访问链接:</label>
+                            <div class="quick-links-controls">
+                                <button id="toggle-quick-link-input" class="text-logo-btn">添加</button>
+                                <div id="quick-links-input-group" class="quick-links-input-group" style="display: none;">
+                                    <input type="text" id="quick-link-name" class="setting-input" placeholder="网站名称">
+                                    <input type="text" id="quick-link-url" class="setting-input" placeholder="网站地址">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <div id="quick-links-list" class="quick-links-list">
+                                <!-- 快速访问链接列表将动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group" id="developer-mode-group" style="display: none;">
+                            <label>开发者模式:</label>
+                            <div class="developer-mode-controls">
+                                <div class="developer-control-item">
+                                    <label for="font-size-slider">字体大小:</label>
+                                    <div class="control-with-reset">
+                                        <input type="range" id="font-size-slider" class="slider-input" min="0.5" max="2" step="0.1" value="1">
+                                        <span id="font-size-value" class="slider-value">1x</span>
+                                    </div>
+                                </div>
+                                <div class="developer-control-item">
+                                    <label for="font-weight-slider">字体粗细:</label>
+                                    <div class="control-with-reset">
+                                        <input type="range" id="font-weight-slider" class="slider-input" min="100" max="900" step="100" value="400">
+                                        <span id="font-weight-value" class="slider-value">400</span>
+                                    </div>
+                                </div>
+                                <div class="developer-control-item">
+                                    <label for="search-box-height">搜索框厚度:</label>
+                                    <div class="control-with-reset">
+                                        <input type="number" id="search-box-height" class="setting-input no-spin" min="0" max="200" value="0" placeholder="默认为0">
+                                    </div>
+                                </div>
+                                <div class="developer-control-item">
+                                    <label for="wallpaper-mode-search-height">壁纸模式搜索框位置:</label>
+                                    <div class="control-with-reset">
+                                        <input type="number" id="wallpaper-mode-search-height" class="setting-input no-spin" min="-100" max="100" value="0" placeholder="默认为0">
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="reset-developer-settings" class="reset-developer-btn">重置开发者模式</button>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <div class="about-feedback-buttons">
+                                <button id="about-btn" class="about-feedback-btn">关于</button>
+                                <button id="feedback-btn" class="about-feedback-btn">反馈</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右侧操作区域 -->
+                <div class="settings-right-panel">
+                    <div class="right-panel-content">
+                        <div class="right-panel-upper" id="right-panel-upper">
+                            <!-- 展开的列表内容将在这里显示 -->
+                        </div>
+                        <!-- 应用和重置按钮 -->
+                        <div class="setting-group action-buttons">
+                            <button id="apply-settings" class="apply-btn">应用</button>
+                            <button id="reset-settings" class="reset-btn">重置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 网格布局右键菜单 -->
+    <div id="context-menu" class="context-menu">
+        <div class="context-menu-grid">
+            <div class="context-menu-item" data-action="copy">
+                <span class="material-icons md3-icon">content_copy</span>
+                <span class="context-menu-text">复制</span>
+            </div>
+            <div class="context-menu-item" data-action="paste">
+                <span class="material-icons md3-icon">content_paste</span>
+                <span class="context-menu-text">粘贴</span>
+            </div>
+            <div class="context-menu-item" data-action="settings">
+                <span class="material-icons md3-icon">settings</span>
+                <span class="context-menu-text">设置</span>
+            </div>
+            <div class="context-menu-item" data-action="refresh">
+                <span class="material-icons md3-icon">refresh</span>
+                <span class="context-menu-text">刷新</span>
+            </div>
+            <div class="context-menu-item" data-action="search-history-toggle">
+                <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
+                <span class="context-menu-text">搜索历史开关</span>
+            </div>
+            <div class="context-menu-item" data-action="wallpaper-toggle">
+                <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
+                <span class="context-menu-text">壁纸常显示开关</span>
+            </div>
+            <div class="context-menu-item" data-action="about">
+                <span class="material-icons md3-icon">info</span>
+                <span class="context-menu-text">关于</span>
+            </div>
+            <div class="context-menu-item" data-action="feedback">
+                <span class="material-icons md3-icon">feedback</span>
+                <span class="context-menu-text">反馈</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

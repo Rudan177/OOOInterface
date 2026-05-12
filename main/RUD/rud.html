@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反馈系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #00AE00;
+            --primary-dark: #008C00;
+            --primary-light: #00AE90;
+            --accent-color: #10BF90;
+            --surface-color: #FFFFFF;
+            --background-color: #F8F9FA;
+            --surface-variant: #F1F3F4;
+            --text-primary: #202124;
+            --text-secondary: #5F6368;
+            --comment-color: #FF6B6B;
+            --divider-color: #E0E0E0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 174, 0, 0.2), 0 1px 3px 1px rgba(0, 174, 0, 0.1);
+            --shadow-md: 0 1px 3px 0 rgba(0, 174, 0, 0.2), 0 4px 8px 3px rgba(0, 174, 0, 0.15);
+            --shadow-lg: 0 4px 6px rgba(0, 174, 0, 0.15);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --surface-color: #1E1E1E;
+            --background-color: #121212;
+            --surface-variant: #2D2D2D;
+            --text-primary: #E8EAED;
+            --text-secondary: #9AA0A6;
+            --comment-color: #FF8A80;
+            --divider-color: #3C4043;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+            --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .top-app-bar {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            box-shadow: var(--shadow-md);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .top-app-bar .logo {
+            font-size: 22px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-left: 12px;
+            position: relative;
+        }
+
+        .theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-lock-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 16px;
+            height: 16px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .theme-lock-badge .material-icons {
+            font-size: 10px;
+        }
+
+        .top-app-bar .logo .material-icons {
+            font-size: 28px;
+        }
+
+        .main-container {
+            max-width: 900px;
+            margin: 80px auto 100px;
+            padding: 24px;
+        }
+
+        .card {
+            background: var(--surface-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+            overflow: hidden;
+            transition: var(--transition), background-color 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--divider-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .card-header .material-icons {
+            color: var(--primary-color);
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--divider-color);
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: var(--transition), background-color 0.3s, border-color 0.3s;
+            background: var(--surface-color);
+            color: var(--text-primary);
+        }
+
+        textarea.form-control {
+            resize: none;
+            min-height: 80px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .textarea-wrapper {
+            position: relative;
+        }
+
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 6px;
+            background: var(--divider-color);
+            border-radius: 3px;
+            cursor: ns-resize;
+            transition: background 0.2s;
+        }
+
+        .resize-handle:hover {
+            background: var(--primary-color);
+        }
+
+        .resize-handle:active {
+            background: var(--primary-dark);
+        }
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--divider-color);
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: var(--transition), background-color 0.3s, border-color 0.3s;
+            background: var(--surface-color);
+            color: var(--text-primary);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 174, 0, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            border-radius: 24px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 174, 0, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+            box-shadow: 0 4px 8px rgba(0, 174, 0, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--surface-variant);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .radio-option {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .radio-option input[type="radio"] {
+            display: none;
+        }
+
+        .radio-option label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 16px;
+            border: 2px solid var(--divider-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+            background: var(--surface-color);
+            color: var(--text-primary);
+        }
+
+        .radio-option input[type="radio"]:checked + label {
+            border-color: var(--primary-color);
+            background: rgba(0, 174, 0, 0.1);
+            color: var(--primary-color);
+        }
+
+        .radio-option label:hover {
+            border-color: var(--primary-color);
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .toast {
+            position: fixed !important;
+            bottom: 24px !important;
+            right: 24px !important;
+            top: auto !important;
+            left: auto !important;
+            min-width: 280px;
+            background: #323232;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            z-index: 2000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast.success {
+            background: var(--primary-color);
+        }
+
+        .toast.error {
+            background: #FF6B6B;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn.loading .material-icons {
+            animation: spin 1s linear infinite;
+        }
+
+        .btn-icon {
+            padding: 8px 16px;
+            border-radius: 24px;
+            min-width: auto;
+            width: auto;
+            height: auto;
+            background: var(--surface-variant);
+            border: none;
+            color: var(--text-primary);
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .btn-icon:hover {
+            background: rgba(0, 174, 0, 0.1);
+            color: var(--primary-color);
+            box-shadow: none;
+            transform: translateY(-1px);
+        }
+
+        .btn-icon.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .info-text {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- MD3E 风格右键菜单 -->
+    <div id="contextMenu" style="
+        position: fixed;
+        background: var(--md-sys-color-surface);
+        border-radius: 12px;
+        box-shadow: var(--md-sys-elevation-level4);
+        z-index: 10000;
+        min-width: 180px;
+        font-family: 'Roboto', sans-serif;
+        display: none;
+        border: 1px solid var(--md-sys-color-outline-variant);
+    ">
+        <div class="context-menu-item" data-action="back">
+            <span class="material-icons md3-icon">arrow_back</span>
+            <span class="md3-text">返回</span>
+        </div>
+        <div class="context-menu-item" data-action="refresh">
+            <span class="material-icons md3-icon">refresh</span>
+            <span class="md3-text">刷新</span>
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="selectAll">
+            <span class="material-icons md3-icon">select_all</span>
+            <span class="md3-text">全选</span>
+        </div>
+        <div class="context-menu-item" data-action="copy">
+            <span class="material-icons md3-icon">content_copy</span>
+            <span class="md3-text">复制</span>
+        </div>
+        <div class="context-menu-item" data-action="paste">
+            <span class="material-icons md3-icon">content_paste</span>
+            <span class="md3-text">粘贴</span>
+        </div>
+    </div>
+
+    <style>
+        /* MD3E 设计系统变量 */
+        :root {
+            /* 亮色模式 */
+            --md-sys-color-surface: #ffffff;
+            --md-sys-color-on-surface: #1d1b20;
+            --md-sys-color-on-surface-variant: #49454f;
+            --md-sys-color-outline-variant: #cac4d0;
+            --md-sys-color-primary: #00AE00;
+            --md-sys-color-primary-container: #e6f7e6;
+            --md-sys-color-on-primary-container: #005000;
+            --md-sys-elevation-level4: 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 深色模式 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --md-sys-color-surface: #333333;
+                --md-sys-color-on-surface: #e6e1e5;
+                --md-sys-color-on-surface-variant: #cac4d0;
+                --md-sys-color-outline-variant: #49454f;
+                --md-sys-color-primary: #00D000;
+                --md-sys-color-primary-container: #007000;
+                --md-sys-color-on-primary-container: #e6f7e6;
+                --md-sys-elevation-level4: 0 8px 10px 1px rgba(0, 0, 0, 0.3), 0 3px 14px 2px rgba(0, 0, 0, 0.2), 0 5px 5px -3px rgba(0, 0, 0, 0.25);
+            }
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--md-sys-color-on-surface);
+            border-radius: 8px;
+            margin: 4px 4px;
+        }
+
+        .context-menu-item:hover {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            transform: translateY(-1px);
+        }
+
+        .context-menu-item:hover .md3-icon {
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .context-menu-item.disabled {
+            color: var(--md-sys-color-on-surface-variant);
+            cursor: not-allowed;
+        }
+
+        .context-menu-item.disabled:hover {
+            background-color: transparent;
+            transform: none;
+        }
+
+        .context-menu-item .md3-icon {
+            font-size: 20px;
+            color: var(--md-sys-color-on-surface-variant);
+            transition: color 0.2s;
+        }
+    </style>
+    <div class="top-app-bar">
+        <div class="logo">
+            <span class="material-icons">feedback</span>
+            <span>反馈系统</span>
+        </div>
+        <div style="margin-left: auto;">
+            <button class="theme-toggle" id="themeToggle" title="切换主题">
+                <span class="material-icons" id="themeIcon">dark_mode</span>
+                <div class="theme-lock-badge" id="themeLockBadge" style="display: none;">
+                    <span class="material-icons">lock</span>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="card">
+            <div class="card-header">
+                <span class="material-icons">edit</span>
+                <span>反馈内容</span>
+                <div class="action-bar">
+                    <button class="btn btn-icon btn-secondary" id="clearBtn" title="清空">
+                        <span class="material-icons">delete</span>
+                    </button>
+                    <button class="btn btn-icon btn-primary" id="saveBtn" title="保存">
+                        <span class="material-icons">download</span>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- 反馈类型选择 -->
+                <div style="margin-bottom: 24px;">
+                    <label class="form-label">反馈类型</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="feedbackType-bug" name="feedbackType" value="bug" checked>
+                            <label for="feedbackType-bug">反馈Bug</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="feedbackType-feature" name="feedbackType" value="feature">
+                            <label for="feedbackType-feature">功能建议</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 严重程度/实用程度选择 -->
+                <div id="severitySection" style="margin-bottom: 24px;">
+                    <label class="form-label" id="severityLabel">严重程度</label>
+                    <div class="radio-group" id="severityOptions">
+                        <div class="radio-option">
+                            <input type="radio" id="severity-critical" name="severity" value="非常严重">
+                            <label for="severity-critical">非常严重</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="severity-high" name="severity" value="比较严重">
+                            <label for="severity-high">比较严重</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="severity-medium" name="severity" value="一般" checked>
+                            <label for="severity-medium">一般</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="severity-low" name="severity" value="不太严重">
+                            <label for="severity-low">不太严重</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="severity-none" name="severity" value="没啥影响">
+                            <label for="severity-none">没啥影响</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 详细描述 -->
+                <div style="margin-bottom: 24px;">
+                    <label class="form-label" for="description">详细描述</label>
+                    <div class="textarea-wrapper">
+                        <textarea class="form-control" id="description" rows="5" placeholder="详细描述"></textarea>
+                        <div class="resize-handle" data-target="description"></div>
+                    </div>
+                </div>
+
+                <!-- 触发环境 (仅Bug显示) -->
+                <div id="environmentSection" style="margin-bottom: 24px;">
+                    <label class="form-label" for="environment">触发环境</label>
+                    <div class="textarea-wrapper">
+                        <textarea class="form-control" id="environment" rows="3" placeholder="详细描述"></textarea>
+                        <div class="resize-handle" data-target="environment"></div>
+                    </div>
+                    <p class="info-text">描述触发Bug时的操作步骤和环境</p>
+                </div>
+
+                <!-- 署名 -->
+                <div style="margin-bottom: 24px;">
+                    <label class="form-label" for="author">署名（可选，留空则为"匿名"）</label>
+                    <input type="text" class="form-control" id="author" placeholder="您的署名">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; padding: 24px; color: var(--text-secondary); font-size: 12px;">
+        <p>© 2026 ByRUDAN 保留所有权利。</p>
+        <p>联系方式：wyjcrtu@proton.me</p>
+        <p>反馈页版本 v1.0:05-RS05</p>
+    </div>
+
+    <script src="rud.js"></script>
+</body>
+</html>

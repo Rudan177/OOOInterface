@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎页面</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #00AE00 0%, #00AE90 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* 页面容器 */
+        .onboarding-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* 页面通用样式 */
+        .page {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .page.active {
+            opacity: 1;
+        }
+
+        /* 第一页样式 */
+        .page-1 {
+            text-align: center;
+            justify-content: flex-start;
+            padding-top: 50px;
+        }
+
+        .logo {
+            width: 300px;
+            height: 300px;
+            margin-bottom: 40px;
+        }
+
+        .main-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .sub-title {
+            font-size: 18px;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        /* 第二页样式 */
+        .page-2 {
+            text-align: left;
+            padding: 60px;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            max-width: 450px;
+            width: 48%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .section-title.more {
+            color: white;
+        }
+
+        .section-list {
+            list-style-type: decimal;
+            list-style-position: inside;
+            line-height: 2.5;
+            font-size: 16px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .more-link {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-align: center;
+            width: 100%;
+        }
+
+        .more-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 交互控件 */
+
+
+        /* 底部横幅 */
+        .footer-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+
+        /* 小字 */
+        .xiaozi {
+            position: fixed;
+            bottom: 0;
+            left: 10;
+            width: 100%;
+            padding: 15px;
+            text-align: right;
+            font-size: 4px;
+            color: rgba(104, 104, 104, 0.195);
+            line-height: 1.5;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 24px;
+            }
+            
+            .sub-title {
+                font-size: 16px;
+            }
+            
+            .page-2 {
+                flex-direction: column;
+                padding: 20px;
+            }
+            
+            .section {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .section-title {
+                font-size: 20px;
+            }
+            
+            .section-list {
+                font-size: 14px;
+                line-height: 2;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- MD3E 风格右键菜单 -->
+    <div id="contextMenu" style="
+        position: fixed;
+        background: var(--md-sys-color-surface);
+        border-radius: 12px;
+        box-shadow: var(--md-sys-elevation-level4);
+        z-index: 10000;
+        min-width: 180px;
+        font-family: 'Roboto', sans-serif;
+        display: none;
+        border: 1px solid var(--md-sys-color-outline-variant);
+    ">
+        <div class="context-menu-item" data-action="back">
+            <span class="material-icons md3-icon">arrow_back</span>
+            <span class="md3-text">返回</span>
+        </div>
+        <div class="context-menu-item" data-action="refresh">
+            <span class="material-icons md3-icon">refresh</span>
+            <span class="md3-text">刷新</span>
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="selectAll">
+            <span class="material-icons md3-icon">select_all</span>
+            <span class="md3-text">全选</span>
+        </div>
+        <div class="context-menu-item" data-action="copy">
+            <span class="material-icons md3-icon">content_copy</span>
+            <span class="md3-text">复制</span>
+        </div>
+        <div class="context-menu-item" data-action="paste">
+            <span class="material-icons md3-icon">content_paste</span>
+            <span class="md3-text">粘贴</span>
+        </div>
+    </div>
+
+    <style>
+        /* MD3E 设计系统变量 */
+        :root {
+            /* 亮色模式 */
+            --md-sys-color-surface: #ffffff;
+            --md-sys-color-on-surface: #1d1b20;
+            --md-sys-color-on-surface-variant: #49454f;
+            --md-sys-color-outline-variant: #cac4d0;
+            --md-sys-color-primary: #00AE00;
+            --md-sys-color-primary-container: #e6f7e6;
+            --md-sys-color-on-primary-container: #005000;
+            --md-sys-elevation-level4: 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 深色模式 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --md-sys-color-surface: #333333;
+                --md-sys-color-on-surface: #e6e1e5;
+                --md-sys-color-on-surface-variant: #cac4d0;
+                --md-sys-color-outline-variant: #49454f;
+                --md-sys-color-primary: #00D000;
+                --md-sys-color-primary-container: #007000;
+                --md-sys-color-on-primary-container: #e6f7e6;
+                --md-sys-elevation-level4: 0 8px 10px 1px rgba(0, 0, 0, 0.3), 0 3px 14px 2px rgba(0, 0, 0, 0.2), 0 5px 5px -3px rgba(0, 0, 0, 0.25);
+            }
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--md-sys-color-on-surface);
+            border-radius: 8px;
+            margin: 4px 4px;
+        }
+
+        .context-menu-item:hover {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            transform: translateY(-1px);
+        }
+
+        .context-menu-item:hover .md3-icon {
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .context-menu-item.disabled {
+            color: var(--md-sys-color-on-surface-variant);
+            cursor: not-allowed;
+        }
+
+        .context-menu-item.disabled:hover {
+            background-color: transparent;
+            transform: none;
+        }
+
+        .context-menu-item .md3-icon {
+            font-size: 20px;
+            color: var(--md-sys-color-on-surface-variant);
+            transition: color 0.2s;
+        }
+    </style>
+    <div class="onboarding-container">
+        <!-- 第一页 -->
+        <div class="page page-1 active">
+            <img id="logo" src="150+.png" alt="Logo" class="logo">
+            <h1 class="main-title">欢迎来到OOOInterface5.1！</h1>
+            <p class="sub-title">版本号：OOOInterface(5.1.2:24-RS42.2)</p>
+            <p style="font-size: 16px; margin-top: 20px; opacity: 0.8; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);">按空格键继续</p>
+        </div>
+
+        <!-- 第二页 -->
+        <div class="page page-2">
+            <div class="section">
+                <h2 class="section-title">新增内容</h2>
+                <ol class="section-list">
+                    <li>加入全新云图标。</li>
+                    <li>引入全新反馈系统。</li>
+                </ol>
+              </div>
+            <div class="section">
+                <h2 class="section-title">修复内容</h2>
+                <ol class="section-list">
+                    <li>修复内存占用和流畅性问题。</li>
+                    <li>修复了一些已知Bug。</li>
+                </ol>
+                  <a href="../about/about.html" class="more-link">进入关于了解更多</a>
+              </div>
+
+            <p style="font-size: 16px; margin-top: 20px; opacity: 0.8; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);">按空格键继续</p>
+        </div>
+    </div>
+
+    <!-- 底部横幅 -->
+    <div class="footer-banner">
+        许可证：ABCD-26W08A  版本：5.1.2:24-RS42.2<br>
+        © 2026 ByRUDAN 保留所有权利。<br>
+        <a href="Pay.jpg" class="footer-link">为更棒的OOOInterface5.2预备好</a>
+    </div>
+    <div class="xiaozi">    
+        [+]计算方式：5×8×3×2×2×2×2×2×15×9×100×100×3=15,552,000,000
+    </div>
+
+    <script src="welc.js"></script>
+</body>
+</html>

@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About OOO Interface</title>
+    <!-- Material Design 3 Expressive Style -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* Google Style Variables */
+        :root {
+            /* Google Color Palette */
+            --google-primary: #00AE00;
+            --google-primary-hover: #009000;
+            --google-secondary: #00AE90;
+            --google-tertiary: #10BF90;
+            --google-quaternary: #009080;
+            
+            --google-background: #ffffff;
+            --google-surface: #ffffff;
+            --google-text-primary: #202124;
+            --google-text-secondary: #5f6368;
+            --google-border: #dadce0;
+            --google-hover: #f8f9fa;
+            --google-active: #e8eaed;
+            
+            /* Elevation (subtle shadows) */
+            --google-shadow-sm: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            --google-shadow-md: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+            --google-shadow-lg: 0 2px 6px 2px rgba(60, 64, 67, 0.15), 0 8px 24px 4px rgba(60, 64, 67, 0.15);
+            
+            /* Radius */
+            --google-radius-sm: 4px;
+            --google-radius-md: 8px;
+            --google-radius-lg: 12px;
+            --google-radius-full: 9999px;
+            
+            /* Typography */
+            --google-headline-large: 2rem/2.4rem Roboto, sans-serif;
+            --google-headline-medium: 1.5rem/2rem Roboto, sans-serif;
+            --google-headline-small: 1.25rem/1.6rem Roboto, sans-serif;
+            --google-title-large: 1.125rem/1.5rem Roboto, sans-serif;
+            --google-title-medium: 1rem/1.4rem Roboto, sans-serif;
+            --google-title-small: 0.875rem/1.2rem Roboto, sans-serif;
+            --google-body-large: 1rem/1.4rem Roboto, sans-serif;
+            --google-body-medium: 0.875rem/1.2rem Roboto, sans-serif;
+            --google-body-small: 0.75rem/1rem Roboto, sans-serif;
+        }
+
+        /* 深色模式支持 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --google-background: #121212;
+                --google-surface: #1e1e1e;
+                --google-text-primary: #e8eaed;
+                --google-text-secondary: #9aa0a6;
+                --google-border: #3c4043;
+                --google-hover: #2a2a2a;
+                --google-active: #333333;
+
+                --google-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+                --google-shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
+                --google-shadow-lg: 0 2px 6px 2px rgba(0, 0, 0, 0.15), 0 8px 24px 4px rgba(0, 0, 0, 0.15);
+            }
+        }
+        
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--google-background);
+            color: var(--google-text-primary);
+            line-height: 1.4;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Layout */
+        .app-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+        
+        .header h1 {
+            font: var(--google-headline-large);
+            font-weight: 400;
+            color: var(--google-text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font: var(--google-body-large);
+            color: var(--google-text-secondary);
+            font-weight: 400;
+        }
+        
+        /* Search Bar */
+        .search-container {
+            margin-bottom: 32px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+        
+        .search-box {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 14px 20px;
+            border: none;
+            border-radius: var(--google-radius-full);
+            font: var(--google-body-large);
+            background-color: var(--google-surface);
+            color: var(--google-text-primary);
+            box-shadow: none;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        
+        .search-box input:focus {
+            box-shadow: var(--google-shadow-sm);
+        }
+        
+        .search-box input::placeholder {
+            color: var(--google-text-secondary);
+        }
+        
+        /* Version List */
+        .version-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* Version Card */
+        .version-card {
+            background-color: var(--google-surface);
+            border-radius: var(--google-radius-md);
+            border: none;
+            box-shadow: none;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideInUp 0.6s ease forwards;
+            position: relative;
+        }
+        
+        .version-card:hover {
+            box-shadow: var(--google-shadow-sm);
+            background-color: var(--google-hover);
+        }
+        
+        /* Version Header */
+        .version-header {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: transparent;
+            border-bottom: none;
+            transition: background-color 0.2s ease;
+        }
+        
+        .version-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .version-badge {
+            background-color: var(--google-primary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: var(--google-radius-full);
+            font: var(--google-body-small);
+            font-weight: 500;
+            box-shadow: none;
+        }
+        
+        .version-title {
+            font: var(--google-title-medium);
+            font-weight: 500;
+            color: var(--google-text-primary);
+        }
+        
+        .expand-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--google-text-secondary);
+            transition: transform 0.2s ease;
+        }
+        
+        .version-card.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+        
+        /* Version Content */
+        .version-content {
+            padding: 20px 24px;
+            background-color: transparent;
+        }
+        
+        .version-content p {
+            font: var(--google-body-medium);
+            color: var(--google-text-primary);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .version-content p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: var(--google-primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--google-shadow-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            z-index: 1000;
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .back-to-top:hover {
+            background-color: var(--google-primary-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--google-shadow-lg);
+        }
+        
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Stagger Animation */
+        .version-card:nth-child(1) { animation-delay: 0.2s; }
+        .version-card:nth-child(2) { animation-delay: 0.3s; }
+        .version-card:nth-child(3) { animation-delay: 0.4s; }
+        .version-card:nth-child(4) { animation-delay: 0.5s; }
+        .version-card:nth-child(5) { animation-delay: 0.6s; }
+        .version-card:nth-child(6) { animation-delay: 0.7s; }
+        .version-card:nth-child(7) { animation-delay: 0.8s; }
+        
+        /* Support Section */
+        .support-section {
+            margin-top: 0;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+        
+        .support-card {
+            background-color: var(--google-surface);
+            border-radius: var(--google-radius-md);
+            border: 1px solid var(--google-border);
+            box-shadow: none;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        
+        .support-card:hover {
+            box-shadow: var(--google-shadow-sm);
+            background-color: var(--google-hover);
+        }
+        
+        .support-header {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: transparent;
+            border-bottom: 1px solid var(--google-border);
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .support-header-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .support-badge {
+            background-color: var(--google-primary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: var(--google-radius-full);
+            font: var(--google-body-small);
+            font-weight: 500;
+            box-shadow: none;
+        }
+        
+        .support-title {
+            font: var(--google-title-medium);
+            font-weight: 500;
+            color: var(--google-text-primary);
+        }
+        
+        .support-content {
+            padding: 0 24px;
+            display: none;
+            transition: all 0.2s ease;
+        }
+        
+        .support-card.expanded .support-content {
+            display: block;
+            padding: 0 24px 24px;
+        }
+        
+        .support-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--google-radius-md);
+            box-shadow: var(--google-shadow-md);
+            margin-top: 20px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 16px;
+            }
+            
+            .tabs {
+                min-width: 80px;
+            }
+            
+            .main-content {
+                margin-left: 90px;
+                padding: 16px;
+            }
+            
+            .header h1 {
+                font: var(--google-headline-medium);
+            }
+            
+            .version-header {
+                padding: 16px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .version-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .version-content {
+                padding: 0 16px;
+            }
+            
+            .version-card.expanded .version-content {
+                padding: 0 16px 16px;
+            }
+            
+            .back-to-top {
+                bottom: 16px;
+                right: 16px;
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+            }
+            
+            .support-header {
+                padding: 16px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .support-header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .support-content {
+                padding: 0 16px;
+            }
+            
+            .support-card.expanded .support-content {
+                padding: 0 16px 16px;
+            }
+        }
+        
+        /* Tabs Styles */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .tabs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 20px 10px;
+            border-right: none;
+            background: transparent;
+            min-width: 120px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        /* Version Search Bar */
+        .version-search-container {
+            margin: 0 5px 10px 5px;
+            display: none;
+        }
+        
+        .version-search-box {
+            position: relative;
+            width: 100%;
+        }
+        
+        #versionSearchInput {
+            width: 100%;
+            padding: 8px 12px;
+            border: none;
+            border-radius: var(--google-radius-full);
+            font: var(--google-body-small);
+            background-color: var(--google-surface);
+            color: var(--google-text-primary);
+            transition: box-shadow 0.2s ease;
+        }
+        
+        #versionSearchInput:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.1);
+        }
+        
+        #versionSearchInput::placeholder {
+            color: var(--google-text-secondary);
+        }
+        
+        .tabs-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: none;
+        }
+        
+        .tabs-header h1 {
+            font: var(--google-headline-small);
+            color: var(--google-text-primary);
+            margin: 0 0 5px 0;
+        }
+        
+        .tabs-header p {
+            font: var(--google-body-small);
+            color: var(--google-text-secondary);
+            margin: 0;
+        }
+        
+        .tab-button {
+            background-color: transparent;
+            border: none;
+            color: #5f6368;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 12px 16px;
+            cursor: pointer;
+            border-radius: 0 24px 24px 0;
+            transition: background-color 0.2s, color 0.2s;
+            text-align: left;
+            border-left: 3px solid transparent;
+        }
+        
+        .tab-button:hover {
+            background-color: var(--google-active);
+        }
+        
+        .tab-button.active {
+            background-color: rgba(0, 174, 0, 0.1);
+            color: var(--google-primary);
+            border-left-color: var(--google-primary);
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 120px;
+            padding: 20px;
+            max-width: 800px;
+        }
+        
+        /* Sections */
+        .section {
+            margin-bottom: 40px;
+            padding-top: 60px;
+            margin-top: -60px;
+        }
+
+        p {
+            font: var(--google-body-small);
+            color: var(--google-text-secondary);
+            margin: 0;
+        }
+
+        li {
+            color: var(--google-text-small);
+            font-size: 0.95rem;
+            margin-left: 20px;
+            font-family: 'HarmonyOS Sans SC', sans-serif;
+        }
+
+        h2 {
+            color: var(--google-text-small);
+            font-size: 1.2rem;
+            margin-left: 0px;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-family: 'HarmonyOS Sans SC', sans-serif;
+        }
+        
+        /* h3标题样式 */
+        h3 {
+            font: var(--google-title-large);
+            font-weight: 500;
+            color: var(--google-text-primary);
+            margin: 20px 0 10px 0;
+        }
+    </style>
+    <script src="about.js"></script>
+</head>
+<body>
+    <!-- MD3E 风格右键菜单 -->
+    <div id="contextMenu" style="
+        position: fixed;
+        background: var(--md-sys-color-surface);
+        border-radius: 12px;
+        box-shadow: var(--md-sys-elevation-level4);
+        z-index: 10000;
+        min-width: 180px;
+        font-family: 'Roboto', sans-serif;
+        display: none;
+        border: 1px solid var(--md-sys-color-outline-variant);
+    ">
+        <div class="context-menu-item" data-action="back">
+            <span class="material-icons md3-icon">arrow_back</span>
+            <span class="md3-text">返回</span>
+        </div>
+        <div class="context-menu-item" data-action="refresh">
+            <span class="material-icons md3-icon">refresh</span>
+            <span class="md3-text">刷新</span>
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="selectAll">
+            <span class="material-icons md3-icon">select_all</span>
+            <span class="md3-text">全选</span>
+        </div>
+        <div class="context-menu-item" data-action="copy">
+            <span class="material-icons md3-icon">content_copy</span>
+            <span class="md3-text">复制</span>
+        </div>
+        <div class="context-menu-item" data-action="paste">
+            <span class="material-icons md3-icon">content_paste</span>
+            <span class="md3-text">粘贴</span>
+        </div>
+    </div>
+
+    <style>
+        /* MD3E 设计系统变量 */
+        :root {
+            /* 亮色模式 */
+            --md-sys-color-surface: #ffffff;
+            --md-sys-color-on-surface: #1d1b20;
+            --md-sys-color-on-surface-variant: #49454f;
+            --md-sys-color-outline-variant: #cac4d0;
+            --md-sys-color-primary: #00AE00;
+            --md-sys-color-primary-container: #e6f7e6;
+            --md-sys-color-on-primary-container: #005000;
+            --md-sys-elevation-level4: 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 深色模式 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --md-sys-color-surface: #333333;
+                --md-sys-color-on-surface: #e6e1e5;
+                --md-sys-color-on-surface-variant: #cac4d0;
+                --md-sys-color-outline-variant: #49454f;
+                --md-sys-color-primary: #00D000;
+                --md-sys-color-primary-container: #007000;
+                --md-sys-color-on-primary-container: #e6f7e6;
+                --md-sys-elevation-level4: 0 8px 10px 1px rgba(0, 0, 0, 0.3), 0 3px 14px 2px rgba(0, 0, 0, 0.2), 0 5px 5px -3px rgba(0, 0, 0, 0.25);
+            }
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--md-sys-color-on-surface);
+            border-radius: 8px;
+            margin: 4px 4px;
+        }
+
+        .context-menu-item:hover {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            transform: translateY(-1px);
+        }
+
+        .context-menu-item:hover .md3-icon {
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .context-menu-item.disabled {
+            color: var(--md-sys-color-on-surface-variant);
+            cursor: not-allowed;
+        }
+
+        .context-menu-item.disabled:hover {
+            background-color: transparent;
+            transform: none;
+        }
+
+        .context-menu-item .md3-icon {
+            font-size: 20px;
+            color: var(--md-sys-color-on-surface-variant);
+            transition: color 0.2s;
+        }
+    </style>
+    <div class="app-container">
+        <!-- Vertical Tabs -->
+        <div class="tabs">
+            <div class="tabs-header">
+                <h1>About OOO Interface</h1>
+            </div>
+            <button class="tab-button active" data-tab="about">关于</button>
+            <button class="tab-button" data-tab="versions">历史版本</button>
+            <!-- Version Search Bar -->
+            <div class="version-search-container" id="versionSearchContainer">
+                <div class="version-search-box">
+                    <input type="text" id="versionSearchInput" placeholder="搜索版本号...">
+                </div>
+            </div>
+            <button class="tab-button" data-tab="support">支持</button>
+            <p style="position: absolute; bottom: 20px; left: 0; right: 0; text-align: left; margin: 0; padding: 0 10px; font-size: 12px; color: var(--google-text-secondary);">ByRUDAN</p>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            
+            <!-- Search Bar -->
+            <div class="search-container" id="searchContainer">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索版本...">
+                </div>
+            </div>
+            
+            <!-- All Content -->
+            <div class="all-content">
+                <!-- About Section -->
+                <section id="about" class="section">
+                    <div class="version-list">
+                        <div class="version-card">
+                            <div class="version-header">
+                                <div class="version-info">
+                                    <div class="version-badge">关于</div>
+                                    <div class="version-title">关于 OOO Interface</div>
+                                </div>
+                            </div>
+                            <div class="version-content">
+                                <h3>产品信息</h3>
+                                <p><strong>产品名称：</strong>OOOInterface</p>
+                                <p><strong>版本号：</strong>5.1.2:24-RS42.2</p>
+                                
+                                <h3>开发者</h3>
+                                <p><strong>团队名称：</strong>ByRUDAN</p>
+                                <p><strong>主要开发者：</strong>RUDAN</p>
+                                <p><strong>贡献者：</strong>ZSCC</p>
+                                
+                                <h3>联系方式</h3>
+                                <p><strong>电子邮件：</strong><a href="mailto:wyjcrtu@proton.me" style="color: var(--google-primary); text-decoration: none;">wyjcrtu@proton.me</a></p>
+                                <p><strong>网址：</strong><a href="https://rudan177.github.io/ByRUDAN/index.html" style="color: var(--google-primary); text-decoration: none;">https://rudan177.github.io/ByRUDAN/index.html</a></p>
+                                
+                                <h3>版权信息</h3>
+                                <p>© 2026 ByRUDAN 保留所有权利。</p>
+                                <p><strong>许可证：</strong>ABCD-26W08A</p>
+                                <p><strong>商标：</strong>OOOInterface 是 ByRUDAN 的注册商标。</p>
+                                <p><strong>使用商标：</strong>"Google"是Alphabet Inc.的注册商标；"Microsoft"是Microsoft Corporation的注册商标；"Bing"是Microsoft Corporation的注册商标；"Apple"是美国苹果公司的注册商标；"HUAWEI"是华为终端有限公司的注册商标。</p>
+                                
+                                <h3>更新信息</h3>
+                                <p><strong>当前版本：</strong>5.1.2:24-RS42.2(发布于 2026年2月27日)</p>
+                                <p><strong>历史版本：</strong>更新日志见下表 </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Versions Section -->
+                <section id="versions" class="section">
+                    <div class="version-list">
+                    
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">1.0:01</div>
+                                <div class="version-title">首个版本</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>以 Google.com 外观为原型，Google Logo 居中，搜索框和搜索引擎切换按钮方便用户搜索。界面简洁，操作简单。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">1.1:02</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">1.2:03</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">1.3:04</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">1.4:05</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">2.0:06</div>
+                                <div class="version-title">界面优化</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>完善界面整体清晰度，解决 Google Logo 模糊问题，优化细节，加入铭牌 "Designed By RUDAN"</p>
+                        </div>
+                    </div>
+                    
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">2.1:07</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">2.2:08</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">2.3:09</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">2.4:10</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">2.5:11</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">2.6:12</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">2.7:13</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">2.8:14</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">2.9:15</div>
+                                <div class="version-title">版本迭代</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">3.0:16</div>
+                                <div class="version-title">功能扩展</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>修复了前n多个版本 Bing 无法使用的 Bug。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">3.1:17</div>
+                                <div class="version-title">功能扩展</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>加入全新字体 Josefin Sans，优化下滑界面。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">3.2:18</div>
+                                <div class="version-title">功能扩展</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>加入全新壁纸，下滑预览。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">3.3:19</div>
+                                <div class="version-title">功能扩展</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>针对不同屏幕比例的壁纸完成适配，搜索框文字简化，底部名牌更改为 "OOO Interface 3.3"。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">3.4:20</div>
+                                <div class="version-title">功能扩展</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>加入全新字体"ABC Ginto Variable",优化稳定性。</p>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">3.5:21</div>
+                                <div class="version-title">功能扩展</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>支持在"Setting"中自行更换字体，搜索框增加灰框提升可读性，搜索引擎按钮增加切换高亮。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">4.0:22</div>
+                                <div class="version-title">UI更新</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>整体UI更加圆润。搜索框位置下调。新增设置按钮自动隐藏，切换字体设置将全局可用。下滑可以调整搜索引擎。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge">5.0:23</div>
+                                <div class="version-title">功能全面升级</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <p>UI加入光照效果，提升可读性。</p>
+                            <p>支持多种图标(Google/Microsoft/Apple/HUAWEI/自定义图片/自定义文字)。</p>
+                            <p>支持自定义字体和背景。</p>
+                            <p>支持新增/删除快速访问链接。</p>
+                            <p>更改设置入口：右键底部铭牌或双击界面中部。</p>
+                            <p>设置页面支持鼠标上滑打开。</p>
+                            <p>底部铭牌样式变化：显示文字"OOO Interface"，单击后显示具体版本号。</p>
+                            <p>优化设置页面显示效果。</p>
+                            <p>优化不同logo时搜索引擎切换按钮显示效果。</p>
+                            <p>修复了一些已知问题。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge"  style="font-family: 'HarmonyOS Sans SC', sans-serif;">5.1:24</div>
+                                <div class="version-title"  style="font-family: 'HarmonyOS Sans SC', sans-serif;">修复显示问题，新增实用功能</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <h2 class="section-title" style="font-family: 'HarmonyOS Sans SC', sans-serif; margin-top: -25px;">更新了什么？</h2>
+                                <ol class="section-list" style="font-size: 1.02rem; font-family: 'HarmonyOS Sans SC', sans-serif;"> 
+                                    <li>新增字体大小和粗细调节</li>
+                                    <li>新增右键Google网页直达功能</li>
+                                    <li>新增搜索历史功能</li>
+                                    <li>新增全新右键菜单</li>
+                                    <li>全新横屏设置页面</li>
+                                    <li>新增反馈入口和全新的关于页面</li>
+                                </ol>
+                            <h2 class="section-title more" style="font-family: 'HarmonyOS Sans SC', sans-serif;">什么是更多？</h2>
+                                <ol class="section-list" style="font-size: 1.02rem; font-family: 'HarmonyOS Sans SC', sans-serif;">
+                                    <li>设置页面部分显示效果</li>
+                                    <li>内存占用和流畅性</li>
+                                    <li>亮色模式下显示效果修复</li>
+                                    <li>修复一些已知Bug</li>
+                                </ol>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge" style="font-family: 'HarmonyOS Sans SC', sans-serif;">5.1.1:24</div>
+                                <div class="version-title"  style="font-family: 'HarmonyOS Sans SC', sans-serif;">紧急修复严重漏洞</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <h2 class="section-title" style="font-family: 'HarmonyOS Sans SC', sans-serif; margin-top: -25px;">修复内容</h2>
+                                <ol class="section-list" style="font-size: 1.02rem; font-family: 'HarmonyOS Sans SC', sans-serif;">
+                                    <li>修复设置页面部分显示效果。</li>
+                                    <li>修复内存占用和流畅性问题。</li>
+                                    <li>修复了关于页面网址错误。</li>
+                                    <li>修复了一些已知Bug。</li>
+                                </ol>
+                        </div>
+                    </div>
+                    <div class="version-card">
+                        <div class="version-header">
+                            <div class="version-info">
+                                <div class="version-badge" style="font-family: 'HarmonyOS Sans SC', sans-serif;">5.1.2:24</div>
+                                <div class="version-title"  style="font-family: 'HarmonyOS Sans SC', sans-serif;">紧急修复严重漏洞</div>
+                            </div>
+                        </div>
+                        <div class="version-content">
+                            <h2 class="section-title" style="font-family: 'HarmonyOS Sans SC', sans-serif; margin-top: -25px;">新增内容</h2>
+                                <ol class="section-list" style="font-size: 1.02rem; font-family: 'HarmonyOS Sans SC', sans-serif;">
+                                    <li>加入全新云图标。</li>
+                                    <li>引入全新反馈系统。</li>
+                                </ol>
+                        </div>
+                        <div class="version-content">
+                            <h2 class="section-title" style="font-family: 'HarmonyOS Sans SC', sans-serif; margin-top: -25px;">修复内容</h2>
+                                <ol class="section-list" style="font-size: 1.02rem; font-family: 'HarmonyOS Sans SC', sans-serif;">
+                                    <li>修复内存占用和流畅性问题。</li>
+                                    <li>修复了一些已知Bug。</li>
+                                </ol>
+                        </div>
+                    </div>                    
+                </div>
+            </section>
+                
+                <!-- Support Section -->
+                <section id="support" class="section">
+                    <!-- Support Section -->
+                    <div class="support-section">
+                        <div class="support-card" id="supportCard">
+                            <div class="support-header">
+                                <div class="support-header-content">
+                                    <div class="support-badge">支持</div>
+                                    <h3 class="support-title">为更棒的OOOInterface预备好</h3>
+                                </div>
+                            </div>
+                            <div class="support-content" id="supportContentInner">
+                                <img src="Pay.jpg" alt="支持图片" class="support-image">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+        
+        <!-- Back to Top Button -->
+        <button class="back-to-top" id="backToTop">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+        </button>
+    </div>
+</body>
+</html>
