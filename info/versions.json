@@ -1,0 +1,330 @@
+{
+  "versions": [
+    {
+      "version": "1.0:01",
+      "title": "首个版本",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "以 Google.com 外观为原型，Google Logo 居中，搜索框和搜索引擎切换按钮方便用户搜索。界面简洁，操作简单。"
+        }
+      ]
+    },
+    {
+      "version": "1.1:02",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "完善界面整体清晰度，优化 Google Logo 清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "1.2:03",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "完善界面整体清晰度，优化 Google Logo 清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "1.3:04",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "完善界面整体清晰度，优化 Google Logo 清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "1.4:05",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "完善界面整体清晰度，优化 Google Logo 清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "2.0:06",
+      "title": "界面优化",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "完善界面整体清晰度，解决 Google Logo 模糊问题，优化细节，加入铭牌 \"Designed By RUDAN\""
+        }
+      ]
+    },
+    {
+      "version": "2.1:07",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "2.2:08",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "2.3:09",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "2.4:10",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "2.5:11",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "2.6:12",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "2.7:13",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "2.8:14",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "2.9:15",
+      "title": "版本迭代",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。"
+        }
+      ]
+    },
+    {
+      "version": "3.0:16",
+      "title": "功能扩展",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "修复了前n多个版本 Bing 无法使用的 Bug。"
+        }
+      ]
+    },
+    {
+      "version": "3.1:17",
+      "title": "功能扩展",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "加入全新字体 Josefin Sans，优化下滑界面。"
+        }
+      ]
+    },
+    {
+      "version": "3.2:18",
+      "title": "功能扩展",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "加入全新壁纸，下滑预览。"
+        }
+      ]
+    },
+    {
+      "version": "3.3:19",
+      "title": "功能扩展",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "针对不同屏幕比例的壁纸完成适配，搜索框文字简化，底部名牌更改为 \"OOO Interface 3.3\"。"
+        }
+      ]
+    },
+    {
+      "version": "3.4:20",
+      "title": "功能扩展",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "加入全新字体\"ABC Ginto Variable\",优化稳定性。"
+        }
+      ]
+    },
+    {
+      "version": "3.5:21",
+      "title": "功能扩展",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "支持在\"Setting\"中自行更换字体，搜索框增加灰框提升可读性，搜索引擎按钮增加切换高亮。"
+        }
+      ]
+    },
+    {
+      "version": "4.0:22",
+      "title": "UI更新",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "整体UI更加圆润。搜索框位置下调。新增设置按钮自动隐藏，切换字体设置将全局可用。下滑可以调整搜索引擎。"
+        }
+      ]
+    },
+    {
+      "version": "5.0:23",
+      "title": "功能全面升级",
+      "content": [
+        {
+          "type": "heading",
+          "text": "更新了什么？"
+        },
+        {
+          "type": "list",
+          "items": [
+            "UI加入光照效果，提升可读性",
+            "支持多种图标(Google/Microsoft/Apple/HUAWEI/自定义图片/自定义文字)",
+            "支持自定义字体和背景",
+            "支持新增/删除快速访问链接",
+            "更改设置入口：右键底部铭牌或双击界面中部",
+            "设置页面支持鼠标上滑打开",
+            "底部铭牌样式变化：显示文字\"OOO Interface\"，单击后显示具体版本号"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "什么是更多？"
+        },
+        {
+          "type": "list",
+          "items": [
+            "优化设置页面显示效果",
+            "优化不同logo时搜索引擎切换按钮显示效果",
+            "修复了一些已知问题"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "5.1:24",
+      "title": "修复显示问题，新增实用功能",
+      "content": [
+        {
+          "type": "heading",
+          "text": "更新了什么？"
+        },
+        {
+          "type": "list",
+          "items": [
+            "新增字体大小和粗细调节",
+            "新增右键Google网页直达功能",
+            "新增搜索历史功能",
+            "新增全新右键菜单",
+            "全新横屏设置页面",
+            "新增反馈入口和全新的关于页面"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "什么是更多？"
+        },
+        {
+          "type": "list",
+          "items": [
+            "设置页面部分显示效果",
+            "内存占用和流畅性",
+            "亮色模式下显示效果修复",
+            "修复一些已知Bug"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "5.1.1:24",
+      "title": "紧急修复严重漏洞",
+      "content": [
+        {
+          "type": "heading",
+          "text": "修复内容"
+        },
+        {
+          "type": "list",
+          "items": [
+            "修复设置页面部分显示效果。",
+            "修复内存占用和流畅性问题。",
+            "修复了关于页面网址错误。",
+            "修复了一些已知Bug。"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "5.1.2:24",
+      "title": "修复漏洞",
+      "content": [
+        {
+          "type": "heading",
+          "text": "修复内容"
+        },
+        {
+          "type": "list",
+          "items": [
+            "加入全新云图标。",
+            "引入全新反馈系统。",
+            "修复内存占用和流畅性问题。",
+            "修复了一些已知Bug。"
+          ]
+        }
+      ]
+    }
+  ]
+}
