@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="format-detection" content="telephone=no">
+    <title>About OOO Interface</title>
+</head>
+
+<body>
+    <style>
+        :root {
+            --text-primary: #1a1a1a;
+            --text-secondary: #e0e0e0;
+            --text-heading: #1a1a1a;
+            --text-paragraph: #2a2a2a;
+            --text-footer: #555;
+            --text-muted: #555;
+            --bg-body: transparent;
+            --bg-card: rgba(0, 174, 144, 0.2);
+            --bg-version: rgba(255, 255, 255, 0.85);
+            --bg-version-border: rgba(0, 0, 0, 0.12);
+            --bg-ver-num: #00A846;
+            --bg-float-btn: #00AE00;
+            --link-color: #008C00;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body:not(.light-theme) {
+                --text-primary: #ffffff;
+                --text-secondary: #e0e0e0;
+                --text-heading: #ffffff;
+                --text-paragraph: #e0e0e0;
+                --text-footer: #888;
+                --text-muted: #999;
+                --bg-body: #0a0a0a;
+                --bg-card: rgba(0, 80, 65, 0.5);
+                --bg-version: rgba(30, 30, 30, 0.6);
+                --bg-version-border: rgba(255, 255, 255, 0.15);
+                --bg-ver-num: #007a35;
+                --bg-float-btn: #007a35;
+                --link-color: #00c853;
+            }
+        }
+
+        body.dark-theme {
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+            --text-heading: #ffffff;
+            --text-paragraph: #e0e0e0;
+            --text-footer: #888;
+            --text-muted: #999;
+            --bg-body: #0a0a0a;
+            --bg-card: rgba(0, 80, 65, 0.5);
+            --bg-version: rgba(30, 30, 30, 0.6);
+            --bg-version-border: rgba(255, 255, 255, 0.15);
+            --bg-ver-num: #007a35;
+            --bg-float-btn: #007a35;
+            --link-color: #00c853;
+        }
+
+        body.light-theme {
+            --text-primary: #1a1a1a;
+            --text-secondary: #e0e0e0;
+            --text-heading: #1a1a1a;
+            --text-paragraph: #2a2a2a;
+            --text-footer: #555;
+            --text-muted: #555;
+            --bg-body: transparent;
+            --bg-card: rgba(0, 174, 144, 0.2);
+            --bg-version: rgba(255, 255, 255, 0.85);
+            --bg-version-border: rgba(0, 0, 0, 0.12);
+            --bg-ver-num: #00A846;
+            --bg-float-btn: #00AE00;
+            --link-color: #008C00;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, rgba(0, 174, 0, 0.1) 0%, rgba(16, 191, 144, 0.1) 100%),
+                radial-gradient(circle at 20% 50%, rgba(0, 174, 0, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(16, 191, 144, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 174, 0, 0.03) 0%, transparent 30%),
+                radial-gradient(circle at 60% 70%, rgba(16, 191, 144, 0.03) 0%, transparent 30%);
+            background-color: var(--bg-body);
+            background-size: 200% 200%;
+            animation: gradientMove 15s ease infinite;
+            overflow-y: auto;
+            font-family: system-ui, sans-serif;
+        }
+
+        body.dark-theme {
+            background: linear-gradient(135deg, rgba(0, 100, 0, 0.15) 0%, rgba(10, 80, 60, 0.15) 100%),
+                radial-gradient(circle at 20% 50%, rgba(0, 100, 0, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(10, 80, 60, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 100, 0, 0.05) 0%, transparent 30%),
+                radial-gradient(circle at 60% 70%, rgba(10, 80, 60, 0.05) 0%, transparent 30%);
+            background-color: var(--bg-body);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body:not(.light-theme) {
+                background: linear-gradient(135deg, rgba(0, 100, 0, 0.15) 0%, rgba(10, 80, 60, 0.15) 100%),
+                    radial-gradient(circle at 20% 50%, rgba(0, 100, 0, 0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(10, 80, 60, 0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 40% 20%, rgba(0, 100, 0, 0.05) 0%, transparent 30%),
+                    radial-gradient(circle at 60% 70%, rgba(10, 80, 60, 0.05) 0%, transparent 30%);
+                background-color: var(--bg-body);
+            }
+        }
+
+        @keyframes gradientMove {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes kuangjia {
+            0% {
+                opacity: 0;
+                transform: translateY(40px);
+                filter: blur(4px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+                filter: blur(0);
+            }
+        }
+
+        .version-container {
+            width: 70%;
+            margin: 0 auto 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 10px 20px;
+            margin-top: 50px;
+            color: var(--text-footer);
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+            transition: opacity 0.2s ease;
+        }
+
+        a:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        .float-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--bg-float-btn);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: transform 0.3s ease, background 0.3s ease, opacity 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+
+
+        .float-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .float-btn .icon-lock {
+            width: 10px;
+            height: 10px;
+            fill: #ff4444;
+        }
+
+        .float-btn .icon-back-top {
+            display: none;
+        }
+
+        .float-btn .theme-icons {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .float-btn.scrolled .icon-back-top {
+            display: block;
+        }
+
+        .float-btn.scrolled .theme-icons {
+            display: none;
+        }
+
+        .float-btn.scrolled.theme-mode .icon-back-top {
+            display: none;
+        }
+
+        .float-btn.scrolled.theme-mode .theme-icons {
+            display: flex;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px 24px;
+            margin-top: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .info-item.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 15px;
+            color: var(--text-paragraph);
+            font-weight: 500;
+        }
+
+        .section-card {
+            background: var(--bg-version);
+            border: 1px solid var(--bg-version-border);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            opacity: 1;
+        }
+
+        .section-card:hover {
+            transform: translateY(-2px);
+            transition: transform 0.3s ease;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-heading);
+            margin: 0 0 16px 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--bg-version-border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title svg {
+            width: 18px;
+            height: 18px;
+            opacity: 0.7;
+        }
+
+        .trademark-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .trademark-name {
+            font-size: 12px;
+            padding: 4px 10px;
+            background: var(--bg-version-border);
+            border-radius: 4px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .trademark-name:hover,
+        .trademark-name.active {
+            background: var(--bg-card);
+            color: var(--text-paragraph);
+        }
+
+        .trademark-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: var(--bg-version-border);
+            border-radius: 6px;
+            display: none;
+        }
+
+        .trademark-desc.show {
+            display: block;
+        }
+
+        .iframe-overlay {
+            position: fixed;
+            top: 0;
+            left: 15%;
+            width: 70%;
+            height: 100%;
+            background: var(--bg-body);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .iframe-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .iframe-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: var(--bg-version);
+            border-bottom: 1px solid var(--bg-version-border);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            cursor: grab;
+        }
+
+        .iframe-header:active {
+            cursor: grabbing;
+        }
+
+        .iframe-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .iframe-close-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--bg-version-border);
+            border: none;
+            border-radius: 20px;
+            color: var(--text-paragraph);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .iframe-close-btn:hover {
+            background: var(--bg-card);
+        }
+
+        .iframe-close-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .iframe-container {
+            position: absolute;
+            top: 56px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            transform: translateY(100%);
+            overflow: hidden;
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-ver-num);
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 8px;
+            text-decoration: none;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .version-badge:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+
+        .hero-section {
+            text-align: center;
+            padding: 50px 20px 10px;
+        }
+
+        .hero-logo {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+
+        .hero-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 8px 0;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .cards-grid .section-card:nth-child(5),
+        .cards-grid .section-card:nth-child(6) {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 768px) {
+            .version-container {
+                width: 94%;
+                margin: 0 auto 30px;
+                gap: 16px;
+            }
+
+            .hero-section {
+                padding: 30px 16px 8px;
+            }
+
+            .hero-logo {
+                width: 70px;
+                height: 70px;
+            }
+
+            .hero-title {
+                font-size: 26px;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .cards-grid .section-card:nth-child(5),
+            .cards-grid .section-card:nth-child(6) {
+                grid-column: auto;
+            }
+
+            .section-card {
+                padding: 18px;
+                border-radius: 14px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .section-title {
+                font-size: 13px;
+                margin-bottom: 12px;
+                padding-bottom: 10px;
+            }
+
+            .info-label {
+                font-size: 11px;
+            }
+
+            .info-value {
+                font-size: 14px;
+            }
+
+            .footer {
+                padding: 15px 15px;
+                margin-top: 30px;
+                font-size: 12px;
+            }
+
+            .float-btn {
+                bottom: 20px;
+                right: 20px;
+                padding: 10px 18px;
+                border-radius: 20px;
+            }
+
+            .float-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .float-btn .icon-lock {
+                width: 9px;
+                height: 9px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .version-container {
+                width: 96%;
+                margin: 0 auto 20px;
+                gap: 12px;
+            }
+
+            .hero-section {
+                padding: 24px 12px 8px;
+            }
+
+            .hero-logo {
+                width: 60px;
+                height: 60px;
+            }
+
+            .hero-title {
+                font-size: 22px;
+            }
+
+            .section-card {
+                padding: 14px;
+                border-radius: 12px;
+            }
+
+            .section-title {
+                font-size: 12px;
+            }
+
+            .info-value {
+                font-size: 13px;
+            }
+
+            .version-badge {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+
+            .float-btn {
+                bottom: 15px;
+                right: 15px;
+                padding: 8px 14px;
+                border-radius: 18px;
+            }
+
+            .float-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .float-btn .icon-lock {
+                width: 8px;
+                height: 8px;
+            }
+        }
+
+        /* ========== 视觉效果控制 ========== */
+
+        /* 默认状态：禁用所有动画 */
+        body:not(.dynamic-blur) {
+            animation: none !important;
+        }
+
+        body:not(.dynamic-blur) .section-card {
+            opacity: 1;
+            animation: none !important;
+            transform: none;
+        }
+
+        body:not(.dynamic-blur) .hero-logo {
+            transition: none;
+        }
+
+        body:not(.dynamic-blur) .section-card:hover {
+            transform: none;
+        }
+
+        body:not(.dynamic-blur) .version-badge:hover {
+            transform: none;
+        }
+
+        body:not(.dynamic-blur) .float-btn:hover {
+            transform: none;
+        }
+
+        body:not(.dynamic-blur) .trademark-name:hover,
+        body:not(.dynamic-blur) .trademark-name.active {
+            transition: none;
+        }
+
+        body:not(.dynamic-blur) .iframe-overlay {
+            transition: none;
+        }
+
+        body:not(.dynamic-blur) .iframe-container {
+            transition: none !important;
+        }
+
+        /* 高级视效开启：基础动画 */
+        body.dynamic-blur .section-card {
+            opacity: 0;
+            animation: kuangjia 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation-delay: calc(var(--i, 0) * 0.1s);
+        }
+
+        body.dynamic-blur .section-card:hover {
+            transform: translateY(-2px);
+            transition: transform 0.3s ease;
+        }
+
+        body.dynamic-blur .iframe-overlay {
+            transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.5s;
+        }
+
+        body.dynamic-blur .float-btn:hover {
+            transform: scale(1.05);
+        }
+
+        body.dynamic-blur .hero-logo:hover {
+            transform: scale(1.1);
+        }
+
+        body.dynamic-blur .version-badge:hover {
+            transform: scale(1.05);
+        }
+
+        @keyframes enhancedCardEnter {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+                filter: blur(4px);
+            }
+
+            60% {
+                opacity: 0.9;
+                transform: translateY(-3px) scale(1.01);
+                filter: blur(0);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes logoFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes badgePulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 168, 70, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(0, 168, 70, 0);
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /* ========== 增强显示 (Beta) 专属动画 ========== */
+
+        body.enhanced-display .hero-logo {
+            animation: logoFloat 4s ease-in-out infinite;
+        }
+
+        body.enhanced-display .version-badge {
+            animation: badgePulse 3s ease-in-out infinite;
+        }
+
+        body.enhanced-display .section-card {
+            animation: enhancedCardEnter 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            animation-delay: calc(var(--i, 0) * 0.12s);
+            opacity: 0;
+        }
+
+        body.enhanced-display .section-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(255, 255, 255, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.enhanced-display .float-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        body.enhanced-display .hero-logo:hover {
+            filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.2));
+        }
+
+        body.enhanced-display .version-container {
+            animation: containerFadeIn 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes containerFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body.enhanced-display .section-card:hover {
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.05);
+            }
+
+            body.enhanced-display .float-btn:hover {
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.05);
+            }
+        }
+
+        .version-card {
+            background: var(--bg-version);
+            border: 1px solid var(--bg-version-border);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 16px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            opacity: 0;
+            animation: kuangjia 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation-delay: calc(var(--i, 0) * 0.08s);
+        }
+
+        .version-card:hover {
+            transform: translateY(-2px);
+            transition: transform 0.3s ease;
+        }
+
+        .version-card.hidden {
+            display: none;
+        }
+
+        body:not(.dynamic-blur) .version-card {
+            opacity: 1;
+            animation: none !important;
+            transform: none;
+        }
+
+        body:not(.dynamic-blur) .version-card:hover {
+            transform: none;
+        }
+
+        body.dynamic-blur .version-card {
+            opacity: 0;
+            animation: kuangjia 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation-delay: calc(var(--i, 0) * 0.08s);
+        }
+
+        body.dynamic-blur .version-card:hover {
+            transform: translateY(-2px);
+            transition: transform 0.3s ease;
+        }
+
+        body.enhanced-display .version-card {
+            animation: enhancedCardEnter 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            animation-delay: calc(var(--i, 0) * 0.1s);
+            opacity: 0;
+        }
+
+        body.enhanced-display .version-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body.enhanced-display .version-card:hover {
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        .version-card-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #00A846 0%, #00C853 100%);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            margin-right: 8px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body:not(.light-theme) .version-card-badge {
+                background: linear-gradient(135deg, #007A35 0%, #009040 100%);
+            }
+        }
+
+        body.dark-theme .version-card-badge {
+            background: linear-gradient(135deg, #007A35 0%, #009040 100%);
+        }
+
+        .version-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-heading);
+            margin: 0 0 12px 0;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .version-card-content h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-heading);
+            margin: 12px 0 6px 0;
+        }
+
+        .version-card-content p {
+            font-size: 13px;
+            color: var(--text-paragraph);
+            line-height: 1.5;
+            margin: 6px 0;
+        }
+
+        .version-card-content ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .version-card-content li {
+            font-size: 13px;
+            color: var(--text-paragraph);
+            line-height: 1.5;
+            margin: 4px 0;
+        }
+
+        .changelog-loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 14px;
+            color: var(--text-body);
+            opacity: 0.5;
+        }
+
+        .changelog-error {
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            color: var(--text-body);
+            background: var(--bg-version);
+            border: 1px solid var(--bg-version-border);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .version-card {
+                padding: 14px;
+                border-radius: 10px;
+            }
+
+            .version-card-title {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .version-card {
+                padding: 12px;
+                border-radius: 8px;
+            }
+
+            .version-card-title {
+                font-size: 12px;
+            }
+        }
+    </style>
+    </head>
+
+    <body>
+        <div class="version-container">
+            <div class="hero-section">
+                <img id="logoImage" class="hero-logo" src="db.png" alt="OOOInterface Logo">
+                <h1 class="hero-title">OOOInterface</h1>
+                <a href="https://rudan177.github.io/OOOInterface/about/about.html" target="_blank"
+                    class="version-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px"
+                        fill="currentColor">
+                        <path
+                            d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Zm-40 200h80v-240h-80v240Zm0-320h80v-80h-80v80Z" />
+                    </svg>
+                    v<span id="version-text"></span>
+                </a>
+            </div>
+
+            <div class="cards-grid">
+                <div class="section-card" style="--i:1">
+                    <h2 class="section-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px"
+                            fill="currentColor">
+                            <path
+                                d="M280-280h280v-80H280v80Zm0-160h400v-80H280v80Zm0-160h400v-80H280v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z" />
+                        </svg>
+                        产品信息
+                    </h2>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">产品名称</span>
+                            <span class="info-value">OOOInterface5.2</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">当前版本</span>
+                            <span class="info-value" id="version-info"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">发布日期</span>
+                            <span class="info-value">2026年4月24日</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">许可证</span>
+                            <span class="info-value">ABCD-26W08A</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card" style="--i:2">
+                    <h2 class="section-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px"
+                            fill="currentColor">
+                            <path
+                                d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Zm80-80h480v-32q0-11-5.5-20T700-306q-54-27-109-40.5T480-360q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T560-640q0-33-23.5-56.5T480-720q-33 0-56.5 23.5T400-640q0 33 23.5 56.5T480-560Zm0-80Zm0 400Z" />
+                        </svg>
+                        开发团队
+                    </h2>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">团队名称</span>
+                            <span class="info-value">ByRUDAN</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">主要开发者</span>
+                            <span class="info-value">RUDAN</span>
+                        </div>
+                        <div class="info-item full-width">
+                            <span class="info-label">贡献者</span>
+                            <span class="info-value">ZSCC</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card" style="--i:3">
+                    <h2 class="section-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px"
+                            fill="currentColor">
+                            <path
+                                d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200ZM160-640v-80 480-400Z" />
+                        </svg>
+                        联系方式
+                    </h2>
+                    <div class="info-grid">
+                        <div class="info-item full-width">
+                            <span class="info-label">电子邮件</span>
+                            <span class="info-value"><a href="mailto:wyjcrtu@proton.me">wyjcrtu@proton.me</a></span>
+                        </div>
+                        <div class="info-item full-width">
+                            <span class="info-label">官方网站</span>
+                            <span class="info-value"><a href="https://rudan177.github.io/ByRUDAN/index.html"
+                                    target="_blank">rudan177.github.io/ByRUDAN</a></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card" style="--i:4">
+                    <h2 class="section-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px"
+                            fill="currentColor">
+                            <path
+                                d="M760-80H200q-33 0-56.5-23.5T120-160v-440q0-33 23.5-56.5T200-680h40v-80q0-83 58.5-141.5T440-960q83 0 141.5 58.5T640-760v80h120q33 0 56.5 23.5T840-600v440q0 33-23.5 56.5T760-80ZM440-640h80v-80q0-17-11.5-28.5T480-760q-17 0-28.5 11.5T440-720v80ZM200-160h560v-440H200v440Zm280-200q33 0 56.5-23.5T560-440q0-33-23.5-56.5T480-520q-33 0-56.5 23.5T400-440q0 33 23.5 56.5T480-360Z" />
+                        </svg>
+                        版权信息
+                    </h2>
+                    <div class="info-grid">
+                        <div class="info-item full-width">
+                            <span class="info-label">版权所有</span>
+                            <span class="info-value">© 2026 ByRUDAN 保留所有权利</span>
+                        </div>
+                        <div class="info-item full-width">
+                            <span class="info-label">产品商标</span>
+                            <span class="info-value">OOOInterface 是 ByRUDAN 的注册商标</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card" style="--i:5">
+                    <h2 class="section-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px"
+                            fill="currentColor">
+                            <path
+                                d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Zm-40 200h80v-240h-80v240Zm0-320h80v-80h-80v80Z" />
+                        </svg>
+                        商标说明
+                    </h2>
+                    <div class="trademark-cards">
+                        <span class="trademark-name" data-desc="Google 是 Alphabet Inc. 的注册商标">Google</span>
+                        <span class="trademark-name"
+                            data-desc="Microsoft 是 Microsoft Corporation 的注册商标">Microsoft</span>
+                        <span class="trademark-name" data-desc="Bing 是 Microsoft Corporation 的注册商标">Bing</span>
+                        <span class="trademark-name" data-desc="Apple 是美国苹果公司的注册商标">Apple</span>
+                        <span class="trademark-name" data-desc="HUAWEI 是华为终端有限公司的注册商标">HUAWEI</span>
+                    </div>
+                    <div class="trademark-desc" id="trademarkDesc"></div>
+                </div>
+
+                <div class="section-card" style="--i:6">
+                    <h2 class="section-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px"
+                            fill="currentColor">
+                            <path
+                                d="M240-800h480v200H240v-200Zm0 240h480v320H240v-320Zm80-80v-40h80v40h-80Zm0 160v40h80v-40h-80Zm0-80v40h80v-40h-80Zm160 0v40h80v-40h-80Zm0 80v40h80v-40h-80Zm0-160v-40h80v40h-80Zm160 0v-40h80v40h-80Zm0 80v40h80v-40h-80Zm0 80v40h80v-40h-80Z" />
+                        </svg>
+                        历史版本
+                    </h2>
+                    <div id="versionsList" style="width: 100%; box-sizing: border-box;">
+                        <div class="changelog-loading">加载版本数据中...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>许可证：ABCD-26W08A · © 2026 ByRUDAN 保留所有权利</p>
+        </footer>
+
+        <button class="float-btn" id="floatBtn">
+            <svg class="icon-back-top" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                width="24px" fill="currentColor">
+                <path d="M160-760v-80h640v80H160Zm280 640v-408L336-424l-56-56 200-200 200 200-56 56-104-104v408h-80Z" />
+            </svg>
+            <span class="theme-icons">
+                <svg class="icon-theme-logo" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                    width="24px" fill="currentColor">
+                    <path
+                        d="M324-111.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM520-163q119-15 199.5-104.5T800-480q0-123-80.5-212.5T520-797v634Z" />
+                </svg>
+                <svg class="icon-lock" xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960"
+                    width="12px" fill="#ff4444" style="display: none;">
+                    <path
+                        d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z" />
+                </svg>
+            </span>
+        </button>
+        <script src="../Script/version.js"></script>
+        <script src="about.js"></script>
+    </body>
+
+</html>
