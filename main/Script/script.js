@@ -977,7 +977,7 @@ class OOOInterface {
         document.getElementById('feedback-btn').addEventListener('contextmenu', (e) => {
             e.preventDefault();
             // 播放音频
-            const audio = new Audio('images/wow.mp3');
+            const audio = new Audio('https://rudan177.github.io/OOOInterface/images/wow.mp3');
             audio.play().catch(err => {
                 console.error('播放音频失败:', err);
             });
