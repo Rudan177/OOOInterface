@@ -3662,7 +3662,7 @@ class OOOInterface {
 
     applyFont() {
         // 移除所有字体类
-        const fontClasses = ['font-ginto', 'font-josefin', 'font-code'];
+        const fontClasses = ['font-ginto', 'font-josefin', 'font-code', 'font-hmsc'];
         fontClasses.forEach(fontClass => {
             document.body.classList.remove(fontClass);
         });
@@ -3688,6 +3688,9 @@ class OOOInterface {
                     break;
                 case 'Code':
                     document.body.classList.add('font-code');
+                    break;
+                case 'HMSC':
+                    document.body.classList.add('font-hmsc');
                     break;
             }
         }
@@ -4158,7 +4161,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             const isCustomFontClass = originalItem.classList.contains('select-item-custom-font');
             
             // 预设字体列表
-            const presetFonts = ['Sans Flex', 'Ginto', 'Josefin', 'Code'];
+            const presetFonts = ['Sans Flex', 'HMSC', 'Ginto', 'Josefin', 'Code'];
             const isPresetFont = presetFonts.includes(fontValue);
             
             // 如果是自定义字体

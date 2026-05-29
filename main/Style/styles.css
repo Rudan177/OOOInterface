@@ -56,6 +56,20 @@
 
 
 
+@font-face {
+
+    font-family: 'HMSC';
+
+    src: url('../fonts/HarmonyOS_SansSC.ttf') format('truetype');
+
+    font-weight: normal;
+
+    font-style: normal;
+
+}
+
+
+
 /* 氓聼潞莽隆聙忙聽路氓录聫 */
 
 * {
@@ -5203,6 +5217,14 @@ input:checked + .slider:before {
 .font-code {
 
     font-family: 'Code', system-ui, -apple-system, sans-serif;
+
+}
+
+
+
+.font-hmsc {
+
+    font-family: 'HMSC', system-ui, -apple-system, sans-serif;
 
 }
 
