@@ -1,1 +1,1 @@
-const VERSION = "5.1.2:24.2-RS42";
+const VERSION = "5.1.2:24.3-RS42.3";

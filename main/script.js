@@ -367,7 +367,7 @@ class OOOInterface {
 
         // 版本信息
         const version = document.createElement('p');
-        version.textContent = `[component.over]5.1.2:24-RS42.2`;
+        version.textContent = `[component.over]5.1.2:24.3-RS42.3`;
         version.style.cssText = `
             font-size: 14px;
             color: #000000;
