@@ -2698,12 +2698,6 @@ class OOOInterface {
         document.body.style.backgroundSize = (this.settings.persistentWallpaper && this.settings.wallpaperScale) ? '100%' : '';
         document.body.style.backgroundPosition = (this.settings.persistentWallpaper && this.settings.wallpaperScale) ? 'center' : '';
 
-        // 搜索框高度和其他样式变更
-        const searchContainer = document.querySelector('.search-container');
-        if (searchContainer) {
-            searchContainer.style.marginTop = `${this.settings.wallpaperModeSearchHeight}px`;
-        }
-
         const engineButtons = document.querySelector('.engine-buttons');
         if (engineButtons) {
             engineButtons.style.marginTop = '';
@@ -2788,12 +2782,6 @@ class OOOInterface {
                 document.body.style.backgroundSize = '';
                 document.body.style.backgroundPosition = '';
                 document.body.style.transition = '';
-        }
-
-        // 恢复搜索框样式
-        const searchContainer = document.querySelector('.search-container');
-        if (searchContainer && !this.settings.persistentWallpaper) {
-            searchContainer.style.marginTop = '';
         }
 
         // 恢复搜索历史框的状态
@@ -3422,6 +3410,7 @@ class OOOInterface {
         const root = document.documentElement;
         root.style.setProperty('--base-font-size', this.settings.fontSize);
         root.style.setProperty('--base-font-weight', this.settings.fontWeight);
+        root.style.setProperty('--wallpaper-mode-search-height', this.settings.wallpaperModeSearchHeight + 'px');
 
         if (this.settings.searchBoxHeight > 0) {
             root.style.setProperty('--search-box-height', this.settings.searchBoxHeight + 'px');
@@ -4363,11 +4352,11 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                 }
 
                 // 检查是否是当前选中的值
-                if (wallpaperValue === 'default' && self.settings.wallpaper === 'default') {
+                if (self.settings.wallpaper === 'default' && wallpaperValue === 'default') {
                     option.classList.add('selected');
-                } else if (wallpaperValue === 'url' && self.settings.wallpaperUrl && self.settings.wallpaper !== 'bing') {
+                } else if (self.settings.wallpaper === 'bing' && wallpaperValue === 'bing') {
                     option.classList.add('selected');
-                } else if (wallpaperValue === 'bing' && self.settings.wallpaper === 'bing') {
+                } else if (self.settings.wallpaper === 'url' && wallpaperValue === 'url') {
                     option.classList.add('selected');
                 }
 
