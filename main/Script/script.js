@@ -35,7 +35,9 @@ class OOOInterface {
             wallpaperScale: false,
             contextMenuStyle: 'default',
             hideInfoPopup: { enabled: false, type: null, timestamp: null },
-            badgeOpenMethod: 'both'
+            badgeOpenMethod: 'both',
+            bingRefreshEveryTime: true,
+            bingRefreshInterval: 0
         };
 
         this.currentEngine = 'google';
@@ -80,7 +82,7 @@ class OOOInterface {
         this.applySettings();
 
         if (this.settings.wallpaper === 'bing') {
-            this.fetchBingWallpaper();
+            this.checkAndFetchBingWallpaper();
         }
 
         this.primeWallpaperEffects();
@@ -464,6 +466,8 @@ class OOOInterface {
         if (savedSettings.enhancedDisplay !== undefined) result.enhancedDisplay = savedSettings.enhancedDisplay;
         if (savedSettings.wallpaperScale !== undefined) result.wallpaperScale = savedSettings.wallpaperScale;
         if (savedSettings.badgeOpenMethod !== undefined) result.badgeOpenMethod = savedSettings.badgeOpenMethod;
+        if (savedSettings.bingRefreshEveryTime !== undefined) result.bingRefreshEveryTime = savedSettings.bingRefreshEveryTime;
+        if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
 
         // 合并自定义Logo列表
         if (savedSettings.customLogos && Array.isArray(savedSettings.customLogos)) {
@@ -1914,11 +1918,12 @@ class OOOInterface {
         } else if (wallpaper === 'bing') {
             this.settings.wallpaper = 'bing';
             wallpaperUrlGroup.style.display = 'none';
-            this.fetchBingWallpaper();
+            this.checkAndFetchBingWallpaper();
         } else if (wallpaper === 'url') {
             if (!this.settings.wallpaperUrl) {
                 this.settings.wallpaper = 'url';
             }
+            wallpaperUrlGroup.style.display = 'flex';
         } else {
             // 处理自定义上传的壁纸
             const customWallpaper = this.settings.customWallpapers.find(wp => wp.name === wallpaper);
@@ -1964,6 +1969,46 @@ class OOOInterface {
         };
 
         img.src = url;
+    }
+
+    // 检查并根据设置决定是否刷新必应壁纸
+    checkAndFetchBingWallpaper() {
+        // 如果开关打开，每次刷新都更新壁纸
+        if (this.settings.bingRefreshEveryTime) {
+            this.fetchBingWallpaper();
+            return;
+        }
+
+        // 如果开关关闭且刷新间隔为0，不自动刷新
+        if (this.settings.bingRefreshInterval === 0) {
+            // 如果已有壁纸URL，直接使用
+            if (this.settings.wallpaperUrl) {
+                this.applySettings();
+            } else {
+                // 如果没有壁纸URL，获取一次
+                this.fetchBingWallpaper();
+            }
+            return;
+        }
+
+        // 如果设置了刷新间隔，检查是否需要刷新
+        const lastRefreshTime = localStorage.getItem('bingLastRefreshTime');
+        const now = Date.now();
+        const intervalMs = this.settings.bingRefreshInterval * 60 * 60 * 1000; // 小时转毫秒
+
+        if (!lastRefreshTime || (now - parseInt(lastRefreshTime)) >= intervalMs) {
+            // 需要刷新
+            this.fetchBingWallpaper();
+            localStorage.setItem('bingLastRefreshTime', now.toString());
+        } else {
+            // 不需要刷新，使用现有壁纸
+            if (this.settings.wallpaperUrl) {
+                this.applySettings();
+            } else {
+                // 如果没有壁纸URL，获取一次
+                this.fetchBingWallpaper();
+            }
+        }
     }
 
     async fetchBingWallpaper() {
@@ -3171,8 +3216,6 @@ class OOOInterface {
             wallpaperValue = 'url';
             document.getElementById('wallpaper-url-input').value = this.settings.wallpaperUrl || '';
             document.getElementById('wallpaper-url-group').style.display = 'flex';
-            const bingGroup = document.getElementById('bing-wallpaper-group');
-            if (bingGroup) bingGroup.style.display = 'flex';
         } else if (this.settings.wallpaper === 'bing') {
             wallpaperValue = 'bing';
             document.getElementById('wallpaper-url-group').style.display = 'none';
@@ -4319,9 +4362,9 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     return;
                 }
             } else {
-                // 预设壁纸，直接显示文本
+                // 预设壁纸处理
                 if (wallpaperValue === 'bing') {
-                    // 必应壁纸特殊处理：显示文本和图标
+                    // 必应壁纸特殊处理：显示文本、图标和配置
                     const contentWrapper = document.createElement('div');
                     contentWrapper.className = 'bing-wallpaper-option-wrapper';
                     contentWrapper.style.display = 'flex';
@@ -4336,9 +4379,8 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     infoIcon.className = 'material-icons info-icon';
                     infoIcon.textContent = 'info';
                     infoIcon.style.fontSize = '16px';
-                    infoIcon.style.color = '#666';
+                    infoIcon.style.color = 'rgba(255, 255, 255, 0.6)';
                     infoIcon.style.cursor = 'pointer';
-                    infoIcon.style.opacity = '0.7';
                     infoIcon.style.marginLeft = '8px';
                     infoIcon.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -4347,35 +4389,344 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     contentWrapper.appendChild(infoIcon);
 
                     option.appendChild(contentWrapper);
-                } else {
-                    option.textContent = originalItem.textContent;
-                }
 
-                // 检查是否是当前选中的值
-                if (self.settings.wallpaper === 'default' && wallpaperValue === 'default') {
-                    option.classList.add('selected');
-                } else if (self.settings.wallpaper === 'bing' && wallpaperValue === 'bing') {
-                    option.classList.add('selected');
-                } else if (self.settings.wallpaper === 'url' && wallpaperValue === 'url') {
-                    option.classList.add('selected');
-                }
+                    // 创建配置区域（参考代理配置样式）
+                    const configWrapper = document.createElement('div');
+                    configWrapper.className = 'bing-config-wrapper';
+                    configWrapper.style.display = 'none';
+                    configWrapper.style.marginTop = '8px';
+                    configWrapper.style.paddingTop = '8px';
+                    configWrapper.style.width = '100%';
 
-                option.addEventListener('click', () => {
-                    const value = option.getAttribute('data-value');
-                    let text = '';
-                    if (value === 'bing') {
-                        text = '必应每日壁纸';
-                    } else {
-                        text = option.textContent;
+                    // 配置行：开关 + 输入框 + 确认按钮
+                    const configRow = document.createElement('div');
+                    configRow.style.display = 'flex';
+                    configRow.style.alignItems = 'center';
+                    configRow.style.gap = '8px';
+                    configRow.style.width = '100%';
+
+                    // 开关（与页面其他开关样式一致）
+                    const switchToggle = document.createElement('label');
+                    switchToggle.className = 'switch';
+                    switchToggle.style.position = 'relative';
+                    switchToggle.style.display = 'inline-block';
+                    switchToggle.style.width = '52px';
+                    switchToggle.style.height = '28px';
+                    switchToggle.style.verticalAlign = 'middle';
+                    switchToggle.style.flexShrink = '0';
+
+                    const switchInput = document.createElement('input');
+                    switchInput.type = 'checkbox';
+                    switchInput.checked = self.settings.bingRefreshEveryTime;
+                    switchInput.style.opacity = '0';
+                    switchInput.style.width = '0';
+                    switchInput.style.height = '0';
+
+                    const switchSlider = document.createElement('span');
+                    switchSlider.className = 'slider';
+                    switchSlider.style.position = 'absolute';
+                    switchSlider.style.cursor = 'pointer';
+                    switchSlider.style.top = '0';
+                    switchSlider.style.left = '0';
+                    switchSlider.style.right = '0';
+                    switchSlider.style.bottom = '0';
+                    switchSlider.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                    switchSlider.style.transition = 'all 0.2s ease';
+                    switchSlider.style.borderRadius = '28px';
+
+                    const sliderKnob = document.createElement('span');
+                    sliderKnob.style.position = 'absolute';
+                    sliderKnob.style.height = '22px';
+                    sliderKnob.style.width = '22px';
+                    sliderKnob.style.left = '3px';
+                    sliderKnob.style.bottom = '3px';
+                    sliderKnob.style.backgroundColor = 'white';
+                    sliderKnob.style.transition = 'all 0.2s ease';
+                    sliderKnob.style.borderRadius = '50%';
+                    sliderKnob.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.3)';
+                    switchSlider.appendChild(sliderKnob);
+
+                    const updateSwitchState = () => {
+                        if (switchInput.checked) {
+                            switchSlider.style.backgroundColor = '#1a73e8';
+                            sliderKnob.style.transform = 'translateX(24px)';
+                        } else {
+                            switchSlider.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                            sliderKnob.style.transform = 'translateX(0)';
+                        }
+                    };
+                    updateSwitchState();
+
+                    switchToggle.appendChild(switchInput);
+                    switchToggle.appendChild(switchSlider);
+                    configRow.appendChild(switchToggle);
+
+                    // 输入框
+                    const intervalInput = document.createElement('input');
+                    intervalInput.type = 'number';
+                    intervalInput.className = 'bing-interval-input';
+                    intervalInput.placeholder = '刷新间隔(小时)';
+                    intervalInput.min = '0.1';
+                    intervalInput.max = '9999';
+                    intervalInput.step = '0.1';
+                    intervalInput.disabled = self.settings.bingRefreshEveryTime;
+                    intervalInput.style.flex = '1';
+                    intervalInput.style.minWidth = '0';
+                    intervalInput.style.padding = '6px 10px';
+                    intervalInput.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+                    intervalInput.style.borderRadius = '6px';
+                    intervalInput.style.background = 'transparent';
+                    intervalInput.style.color = 'white';
+                    intervalInput.style.fontFamily = 'inherit';
+                    intervalInput.style.fontSize = '12px';
+                    intervalInput.style.outline = 'none';
+                    intervalInput.style.transition = 'border-color 0.2s ease';
+                    intervalInput.style.MozAppearance = 'textfield';
+                    intervalInput.style.WebkitAppearance = 'none';
+                    intervalInput.style.appearance = 'textfield';
+                    if (!self.settings.bingRefreshEveryTime && self.settings.bingRefreshInterval > 0) {
+                        intervalInput.value = self.settings.bingRefreshInterval;
                     }
-                    selected.textContent = text;
+                    configRow.appendChild(intervalInput);
 
-                    hiddenSelect.value = value;
-                    const event = new Event('change', { bubbles: true });
-                    hiddenSelect.dispatchEvent(event);
+                    // 确认按钮
+                    const confirmBtn = document.createElement('button');
+                    confirmBtn.className = 'bing-interval-confirm-btn';
+                    confirmBtn.disabled = self.settings.bingRefreshEveryTime;
+                    confirmBtn.style.width = '28px';
+                    confirmBtn.style.height = '28px';
+                    confirmBtn.style.padding = '0';
+                    confirmBtn.style.border = 'none';
+                    confirmBtn.style.borderRadius = '6px';
+                    confirmBtn.style.background = 'transparent';
+                    confirmBtn.style.color = 'white';
+                    confirmBtn.style.cursor = 'pointer';
+                    confirmBtn.style.transition = 'all 0.2s ease';
+                    confirmBtn.style.display = 'flex';
+                    confirmBtn.style.alignItems = 'center';
+                    confirmBtn.style.justifyContent = 'center';
+                    confirmBtn.style.flexShrink = '0';
+                    confirmBtn.style.backgroundImage = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'20 6 9 17 4 12\'%3E%3C/polyline%3E%3C/svg%3E")';
+                    confirmBtn.style.backgroundRepeat = 'no-repeat';
+                    confirmBtn.style.backgroundPosition = 'center';
+                    confirmBtn.style.backgroundSize = '16px';
+                    configRow.appendChild(confirmBtn);
 
-                    self.closeSettingsMenuInRightPanel();
-                });
+                    configWrapper.appendChild(configRow);
+                    option.appendChild(configWrapper);
+
+                    // 开关事件
+                    switchInput.addEventListener('change', (e) => {
+                        const isChecked = e.target.checked;
+                        self.settings.bingRefreshEveryTime = isChecked;
+                        intervalInput.disabled = isChecked;
+                        confirmBtn.disabled = isChecked;
+                        if (isChecked) {
+                            self.settings.bingRefreshInterval = 0;
+                            localStorage.removeItem('bingLastRefreshTime');
+                            intervalInput.value = '';
+                            intervalInput.style.opacity = '0.5';
+                        } else {
+                            self.settings.bingRefreshInterval = 0;
+                            localStorage.removeItem('bingLastRefreshTime');
+                            intervalInput.value = '';
+                            intervalInput.style.opacity = '1';
+                        }
+                        self.saveSettings();
+                        updateSwitchState();
+                    });
+
+                    // 输入框焦点样式
+                    intervalInput.addEventListener('focus', () => {
+                        intervalInput.style.borderColor = 'white';
+                    });
+
+                    intervalInput.addEventListener('blur', () => {
+                        intervalInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                    });
+
+                    // 输入验证
+                    intervalInput.addEventListener('input', (e) => {
+                        let value = parseFloat(e.target.value);
+                        if (value < 0.1) e.target.value = 0.1;
+                        if (value > 9999) e.target.value = 9999;
+                    });
+
+                    // 确认按钮事件
+                    confirmBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const inputValue = intervalInput.value.trim();
+                        if (!inputValue) {
+                            self.settings.bingRefreshInterval = 0;
+                            localStorage.removeItem('bingLastRefreshTime');
+                            self.saveSettings();
+                            self.showNotification('已设置为不自动刷新');
+                            return;
+                        }
+                        const value = parseFloat(inputValue);
+                        if (isNaN(value) || value < 0.1 || value > 9999) {
+                            self.showNotification('请输入0.1-9999之间的数字');
+                            return;
+                        }
+                        self.settings.bingRefreshInterval = value;
+                        localStorage.setItem('bingLastRefreshTime', Date.now().toString());
+                        self.saveSettings();
+                        self.showNotification(`必应壁纸刷新间隔已设置为 ${value} 小时`);
+                    });
+
+                    // 确认按钮悬停样式
+                    confirmBtn.addEventListener('mouseenter', () => {
+                        if (!confirmBtn.disabled) {
+                            confirmBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                        }
+                    });
+
+                    confirmBtn.addEventListener('mouseleave', () => {
+                        confirmBtn.style.backgroundColor = 'transparent';
+                    });
+
+                    // 检查是否是当前选中的值
+                    if (self.settings.wallpaper === 'bing') {
+                        option.classList.add('selected');
+                        configWrapper.style.display = 'block';
+                    }
+
+                    // 点击选项时显示/隐藏配置
+                    option.addEventListener('click', (e) => {
+                        if (e.target === intervalInput || e.target === confirmBtn || e.target.closest('.switch')) {
+                            return;
+                        }
+                        
+                        // 移除其他选项的selected类
+                        optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        option.classList.add('selected');
+                        
+                        if (configWrapper.style.display === 'none') {
+                            configWrapper.style.display = 'block';
+                        } else {
+                            configWrapper.style.display = 'none';
+                        }
+                        
+                        // 应用必应壁纸
+                        selected.textContent = '必应每日壁纸';
+                        hiddenSelect.value = 'bing';
+                        const event = new Event('change', { bubbles: true });
+                        hiddenSelect.dispatchEvent(event);
+                    });
+                } else if (wallpaperValue === 'url') {
+                    // URL壁纸特殊处理：显示文本和配置
+                    option.textContent = 'URL链接';
+
+                    // 创建配置区域
+                    const configWrapper = document.createElement('div');
+                    configWrapper.className = 'url-config-wrapper';
+                    configWrapper.style.display = 'none';
+                    configWrapper.style.marginTop = '8px';
+                    configWrapper.style.width = '100%';
+
+                    const inputRow = document.createElement('div');
+                    inputRow.style.display = 'flex';
+                    inputRow.style.gap = '8px';
+                    inputRow.style.width = '100%';
+
+                    const urlInput = document.createElement('input');
+                    urlInput.type = 'text';
+                    urlInput.className = 'setting-input';
+                    urlInput.placeholder = '输入壁纸图片URL链接';
+                    urlInput.style.flex = '1';
+                    urlInput.style.padding = '8px 12px';
+                    if (self.settings.wallpaperUrl) {
+                        urlInput.value = self.settings.wallpaperUrl;
+                    }
+                    inputRow.appendChild(urlInput);
+
+                    const applyBtn = document.createElement('button');
+                    applyBtn.className = 'text-logo-btn';
+                    applyBtn.textContent = '应用';
+                    applyBtn.style.padding = '8px 16px';
+                    inputRow.appendChild(applyBtn);
+
+                    configWrapper.appendChild(inputRow);
+                    option.appendChild(configWrapper);
+
+                    // 应用按钮事件
+                    applyBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const url = urlInput.value.trim();
+                        if (!url) {
+                            self.showNotification('请输入壁纸URL');
+                            return;
+                        }
+                        try {
+                            new URL(url);
+                        } catch (err) {
+                            self.showNotification('请输入有效的URL');
+                            return;
+                        }
+                        
+                        self.settings.wallpaper = 'url';
+                        self.settings.wallpaperUrl = url;
+                        self.applySettings();
+                        self.saveSettings();
+                        self.showNotification('URL壁纸已应用');
+                        self.closeSettingsMenuInRightPanel();
+                    });
+
+                    // 输入框回车事件
+                    urlInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            applyBtn.click();
+                        }
+                    });
+
+                    // 检查是否是当前选中的值
+                    if (self.settings.wallpaper === 'url') {
+                        option.classList.add('selected');
+                        configWrapper.style.display = 'block';
+                    }
+
+                    // 点击选项时显示/隐藏配置
+                    option.addEventListener('click', (e) => {
+                        if (e.target === urlInput || e.target === applyBtn) {
+                            return;
+                        }
+                        
+                        // 移除其他选项的selected类
+                        optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        option.classList.add('selected');
+                        
+                        if (configWrapper.style.display === 'none') {
+                            configWrapper.style.display = 'block';
+                            urlInput.focus();
+                        } else {
+                            configWrapper.style.display = 'none';
+                        }
+                    });
+                } else {
+                    // 默认壁纸
+                    option.textContent = originalItem.textContent;
+
+                    // 检查是否是当前选中的值
+                    if (self.settings.wallpaper === 'default' && wallpaperValue === 'default') {
+                        option.classList.add('selected');
+                    }
+
+                    option.addEventListener('click', () => {
+                        const value = option.getAttribute('data-value');
+                        const text = option.textContent;
+                        selected.textContent = text;
+
+                        hiddenSelect.value = value;
+                        const event = new Event('change', { bubbles: true });
+                        hiddenSelect.dispatchEvent(event);
+
+                        self.closeSettingsMenuInRightPanel();
+                    });
+                }
             }
         } else if (menuType === 'proxy') {
             const isCustomProxy = originalItem.getAttribute('data-value') === 'custom';

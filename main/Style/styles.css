@@ -5156,6 +5156,20 @@ input:checked + .slider:before {
 
 
 
+/* 隐藏number输入框的上下箭头 */
+.bing-interval-input::-webkit-inner-spin-button,
+.bing-interval-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.bing-interval-input {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+
+
 .switch-label {
 
     display: flex;
