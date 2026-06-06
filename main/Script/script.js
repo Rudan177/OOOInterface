@@ -3636,8 +3636,8 @@ class OOOInterface {
             });
         } else if (blackWhiteLogos.includes(this.settings.logo) || isCustomLogo) {
             // Apple、Huawei、text-logo、自定义Logo：使用黑白配色
-            const bgColor = this.isDarkMode ? '#ffffff' : '#000000';
-            const textColor = this.isDarkMode ? '#000000' : '#ffffff';
+            const bgColor = this.isDarkMode ? '#000000' : '#ffffff';
+            const textColor = this.isDarkMode ? '#ffffff' : '#000000';
             contextMenu.style.setProperty('--context-menu-color', bgColor);
             contextMenu.style.setProperty('--context-menu-text-color', textColor);
             menuItems.forEach(item => {

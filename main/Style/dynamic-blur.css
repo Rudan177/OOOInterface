@@ -759,42 +759,42 @@ body.dynamic-blur .context-menu.show {
 }
 
 body.dynamic-blur .context-menu.show .context-menu-item {
-    color: #1a1a1a;
+    color: var(--context-menu-text-color, #1a1a1a);
 }
 
 body.dynamic-blur .context-menu.show .context-menu-item .md3-icon,
 body.dynamic-blur .context-menu.show .context-menu-item .context-menu-icon {
-    color: rgba(0, 0, 0, 0.55);
+    color: var(--context-menu-text-color, rgba(0, 0, 0, 0.55));
 }
 
 body.dynamic-blur .context-menu.show .context-menu-item:hover {
-    background: rgba(255, 255, 255, 0.45);
-    color: #1a1a1a;
+    background: var(--context-menu-color, rgba(255, 255, 255, 0.45));
+    color: var(--context-menu-text-color, #1a1a1a);
 }
 
 body.dynamic-blur .context-menu.show .context-menu-item:hover .md3-icon,
 body.dynamic-blur .context-menu.show .context-menu-item:hover .context-menu-icon {
-    color: #1a1a1a;
+    color: var(--context-menu-text-color, #1a1a1a);
 }
 
 @media (prefers-color-scheme: dark) {
     body.dynamic-blur .context-menu.show .context-menu-item {
-        color: #f0f0f0;
+        color: var(--context-menu-text-color, #f0f0f0);
     }
 
     body.dynamic-blur .context-menu.show .context-menu-item .md3-icon,
     body.dynamic-blur .context-menu.show .context-menu-item .context-menu-icon {
-        color: rgba(255, 255, 255, 0.6);
+        color: var(--context-menu-text-color, rgba(255, 255, 255, 0.6));
     }
 
     body.dynamic-blur .context-menu.show .context-menu-item:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #ffffff;
+        background: var(--context-menu-color, rgba(255, 255, 255, 0.1));
+        color: var(--context-menu-text-color, #ffffff);
     }
 
     body.dynamic-blur .context-menu.show .context-menu-item:hover .md3-icon,
     body.dynamic-blur .context-menu.show .context-menu-item:hover .context-menu-icon {
-        color: #ffffff;
+        color: var(--context-menu-text-color, #ffffff);
     }
 }
 

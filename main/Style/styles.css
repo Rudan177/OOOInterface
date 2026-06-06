@@ -4775,7 +4775,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
     font-size: 13px;
     font-weight: 450;
     text-align: left;
-    color: var(--text-color);
+    color: var(--context-menu-text-color, var(--text-color));
     letter-spacing: 0.1px;
 }
 
@@ -4786,7 +4786,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
 .context-menu-grid.compact .md3-icon {
     display: flex;
     font-size: 18px;
-    color: var(--text-secondary);
+    color: var(--context-menu-text-color, var(--text-secondary));
     transition: color 0.2s ease;
 }
 
@@ -4808,7 +4808,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
 
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
-    color: var(--text-color);
+    color: var(--context-menu-text-color, var(--text-color));
 
     border-radius: 12px;
 
@@ -4866,7 +4866,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
 
     font-size: 20px;
 
-    color: var(--text-secondary);
+    color: var(--context-menu-text-color, var(--text-secondary));
 
     transition: all 0.2s ease;
 
