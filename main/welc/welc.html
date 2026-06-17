@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎使用 OOOInterface</title>
+    <style>
+
+        @font-face {
+            font-family: 'HMSC';
+            src: url('main/fonts/HarmonyOS_SansSC.ttf') format('truetype');
+        }
+        
+        @font-face {
+            font-family: 'Sans Flex';
+            src: url('../fonts/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'RUDAN';
+            src: url('../fonts/RUDAN.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @keyframes kuangjia {
+            0% {
+                opacity: 0;
+                transform: translateY(40px);
+                filter: blur(4px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes gradientMove {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes logoFloat {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 174, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(0, 174, 0, 0);
+            }
+        }
+
+        @keyframes splashLogoPulse {
+            0%,
+            100% {
+                filter: drop-shadow(0 0 30px rgba(0, 174, 0, 0.3));
+            }
+            50% {
+                filter: drop-shadow(0 0 50px rgba(0, 174, 0, 0.5));
+            }
+        }
+
+        :root {
+            --primary-color: #00AE00;
+            --primary-dark: #008C00;
+            --primary-light: #00AE90;
+            --accent-color: #10BF90;
+            --bg-body: transparent;
+            --bg-card: rgba(255, 255, 255, 0.115);
+            --bg-card-border: #00000050;
+            --text-primary: #1a1a1a;
+            --text-heading: #1a1a1a;
+            --text-paragraph: #2a2a2a;
+            --text-muted: #555;
+            --link-color: #008C00;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-body: #0a0a0a;
+                --bg-card: rgba(30, 30, 30, 0.6);
+                --bg-card-border: rgba(255, 255, 255, 0.15);
+                --text-primary: #ffffff;
+                --text-heading: #ffffff;
+                --text-paragraph: #e0e0e0;
+                --text-muted: #888;
+                --link-color: #00c853;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'HMSC', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(0, 174, 0, 0.1) 0%, rgba(16, 191, 144, 0.1) 100%),
+                radial-gradient(circle at 20% 50%, rgba(0, 174, 0, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(16, 191, 144, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(0, 174, 0, 0.03) 0%, transparent 30%),
+                radial-gradient(circle at 60% 70%, rgba(16, 191, 144, 0.03) 0%, transparent 30%);
+            background-color: var(--bg-body);
+            background-size: 200% 200%;
+            animation: gradientMove 15s ease infinite;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, rgba(0, 100, 0, 0.15) 0%, rgba(10, 80, 60, 0.15) 100%),
+                    radial-gradient(circle at 20% 50%, rgba(0, 100, 0, 0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(10, 80, 60, 0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 40% 20%, rgba(0, 100, 0, 0.05) 0%, transparent 30%),
+                    radial-gradient(circle at 60% 70%, rgba(10, 80, 60, 0.05) 0%, transparent 30%);
+                background-color: var(--bg-body);
+            }
+        }
+
+        .splash-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 100;
+            pointer-events: auto;
+        }
+
+        .splash-overlay.exit {
+            pointer-events: none;
+        }
+
+        .splash-logo {
+            position: fixed;
+            width: 200px;
+            height: 200px;
+            top: 38%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: splashLogoPulse 3s ease-in-out infinite;
+            cursor: pointer;
+            z-index: 101;
+            transition: top 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        left 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        width 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        height 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .splash-logo.exit {
+            animation: none;
+            width: 100px;
+            height: 100px;
+            top: 30px;
+            left: 50%;
+            transform: translate(-50%, 0);
+        }
+
+        .splash-title {
+            position: fixed;
+            font-size: 48px;
+            font-weight: 700;
+            font-family: 'RUDAN', 'Sans Flex', sans-serif;
+            color: var(--text-primary);
+            top: calc(38% + 110px);
+            left: 50%;
+            transform: translate(-50%, 0);
+            letter-spacing: 4px;
+            white-space: nowrap;
+            z-index: 101;
+            transition: top 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        left 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        font-size 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        letter-spacing 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .splash-title.exit {
+            font-size: 28px;
+            top: 170px;
+            left: 50%;
+            transform: translate(-50%, 0);
+            letter-spacing: 2px;
+        }
+
+        .splash-hint {
+            position: fixed;
+            top: calc(38% + 200px);
+            left: 50%;
+            transform: translate(-50%, 0);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 36px;
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #FFFFFF;
+            background: var(--primary-color);
+            border: none;
+            cursor: pointer;
+            z-index: 101;
+            transition: top 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        left 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        opacity 0.4s ease;
+        }
+
+        .splash-hint.exit {
+            opacity: 0;
+            top: 60%;
+            transform: translate(-50%, 50px);
+            pointer-events: none;
+        }
+
+        .splash-hint .key-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .splash-logo {
+                animation: splashLogoPulse 3s ease-in-out infinite;
+            }
+
+            .splash-hint {
+                background: #007a35;
+            }
+        }
+
+        .container {
+            width: 70%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding-top: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1 1 0;
+            min-height: 0;
+            pointer-events: none;
+        }
+
+        .container.show {
+            pointer-events: auto;
+        }
+
+        body.ready {
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .hero-section {
+            text-align: center;
+            padding: 16px 20px 8px;
+            position: relative;
+        }
+
+        .hero-tagline {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 4px;
+            margin-bottom: 2px;
+            opacity: 0;
+            transform: translateY(20px);
+            filter: blur(8px);
+            transition: opacity 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        filter 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .hero-tagline.show {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px; 
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #00A846 0%, #00C853 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 35px;
+            text-decoration: none;
+            opacity: 0;
+            filter: blur(8px);
+            transition: opacity 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        filter 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .version-badge.show {
+            opacity: 1;
+            filter: blur(0);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .version-badge {
+                background: linear-gradient(135deg, #007A35 0%, #009040 100%);
+            }
+        }
+
+        .welcome-card {
+            background: var(--bg-card);
+            border: 2px solid var(--bg-card-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 16px;
+            overflow: hidden;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateY(30px);
+            filter: blur(10px);
+            transition: opacity 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        filter 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .welcome-card.show {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
+
+        .card-header {
+            padding: 16px 24px;
+            border-bottom: 2px solid var(--bg-card-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .card-header svg {
+            width: 20px;
+            height: 20px;
+            opacity: 0.7;
+            flex-shrink: 0;
+        }
+
+        .card-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .card-body::-webkit-scrollbar {
+            display: none;
+        }
+
+        .card-body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .changelog {
+            position: relative;
+        }
+
+        .changelog-section {
+            display: none;
+            animation: kuangjia 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .changelog-section.active {
+            display: block;
+        }
+
+        .section-header {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--bg-card-border);
+            letter-spacing: 2px;
+        }
+
+        .section-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .section-list li {
+            font-size: 18px;
+            line-height: 1.5;
+            color: var(--text-paragraph);
+            padding-left: 14px;
+            position: relative;
+        }
+
+        .section-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            opacity: 0.5;
+        }
+
+        .action-area {
+            display: flex;
+            justify-content: center;
+            margin-top: auto;
+            padding-bottom: 0;
+        }
+
+        .start-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 36px;
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'HMSC', sans-serif;
+            color: #FFFFFF;
+            background: var(--primary-color);
+            border: none;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(30px);
+            filter: blur(8px);
+            transition: opacity 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        filter 0.6s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .start-btn.show {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
+
+        .start-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 174, 0, 0.35);
+        }
+
+        .start-btn:active {
+            transform: translateY(0);
+        }
+
+        .start-btn .key-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.9);
+            background: transparent;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .start-btn {
+                background: #007a35;
+            }
+
+            .start-btn:hover {
+                background: #006128;
+                box-shadow: 0 4px 16px rgba(0, 122, 53, 0.4);
+            }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 10px 20px;
+            margin-top: auto;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin: 5px 0;
+            font-family: 'HMSC', sans-serif;
+        }
+
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+            transition: opacity 0.2s ease;
+        }
+
+        a:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        /* ========== 视觉效果控制 ========== */
+
+        body:not(.dynamic-blur) .welcome-card:hover {
+            transform: none;
+        }
+
+        body.dynamic-blur .welcome-card.show {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
+
+        body.dynamic-blur .hero-logo:hover {
+            transform: scale(1.1);
+        }
+
+        body.dynamic-blur .welcome-card {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        /* ========== 增强显示 ========== */
+
+        body.enhanced-display .hero-logo {
+            animation: logoFloat 4s ease-in-out infinite;
+        }
+
+        body.enhanced-display .welcome-card {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        body.enhanced-display .welcome-card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        body.enhanced-display .welcome-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(255, 255, 255, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.enhanced-display .hero-logo:hover {
+            filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.2));
+        }
+
+        body.enhanced-display .start-btn:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 24px rgba(0, 174, 0, 0.4);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.enhanced-display .container.show {
+            opacity: 1;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body.enhanced-display .welcome-card:hover {
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.05);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .splash-logo {
+                width: 150px;
+                height: 150px;
+            }
+
+            .splash-logo.exit {
+                width: 64px;
+                height: 64px;
+                top: 30px;
+            }
+
+            .splash-title {
+                font-size: 36px;
+            }
+
+            .splash-title.exit {
+                font-size: 28px;
+                top: 80px;
+            }
+
+            .splash-hint {
+                font-size: 13px;
+                padding: 12px 30px;
+            }
+
+            .container {
+                width: 94%;
+                margin: 0 auto 30px;
+                gap: 16px;
+            }
+
+            .hero-section {
+                padding: 40px 16px 16px;
+            }
+
+            .welcome-card {
+                padding: 0;
+                border-radius: 14px;
+            }
+
+            .card-header {
+                padding: 14px 20px;
+                font-size: 14px;
+            }
+
+            .card-body {
+                padding: 16px 20px;
+            }
+
+            .section-header {
+                font-size: 18px;
+            }
+
+            .section-list li {
+                font-size: 12px;
+            }
+
+            .start-btn {
+                padding: 12px 30px;
+                font-size: 14px;
+                border-radius: 22px;
+            }
+
+            .version-badge {
+                font-size: 12px;
+                padding: 5px 12px;
+            }
+
+            .footer {
+                padding: 15px 15px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .splash-logo {
+                width: 120px;
+                height: 120px;
+            }
+
+            .splash-logo.exit {
+                width: 48px;
+                height: 48px;
+                top: 20px;
+            }
+
+            .splash-title {
+                font-size: 32px;
+            }
+
+            .splash-title.exit {
+                font-size: 24px;
+                top: 60px;
+            }
+
+            .splash-hint {
+                font-size: 12px;
+                padding: 10px 24px;
+            }
+
+            .container {
+                width: 96%;
+                margin: 0 auto 20px;
+                gap: 12px;
+            }
+
+            .hero-section {
+                padding: 30px 12px 12px;
+            }
+
+            .welcome-card {
+                border-radius: 12px;
+            }
+
+            .card-header {
+                padding: 12px 16px;
+                font-size: 13px;
+            }
+
+            .card-body {
+                padding: 14px 16px;
+            }
+
+            .section-header {
+                font-size: 16px;
+            }
+
+            .section-list li {
+                font-size: 11px;
+            }
+
+            .start-btn {
+                padding: 10px 24px;
+                font-size: 13px;
+                border-radius: 20px;
+            }
+
+            .start-btn .key-icon {
+                width: 24px;
+                height: 18px;
+                font-size: 10px;
+            }
+
+            .version-badge {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+
+            .footer {
+                padding: 12px 12px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="splash-overlay" id="splashOverlay">
+        <img class="splash-logo" id="splashLogo" src="../images/db.png" alt="OOOInterface Logo">
+        <h1 class="splash-title" id="splashTitle">OOOInterface</h1>
+        <button class="splash-hint" id="splashHint">
+            按空格键或点击继续
+        </button>
+    </div>
+
+    <div class="container">
+        <div class="hero-section">
+            <div class="hero-tagline">欢 迎 使 用</div>
+            <div class="version-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px"
+                    fill="currentColor">
+                    <path
+                        d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Zm-40 200h80v-240h-80v240Zm0-320h80v-80h-80v80Z" />
+                </svg>
+                v<span id="version"></span>
+            </div>
+        </div>
+
+        <div class="welcome-card" style="--i:1">
+            <div class="card-header">
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                    fill="currentColor">
+                    <path
+                        d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-40-200h80v-240h-80v240Zm0-320h80v-80h-80v80Z" />
+                </svg>
+                更新日志
+            </div>
+            <div class="card-body">
+                <div class="changelog">
+                    <div class="changelog-section active">
+                        <div class="section-header">界面重构</div>
+                        <ul class="section-list">
+                            <li>设置页面：统一按钮圆角规范，移除冗余阴影，显著提升视觉简洁性与界面统一性</li>
+                            <li>设置页面：优化多分辨率屏幕下右侧选项框的自适应显示效果</li>
+                            <li>关于页面：采用全新卡片式布局设计，采用全新历史版本API接口</li>
+                        </ul>
+                    </div>
+                    <div class="changelog-section">
+                        <div class="section-header">视觉效果增强</div>
+                        <ul class="section-list">
+                            <li>新增右键菜单渐入动画效果</li>
+                            <li>新增应用按钮退出设置页面的动态过渡效果</li>
+                            <li>新增设置页面、搜索框、搜索引擎切换按钮、快速访问链接及搜索历史框的毛玻璃模糊效果</li>
+                            <li>新增动态背景粒子系统</li>
+                            <li>优化壁纸模式进入动画流程</li>
+                            <li>改进壁纸常显示模式的呈现效果</li>
+                        </ul>
+                    </div>
+                    <div class="changelog-section">
+                        <div class="section-header">增强显示视效</div>
+                        <ul class="section-list">
+                            <li>新增全新光照效果</li>
+                            <li>新增关于页面丝滑动画</li>
+                        </ul>
+                    </div>
+                    <div class="changelog-section">
+                        <div class="section-header">新增功能</div>
+                        <ul class="section-list">
+                            <li>快速粘贴功能：支持在搜索框内右键快速插入剪贴板内容</li>
+                            <li>搜索框一键清除：支持一键清除搜索框内容</li>
+                            <li>壁纸显示：新增壁纸缩放功能，新增必应每日壁纸</li>
+                            <li>提示框模块：可通过网络获取版本更新提示信息</li>
+                            <li>用户反馈页面</li>
+                        </ul>
+                    </div>
+                    <div class="changelog-section">
+                        <div class="section-header">开发者模式优化</div>
+                        <ul class="section-list">
+                            <li>加入全新代理配置入口</li>
+                            <li>四项数据内容全面支持滑块拖动与数值输入双重调整方式</li>
+                            <li>调整部分参数上限设置</li>
+                            <li>字体粗细调整新增自动四舍五入功能</li>
+                            <li>优化开发者模式在亮色主题下的显示效果</li>
+                        </ul>
+                    </div>
+                    <div class="changelog-section">
+                        <div class="section-header">问题修复</div>
+                        <ul class="section-list">
+                            <li>修复右键菜单"设置"选项无法正常打开的问题</li>
+                            <li>修复多页面间版本号显示不一致的问题</li>
+                            <li>优化自定义Logo体验</li>
+                            <li>优化自定义表单，提供删除按钮</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-area">
+            <button class="start-btn" id="startBtn">
+                下一步
+            </button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p id="welc-footer">© 2026 ByRUDAN</p>
+    </footer>
+
+    <script src="../Script/version.js"></script>
+    <script src="welc.js"></script>
+</body>
+
+</html>
