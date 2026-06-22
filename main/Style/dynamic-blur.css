@@ -157,13 +157,14 @@ body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:focus-with
 
 body.dynamic-blur:not(.scrolled).enhanced-display .search-container:hover,
 body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within {
-    box-shadow: 
+    box-shadow:
         0 0 40px rgba(255, 255, 255, 0.2),
         0 0 80px rgba(255, 255, 255, 0.1),
         0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur:not(.scrolled) .search-container,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .search-container,
@@ -171,7 +172,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within
         background: rgba(0, 0, 0, 0.2) !important;
         border: 1px solid transparent;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .search-container:hover,
     body.dynamic-blur:not(.scrolled) .search-container:focus-within,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:hover,
@@ -181,13 +182,14 @@ body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within
 }
 
 @media (prefers-color-scheme: light) {
+
     body.dynamic-blur:not(.scrolled) .search-container,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .search-container,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .search-container {
         background: rgba(240, 240, 240, 0.5) !important;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .search-container:hover,
     body.dynamic-blur:not(.scrolled) .search-container:focus-within,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:hover,
@@ -199,35 +201,57 @@ body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within
 /* 滚动模式搜索框 */
 body.scrolled.dynamic-blur .search-container,
 body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
-    background: rgba(255, 255, 255, 0.2) !important;
-    backdrop-filter: blur(80px) saturate(1.5) !important;
-    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+    background: transparent !important;
     border: 1px solid rgba(0, 0, 0, 0.08);
     transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+body.scrolled.dynamic-blur .search-container::before,
+body.scrolled.dynamic-blur.homepage-wallpaper .search-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(80px) saturate(1.5);
+    -webkit-backdrop-filter: blur(80px) saturate(1.5);
+    border-radius: inherit;
+    z-index: -1;
+    pointer-events: none;
+}
+
 body.scrolled.dynamic-blur .search-container:hover,
 body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover {
-    background: rgba(255, 255, 255, 0.3) !important;
+    background: transparent !important;
+}
+
+body.scrolled.dynamic-blur .search-container:hover::before,
+body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover::before {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 body.scrolled.dynamic-blur.enhanced-display .search-container:hover,
 body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
-    box-shadow: 
+    box-shadow:
         0 0 40px rgba(255, 255, 255, 0.2),
         0 0 80px rgba(255, 255, 255, 0.1),
         0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.scrolled.dynamic-blur .search-container,
     body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
-        background: rgba(0, 0, 0, 0.25) !important;
-        backdrop-filter: blur(80px) saturate(1.5) !important;
-        -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+        background: transparent !important;
         border: 1px solid rgba(255, 255, 255, 0.08);
     }
-    
+
+    body.scrolled.dynamic-blur .search-container::before,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container::before {
+        background: rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(80px) saturate(1.5);
+        -webkit-backdrop-filter: blur(80px) saturate(1.5);
+    }
+
     body.scrolled.dynamic-blur .search-container:hover,
     body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover {
         background: rgba(0, 0, 0, 0.38) !important;
@@ -235,11 +259,12 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
 }
 
 @media (prefers-color-scheme: light) {
+
     body.scrolled.dynamic-blur .search-container,
     body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
         background: rgba(240, 240, 240, 0.6) !important;
     }
-    
+
     body.scrolled.dynamic-blur .search-container:hover,
     body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover {
         background: rgba(240, 240, 240, 0.7) !important;
@@ -275,11 +300,11 @@ body.scrolled.dynamic-blur .engine-btn.active {
         -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
         border: 1px solid rgba(255, 255, 255, 0.06);
     }
-    
+
     body.scrolled.dynamic-blur .engine-btn:hover {
         background: rgba(0, 0, 0, 0.38) !important;
     }
-    
+
     body.scrolled.dynamic-blur .engine-btn.active {
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
@@ -290,7 +315,7 @@ body.scrolled.dynamic-blur .engine-btn.active {
     body.scrolled.dynamic-blur .engine-btn {
         background: rgba(240, 240, 240, 0.6) !important;
     }
-    
+
     body.scrolled.dynamic-blur .engine-btn:hover {
         background: rgba(240, 240, 240, 0.7) !important;
     }
@@ -319,6 +344,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .engine-btn
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur:not(.scrolled) .engine-btn,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .engine-btn,
@@ -326,7 +352,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .engine-btn
         background: rgba(0, 0, 0, 0.2) !important;
         border: 1px solid transparent;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .engine-btn:hover,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn:hover {
         background: rgba(0, 0, 0, 0.3) !important;
@@ -334,13 +360,14 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .engine-btn
 }
 
 @media (prefers-color-scheme: light) {
+
     body.dynamic-blur:not(.scrolled) .engine-btn,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .engine-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn {
         background: rgba(240, 240, 240, 0.5) !important;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .engine-btn:hover,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn:hover {
         background: rgba(240, 240, 240, 0.6) !important;
@@ -391,6 +418,7 @@ body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-text {
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur .engine-btn.active.logo-google,
     body.dynamic-blur .engine-btn.active.logo-microsoft,
     body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-google,
@@ -400,7 +428,7 @@ body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-text {
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
-    
+
     body.dynamic-blur .engine-btn.active.logo-apple,
     body.dynamic-blur .engine-btn.active.logo-huawei,
     body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-apple,
@@ -411,7 +439,7 @@ body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-text {
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
-    
+
     body.dynamic-blur .engine-btn.active.logo-custom,
     body.dynamic-blur .engine-btn.active.logo-text,
     body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-custom,
@@ -452,19 +480,20 @@ body.dynamic-blur .engine-btn.active.logo-text:hover {
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur .engine-btn.active.logo-google:hover,
     body.dynamic-blur .engine-btn.active.logo-microsoft:hover {
         background: #0d47a1 !important;
         border: none !important;
     }
-    
+
     body.dynamic-blur .engine-btn.active.logo-apple:hover,
     body.dynamic-blur .engine-btn.active.logo-huawei:hover {
         background: #ffffff !important;
         color: #303134 !important;
         border: none !important;
     }
-    
+
     body.dynamic-blur .engine-btn.active.logo-custom:hover,
     body.dynamic-blur .engine-btn.active.logo-text:hover {
         background: #ffffff !important;
@@ -498,6 +527,7 @@ body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.scrolled.dynamic-blur .quick-access-btn,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
         background: rgba(0, 0, 0, 0.25) !important;
@@ -505,7 +535,7 @@ body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn
         -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
         border: 1px solid rgba(255, 255, 255, 0.06);
     }
-    
+
     body.scrolled.dynamic-blur .quick-access-btn:hover,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
         background: rgba(0, 0, 0, 0.38) !important;
@@ -513,11 +543,12 @@ body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn
 }
 
 @media (prefers-color-scheme: light) {
+
     body.scrolled.dynamic-blur .quick-access-btn,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
         background: rgba(240, 240, 240, 0.6) !important;
     }
-    
+
     body.scrolled.dynamic-blur .quick-access-btn:hover,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
         background: rgba(240, 240, 240, 0.7) !important;
@@ -552,6 +583,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-acce
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur:not(.scrolled) .quick-access-btn,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .quick-access-btn,
@@ -559,7 +591,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-acce
         background: rgba(0, 0, 0, 0.2) !important;
         border: 1px solid transparent;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
         background: rgba(0, 0, 0, 0.3) !important;
@@ -567,13 +599,14 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-acce
 }
 
 @media (prefers-color-scheme: light) {
+
     body.dynamic-blur:not(.scrolled) .quick-access-btn,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .quick-access-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn {
         background: rgba(240, 240, 240, 0.5) !important;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
         background: rgba(240, 240, 240, 0.6) !important;
@@ -609,12 +642,12 @@ body.scrolled.dynamic-blur .search-history-item:hover {
         background: rgba(0, 0, 0, 0.2) !important;
         border: none;
     }
-    
+
     body.scrolled.dynamic-blur .search-history-container {
         background: rgba(0, 0, 0, 0.1) !important;
         border: none;
     }
-    
+
     body.dynamic-blur .search-history-item:hover,
     body.scrolled.dynamic-blur .search-history-item:hover {
         background: rgba(255, 255, 255, 0.1);
@@ -625,11 +658,11 @@ body.scrolled.dynamic-blur .search-history-item:hover {
     body.dynamic-blur:not(.scrolled) .search-history-container {
         background: rgba(240, 240, 240, 0.5) !important;
     }
-    
+
     body.scrolled.dynamic-blur .search-history-container {
         background: rgba(240, 240, 240, 0.55) !important;
     }
-    
+
     body.dynamic-blur .search-history-item:hover,
     body.scrolled.dynamic-blur .search-history-item:hover {
         background: rgba(240, 240, 240, 0.6);
@@ -815,13 +848,14 @@ body.dynamic-blur:not(.scrolled) .search-input::placeholder {
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur:not(.scrolled) .search-input,
     body.dynamic-blur:not(.scrolled) .engine-btn,
     body.dynamic-blur:not(.scrolled) .quick-access-btn,
     body.dynamic-blur:not(.scrolled) .ooo-badge {
         color: #ffffff;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .search-input::placeholder {
         color: rgba(255, 255, 255, 0.5);
     }
@@ -839,13 +873,14 @@ body.scrolled.dynamic-blur .search-input::placeholder {
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.scrolled.dynamic-blur .search-input,
     body.scrolled.dynamic-blur .engine-btn,
     body.scrolled.dynamic-blur .quick-access-btn,
     body.scrolled.dynamic-blur .ooo-badge {
         color: #ffffff;
     }
-    
+
     body.scrolled.dynamic-blur .search-input::placeholder {
         color: rgba(255, 255, 255, 0.5);
     }

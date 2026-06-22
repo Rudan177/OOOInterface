@@ -60,7 +60,7 @@
     --background-color: #ffffff;
     --surface-color: #F1F3F4;
     --surface-color-rgb: 248, 249, 250;
-    --surface-variant: #e2e8f0; 
+    --surface-variant: #e2e8f0;
     --text-color: #3c4043;
     --text-secondary: #70757a;
     --border-color: #dfe1e5;
@@ -71,7 +71,6 @@
     --base-font-size: 1;
     --base-font-weight: 400;
     --search-box-height: 50px;
-    --wallpaper-mode-search-height: 0px;
     --info-bg-color: #F1F3F4;
     --info-text-color: #3c4043;
     --info-close-color: #5f6368;
@@ -96,9 +95,11 @@
         --info-close-color: #aaaaaa;
         --info-close-hover: #e8eaed;
     }
+
     .search-icon {
         color: #BFBFBF;
     }
+
     .search-icon svg path {
         fill: #BFBFBF;
     }
@@ -194,13 +195,16 @@ body {
         background-color: black;
         color: white;
     }
+
     .welcome-content {
         background-color: #1a1a1a;
         box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
     }
+
     .welcome-title {
         color: white;
     }
+
     .welcome-version {
         color: #aaa;
     }
@@ -215,8 +219,8 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    min-height: 100vh;
-    padding: 120px 25px 25px;
+    min-height: 100dvh;
+    padding: calc(40vh - 133px) 25px 25px;
     gap: 10px;
     position: relative;
     transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
@@ -227,8 +231,11 @@ body {
 /* Logo区域 */
 
 .logo-section {
-    margin-bottom: 3px; /* 调整Logo与搜索框间距 */
-    transition: opacity 0.3s ease;
+    height: 120px;
+    margin-bottom: 3px;
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        margin 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.3s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -237,7 +244,8 @@ body {
 
 
 .logo {
-    height: 120px; /* 设置Logo尺寸 */
+    height: 120px;
+    /* 设置Logo尺寸 */
     width: auto;
     transition: var(--transition);
 }
@@ -264,13 +272,14 @@ body {
     align-items: center;
     transition: var(--transition);
     position: relative;
-    margin-top: 0; /* 移除顶部边距以减少Logo间距 */
+    margin-top: 0;
 }
 
 
 
 .search-container {
     position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     border: 1px solid var(--border-color);
@@ -291,8 +300,10 @@ body {
 
 @media (prefers-color-scheme: dark) {
     .search-container {
-        background: #202124; /* 深色模式 #202124 */
-        border: 1px solid var(--border-color); /* 深色模式边框 */
+        background: #202124;
+        /* 深色模式 #202124 */
+        border: 1px solid var(--border-color);
+        /* 深色模式边框 */
         backdrop-filter: blur(0);
         -webkit-backdrop-filter: blur(0);
     }
@@ -316,6 +327,7 @@ body:not(.dynamic-blur).homepage-wallpaper .search-container {
 /* 搜索框壁纸模式深色样式 */
 
 @media (prefers-color-scheme: dark) {
+
     body:not(.dynamic-blur):not([style*="background-image: none"]) .search-container,
     body:not(.dynamic-blur).homepage-wallpaper .search-container {
         background: #202124;
@@ -420,10 +432,14 @@ body:not(.enhanced-display) .search-container:focus-within {
 
 
 .engine-btn {
-    background-color: #F1F3F4; /* 浅色模式 #F8F9FA */
-    border: none; /* 浅色模式无边框 */
-    border-radius: 24px; /* 圆角 */
-    color: var(--text-color); /* 使用CSS变量适配浅色/深色 */
+    background-color: #F1F3F4;
+    /* 浅色模式 #F8F9FA */
+    border: none;
+    /* 浅色模式无边框 */
+    border-radius: 24px;
+    /* 圆角 */
+    color: var(--text-color);
+    /* 使用CSS变量适配浅色/深色 */
     font-family: inherit;
     font-size: 14px;
     font-weight: 500;
@@ -441,8 +457,10 @@ body:not(.enhanced-display) .search-container:focus-within {
 
 @media (prefers-color-scheme: dark) {
     .engine-btn {
-        background-color: #303134; /* 深色模式 #303134 */
-        color: var(--text-color); /* 深色模式文本颜色适配 */
+        background-color: #303134;
+        /* 深色模式 #303134 */
+        color: var(--text-color);
+        /* 深色模式文本颜色适配 */
         backdrop-filter: blur(0);
         -webkit-backdrop-filter: blur(0);
     }
@@ -533,37 +551,44 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 /* 引擎按钮壁纸模式深色样式 */
 
 @media (prefers-color-scheme: dark) {
+
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn,
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn {
         background: #303134;
     }
+
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-google,
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-google {
         background: #303134;
         border: none;
         color: var(--text-color);
     }
+
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-microsoft,
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-microsoft {
         background: #303134;
         border: none;
         color: var(--text-color);
     }
+
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-google,
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-google {
         background-color: #0d47a1;
         border-color: #0d47a1;
     }
+
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-google:hover,
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-google:hover {
         box-shadow: 0 6px 20px rgba(13, 71, 161, 0.5);
     }
+
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-default,
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-default {
         background: #303134;
         border: 1px solid #303134;
         color: #ffffff;
     }
+
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-default,
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default {
         background: #00AE90;
@@ -571,6 +596,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
         border-color: #00AE90;
         box-shadow: 0 4px 16px rgba(0, 174, 144, 0.4);
     }
+
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-default:hover,
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover {
         box-shadow: 0 6px 20px rgba(0, 174, 144, 0.5);
@@ -617,11 +643,14 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 /* Google和Microsoft - 深色模式 */
 
 @media (prefers-color-scheme: dark) {
+
     .engine-btn.active.logo-google,
     .engine-btn.active.logo-microsoft {
-        background-color: #0d47a1; /* 深蓝色激活颜色 */
+        background-color: #0d47a1;
+        /* 深蓝色激活颜色 */
         border-color: #0d47a1;
     }
+
     .engine-btn.active.logo-google:hover,
     .engine-btn.active.logo-microsoft:hover {
         box-shadow: 0 6px 20px rgba(13, 71, 161, 0.5);
@@ -681,6 +710,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 /* Apple和HUAWEI - 深色模式 */
 
 @media (prefers-color-scheme: dark) {
+
     .engine-btn.logo-apple,
     .engine-btn.logo-huawei,
     .engine-btn.logo-default {
@@ -688,6 +718,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
         border: none;
         color: var(--text-color);
     }
+
     .engine-btn.active.logo-apple,
     .engine-btn.active.logo-huawei {
         background-color: #ffffff;
@@ -695,16 +726,19 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
         border-color: #ffffff;
         box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
     }
+
     .engine-btn.active.logo-default {
         background-color: #00AE90;
         color: #ffffff;
         border-color: #00AE90;
         box-shadow: 0 4px 16px rgba(0, 174, 144, 0.4);
     }
+
     .engine-btn.active.logo-apple:hover,
     .engine-btn.active.logo-huawei:hover {
         box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
     }
+
     .engine-btn.active.logo-default:hover {
         box-shadow: 0 6px 20px rgba(0, 174, 144, 0.5);
     }
@@ -744,12 +778,14 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 
 
 @media (prefers-color-scheme: dark) {
+
     .engine-btn.logo-custom,
     .engine-btn.logo-text {
         background-color: #303134;
         border: none;
         color: var(--text-color);
     }
+
     .engine-btn.active.logo-custom,
     .engine-btn.active.logo-text {
         background-color: #ffffff;
@@ -757,6 +793,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
         border-color: #303134;
         box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
     }
+
     .engine-btn.active.logo-custom:hover,
     .engine-btn.active.logo-text:hover {
         box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
@@ -788,7 +825,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     font-size: 14px;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: transform 0.35s ease-out, opacity 0.3s ease;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
     border: 1px solid var(--border-color);
     font-family: inherit;
     position: relative;
@@ -805,9 +842,17 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 
 
 @keyframes badgeBounce {
-    0%   { transform: scale(1); }
-    50%  { transform: scale(0.98); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(0.98);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 .badge-bounce {
@@ -820,7 +865,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 /* 高级视觉效果 - 底部动画 */
 
 body.dynamic-blur .ooo-badge {
-    transition: background 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.35s ease-out, opacity 0.3s ease;
+    transition: background 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
 
@@ -858,22 +903,22 @@ body.dynamic-blur .ooo-badge:hover {
 
 /* 底部名片退出动画 - 由JavaScript控制时添加此效果 */
 body.exit-animation .ooo-badge {
-    transform: translateY(100px) !important;
+    transform: translateY(100%) !important;
     opacity: 0 !important;
-    transition: transform 0.35s ease-out, opacity 0.3s ease !important;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
     pointer-events: none !important;
 }
 
 /* 底部名片高级视觉效果 - 退出动画增强 */
 body.dynamic-blur.exit-animation .ooo-badge {
-    transform: translateY(100px) scale(0.9) !important;
+    transform: translateY(100%) scale(0.9) !important;
     filter: blur(4px) !important;
     opacity: 0 !important;
 }
 
 /* 底部名片进入动画 - Phase 1: 初始位置 */
 body.enter-animation .ooo-badge {
-    transform: translateY(100px) !important;
+    transform: translateY(100%) !important;
     opacity: 0 !important;
     pointer-events: none !important;
 }
@@ -882,13 +927,13 @@ body.enter-animation .ooo-badge {
 body.enter-animation.enter-active .ooo-badge {
     transform: translateY(0) !important;
     opacity: 1 !important;
-    transition: transform 0.35s ease-out, opacity 0.3s ease !important;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
     pointer-events: auto !important;
 }
 
 /* 底部名片高级视觉效果 - 进入动画增强 */
 body.dynamic-blur.enter-animation .ooo-badge {
-    transform: translateY(100px) scale(0.9) !important;
+    transform: translateY(100%) scale(0.9) !important;
     filter: blur(4px) !important;
     opacity: 0 !important;
 }
@@ -897,8 +942,22 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
     transform: translateY(0) scale(1) !important;
     filter: blur(0) !important;
     opacity: 1 !important;
-    transition: transform 0.35s ease-out, opacity 0.3s ease, filter 0.35s ease-out !important;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, filter 0.35s ease-out !important;
     pointer-events: auto !important;
+}
+
+/* 壁纸模式 - 底部名片保持隐藏（防止类切换时闪现） */
+body.scrolled .ooo-badge {
+    transform: translateY(100%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.scrolled.dynamic-blur .ooo-badge {
+    transform: translateY(100%) scale(0.9) !important;
+    filter: blur(4px) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 /* 模态框 */
@@ -1071,15 +1130,15 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
     background: rgba(255, 255, 255, 0.3);
     border: 1px solid rgba(0, 0, 0, 0.1);
     font-size: 28px;
-    cursor: pointer; 
+    cursor: pointer;
     color: var(--text-color);
-    padding: 8px; 
-    width: 40px; 
+    padding: 8px;
+    width: 40px;
     height: 40px;
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    border-radius: 50%; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     backdrop-filter: blur(20px);
@@ -1125,10 +1184,14 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 
 .modal-body {
     padding: 24px;
-    max-height: 70vh; /* 模态框最大高度，使用vh */
-    overflow-y: auto; /* 启用垂直滚动 */
-    scrollbar-width: thin; /* Firefox */
-    scrollbar-color: var(--border-color) transparent; /* Firefox */
+    max-height: 70vh;
+    /* 模态框最大高度，使用vh */
+    overflow-y: auto;
+    /* 启用垂直滚动 */
+    scrollbar-width: thin;
+    /* Firefox */
+    scrollbar-color: var(--border-color) transparent;
+    /* Firefox */
 }
 
 
@@ -1245,8 +1308,8 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 
 
 
-.right-panel-placeholder { 
-    color: var(--text-secondary); 
+.right-panel-placeholder {
+    color: var(--text-secondary);
     font-size: 16px;
     text-align: center;
     font-weight: 500;
@@ -1454,28 +1517,28 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 
 
 
-.setting-group.action-buttons { 
+.setting-group.action-buttons {
     margin-bottom: 0;
 }
 
 
 
-.setting-group label { 
-    display: block; 
+.setting-group label {
+    display: block;
     margin-bottom: 8px;
     color: var(--text-color);
 }
 
 
 
-.setting-select { 
+.setting-select {
     width: 100%;
     padding: 16px 40px 16px 16px;
     border: 1px solid var(--border-color);
     border-radius: 16px;
     background: var(--background-color);
     color: var(--text-color);
-    font-family: inherit; 
+    font-family: inherit;
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1553,13 +1616,13 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 
 
 
-.select-item:first-child { 
+.select-item:first-child {
     border-radius: 16px 16px 0 0;
 }
 
 
 
-.select-item:last-child {   
+.select-item:last-child {
     border-radius: 0 0 16px 16px;
 }
 
@@ -1654,6 +1717,7 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 
 
 @media (prefers-color-scheme: dark) {
+
     .setting-select:focus,
     .setting-input:focus {
         background-color: rgba(255, 255, 255, 0.02);
@@ -2781,10 +2845,10 @@ body.scrolled .search-history-container {
 
 
 .quick-access-btn {
-    background-color: #F1F3F4; 
-    border: none; 
-    border-radius: 24px; 
-    color: var(--text-color); 
+    background-color: #F1F3F4;
+    border: none;
+    border-radius: 24px;
+    color: var(--text-color);
     font-family: inherit;
     font-size: 14px;
     font-weight: 500;
@@ -2827,6 +2891,7 @@ body:not(.dynamic-blur).homepage-wallpaper .quick-access-btn {
 /* 快速访问链接壁纸模式深色样式 */
 
 @media (prefers-color-scheme: dark) {
+
     body:not(.dynamic-blur):not([style*="background-image: none"]) .quick-access-btn,
     body:not(.dynamic-blur).homepage-wallpaper .quick-access-btn {
         background: #303134;
@@ -2910,7 +2975,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
 .action-buttons {
     display: flex;
     flex-direction: column;
-    gap: 12px; 
+    gap: 12px;
     margin-top: 10px;
 }
 
@@ -2945,7 +3010,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
     position: fixed;
     background: var(--surface-color);
     border-radius: 16px;
-    box-shadow: 
+    box-shadow:
         0 8px 32px rgba(0, 0, 0, 0.15),
         0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 10000;
@@ -3046,15 +3111,25 @@ body.scrolled.dynamic-blur .quick-access-btn {
 
 /* 右键菜单分隔线动画 */
 
-.context-menu-item:nth-child(1) { animation-delay: 0.05s; }
+.context-menu-item:nth-child(1) {
+    animation-delay: 0.05s;
+}
 
-.context-menu-item:nth-child(2) { animation-delay: 0.1s; }
+.context-menu-item:nth-child(2) {
+    animation-delay: 0.1s;
+}
 
-.context-menu-item:nth-child(3) { animation-delay: 0.15s; }
+.context-menu-item:nth-child(3) {
+    animation-delay: 0.15s;
+}
 
-.context-menu-item:nth-child(4) { animation-delay: 0.2s; }
+.context-menu-item:nth-child(4) {
+    animation-delay: 0.2s;
+}
 
-.context-menu-item:nth-child(5) { animation-delay: 0.25s; }
+.context-menu-item:nth-child(5) {
+    animation-delay: 0.25s;
+}
 
 
 
@@ -3159,6 +3234,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
         background: linear-gradient(to right, rgba(26, 115, 232, 0.3) 0%, rgba(26, 115, 232, 0.3) 100%);
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     }
+
     .hide-info-popup-days::before {
         background-color: rgba(26, 115, 232, 0.9);
     }
@@ -3173,6 +3249,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
         opacity: 0;
         transform: scale(0.9);
     }
+
     100% {
         opacity: 1;
         transform: scale(1);
@@ -3188,6 +3265,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
         opacity: 1;
         transform: scale(1);
     }
+
     100% {
         opacity: 0;
         transform: scale(0.9);
@@ -3203,6 +3281,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
         opacity: 0;
         transform: translateX(-10px);
     }
+
     100% {
         opacity: 1;
         transform: translateX(0);
@@ -3217,21 +3296,37 @@ body.scrolled.dynamic-blur .quick-access-btn {
 
 
 
-.context-menu.show .context-menu-item:nth-child(1) { animation-delay: 0.02s; }
+.context-menu.show .context-menu-item:nth-child(1) {
+    animation-delay: 0.02s;
+}
 
-.context-menu.show .context-menu-item:nth-child(2) { animation-delay: 0.04s; }
+.context-menu.show .context-menu-item:nth-child(2) {
+    animation-delay: 0.04s;
+}
 
-.context-menu.show .context-menu-item:nth-child(3) { animation-delay: 0.06s; }
+.context-menu.show .context-menu-item:nth-child(3) {
+    animation-delay: 0.06s;
+}
 
-.context-menu.show .context-menu-item:nth-child(4) { animation-delay: 0.08s; }
+.context-menu.show .context-menu-item:nth-child(4) {
+    animation-delay: 0.08s;
+}
 
-.context-menu.show .context-menu-item:nth-child(5) { animation-delay: 0.10s; }
+.context-menu.show .context-menu-item:nth-child(5) {
+    animation-delay: 0.10s;
+}
 
-.context-menu.show .context-menu-item:nth-child(6) { animation-delay: 0.12s; }
+.context-menu.show .context-menu-item:nth-child(6) {
+    animation-delay: 0.12s;
+}
 
-.context-menu.show .context-menu-item:nth-child(7) { animation-delay: 0.14s; }
+.context-menu.show .context-menu-item:nth-child(7) {
+    animation-delay: 0.14s;
+}
 
-.context-menu.show .context-menu-item:nth-child(8) { animation-delay: 0.16s; }
+.context-menu.show .context-menu-item:nth-child(8) {
+    animation-delay: 0.16s;
+}
 
 
 
@@ -3449,6 +3544,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
     .apply-btn {
         background-color: #0d47a1;
     }
+
     .apply-btn:hover {
         background-color: #0b3d91;
     }
@@ -3493,12 +3589,15 @@ body.scrolled.dynamic-blur .quick-access-btn {
     .reset-btn:hover {
         background-color: rgba(239, 68, 68, 0.15);
     }
+
     .slider-input {
         background: rgba(59, 130, 246, 0.3);
     }
+
     .slider-input::-webkit-slider-thumb {
         box-shadow: 0 0 0 4px rgba(20, 33, 36, 0.8);
     }
+
     .slider-input::-moz-range-thumb {
         box-shadow: 0 0 0 4px rgba(20, 33, 36, 0.8);
     }
@@ -3554,19 +3653,19 @@ body.scrolled.dynamic-blur .quick-access-btn {
 
 
 
-input:focus + .slider {
+input:focus+.slider {
     outline: none;
 }
 
 
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: var(--primary-color);
 }
 
 
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(24px);
 }
 
@@ -3593,7 +3692,7 @@ input:checked + .slider:before {
     margin-bottom: -16px;
     padding: 8px 8px;
     transition: all 0.2s ease;
-    border-radius: 12px; 
+    border-radius: 12px;
 }
 
 
@@ -3677,9 +3776,7 @@ body.scrolled:not(.dynamic-blur) {
 /* 无动态模式时滚动隐藏模糊 */
 
 body.dynamic-blur.scrolled {
-    backdrop-filter: saturate(1.3) brightness(1.05);
-    -webkit-backdrop-filter: saturate(1.3) brightness(1.05);
-    animation: fadeBlur 0.5s ease-out forwards;
+    /* backdrop-filter 交由子元素控制 */
 }
 
 
@@ -3689,9 +3786,10 @@ body.dynamic-blur.scrolled {
         backdrop-filter: blur(30px) saturate(1.3) brightness(1.05);
         -webkit-backdrop-filter: blur(30px) saturate(1.3) brightness(1.05);
     }
+
     100% {
-        backdrop-filter: blur(0);
-        -webkit-backdrop-filter: blur(0);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 }
 
@@ -3707,7 +3805,7 @@ body.scrolled #quick-access-links {
 
 
 body.scrolled .container {
-    padding-top: 440px;
+    padding-top: calc(100dvh - 145px);
     transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
@@ -3717,6 +3815,9 @@ body.scrolled .logo-section {
     opacity: 0;
     pointer-events: none;
     visibility: hidden;
+    height: 0;
+    margin: 0;
+    overflow: hidden;
 }
 
 
@@ -3741,15 +3842,9 @@ body.scrolled .engine-buttons {
 /* 壁纸模式 - 搜索区域 */
 
 body.scrolled .search-section {
-    max-width: 584px; /* 标准Google搜索宽度 */
+    max-width: 584px;
+    /* 标准Google搜索宽度 */
 }
-
-
-
-body.scrolled .search-container {
-    margin-top: var(--wallpaper-mode-search-height);
-}
-
 
 
 /* ========== 高级视觉效果 ========== */
@@ -3795,12 +3890,15 @@ body.scrolled .search-container {
         transform: translateY(100vh) rotate(0deg) scale(0);
         opacity: 0;
     }
+
     10% {
         opacity: 0.8;
     }
+
     90% {
         opacity: 0.8;
     }
+
     100% {
         transform: translateY(-100px) rotate(720deg) scale(1);
         opacity: 0;
@@ -3842,15 +3940,20 @@ body.scrolled .search-container {
 
 
 @keyframes orb-float {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translate(0, 0) scale(1);
     }
+
     25% {
         transform: translate(50px, -30px) scale(1.1);
     }
+
     50% {
         transform: translate(-30px, 50px) scale(0.9);
     }
+
     75% {
         transform: translate(-50px, -20px) scale(1.05);
     }
@@ -3897,7 +4000,7 @@ body.scrolled.dynamic-blur .search-container:hover {
 body.scrolled.dynamic-blur.enhanced-display .search-container:hover,
 
 body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
-    box-shadow: 
+    box-shadow:
         0 0 40px rgba(255, 255, 255, 0.2),
         0 0 80px rgba(255, 255, 255, 0.1),
         0 12px 40px rgba(0, 0, 0, 0.12);
@@ -3912,6 +4015,7 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
         background: rgba(0, 0, 0, 0.35);
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
+
     body.scrolled.dynamic-blur .search-container:hover {
         background: rgba(0, 0, 0, 0.45);
     }
@@ -3920,10 +4024,13 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
 
 
 @keyframes breathe {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 0.3;
         transform: scale(1);
     }
+
     50% {
         opacity: 0.6;
         transform: scale(1.02);
@@ -3962,6 +4069,7 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
     0% {
         background-position: -200% 0;
     }
+
     100% {
         background-position: 200% 0;
     }
@@ -4022,6 +4130,7 @@ body.scrolled.dynamic-blur.enhanced-display .engine-btn:hover {
         background: rgba(0, 0, 0, 0.35);
         border: 1px solid rgba(255, 255, 255, 0.08);
     }
+
     body.scrolled.dynamic-blur .engine-btn:hover {
         background: rgba(0, 0, 0, 0.45);
     }
@@ -4065,11 +4174,13 @@ body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn
 
 
 @media (prefers-color-scheme: dark) {
+
     body.scrolled.dynamic-blur .quick-access-btn,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
         background: transparent;
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
+
     body.scrolled.dynamic-blur .quick-access-btn:hover,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
         background: rgba(0, 0, 0, 0.3);
@@ -4114,11 +4225,13 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-acce
 
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur:not(.scrolled) .quick-access-btn,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn {
         background: transparent;
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
+
     body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
         background: rgba(0, 0, 0, 0.3);
@@ -4152,11 +4265,13 @@ body.scrolled.dynamic-blur .search-history-item:hover {
 
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur .search-history-container,
     body.scrolled.dynamic-blur .search-history-container {
         background: rgba(0, 0, 0, 0.4);
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
+
     body.dynamic-blur .search-history-item:hover,
     body.scrolled.dynamic-blur .search-history-item:hover {
         background: rgba(255, 255, 255, 0.1);
@@ -4188,7 +4303,7 @@ body.dynamic-blur:not(.scrolled) .search-container:focus-within {
 body.dynamic-blur:not(.scrolled).enhanced-display .search-container:hover,
 
 body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within {
-    box-shadow: 
+    box-shadow:
         0 0 40px rgba(255, 255, 255, 0.2),
         0 0 80px rgba(255, 255, 255, 0.1),
         0 12px 40px rgba(0, 0, 0, 0.12);
@@ -4201,6 +4316,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within
         background: rgba(0, 0, 0, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
+
     body.dynamic-blur:not(.scrolled) .search-container:hover,
     body.dynamic-blur:not(.scrolled) .search-container:focus-within {
         background: rgba(0, 0, 0, 0.3);
@@ -4238,6 +4354,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display .engine-btn:hover {
         background: transparent;
         border: 1px solid rgba(255, 255, 255, 0.08);
     }
+
     body.dynamic-blur:not(.scrolled) .engine-btn:hover {
         background: rgba(0, 0, 0, 0.3);
     }
@@ -4279,17 +4396,20 @@ body.dynamic-blur .engine-btn.active.logo-text {
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur .engine-btn.active.logo-google,
     body.dynamic-blur .engine-btn.active.logo-microsoft {
         background: #0d47a1;
         border-color: #0d47a1;
     }
+
     body.dynamic-blur .engine-btn.active.logo-apple,
     body.dynamic-blur .engine-btn.active.logo-huawei {
         background: #ffffff;
         color: #303134;
         border-color: #ffffff;
     }
+
     body.dynamic-blur .engine-btn.active.logo-custom,
     body.dynamic-blur .engine-btn.active.logo-text {
         background: #ffffff;
@@ -4330,17 +4450,20 @@ body.dynamic-blur .engine-btn.active.logo-text:hover {
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur .engine-btn.active.logo-google:hover,
     body.dynamic-blur .engine-btn.active.logo-microsoft:hover {
         background: #0d47a1;
         border-color: #0d47a1;
     }
+
     body.dynamic-blur .engine-btn.active.logo-apple:hover,
     body.dynamic-blur .engine-btn.active.logo-huawei:hover {
         background: #ffffff;
         color: #303134;
         border-color: #ffffff;
     }
+
     body.dynamic-blur .engine-btn.active.logo-custom:hover,
     body.dynamic-blur .engine-btn.active.logo-text:hover {
         background: #ffffff;
@@ -4463,6 +4586,7 @@ body.dynamic-blur:not(.scrolled) .ooo-badge:hover {
         background: rgba(0, 0, 0, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
+
     body.dynamic-blur:not(.scrolled) .ooo-badge:hover {
         background: rgba(0, 0, 0, 0.3);
         transform: translateY(-2px);
@@ -4493,12 +4617,14 @@ body.dynamic-blur:not(.scrolled) .search-input::placeholder {
 
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur:not(.scrolled) .search-input,
     body.dynamic-blur:not(.scrolled) .engine-btn,
     body.dynamic-blur:not(.scrolled) .quick-access-btn,
     body.dynamic-blur:not(.scrolled) .ooo-badge {
         color: #ffffff;
     }
+
     body.dynamic-blur:not(.scrolled) .search-input::placeholder {
         color: rgba(255, 255, 255, 0.5);
     }
@@ -4527,12 +4653,14 @@ body.scrolled.dynamic-blur .search-input::placeholder {
 
 
 @media (prefers-color-scheme: dark) {
+
     body.scrolled.dynamic-blur .search-input,
     body.scrolled.dynamic-blur .engine-btn,
     body.scrolled.dynamic-blur .quick-access-btn,
     body.scrolled.dynamic-blur .ooo-badge {
         color: #ffffff;
     }
+
     body.scrolled.dynamic-blur .search-input::placeholder {
         color: rgba(255, 255, 255, 0.5);
     }
@@ -4564,6 +4692,7 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
         background: rgba(0, 0, 0, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.12);
     }
+
     body.scrolled.dynamic-blur .ooo-badge:hover {
         background: rgba(0, 0, 0, 0.15);
         transform: translateY(-2px);
@@ -4594,10 +4723,13 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
 
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
         box-shadow: 0 0 6px currentColor;
     }
+
     50% {
         opacity: 0.6;
         box-shadow: 0 0 10px currentColor;
@@ -4693,10 +4825,12 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
         background-color: #ffffff;
         border: 1px solid rgba(0, 0, 0, 0.1);
     }
+
     .info-indicator.huawei {
         background-color: #ffffff;
         border: 1px solid rgba(0, 0, 0, 0.1);
     }
+
     .info-indicator.text-logo {
         background-color: #ffffff;
         border: 1px solid rgba(0, 0, 0, 0.1);
