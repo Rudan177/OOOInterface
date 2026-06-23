@@ -120,6 +120,7 @@ body {
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
+    isolation: isolate;
 }
 
 
@@ -2819,7 +2820,7 @@ body.scrolled .search-history-container {
 
 
 
-/* 快速访问链接 */
+/* 快捷访问链接 */
 
 .quick-access-links {
     display: flex;
@@ -2875,7 +2876,7 @@ body.scrolled .search-history-container {
 
 
 
-/* 快速访问链接壁纸模式样式 */
+/* 快捷访问链接壁纸模式样式 */
 
 body:not(.dynamic-blur):not([style*="background-image: none"]) .quick-access-btn,
 
@@ -2888,7 +2889,7 @@ body:not(.dynamic-blur).homepage-wallpaper .quick-access-btn {
 
 
 
-/* 快速访问链接壁纸模式深色样式 */
+/* 快捷访问链接壁纸模式深色样式 */
 
 @media (prefers-color-scheme: dark) {
 
@@ -2898,7 +2899,7 @@ body:not(.dynamic-blur).homepage-wallpaper .quick-access-btn {
     }
 }
 
-/* 快速访问链接容器退出动画 - 由JavaScript控制时添加此效果 */
+/* 快捷访问链接容器退出动画 - 由JavaScript控制时添加此效果 */
 body.exit-animation #quick-access-links {
     transform: translateY(200px) !important;
     opacity: 0 !important;
@@ -2907,14 +2908,14 @@ body.exit-animation #quick-access-links {
     pointer-events: none !important;
 }
 
-/* 快速访问链接容器高级视觉效果 - 退出动画增强 */
+/* 快捷访问链接容器高级视觉效果 - 退出动画增强 */
 body.dynamic-blur.exit-animation #quick-access-links {
     transform: translateY(200px) scale(0.9) !important;
     filter: blur(4px) !important;
     opacity: 0 !important;
 }
 
-/* 快速访问链接容器进入动画 - Phase 1: 初始位置 */
+/* 快捷访问链接容器进入动画 - Phase 1: 初始位置 */
 body.enter-animation #quick-access-links {
     transform: translateY(200px) !important;
     opacity: 0 !important;
@@ -2922,7 +2923,7 @@ body.enter-animation #quick-access-links {
     pointer-events: none !important;
 }
 
-/* 快速访问链接容器进入动画 - Phase 2: 过渡到最终位置 */
+/* 快捷访问链接容器进入动画 - Phase 2: 过渡到最终位置 */
 body.enter-animation.enter-active #quick-access-links {
     transform: translateY(0) !important;
     opacity: 1 !important;
@@ -2930,7 +2931,7 @@ body.enter-animation.enter-active #quick-access-links {
     pointer-events: auto !important;
 }
 
-/* 快速访问链接容器高级视觉效果 - 进入动画增强 */
+/* 快捷访问链接容器高级视觉效果 - 进入动画增强 */
 body.dynamic-blur.enter-animation #quick-access-links {
     transform: translateY(200px) scale(0.9) !important;
     filter: blur(4px) !important;
@@ -4130,7 +4131,7 @@ body.scrolled.dynamic-blur.enhanced-display .engine-btn:hover {
 
 
 
-/* 快速访问链接模糊 - 壁纸 */
+/* 快捷访问链接模糊 - 壁纸 */
 
 body.scrolled.dynamic-blur #quick-access-links {
     background: transparent;
@@ -4175,57 +4176,6 @@ body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn
 
     body.scrolled.dynamic-blur .quick-access-btn:hover,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
-        background: rgba(0, 0, 0, 0.3);
-    }
-}
-
-
-
-/* 深色模式 - 快速访问链接模糊 */
-
-body.dynamic-blur:not(.scrolled) #quick-access-links {
-    background: transparent;
-}
-
-
-
-body.dynamic-blur:not(.scrolled) .quick-access-btn,
-
-body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn {
-    background: transparent;
-    backdrop-filter: blur(60px) saturate(1.4);
-    -webkit-backdrop-filter: blur(60px) saturate(1.4);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-
-
-body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
-
-body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
-    background: rgba(255, 255, 255, 0.18);
-}
-
-
-
-body.dynamic-blur:not(.scrolled).enhanced-display .quick-access-btn:hover,
-
-body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-access-btn:hover {
-    transform: translateY(-2px);
-}
-
-
-
-@media (prefers-color-scheme: dark) {
-
-    body.dynamic-blur:not(.scrolled) .quick-access-btn,
-    body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn {
-        background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
-    body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
         background: rgba(0, 0, 0, 0.3);
     }
 }
@@ -4836,4 +4786,122 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+
+
+/* ========== 壁纸模糊填充系统 ========== */
+/* 原理：两层壁纸叠加，模糊层始终 cover 全屏，清晰层 contain 居中显示 */
+/* 当清晰层因宽高比不同出现空隙时，模糊层填充空隙，消除黑边 */
+
+
+
+#wallpaper-blur {
+    position: fixed;
+    top: -10%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    z-index: -2;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    filter: blur(40px) brightness(0.85);
+    transform: scale(1.1);
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    will-change: transform, opacity;
+}
+
+#wallpaper-blur.active {
+    opacity: 1;
+}
+
+
+
+@media (prefers-color-scheme: dark) {
+    #wallpaper-blur {
+        filter: blur(40px) brightness(0.6);
+    }
+}
+
+
+
+#wallpaper-main {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    will-change: background-size, background-position, opacity, transform;
+}
+
+#wallpaper-main.active {
+    opacity: 1;
+}
+
+/* 填充模式：壁纸铺满全屏，不留空隙 */
+#wallpaper-main.fill-mode {
+    background-size: cover;
+}
+
+/* 填充模式下模糊层不需要显示（壁纸已铺满） */
+#wallpaper-main.fill-mode~#wallpaper-blur {
+    opacity: 0 !important;
+}
+
+
+
+#wallpaper-main.no-transition {
+    transition: none !important;
+}
+
+
+
+/* 覆盖 body.scrolled / body.homepage-wallpaper 的 CSS 背景图，避免冲突 */
+body.wallpaper-layers-ready {
+    background-image: none !important;
+}
+
+/* ========== 右侧面板壁纸填满开关 ========== */
+
+.wallpaper-fill-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.wallpaper-fill-toggle-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+.wallpaper-fill-switch {
+    width: 36px !important;
+    height: 20px !important;
+}
+
+.wallpaper-fill-switch .slider:before {
+    height: 16px !important;
+    width: 16px !important;
+    left: 2px !important;
+    bottom: 2px !important;
+}
+
+.wallpaper-fill-switch input:checked+.slider:before {
+    transform: translateX(16px) !important;
 }

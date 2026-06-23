@@ -32,6 +32,7 @@ class OOOInterface {
             searchBoxHeight: 50,
             enhancedDisplay: false,
             wallpaperScale: false,
+            wallpaperFill: true,
             contextMenuStyle: 'default',
             hideInfoPopup: { enabled: false, type: null, timestamp: null },
             badgeOpenMethod: 'both',
@@ -52,11 +53,17 @@ class OOOInterface {
         this.modalScrollHandler = null;
         this.currentVersion = VERSION; // 使用 version.js 中的版本号
 
+        // 壁纸填充层
+        this.wallpaperBlur = null;
+        this.wallpaperMain = null;
+
         this.init();
     }
 
     init() {
         this.loadSettings();
+
+        this.createWallpaperLayers();
 
         this.preloadWallpaper();
 
@@ -465,6 +472,7 @@ class OOOInterface {
         if (savedSettings.searchBoxHeight !== undefined) result.searchBoxHeight = savedSettings.searchBoxHeight;
         if (savedSettings.enhancedDisplay !== undefined) result.enhancedDisplay = savedSettings.enhancedDisplay;
         if (savedSettings.wallpaperScale !== undefined) result.wallpaperScale = savedSettings.wallpaperScale;
+        if (savedSettings.wallpaperFill !== undefined) result.wallpaperFill = savedSettings.wallpaperFill;
         if (savedSettings.badgeOpenMethod !== undefined) result.badgeOpenMethod = savedSettings.badgeOpenMethod;
         if (savedSettings.bingRefreshEveryTime !== undefined) result.bingRefreshEveryTime = savedSettings.bingRefreshEveryTime;
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
@@ -930,6 +938,11 @@ class OOOInterface {
             const oldPersistentWallpaper = this.settings.persistentWallpaper;
             this.settings.persistentWallpaper = document.getElementById('persistent-wallpaper-toggle').checked;
             this.settings.wallpaperScale = document.getElementById('wallpaper-scale-toggle').checked;
+            // 读取右侧面板填满开关（如果面板打开时）
+            const panelFillToggle = document.getElementById('wallpaper-fill-toggle-panel');
+            if (panelFillToggle) {
+                this.settings.wallpaperFill = panelFillToggle.checked;
+            }
             this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
             this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
@@ -2592,34 +2605,23 @@ class OOOInterface {
 
     // 预加载壁纸并立即设置（隐藏状态）
     preloadWallpaper() {
-        let wallpaperUrl;
-        if (this.settings.wallpaper === 'default') {
-            wallpaperUrl = this.onlineBackgroundUrl;
-        } else if (this.settings.wallpaper === 'bing' && this.settings.wallpaperUrl) {
-            wallpaperUrl = this.settings.wallpaperUrl;
-        } else if (this.settings.wallpaper === 'url' && this.settings.wallpaperUrl) {
-            wallpaperUrl = this.settings.wallpaperUrl;
-        } else {
-            wallpaperUrl = this.settings.wallpaper;
-        }
+        const wallpaperUrl = this.getWallpaperUrl();
 
         if (wallpaperUrl) {
+            // 预加载到浏览器缓存
             const img = new Image();
             img.onload = () => { };
             img.src = wallpaperUrl;
 
-            if (this.settings.wallpaper === 'default') {
-                document.body.style.backgroundImage = `url('${this.onlineBackgroundUrl}')`;
-            } else if ((this.settings.wallpaper === 'bing' || this.settings.wallpaper === 'url') && this.settings.wallpaperUrl) {
-                document.body.style.backgroundImage = `url('${this.settings.wallpaperUrl}')`;
-            } else {
-                document.body.style.backgroundImage = `url('${this.settings.wallpaper}')`;
-            }
+            // 在两层的 blur 层和 main 层上设置背景图
+            this.setWallpaperOnLayers(wallpaperUrl);
+            // body上不设背景图（避免CSS类冲突和黑边）
+            document.body.style.backgroundImage = 'none';
 
-            // 如果没有开启壁纸常显，并且不在壁纸模式，我们立即清除背景图片
-            // 但是浏览器已经缓存了图片
+            // 如果没有开启壁纸常显，并且不在壁纸模式，立即隐藏层
             if (!this.settings.persistentWallpaper && !this.isScrolled) {
                 setTimeout(() => {
+                    this.clearWallpaperLayers();
                     document.body.style.backgroundImage = '';
                 }, 0);
             }
@@ -2699,18 +2701,29 @@ class OOOInterface {
             document.body.classList.remove('dynamic-blur');
         }
 
-        // 同步应用壁纸
-        if (this.settings.wallpaper === 'default') {
-            document.body.style.backgroundImage = `url('${this.onlineBackgroundUrl}')`;
-        } else if ((this.settings.wallpaper === 'bing' || this.settings.wallpaper === 'url') && this.settings.wallpaperUrl) {
-            document.body.style.backgroundImage = `url('${this.settings.wallpaperUrl}')`;
-        } else {
-            document.body.style.backgroundImage = `url('${this.settings.wallpaper}')`;
+        // 同步应用壁纸（使用模糊填充层，无黑边）
+        const url = this.getWallpaperUrl();
+        if (url) {
+            this.setWallpaperOnLayers(url);
         }
+        document.body.style.backgroundImage = 'none';
 
         document.body.style.transition = 'none';
-        document.body.style.backgroundSize = (this.settings.persistentWallpaper && this.settings.wallpaperScale) ? '100%' : '';
-        document.body.style.backgroundPosition = (this.settings.persistentWallpaper && this.settings.wallpaperScale) ? 'center' : '';
+
+        // 壁纸缩放动画：根据填充模式选择不同动画方式
+        if (this.settings.persistentWallpaper && this.settings.wallpaperScale && this.wallpaperMain) {
+            this.wallpaperMain.style.transition = 'none';
+            // 两种模式统一使用 transform scale 做缩放动画
+            // 填满模式：background-size: cover；适配模式：background-size: contain（CSS控制）
+            this.wallpaperMain.style.backgroundSize = '';
+            this.wallpaperMain.style.backgroundPosition = '';
+            this.wallpaperMain.style.transform = 'scale(1)';
+        } else if (this.wallpaperMain) {
+            this.wallpaperMain.style.backgroundSize = '';
+            this.wallpaperMain.style.backgroundPosition = '';
+            this.wallpaperMain.style.transform = '';
+            this.wallpaperMain.style.transition = '';
+        }
 
         const engineButtons = document.querySelector('.engine-buttons');
         if (engineButtons) {
@@ -2732,12 +2745,12 @@ class OOOInterface {
             quickAccessLinks.style.pointerEvents = '';
         }
 
-        // 壁纸缩放动画：仅在常显示模式下对已有壁纸进行连贯放大和偏移
-        if (this.settings.persistentWallpaper && this.settings.wallpaperScale) {
-            void document.body.offsetHeight;
-            document.body.style.transition = 'background-size 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-position 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
-            document.body.style.backgroundSize = '140%';
-            document.body.style.backgroundPosition = 'center 35%';
+        // 壁纸缩放动画：仅在常显示模式下对主层进行连贯放大和偏移
+        // 两种模式统一使用 transform scale 实现缩放，background-size 由 CSS fill-mode 类控制
+        if (this.settings.persistentWallpaper && this.settings.wallpaperScale && this.wallpaperMain) {
+            void this.wallpaperMain.offsetHeight;
+            this.wallpaperMain.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+            this.wallpaperMain.style.transform = 'scale(1.4)';
         }
 
         this.isAnimating = true;
@@ -2778,24 +2791,24 @@ class OOOInterface {
             document.body.classList.add('homepage-wallpaper');
         }
 
-        // 同步移除壁纸（不再延迟，避免壁纸在退出最后才消失）
+        // 同步移除壁纸（使用层系统，模糊层始终覆盖无黑边）
         if (this.settings.persistentWallpaper) {
-            if (this.settings.wallpaperScale) {
-                void document.body.offsetHeight;
-                document.body.style.transition = 'background-size 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-position 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                document.body.style.backgroundSize = '100%';
-                document.body.style.backgroundPosition = 'center';
+            // 壁纸常显模式下保持壁纸，但处理缩放动画
+            if (this.settings.wallpaperScale && this.wallpaperMain) {
+                void this.wallpaperMain.offsetHeight;
+                // 两种模式统一使用 transform scale 回缩
+                this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                this.wallpaperMain.style.transform = 'scale(1)';
                 setTimeout(() => {
-                    document.body.style.backgroundSize = '';
-                    document.body.style.backgroundPosition = '';
-                    document.body.style.transition = '';
+                    if (this.wallpaperMain) {
+                        this.wallpaperMain.style.transform = '';
+                        this.wallpaperMain.style.transition = '';
+                    }
                 }, 400);
             }
         } else {
+            this.clearWallpaperLayers();
             document.body.style.backgroundImage = '';
-            document.body.style.backgroundSize = '';
-            document.body.style.backgroundPosition = '';
-            document.body.style.transition = '';
         }
 
         // 恢复搜索历史框的状态
@@ -3635,24 +3648,95 @@ class OOOInterface {
         }
     }
 
+    // ========== 壁纸模糊填充系统 ==========
+
+    createWallpaperLayers() {
+        // 创建模糊填充层
+        this.wallpaperBlur = document.createElement('div');
+        this.wallpaperBlur.id = 'wallpaper-blur';
+        document.body.insertBefore(this.wallpaperBlur, document.body.firstChild);
+
+        // 创建清晰主层
+        this.wallpaperMain = document.createElement('div');
+        this.wallpaperMain.id = 'wallpaper-main';
+        document.body.insertBefore(this.wallpaperMain, document.body.firstChild);
+
+        // 标记body，CSS层面覆盖自带的背景图
+        document.body.classList.add('wallpaper-layers-ready');
+
+        // 如果没有启用壁纸，隐藏两层
+        if (!this.settings.persistentWallpaper && !this.isScrolled) {
+            this.wallpaperBlur.classList.remove('active');
+            this.wallpaperMain.classList.remove('active');
+        }
+    }
+
+    // 获取当前壁纸URL
+    getWallpaperUrl() {
+        if (this.settings.wallpaper === 'default') {
+            return this.onlineBackgroundUrl;
+        } else if (this.settings.wallpaper === 'bing' && this.settings.wallpaperUrl) {
+            return this.settings.wallpaperUrl;
+        } else if (this.settings.wallpaper === 'url' && this.settings.wallpaperUrl) {
+            return this.settings.wallpaperUrl;
+        } else if (this.settings.wallpaper && this.settings.wallpaper !== 'default' && this.settings.wallpaper !== 'bing' && this.settings.wallpaper !== 'url') {
+            return this.settings.wallpaper; // 自定义上传壁纸 data URL
+        }
+        return null;
+    }
+
+    // 更新两层壁纸（统一入口）
+    setWallpaperOnLayers(url) {
+        if (!url) {
+            this.clearWallpaperLayers();
+            return;
+        }
+        if (this.wallpaperBlur) {
+            this.wallpaperBlur.style.backgroundImage = `url('${url}')`;
+            // 填充模式下模糊层由CSS控制隐藏，适配模式下显示
+            this.wallpaperBlur.classList.add('active');
+        }
+        if (this.wallpaperMain) {
+            this.wallpaperMain.style.backgroundImage = `url('${url}')`;
+            this.wallpaperMain.classList.add('active');
+            // 根据 wallpaperFill 设置填充/适配模式
+            this.wallpaperMain.classList.toggle('fill-mode', this.settings.wallpaperFill === true);
+        }
+    }
+
+    // 清除两层壁纸
+    clearWallpaperLayers() {
+        if (this.wallpaperBlur) {
+            this.wallpaperBlur.style.backgroundImage = '';
+            this.wallpaperBlur.classList.remove('active');
+        }
+        if (this.wallpaperMain) {
+            this.wallpaperMain.style.backgroundImage = '';
+            this.wallpaperMain.classList.remove('active');
+            this.wallpaperMain.classList.remove('fill-mode');
+            this.wallpaperMain.style.backgroundSize = '';
+            this.wallpaperMain.style.backgroundPosition = '';
+            this.wallpaperMain.style.transform = '';
+            this.wallpaperMain.style.transition = '';
+        }
+    }
+
     applyDefaultWallpaper() {
-        document.body.style.backgroundImage = `url('${this.onlineBackgroundUrl}')`;
+        // 使用层系统，body上不设背景图
+        this.setWallpaperOnLayers(this.onlineBackgroundUrl);
+        document.body.style.backgroundImage = 'none';
     }
 
     applyWallpaper() {
         if (this.settings.persistentWallpaper || document.body.classList.contains('scrolled')) {
-            if (this.settings.wallpaper === 'default') {
-                this.applyDefaultWallpaper();
-            } else if (this.settings.wallpaper === 'bing') {
-                if (this.settings.wallpaperUrl) {
-                    document.body.style.backgroundImage = `url('${this.settings.wallpaperUrl}')`;
-                }
-            } else if (this.settings.wallpaper === 'url' && this.settings.wallpaperUrl) {
-                document.body.style.backgroundImage = `url('${this.settings.wallpaperUrl}')`;
-            } else {
-                document.body.style.backgroundImage = `url('${this.settings.wallpaper}')`;
+            const url = this.getWallpaperUrl();
+            if (url) {
+                this.setWallpaperOnLayers(url);
+                // body上不设背景图，避免与CSS类冲突和黑边
+                document.body.style.backgroundImage = 'none';
             }
         } else {
+            this.clearWallpaperLayers();
             document.body.style.backgroundImage = '';
         }
     }
@@ -3667,6 +3751,7 @@ class OOOInterface {
         } else {
             document.body.classList.remove('homepage-wallpaper');
             if (!this.isScrolled) {
+                this.clearWallpaperLayers();
                 document.body.style.backgroundImage = '';
             }
         }
@@ -4849,6 +4934,35 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         });
 
         buttonContainer.appendChild(plusBtn);
+
+        // 壁纸菜单：在加号旁边添加填满全屏开关
+        if (menuType === 'wallpaper') {
+            const fillLabel = document.createElement('label');
+            fillLabel.className = 'wallpaper-fill-toggle-label';
+            fillLabel.title = '壁纸填满全屏（关闭则显示完整画面，空隙用模糊填充）';
+
+            const fillSpan = document.createElement('span');
+            fillSpan.className = 'wallpaper-fill-toggle-text';
+            fillSpan.textContent = '填满';
+
+            const fillSwitch = document.createElement('label');
+            fillSwitch.className = 'switch wallpaper-fill-switch';
+
+            const fillInput = document.createElement('input');
+            fillInput.type = 'checkbox';
+            fillInput.id = 'wallpaper-fill-toggle-panel';
+            fillInput.checked = self.settings.wallpaperFill;
+
+            const fillSlider = document.createElement('span');
+            fillSlider.className = 'slider';
+
+            fillSwitch.appendChild(fillInput);
+            fillSwitch.appendChild(fillSlider);
+            fillLabel.appendChild(fillSpan);
+            fillLabel.appendChild(fillSwitch);
+
+            buttonContainer.insertBefore(fillLabel, plusBtn);
+        }
     }
 
     const confirmBtn = document.createElement('button');
@@ -4890,6 +5004,16 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     selected.textContent = '自定义文字Logo';
                     hiddenSelect.value = 'text-logo';
                 }
+            }
+        }
+
+        // 保存壁纸填满开关状态
+        if (menuType === 'wallpaper') {
+            const panelToggle = document.getElementById('wallpaper-fill-toggle-panel');
+            if (panelToggle) {
+                self.settings.wallpaperFill = panelToggle.checked;
+                self.saveSettings();
+                self.applyWallpaper();
             }
         }
 
