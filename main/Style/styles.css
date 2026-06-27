@@ -222,7 +222,6 @@ body {
     justify-content: flex-start;
     min-height: 100dvh;
     padding: calc(40vh - 133px) 25px 25px;
-    gap: 10px;
     position: relative;
     transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
@@ -273,6 +272,7 @@ body {
     align-items: center;
     transition: var(--transition);
     position: relative;
+    margin-bottom: 10px;
     margin-top: 0;
 }
 
@@ -425,9 +425,9 @@ body:not(.enhanced-display) .search-container:focus-within {
 .engine-buttons {
     display: flex;
     gap: 12px;
-    margin-top: 20px;
+    margin-top: 10px;
     opacity: 1;
-    transition: var(--transition);
+    transition: opacity 0.3s ease, margin-top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -2692,23 +2692,20 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 
 .search-history-container {
-    position: absolute;
-    top: calc(220px + 105px);
-    left: 50%;
-    transform: translateX(-50%) translateY(10px);
+    position: relative;
+    margin: 0 auto;
     max-width: 600px;
     width: 100%;
     background-color: var(--surface-color);
     border-radius: 16px;
-    height: 180px;
-    overflow-y: auto;
+    max-height: 0;
+    overflow: hidden;
     z-index: 1000;
-    border: 1px solid var(--border-color);
+    border: 0 none;
     opacity: 0;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: max-height 0.35s ease, opacity 0.2s ease, padding 0.35s ease, border 0.35s ease;
     pointer-events: none;
-    display: none;
-    padding: 10px 16px;
+    padding: 0 16px;
     scrollbar-width: thin;
     scrollbar-color: var(--border-color) transparent;
 }
@@ -2718,10 +2715,12 @@ body.scrolled.dynamic-blur .ooo-badge {
 /* 搜索历史 - 显示 */
 
 .search-history-container.show {
+    max-height: 200px;
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+    overflow-y: auto;
     pointer-events: auto;
-    display: block;
 }
 
 
@@ -2729,8 +2728,11 @@ body.scrolled.dynamic-blur .ooo-badge {
 /* 滚动时隐藏搜索历史 */
 
 body.scrolled .search-history-container {
-    display: none !important;
+    max-height: 0 !important;
     opacity: 0 !important;
+    padding: 0 16px !important;
+    border: 0 none !important;
+    overflow: hidden !important;
     pointer-events: none !important;
 }
 
@@ -2758,8 +2760,6 @@ body.scrolled .search-history-container {
     border-radius: 12px;
 }
 
-
-
 .search-history-item:hover {
     background-color: var(--surface-variant);
 }
@@ -2769,25 +2769,38 @@ body.scrolled .search-history-container {
 /* 搜索历史删除按钮 */
 
 .search-history-delete {
-    width: 24px;
-    height: 24px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    border-radius: 50%;
+    font-size: 20px;
+    line-height: 1;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    transition: all 0.2s ease;
-    margin-right: -15px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    flex-shrink: 0;
+    margin-left: 12px;
+    transform: scale(0.7);
 }
 
+.search-history-item:hover .search-history-delete {
+    opacity: 0.5;
+    transform: scale(1) translateX(4px);
+}
 
+.search-history-item:hover .search-history-delete:hover {
+    opacity: 1;
+    color: #d93025;
+    transform: scale(1.2) translateX(4px);
+}
 
-.search-history-delete:hover {
-    background-color: var(--surface-variant);
+@media (prefers-color-scheme: dark) {
+    .search-history-item:hover .search-history-delete:hover {
+        color: #f28b82;
+    }
 }
 
 
@@ -3827,7 +3840,7 @@ body.scrolled .footer {
 body.scrolled .engine-buttons {
     opacity: 1;
     pointer-events: auto;
-    transition: var(--transition);
+    transition: opacity 0.3s ease, margin-top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -4197,11 +4210,31 @@ body.scrolled.dynamic-blur .search-history-container {
 
 
 body.dynamic-blur .search-history-item:hover,
-
 body.scrolled.dynamic-blur .search-history-item:hover {
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
+}
+
+body.dynamic-blur .search-history-item:hover .search-history-delete,
+body.scrolled.dynamic-blur .search-history-item:hover .search-history-delete {
+    opacity: 0.4;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+body.dynamic-blur .search-history-delete:hover,
+body.scrolled.dynamic-blur .search-history-delete:hover {
+    opacity: 1 !important;
+    color: #d93025;
+    transform: scale(1.2) translateX(4px) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.dynamic-blur .search-history-delete:hover,
+    body.scrolled.dynamic-blur .search-history-delete:hover {
+        color: #f28b82;
+    }
 }
 
 

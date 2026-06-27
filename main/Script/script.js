@@ -2733,9 +2733,6 @@ class OOOInterface {
         const searchHistoryContainer = document.getElementById('search-history-container');
         if (searchHistoryContainer) {
             searchHistoryContainer.classList.remove('show');
-            searchHistoryContainer.style.display = 'none';
-            searchHistoryContainer.style.opacity = '0';
-            searchHistoryContainer.style.pointerEvents = 'none';
         }
 
         const quickAccessLinks = document.getElementById('quick-access-links');
@@ -2811,13 +2808,9 @@ class OOOInterface {
             document.body.style.backgroundImage = '';
         }
 
-        // 恢复搜索历史框的状态
         const searchHistoryContainer = document.getElementById('search-history-container');
         if (searchHistoryContainer) {
             searchHistoryContainer.classList.remove('show');
-            searchHistoryContainer.style.display = '';
-            searchHistoryContainer.style.opacity = '';
-            searchHistoryContainer.style.pointerEvents = '';
         }
 
         if (!immediate) {
@@ -2986,18 +2979,12 @@ class OOOInterface {
             searchHistoryList.appendChild(historyItem);
         });
 
-        searchHistoryContainer.style.display = 'block';
-        void searchHistoryContainer.offsetWidth;
         searchHistoryContainer.classList.add('show');
 
         if (quickAccessLinks) {
             quickAccessLinks.style.transform = 'translateY(1000px)';
             quickAccessLinks.style.opacity = '0';
             quickAccessLinks.style.pointerEvents = 'none';
-        }
-
-        if (engineButtons) {
-            engineButtons.style.marginTop = '220px';
         }
     }
 
@@ -3008,21 +2995,12 @@ class OOOInterface {
 
         if (searchHistoryContainer) {
             searchHistoryContainer.classList.remove('show');
-            setTimeout(() => {
-                if (!searchHistoryContainer.classList.contains('show')) {
-                    searchHistoryContainer.style.display = 'none';
-                }
-            }, 200);
         }
 
         if (quickAccessLinks) {
             quickAccessLinks.style.transform = '';
             quickAccessLinks.style.opacity = '';
             quickAccessLinks.style.pointerEvents = '';
-        }
-
-        if (engineButtons) {
-            engineButtons.style.marginTop = '';
         }
     }
 

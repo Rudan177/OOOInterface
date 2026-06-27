@@ -630,13 +630,6 @@ body.scrolled.dynamic-blur .search-history-container {
     box-shadow: none;
 }
 
-body.dynamic-blur .search-history-item:hover,
-body.scrolled.dynamic-blur .search-history-item:hover {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-}
-
 @media (prefers-color-scheme: dark) {
     body.dynamic-blur:not(.scrolled) .search-history-container {
         background: rgba(0, 0, 0, 0.2) !important;
@@ -647,11 +640,6 @@ body.scrolled.dynamic-blur .search-history-item:hover {
         background: rgba(0, 0, 0, 0.1) !important;
         border: none;
     }
-
-    body.dynamic-blur .search-history-item:hover,
-    body.scrolled.dynamic-blur .search-history-item:hover {
-        background: rgba(255, 255, 255, 0.1);
-    }
 }
 
 @media (prefers-color-scheme: light) {
@@ -661,11 +649,6 @@ body.scrolled.dynamic-blur .search-history-item:hover {
 
     body.scrolled.dynamic-blur .search-history-container {
         background: rgba(240, 240, 240, 0.55) !important;
-    }
-
-    body.dynamic-blur .search-history-item:hover,
-    body.scrolled.dynamic-blur .search-history-item:hover {
-        background: rgba(240, 240, 240, 0.6);
     }
 }
 
