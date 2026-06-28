@@ -37,7 +37,9 @@ class OOOInterface {
             hideInfoPopup: { enabled: false, type: null, timestamp: null },
             badgeOpenMethod: 'both',
             bingRefreshEveryTime: true,
-            bingRefreshInterval: 0
+            bingRefreshInterval: 0,
+            newQuickLinkStyle: false,
+            showQuickLinkIcons: true
         };
 
         this.currentEngine = 'google';
@@ -84,6 +86,8 @@ class OOOInterface {
         this.updateCustomFontsList();
 
         this.updateCustomWallpapersList();
+
+        this.initQuickAccessSidebar();
 
         this.applySettings();
 
@@ -476,6 +480,8 @@ class OOOInterface {
         if (savedSettings.badgeOpenMethod !== undefined) result.badgeOpenMethod = savedSettings.badgeOpenMethod;
         if (savedSettings.bingRefreshEveryTime !== undefined) result.bingRefreshEveryTime = savedSettings.bingRefreshEveryTime;
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
+        if (savedSettings.newQuickLinkStyle !== undefined) result.newQuickLinkStyle = savedSettings.newQuickLinkStyle;
+        if (savedSettings.showQuickLinkIcons !== undefined) result.showQuickLinkIcons = savedSettings.showQuickLinkIcons;
 
         // 合并自定义Logo列表
         if (savedSettings.customLogos && Array.isArray(savedSettings.customLogos)) {
@@ -917,6 +923,22 @@ class OOOInterface {
             }
         });
 
+        // 新一代快速链接开关改变时，显示/隐藏子开关并同步状态
+        document.getElementById('new-quick-link-style').addEventListener('change', (e) => {
+            const iconsGroup = document.getElementById('show-quick-icons-group');
+            const iconsToggle = document.getElementById('show-quick-icons');
+            if (iconsGroup && iconsToggle) {
+                if (e.target.checked) {
+                    iconsGroup.style.display = 'block';
+                    // 恢复上次保存的状态
+                    iconsToggle.checked = this.settings.showQuickLinkIcons;
+                } else {
+                    iconsGroup.style.display = 'none';
+                    iconsToggle.checked = false;
+                }
+            }
+        });
+
         // 壁纸常显示开关改变时，实时显示/隐藏壁纸缩放开关
         document.getElementById('persistent-wallpaper-toggle').addEventListener('change', (e) => {
             const wallpaperScaleGroup = document.getElementById('wallpaper-scale-group');
@@ -945,6 +967,18 @@ class OOOInterface {
             }
             this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
             this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
+
+            // 读取新一代快速链接开关
+            const newQuickLinkToggle = document.getElementById('new-quick-link-style');
+            if (newQuickLinkToggle) {
+                this.settings.newQuickLinkStyle = newQuickLinkToggle.checked;
+            }
+
+            // 读取显示图标开关
+            const showIconsToggle = document.getElementById('show-quick-icons');
+            if (showIconsToggle) {
+                this.settings.showQuickLinkIcons = showIconsToggle.checked;
+            }
 
             // 保存设置打开方式
             const badgeMethodSelect = document.getElementById('badge-open-method-select');
@@ -2500,20 +2534,331 @@ class OOOInterface {
 
         if (this.settings.quickLinks.length === 0) {
             quickAccessContainer.style.display = 'none';
-            return;
+        } else if (this.settings.newQuickLinkStyle) {
+            // 新一代快速链接：隐藏原始底部链接，显示侧边栏
+            quickAccessContainer.style.display = 'none';
+        } else {
+            quickAccessContainer.style.display = 'flex';
+
+            this.settings.quickLinks.forEach(link => {
+                const linkBtn = document.createElement('button');
+                linkBtn.className = 'quick-access-btn';
+                linkBtn.textContent = link.name;
+                linkBtn.addEventListener('click', () => {
+                    window.open(link.url, '_blank');
+                });
+
+                quickAccessContainer.appendChild(linkBtn);
+            });
         }
 
-        quickAccessContainer.style.display = 'flex';
+        // 渲染侧边栏版本
+        this.renderQuickAccessSidebar();
+    }
 
-        this.settings.quickLinks.forEach(link => {
-            const linkBtn = document.createElement('button');
-            linkBtn.className = 'quick-access-btn';
-            linkBtn.textContent = link.name;
-            linkBtn.addEventListener('click', () => {
-                window.open(link.url, '_blank');
+    // 渲染快速访问链接侧边栏
+    renderQuickAccessSidebar() {
+        const sidebarLinks = document.getElementById('quick-access-sidebar-links');
+        if (!sidebarLinks) return;
+
+        sidebarLinks.innerHTML = '';
+
+        if (this.settings.quickLinks.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'quick-access-sidebar-empty';
+            emptyMsg.textContent = '暂无快速访问链接';
+            sidebarLinks.appendChild(emptyMsg);
+            this.updateSidebarVisibility();
+            this.updateSidebarIconColors();
+            // 不 return，继续渲染底部的添加按钮
+        } else {
+
+            this.settings.quickLinks.forEach((link, index) => {
+                const linkItem = document.createElement('button');
+                linkItem.className = 'quick-access-sidebar-link';
+                linkItem.title = link.url;
+
+                // 图标容器
+                const iconEl = document.createElement('span');
+                iconEl.className = 'quick-access-sidebar-link-icon';
+
+                // 字母占位（默认显示）
+                const letterEl = document.createElement('span');
+                letterEl.className = 'quick-access-sidebar-link-letter';
+                letterEl.textContent = link.name.charAt(0).toUpperCase();
+                iconEl.appendChild(letterEl);
+
+                // 尝试显示已缓存的 favicon
+                const faviconImg = document.createElement('img');
+                faviconImg.className = 'quick-access-sidebar-link-favicon';
+                faviconImg.alt = '';
+                faviconImg.style.display = 'none';
+
+                const domain = this.extractDomain(link.url);
+                let faviconUrl = null;
+                let tryFallback = false;
+
+                if (link._favicon) {
+                    // _favicon 为空字符串表示之前已检测为无图标
+                    if (link._favicon !== '') {
+                        faviconUrl = link._favicon;
+                    }
+                } else if (domain) {
+                    faviconUrl = 'https://www.google.com/s2/favicons?domain=' + domain + '&sz=32';
+                    tryFallback = true;
+                }
+
+                if (faviconUrl) {
+                    faviconImg.src = faviconUrl;
+
+                    const self = this;
+                    let fallbackTried = false;
+
+                    faviconImg.onerror = function () {
+                        if (tryFallback && !fallbackTried && domain) {
+                            fallbackTried = true;
+                            this.src = 'https://icons.duckduckgo.com/ip3/' + domain + '.ico';
+                            return;
+                        }
+                        // 两个源都失败，回退到字母占位
+                        this.style.display = 'none';
+                        const letter = this.parentElement.querySelector('.quick-access-sidebar-link-letter');
+                        if (letter) letter.style.display = 'flex';
+                        if (!link._favicon && domain) {
+                            self.cacheFavicon(link, index, domain, null);
+                        }
+                    };
+
+                    faviconImg.onload = function () {
+                        // 检测是否为默认图标（如 Google 的默认地球图标大小为 16x16）
+                        const isDefaultIcon = this.naturalWidth <= 20 || this.naturalHeight <= 20;
+
+                        if (isDefaultIcon && !link._favicon) {
+                            // 无真实图标，回退到字母占位
+                            this.style.display = 'none';
+                            const letter = this.parentElement.querySelector('.quick-access-sidebar-link-letter');
+                            if (letter) letter.style.display = 'flex';
+                            // 标记为无图标，下次不再尝试加载
+                            self.cacheFavicon(link, index, domain, null);
+                            return;
+                        }
+
+                        const letter = this.parentElement.querySelector('.quick-access-sidebar-link-letter');
+                        if (letter) letter.style.display = 'none';
+                        this.style.display = 'block';
+
+                        if (!link._favicon && domain) {
+                            self.cacheFavicon(link, index, domain, this.src);
+                        }
+                    };
+                }
+
+                iconEl.appendChild(faviconImg);
+
+                // 文字
+                const textEl = document.createElement('span');
+                textEl.className = 'quick-access-sidebar-link-text';
+                textEl.textContent = link.name;
+
+                linkItem.appendChild(iconEl);
+                linkItem.appendChild(textEl);
+
+                linkItem.addEventListener('click', () => {
+                    window.open(link.url, '_blank');
+                });
+
+                sidebarLinks.appendChild(linkItem);
             });
+        } // else 结束
 
-            quickAccessContainer.appendChild(linkBtn);
+        // 根据设置显示/隐藏图标
+        const containerEl = document.getElementById('quick-access-sidebar-container');
+        if (containerEl) {
+            containerEl.classList.toggle('no-icons', !this.settings.showQuickLinkIcons);
+            // 内联样式兜底，确保图标隐藏
+            const linkItems = containerEl.querySelectorAll('.quick-access-sidebar-link');
+            linkItems.forEach(item => {
+                const icon = item.querySelector('.quick-access-sidebar-link-icon');
+                if (icon) {
+                    icon.style.display = this.settings.showQuickLinkIcons ? '' : 'none';
+                }
+            });
+        }
+
+        this.updateSidebarVisibility();
+        this.updateSidebarIconColors();
+    }
+
+    // 提取域名
+    extractDomain(url) {
+        try {
+            const u = new URL(url);
+            return u.hostname;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // 缓存 favicon 信息到设置中
+    // src 有值 = 该网站有图标；src 为 null = 无图标，下次不再尝试加载
+    cacheFavicon(link, index, domain, src) {
+        if (src) {
+            this.settings.quickLinks[index]._favicon = src;
+        } else {
+            // 标记为无图标，存储空字符串避免下次重复请求
+            this.settings.quickLinks[index]._favicon = '';
+        }
+        this.saveSettings();
+    }
+
+    // 更新侧边栏图标配色（跟随主题色）
+    updateSidebarIconColors() {
+        const container = document.getElementById('quick-access-sidebar-container');
+        if (!container) return;
+
+        const blackWhiteLogos = ['Apple', 'HUAWEI', 'text-logo'];
+        const isCustomLogo = !blackWhiteLogos.includes(this.settings.logo) &&
+            !['default', 'auto', 'Google', 'Microsoft', 'Bing', 'Baidu', 'DuckDuckGo', 'Sogou', '360', 'Yahoo', 'Yandex'].includes(this.settings.logo);
+
+        if (this.settings.logo === 'default') {
+            // 默认Logo：绿色（与引擎按钮激活色一致）
+            container.style.setProperty('--sidebar-icon-bg', '#00AE90');
+        } else if (blackWhiteLogos.includes(this.settings.logo) || isCustomLogo) {
+            // Apple、Huawei、自定义Logo：中性灰色
+            container.style.setProperty('--sidebar-icon-bg', '#555555');
+        } else {
+            // Google、Microsoft 等：蓝色主题
+            container.style.setProperty('--sidebar-icon-bg', 'var(--primary-color)');
+        }
+    }
+
+    // 根据 newQuickLinkStyle 设置更新侧边栏可见性
+    updateSidebarVisibility() {
+        const sidebar = document.getElementById('quick-access-sidebar');
+        if (!sidebar) return;
+
+        if (this.settings.newQuickLinkStyle) {
+            sidebar.classList.add('active');
+        } else {
+            sidebar.classList.remove('active');
+            // 同时隐藏容器
+            const container = document.getElementById('quick-access-sidebar-container');
+            if (container) {
+                container.classList.remove('visible');
+                container.classList.add('hiding');
+            }
+        }
+    }
+
+    // 初始化快速访问侧边栏交互
+    initQuickAccessSidebar() {
+        const trigger = document.getElementById('quick-access-sidebar-trigger');
+        const container = document.getElementById('quick-access-sidebar-container');
+        const sidebar = document.getElementById('quick-access-sidebar');
+        const addBtn = document.getElementById('quick-access-sidebar-add-btn');
+
+        if (!trigger || !container || !sidebar) return;
+
+        // 添加按钮：打开设置并跳转到快速链接管理
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                this.openSettings();
+                // 等待设置面板打开后，显示快速链接管理
+                setTimeout(() => {
+                    this.showQuickLinksMenuInRightPanel();
+                }, 100);
+            });
+        }
+
+        let hideTimeout = null;
+        let isVisible = false;
+        const TRIGGER_ZONE_WIDTH = 100;  // 右侧触发区域宽度（像素）
+        const HIDE_DELAY = 0;
+
+        const pushWallpaper = (pushIn) => {
+            const wm = this.wallpaperMain;
+            if (!wm || !this.settings.wallpaperScale ||
+                (!this.settings.persistentWallpaper && !this.isScrolled)) return;
+
+            if (pushIn) {
+                this._savedWallpaperTransform = wm.style.transform || '';
+                wm.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                wm.style.transform = 'scale(1.16) translateX(-80px)';
+            } else if (this._savedWallpaperTransform !== undefined) {
+                wm.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                wm.style.transform = this._savedWallpaperTransform || '';
+                this._savedWallpaperTransform = undefined;
+            }
+        };
+
+        const showSidebar = () => {
+            if (!this.settings.newQuickLinkStyle) return;
+            if (hideTimeout) {
+                clearTimeout(hideTimeout);
+                hideTimeout = null;
+            }
+            if (!isVisible) {
+                isVisible = true;
+                container.classList.remove('hiding');
+                container.classList.add('visible');
+                document.body.classList.add('sidebar-visible');
+                pushWallpaper(true);
+            }
+        };
+
+        const scheduleHide = () => {
+            if (hideTimeout) clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                if (isVisible) {
+                    isVisible = false;
+                    container.classList.remove('visible');
+                    container.classList.add('hiding');
+                    document.body.classList.remove('sidebar-visible');
+                    pushWallpaper(false);
+                }
+                hideTimeout = null;
+            }, HIDE_DELAY);
+        };
+
+        // 全局鼠标移动检测：在右侧边缘触发区域显示容器
+        document.addEventListener('mousemove', (e) => {
+            if (!this.settings.newQuickLinkStyle) return;
+            const viewportWidth = window.innerWidth;
+            const mouseX = e.clientX;
+
+            if (mouseX >= viewportWidth - TRIGGER_ZONE_WIDTH) {
+                showSidebar();
+            } else if (isVisible) {
+                // 仅在容器可见时检查是否需要隐藏
+                const containerRect = container.getBoundingClientRect();
+                const isOverContainer = (
+                    mouseX >= containerRect.left &&
+                    mouseX <= containerRect.right &&
+                    e.clientY >= containerRect.top &&
+                    e.clientY <= containerRect.bottom
+                );
+                if (!isOverContainer) {
+                    scheduleHide();
+                }
+            }
+        });
+
+        // 容器悬停维持显示
+        container.addEventListener('mouseenter', () => {
+            if (!this.settings.newQuickLinkStyle) return;
+            if (hideTimeout) {
+                clearTimeout(hideTimeout);
+                hideTimeout = null;
+            }
+            if (!isVisible) {
+                isVisible = true;
+                container.classList.remove('hiding');
+                container.classList.add('visible');
+            }
+        });
+
+        container.addEventListener('mouseleave', () => {
+            scheduleHide();
         });
     }
 
@@ -3401,6 +3746,25 @@ class OOOInterface {
             document.getElementById('font-weight-value').value = this.settings.fontWeight;
             document.getElementById('search-box-height').value = this.settings.searchBoxHeight;
             document.getElementById('search-box-height-value').value = this.settings.searchBoxHeight;
+
+            // 更新新一代快速链接开关
+            const newQuickLinkToggle = document.getElementById('new-quick-link-style');
+            if (newQuickLinkToggle) {
+                newQuickLinkToggle.checked = this.settings.newQuickLinkStyle;
+            }
+
+            // 根据新一代快速链接开关状态显示/隐藏子开关
+            const iconsGroup = document.getElementById('show-quick-icons-group');
+            const showIconsToggle = document.getElementById('show-quick-icons');
+            if (iconsGroup && showIconsToggle) {
+                if (this.settings.newQuickLinkStyle) {
+                    iconsGroup.style.display = 'block';
+                    showIconsToggle.checked = this.settings.showQuickLinkIcons;
+                } else {
+                    iconsGroup.style.display = 'none';
+                    showIconsToggle.checked = false;
+                }
+            }
         }
 
         const proxySelect = document.getElementById('proxy-select');
@@ -3867,6 +4231,9 @@ class OOOInterface {
 
         // 更新搜索引擎按钮类名
         this.updateEngineButtonClasses();
+
+        // 更新侧边栏图标配色
+        this.updateSidebarIconColors();
     }
 
     // 获取字体族

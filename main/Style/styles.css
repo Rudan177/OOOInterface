@@ -223,7 +223,13 @@ body {
     min-height: 100dvh;
     padding: calc(40vh - 133px) 25px 25px;
     position: relative;
-    transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.3s ease,
+        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.sidebar-visible .container {
+    transform: translateX(-80px);
 }
 
 
@@ -3615,6 +3621,294 @@ body.scrolled.dynamic-blur .quick-access-btn {
     .slider-input::-moz-range-thumb {
         box-shadow: 0 0 0 4px rgba(20, 33, 36, 0.8);
     }
+}
+
+/* ========== 快速访问链接侧边栏 ========== */
+
+.quick-access-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    z-index: 500;
+    pointer-events: none;
+    display: none;
+    align-items: flex-start;
+    padding: 0;
+}
+
+.quick-access-sidebar.active {
+    display: flex;
+}
+
+/* 触发区域 - 右侧边缘热区 */
+.quick-access-sidebar-trigger {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 25px;
+    height: 100%;
+    pointer-events: auto;
+    cursor: default;
+    z-index: 1;
+}
+
+/* 侧边栏容器 */
+.quick-access-sidebar-container {
+    position: relative;
+    pointer-events: auto;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 6px;
+    margin: 10px 10px 10px 0;
+    min-width: 160px;
+    max-width: 220px;
+    height: calc(100vh - 20px);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    transform: translateX(calc(100% + 20px));
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.25s ease;
+}
+
+/* 侧边栏显示状态 */
+.quick-access-sidebar-container.visible {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* 侧边栏隐藏状态 */
+.quick-access-sidebar-container.hiding {
+    transform: translateX(calc(100% + 20px));
+    opacity: 0;
+}
+
+/* 侧边栏链接列表 - 可滚动（隐藏滚动条） */
+.quick-access-sidebar-links {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.quick-access-sidebar-links::-webkit-scrollbar {
+    display: none;
+}
+
+/* 侧边栏添加按钮区域 */
+.quick-access-sidebar-add {
+    flex: 0 0 auto;
+    padding: 6px 0 2px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 4px;
+}
+
+.quick-access-sidebar-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.quick-access-sidebar-add-btn:hover {
+    background-color: var(--surface-variant);
+    color: var(--text-color);
+}
+
+.quick-access-sidebar-add-btn:active {
+    opacity: 0.8;
+}
+
+.quick-access-sidebar-add-icon {
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+.quick-access-sidebar-add-text {
+    font-size: 13px;
+}
+
+/* 侧边栏链接项 */
+.quick-access-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    background: transparent;
+    border: none;
+    text-align: left;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+}
+
+.quick-access-sidebar-link:hover {
+    background-color: var(--surface-variant);
+}
+
+.quick-access-sidebar-link:active {
+    background-color: var(--surface-variant);
+    opacity: 0.85;
+}
+
+/* 侧边栏链接图标容器 */
+.quick-access-sidebar-link-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+
+/* 隐藏图标模式 */
+.quick-access-sidebar-container.no-icons .quick-access-sidebar-link-icon {
+    display: none;
+}
+
+.quick-access-sidebar-container.no-icons .quick-access-sidebar-link {
+    padding-left: 10px;
+}
+
+/* 侧边栏链接 favicon 图片 */
+.quick-access-sidebar-link-favicon {
+    display: none;
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+/* 侧边栏链接字母占位（favicon加载失败时显示） */
+.quick-access-sidebar-link-letter {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    background: var(--sidebar-icon-bg, var(--primary-color));
+    flex-shrink: 0;
+}
+
+/* 侧边栏链接文字 */
+.quick-access-sidebar-link-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 高级视觉效果 - 侧边栏毛玻璃（与右键菜单完全一致） */
+body.dynamic-blur .quick-access-sidebar-container {
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(40px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(1.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.6) !important;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur .quick-access-sidebar-container {
+        background: rgba(40, 42, 48, 0.6) !important;
+        backdrop-filter: blur(40px) saturate(1.5) !important;
+        -webkit-backdrop-filter: blur(40px) saturate(1.5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    body.dynamic-blur .quick-access-sidebar-container {
+        background: rgba(255, 255, 255, 0.6) !important;
+    }
+}
+
+/* 深色模式侧边栏（与右键菜单完全一致） */
+@media (prefers-color-scheme: dark) {
+    .quick-access-sidebar-container {
+        background: var(--surface-color);
+        border: 1px solid var(--border-color);
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.15),
+            0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .quick-access-sidebar-link {
+        color: var(--text-color);
+    }
+
+    .quick-access-sidebar-link:hover {
+        background-color: var(--surface-variant);
+    }
+
+    .quick-access-sidebar-add {
+        border-top-color: var(--border-color);
+    }
+
+    .quick-access-sidebar-add-btn:hover {
+        background-color: var(--surface-variant);
+    }
+
+    .quick-access-sidebar-link-letter {
+        background: var(--sidebar-icon-bg, var(--primary-color));
+    }
+}
+
+/* 侧边栏空状态 */
+.quick-access-sidebar-empty {
+    padding: 20px 10px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+/* 壁纸滚动模式下侧边栏不受影响 */
+body.scrolled .quick-access-sidebar-container,
+body.enter-animation .quick-access-sidebar-container,
+body.exit-animation .quick-access-sidebar-container {
+    transform: translateX(calc(100% + 20px));
+    opacity: 0;
+}
+
+body.scrolled .quick-access-sidebar-container.visible {
+    transform: translateX(0);
+    opacity: 1;
 }
 
 

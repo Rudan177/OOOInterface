@@ -298,11 +298,20 @@
                         <div class="setting-group" id="developer-mode-group" style="display: none;">
                             <label style="font-size:1.2em; margin-top: 28px;">开发者模式:</label>
                             <div class="developer-mode-controls">
-                                <div class="setting-group">
+                                <div class="setting-group" style="margin-bottom: 0;">
                                     <div class="switch-label">
                                         <span class="setting-label">新一代快速链接</span>
                                         <label class="switch">
                                             <input type="checkbox" id="new-quick-link-style">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="setting-group" id="show-quick-icons-group" style="padding-left: 20px;">
+                                    <div class="switch-label">
+                                        <span class="setting-label">显示图标</span>
+                                        <label class="switch">
+                                            <input type="checkbox" id="show-quick-icons">
                                             <span class="slider"></span>
                                         </label>
                                     </div>
@@ -379,6 +388,20 @@
         </div>
     </div>
 
+    <!-- 快速访问链接侧边栏 -->
+    <div id="quick-access-sidebar" class="quick-access-sidebar">
+        <div class="quick-access-sidebar-trigger" id="quick-access-sidebar-trigger"></div>
+        <div class="quick-access-sidebar-container" id="quick-access-sidebar-container">
+            <div class="quick-access-sidebar-links" id="quick-access-sidebar-links"></div>
+            <div class="quick-access-sidebar-add" id="quick-access-sidebar-add">
+                <button class="quick-access-sidebar-add-btn" id="quick-access-sidebar-add-btn">
+                    <span class="quick-access-sidebar-add-icon">+</span>
+                    <span class="quick-access-sidebar-add-text">添加</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 网格布局右键菜单 -->
     <div id="context-menu" class="context-menu">
         <div class="context-menu-grid">
@@ -400,11 +423,11 @@
             </div>
             <div class="context-menu-item" data-action="search-history-toggle">
                 <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
-                <span class="context-menu-text">搜索历史开关</span>
+                <span class="context-menu-text">搜索历史</span>
             </div>
             <div class="context-menu-item" data-action="wallpaper-toggle">
                 <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
-                <span class="context-menu-text">壁纸常显示开关</span>
+                <span class="context-menu-text">壁纸常显示</span>
             </div>
             <div class="context-menu-item" data-action="about">
                 <span class="material-icons md3-icon">info</span>
