@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -9,6 +10,7 @@
     <meta name="format-detection" content="telephone=no">
     <title>About OOO Interface</title>
 </head>
+
 <body>
     <style>
         body {
@@ -22,7 +24,7 @@
                 radial-gradient(circle at 60% 70%, rgba(16, 191, 144, 0.03) 0%, transparent 30%);
             background-size: 200% 200%;
             animation: gradientMove 15s ease infinite;
-            overflow-y: hidden;
+            overflow-y: auto;
         }
 
         @font-face {
@@ -32,7 +34,7 @@
             font-weight: 900;
             font-display: swap;
         }
-        
+
         @keyframes kuangjia {
             0% {
                 opacity: 0;
@@ -76,17 +78,17 @@
             }
 
             50% {
-                opacity: 0.5; 
+                opacity: 0.5;
                 font-size: 18px;
             }
 
             90% {
-                opacity: 0.9; 
+                opacity: 0.9;
                 font-size: 19.9999px;
             }
 
             100% {
-                opacity: 1; 
+                opacity: 1;
                 font-size: 20px;
             }
         }
@@ -166,7 +168,7 @@
         .verson:hover {
             transform: scale(1.02);
             transition: transform 0.3s ease-in-out;
-        }   
+        }
 
         h1 {
             font-size: 30px;
@@ -253,14 +255,14 @@
             border: 2px solid #00000050;
             backdrop-filter: blur(10px);
             border-radius: 12px;
-            padding: 15px 20px; 
+            padding: 15px 20px;
             margin-bottom: 10px;
             margin-left: 0%;
             margin-right: 0%;
             width: 100%;
             align-items: center;
             display: flex;
-            gap: 12px; 
+            gap: 12px;
             opacity: 0;
             animation: kuangjia 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
             position: sticky;
@@ -268,12 +270,12 @@
             z-index: 100;
             box-sizing: border-box;
             transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                        margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                        margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                        padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                        border-radius 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                        border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                        background 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+                margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                border-radius 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .search-box.sticky {
@@ -282,7 +284,7 @@
             width: 80%;
             margin-left: 10%;
             margin-right: 10%;
-            border-radius: 28px; 
+            border-radius: 28px;
             background: rgba(255, 255, 255, 0.4);
             backdrop-filter: blur(20px);
         }
@@ -395,7 +397,9 @@
             display: flex;
         }
 
-        @media (max-width: 768px), (max-device-width: 768px) {
+        @media (max-width: 768px),
+        (max-device-width: 768px) {
+
             body.mobile-device,
             html.mobile body {
                 --mobile-active: 1;
@@ -420,10 +424,25 @@
             }
 
             @keyframes ULTRA {
-                0% { opacity: 0; font-size: 35px; }
-                50% { opacity: 0.5; font-size: 34px; }
-                90% { opacity: 0.9; font-size: 32.0001px; }
-                100% { opacity: 1; font-size: 32px; }
+                0% {
+                    opacity: 0;
+                    font-size: 35px;
+                }
+
+                50% {
+                    opacity: 0.5;
+                    font-size: 34px;
+                }
+
+                90% {
+                    opacity: 0.9;
+                    font-size: 32.0001px;
+                }
+
+                100% {
+                    opacity: 1;
+                    font-size: 32px;
+                }
             }
 
             .pro {
@@ -432,10 +451,25 @@
             }
 
             @keyframes PRO {
-                0% { opacity: 0; font-size: 12px; }
-                50% { opacity: 0.5; font-size: 13px; }
-                90% { opacity: 0.9; font-size: 13.9999px; }
-                100% { opacity: 1; font-size: 14px; }
+                0% {
+                    opacity: 0;
+                    font-size: 12px;
+                }
+
+                50% {
+                    opacity: 0.5;
+                    font-size: 13px;
+                }
+
+                90% {
+                    opacity: 0.9;
+                    font-size: 13.9999px;
+                }
+
+                100% {
+                    opacity: 1;
+                    font-size: 14px;
+                }
             }
 
             .search-box {
@@ -557,6 +591,7 @@
                     transform: translateY(25px);
                     filter: blur(2px);
                 }
+
                 100% {
                     opacity: 1;
                     transform: translateY(0);
@@ -584,10 +619,25 @@
             }
 
             @keyframes ULTRA {
-                0% { opacity: 0; font-size: 29px; }
-                50% { opacity: 0.5; font-size: 28px; }
-                90% { opacity: 0.9; font-size: 26.0001px; }
-                100% { opacity: 1; font-size: 26px; }
+                0% {
+                    opacity: 0;
+                    font-size: 29px;
+                }
+
+                50% {
+                    opacity: 0.5;
+                    font-size: 28px;
+                }
+
+                90% {
+                    opacity: 0.9;
+                    font-size: 26.0001px;
+                }
+
+                100% {
+                    opacity: 1;
+                    font-size: 26px;
+                }
             }
 
             .pro {
@@ -595,10 +645,25 @@
             }
 
             @keyframes PRO {
-                0% { opacity: 0; font-size: 10px; }
-                50% { opacity: 0.5; font-size: 11px; }
-                90% { opacity: 0.9; font-size: 11.9999px; }
-                100% { opacity: 1; font-size: 12px; }
+                0% {
+                    opacity: 0;
+                    font-size: 10px;
+                }
+
+                50% {
+                    opacity: 0.5;
+                    font-size: 11px;
+                }
+
+                90% {
+                    opacity: 0.9;
+                    font-size: 11.9999px;
+                }
+
+                100% {
+                    opacity: 1;
+                    font-size: 12px;
+                }
             }
 
             .search-box {
@@ -943,256 +1008,255 @@
         body.dark-theme .float-btn {
             background: #007a35;
         }
-
     </style>
-        <div class="version-container">
-            <div class="decoration">ByRUDAN OOOInterface</div>
-            <div class="dakuang">
-                <div class="ultra">历史版本</div>
-                <div class="pro">OOOInterface所有版本的列表</div>
-            </div>
-    
-            <div class="search-box">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                </svg>
-                <input type="text" id="searchInput" placeholder="搜索版本">
-            </div>
-            <div class="no-result" id="noResult">Something not found，please try again.</div>
-    
-            <div class="verson" data-version="1.0:01" style="--i:0">
-                <h2><span class="ver-num">1.0:01</span> 首个版本</h2>
-                <p>以 Google.com 外观为原型，Google Logo 居中，搜索框和搜索引擎切换按钮方便用户搜索。界面简洁，操作简单。</p>
-            </div>
-    
-            <div class="verson" data-version="1.1:02" style="--i:1">
-                <h2><span class="ver-num">1.1:02</span> 版本迭代</h2>
-                <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="1.2:03" style="--i:2">
-                <h2><span class="ver-num">1.2:03</span> 版本迭代</h2>
-                <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="1.3:04" style="--i:3">
-                <h2><span class="ver-num">1.3:04</span> 版本迭代</h2>
-                <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="1.4:05" style="--i:4">
-                <h2><span class="ver-num">1.4:05</span> 版本迭代</h2>
-                <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="2.0:06" style="--i:5">
-                <h2><span class="ver-num">2.0:06</span> 界面优化</h2>
-                <p>完善界面整体清晰度，解决 Google Logo 模糊问题，优化细节，加入铭牌 "Designed By RUDAN"</p>
-            </div>
-    
-            <div class="verson" data-version="2.1:07" style="--i:6">
-                <h2><span class="ver-num">2.1:07</span> 版本迭代</h2>
-                <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="2.2:08" style="--i:7">
-                <h2><span class="ver-num">2.2:08</span> 版本迭代</h2>
-                <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="2.3:09" style="--i:8">
-                <h2><span class="ver-num">2.3:09</span> 版本迭代</h2>
-                <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="2.4:10" style="--i:9">
-                <h2><span class="ver-num">2.4:10</span> 版本迭代</h2>
-                <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="2.5:11" style="--i:10">
-                <h2><span class="ver-num">2.5:11</span> 版本迭代</h2>
-                <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="2.6:12" style="--i:11">
-                <h2><span class="ver-num">2.6:12</span> 版本迭代</h2>  
-                <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="2.7:13" style="--i:12">
-                <h2><span class="ver-num">2.7:13</span> 版本迭代</h2>
-                <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="2.8:14" style="--i:13">
-                <h2><span class="ver-num">2.8:14</span> 版本迭代</h2>
-                <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="2.9:15" style="--i:14">
-                <h2><span class="ver-num">2.9:15</span> 版本迭代</h2>
-                <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
-            </div>
-    
-            <div class="verson" data-version="3.0:16" style="--i:15">
-                <h2><span class="ver-num">3.0:16</span> 功能扩展</h2>
-                <p>修复了前n多个版本 Bing 无法使用的 Bug。</p>
-            </div>
-    
-            <div class="verson" data-version="3.1:17" style="--i:16">
-                <h2><span class="ver-num">3.1:17</span> 功能扩展</h2>
-                <p>加入全新字体 Josefin Sans，优化下滑界面。</p>
-            </div>
-    
-            <div class="verson" data-version="3.2:18" style="--i:17">
-                <h2><span class="ver-num">3.2:18</span> 功能扩展</h2>
-                <p>加入全新壁纸，下滑预览。</p>
-            </div>
-    
-            <div class="verson" data-version="3.3:19" style="--i:18">
-                <h2><span class="ver-num">3.3:19</span> 功能扩展</h2>
-                <p>针对不同屏幕比例的壁纸完成适配，搜索框文字简化，底部名牌更改为 "OOO Interface 3.3"。</p>
-            </div>
-    
-            <div class="verson" data-version="3.4:20" style="--i:19">
-                <h2><span class="ver-num">3.4:20</span> 功能扩展</h2>
-                <p>加入全新字体"ABC Ginto Variable",优化稳定性。</p>
-            </div>
-    
-            <div class="verson" data-version="3.5:21" style="--i:20">
-                <h2><span class="ver-num">3.5:21</span> 功能扩展</h2>
-                <p>支持在"Setting"中自行更换字体，搜索框增加灰框提升可读性，搜索引擎按钮增加切换高亮。</p>
-            </div>
-    
-            <div class="verson" data-version="4.0:22" style="--i:21">
-                <h2><span class="ver-num">4.0:22</span> UI更新</h2>
-                <p>整体UI更加圆润。搜索框位置下调。新增设置按钮自动隐藏，切换字体设置将全局可用。下滑可以调整搜索引擎。</p>
-            </div>
-    
-            <div class="verson" data-version="5.0:23" style="--i:22">
-                <h2><span class="ver-num">5.0:23</span> 功能全面升级</h2>
-                    <h3>更新了什么？</h3>
-                        <ol>
-                            <li>UI加入光照效果，提升可读性</li>
-                            <li>支持多种图标(Google/Microsoft/Apple/HUAWEI/自定义图片/自定义文字)</li>
-                            <li>支持自定义字体和背景</li>
-                            <li>支持新增/删除快速访问链接</li>
-                            <li>更改设置入口：右键底部铭牌或双击界面中部</li>
-                            <li>设置页面支持鼠标上滑打开</li>
-                            <li>底部铭牌样式变化：显示文字"OOO Interface"，单击后显示具体版本号</li>
-                        </ol>
-                    <h3>什么是更多？</h3>
-                        <ol>
-                            <li>优化设置页面显示效果</li>
-                            <li>优化不同logo时搜索引擎切换按钮显示效果</li>
-                            <li>修复了一些已知问题</li>
-                        </ol>
-            </div>  
-    
-            <div class="verson" data-version="5.1:24" style="--i:23">
-                <h2><span class="ver-num">5.1:24</span> 修复显示问题，新增实用功能</h2>
-                    <h3>更新了什么？</h3>
-                        <ol>
-                            <li>新增字体大小和粗细调节</li>
-                            <li>新增右键Google网页直达功能</li>
-                            <li>新增搜索历史功能</li>
-                            <li>新增全新右键菜单</li>
-                            <li>全新横屏设置页面</li>
-                            <li>新增反馈入口和全新的关于页面</li>
-                        </ol>   
-                    <h3>什么是更多？</h3>
-                        <ol>
-                            <li>设置页面部分显示效果</li>
-                            <li>内存占用和流畅性</li>
-                            <li>亮色模式下显示效果修复</li>
-                            <li>修复一些已知Bug</li>
-                        </ol>
-            </div>
-    
-            <div class="verson" data-version="5.1.1:24" style="--i:24">
-                <h2><span class="ver-num">5.1.1:24</span> 紧急修复严重漏洞</h2>
-                <h3>修复内容</h3>
-                <ol>
-                    <li>修复设置页面部分显示效果。</li>
-                    <li>修复内存占用和流畅性问题。</li>
-                    <li>修复了关于页面网址错误。</li>
-                    <li>修复了一些已知Bug。</li>
-                </ol>
-            </div>
-
-            <div class="verson" data-version="5.1.2:24" style="--i:24">
-                <h2><span class="ver-num">5.1.2:24</span> 紧急修复严重漏洞</h2>
-                <h3>修复内容</h3>
-                <ol>
-                    <li>加入全新云图标。</li>
-                    <li>引入全新反馈系统。</li>
-                    <li>修复内存占用和流畅性问题。</li>
-                    <li>修复了一些已知Bug。</li>
-                </ol>
-            </div>
-            <div class="verson" data-version="5.1.3:24" style="--i:25">
-                <h2><span class="ver-num">5.1.3:24</span> 版本更新</h2>
-                <h3>新增内容</h3>
-                <ol>
-                    <li>新版本地图标。</li>
-                </ol>
-                <h3>修复内容</h3>
-                <ol>
-                    <li>修复内存占用和流畅性问题。</li>
-                    <li>修复了一些已知Bug。</li>
-                </ol>
-            </div>
-
-            <div class="verson" data-version="5.2:25" style="--i:26">
-                <h2><span class="ver-num">5.2:25</span> 版本更新</h2>
-                <h3>界面重构</h3>
-                <ol>
-                    <li>设置页面：统一按钮圆角规范，移除冗余阴影，显著提升视觉简洁性与界面统一性</li>
-                    <li>设置页面：优化多分辨率屏幕下右侧选项框的自适应显示效果</li>
-                    <li>关于页面：采用全新卡片式布局设计，采用全新历史版本API接口</li>
-                </ol>
-                <h3>视觉效果增强</h3>
-                <ol>
-                    <li>新增右键菜单渐入动画效果</li>
-                    <li>新增应用按钮退出设置页面的动态过渡效果</li>
-                    <li>新增设置页面、搜索框、搜索引擎切换按钮、快速访问链接及搜索历史框的毛玻璃模糊效果</li>
-                    <li>新增动态背景粒子系统</li>
-                    <li>优化壁纸模式进入动画流程</li>
-                    <li>改进壁纸常显示模式的呈现效果</li>
-                </ol>
-                <h3>增强显示视效</h3>
-                <ol>
-                    <li>新增全新光照效果</li>
-                    <li>新增关于页面丝滑动画</li>
-                </ol>
-                <h3>新增功能</h3>
-                <ol>
-                    <li>快速粘贴功能：支持在搜索框内右键快速插入剪贴板内容</li>
-                    <li>搜索框一键清除：支持一键清除搜索框内容</li>
-                    <li>壁纸显示：新增壁纸缩放功能，新增必应每日壁纸</li>
-                    <li>提示框模块：可通过网络获取版本更新提示信息</li>
-                    <li>用户反馈页面</li>
-                </ol>
-                <h3>开发者模式优化</h3>
-                <ol>
-                    <li>加入全新代理配置入口</li>
-                    <li>四项数据内容全面支持滑块拖动与数值输入双重调整方式</li>
-                    <li>调整部分参数上限设置</li>
-                    <li>字体粗细调整新增自动四舍五入功能</li>
-                    <li>优化开发者模式在亮色主题下的显示效果</li>
-                </ol>
-                <h3>问题修复</h3>
-                <ol>
-                    <li>修复右键菜单"设置"选项无法正常打开的问题</li>
-                    <li>修复多页面间版本号显示不一致的问题</li>
-                    <li>优化自定义Logo体验</li>
-                    <li>优化自定义表单，提供删除按钮</li>
-                </ol>
-            </div>
+    <div class="version-container">
+        <div class="decoration">ByRUDAN OOOInterface</div>
+        <div class="dakuang">
+            <div class="ultra">历史版本</div>
+            <div class="pro">OOOInterface所有版本的列表</div>
         </div>
-    
+
+        <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input type="text" id="searchInput" placeholder="搜索版本">
+        </div>
+        <div class="no-result" id="noResult">Something not found，please try again.</div>
+
+        <div class="verson" data-version="1.0:01" style="--i:0">
+            <h2><span class="ver-num">1.0:01</span> 首个版本</h2>
+            <p>以 Google.com 外观为原型，Google Logo 居中，搜索框和搜索引擎切换按钮方便用户搜索。界面简洁，操作简单。</p>
+        </div>
+
+        <div class="verson" data-version="1.1:02" style="--i:1">
+            <h2><span class="ver-num">1.1:02</span> 版本迭代</h2>
+            <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="1.2:03" style="--i:2">
+            <h2><span class="ver-num">1.2:03</span> 版本迭代</h2>
+            <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="1.3:04" style="--i:3">
+            <h2><span class="ver-num">1.3:04</span> 版本迭代</h2>
+            <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="1.4:05" style="--i:4">
+            <h2><span class="ver-num">1.4:05</span> 版本迭代</h2>
+            <p>完善界面整体清晰度，优化 Google Logo 清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="2.0:06" style="--i:5">
+            <h2><span class="ver-num">2.0:06</span> 界面优化</h2>
+            <p>完善界面整体清晰度，解决 Google Logo 模糊问题，优化细节，加入铭牌 "Designed By RUDAN"</p>
+        </div>
+
+        <div class="verson" data-version="2.1:07" style="--i:6">
+            <h2><span class="ver-num">2.1:07</span> 版本迭代</h2>
+            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="2.2:08" style="--i:7">
+            <h2><span class="ver-num">2.2:08</span> 版本迭代</h2>
+            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="2.3:09" style="--i:8">
+            <h2><span class="ver-num">2.3:09</span> 版本迭代</h2>
+            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="2.4:10" style="--i:9">
+            <h2><span class="ver-num">2.4:10</span> 版本迭代</h2>
+            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="2.5:11" style="--i:10">
+            <h2><span class="ver-num">2.5:11</span> 版本迭代</h2>
+            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="2.6:12" style="--i:11">
+            <h2><span class="ver-num">2.6:12</span> 版本迭代</h2>
+            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="2.7:13" style="--i:12">
+            <h2><span class="ver-num">2.7:13</span> 版本迭代</h2>
+            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="2.8:14" style="--i:13">
+            <h2><span class="ver-num">2.8:14</span> 版本迭代</h2>
+            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="2.9:15" style="--i:14">
+            <h2><span class="ver-num">2.9:15</span> 版本迭代</h2>
+            <p>试图解决加载为插件后切换引擎按钮无法使用问题，同时完善界面整体清晰度。</p>
+        </div>
+
+        <div class="verson" data-version="3.0:16" style="--i:15">
+            <h2><span class="ver-num">3.0:16</span> 功能扩展</h2>
+            <p>修复了前n多个版本 Bing 无法使用的 Bug。</p>
+        </div>
+
+        <div class="verson" data-version="3.1:17" style="--i:16">
+            <h2><span class="ver-num">3.1:17</span> 功能扩展</h2>
+            <p>加入全新字体 Josefin Sans，优化下滑界面。</p>
+        </div>
+
+        <div class="verson" data-version="3.2:18" style="--i:17">
+            <h2><span class="ver-num">3.2:18</span> 功能扩展</h2>
+            <p>加入全新壁纸，下滑预览。</p>
+        </div>
+
+        <div class="verson" data-version="3.3:19" style="--i:18">
+            <h2><span class="ver-num">3.3:19</span> 功能扩展</h2>
+            <p>针对不同屏幕比例的壁纸完成适配，搜索框文字简化，底部名牌更改为 "OOO Interface 3.3"。</p>
+        </div>
+
+        <div class="verson" data-version="3.4:20" style="--i:19">
+            <h2><span class="ver-num">3.4:20</span> 功能扩展</h2>
+            <p>加入全新字体"ABC Ginto Variable",优化稳定性。</p>
+        </div>
+
+        <div class="verson" data-version="3.5:21" style="--i:20">
+            <h2><span class="ver-num">3.5:21</span> 功能扩展</h2>
+            <p>支持在"Setting"中自行更换字体，搜索框增加灰框提升可读性，搜索引擎按钮增加切换高亮。</p>
+        </div>
+
+        <div class="verson" data-version="4.0:22" style="--i:21">
+            <h2><span class="ver-num">4.0:22</span> UI更新</h2>
+            <p>整体UI更加圆润。搜索框位置下调。新增设置按钮自动隐藏，切换字体设置将全局可用。下滑可以调整搜索引擎。</p>
+        </div>
+
+        <div class="verson" data-version="5.0:23" style="--i:22">
+            <h2><span class="ver-num">5.0:23</span> 功能全面升级</h2>
+            <h3>更新了什么？</h3>
+            <ol>
+                <li>UI加入光照效果，提升可读性</li>
+                <li>支持多种图标(Google/Microsoft/Apple/HUAWEI/自定义图片/自定义文字)</li>
+                <li>支持自定义字体和背景</li>
+                <li>支持新增/删除快速访问链接</li>
+                <li>更改设置入口：右键底部铭牌或双击界面中部</li>
+                <li>设置页面支持鼠标上滑打开</li>
+                <li>底部铭牌样式变化：显示文字"OOO Interface"，单击后显示具体版本号</li>
+            </ol>
+            <h3>什么是更多？</h3>
+            <ol>
+                <li>优化设置页面显示效果</li>
+                <li>优化不同logo时搜索引擎切换按钮显示效果</li>
+                <li>修复了一些已知问题</li>
+            </ol>
+        </div>
+
+        <div class="verson" data-version="5.1:24" style="--i:23">
+            <h2><span class="ver-num">5.1:24</span> 修复显示问题，新增实用功能</h2>
+            <h3>更新了什么？</h3>
+            <ol>
+                <li>新增字体大小和粗细调节</li>
+                <li>新增右键Google网页直达功能</li>
+                <li>新增搜索历史功能</li>
+                <li>新增全新右键菜单</li>
+                <li>全新横屏设置页面</li>
+                <li>新增反馈入口和全新的关于页面</li>
+            </ol>
+            <h3>什么是更多？</h3>
+            <ol>
+                <li>设置页面部分显示效果</li>
+                <li>内存占用和流畅性</li>
+                <li>亮色模式下显示效果修复</li>
+                <li>修复一些已知Bug</li>
+            </ol>
+        </div>
+
+        <div class="verson" data-version="5.1.1:24" style="--i:24">
+            <h2><span class="ver-num">5.1.1:24</span> 紧急修复严重漏洞</h2>
+            <h3>修复内容</h3>
+            <ol>
+                <li>修复设置页面部分显示效果。</li>
+                <li>修复内存占用和流畅性问题。</li>
+                <li>修复了关于页面网址错误。</li>
+                <li>修复了一些已知Bug。</li>
+            </ol>
+        </div>
+
+        <div class="verson" data-version="5.1.2:24" style="--i:24">
+            <h2><span class="ver-num">5.1.2:24</span> 紧急修复严重漏洞</h2>
+            <h3>修复内容</h3>
+            <ol>
+                <li>加入全新云图标。</li>
+                <li>引入全新反馈系统。</li>
+                <li>修复内存占用和流畅性问题。</li>
+                <li>修复了一些已知Bug。</li>
+            </ol>
+        </div>
+        <div class="verson" data-version="5.1.3:24" style="--i:25">
+            <h2><span class="ver-num">5.1.3:24</span> 版本更新</h2>
+            <h3>新增内容</h3>
+            <ol>
+                <li>新版本地图标。</li>
+            </ol>
+            <h3>修复内容</h3>
+            <ol>
+                <li>修复内存占用和流畅性问题。</li>
+                <li>修复了一些已知Bug。</li>
+            </ol>
+        </div>
+
+        <div class="verson" data-version="5.2:25" style="--i:26">
+            <h2><span class="ver-num">5.2:25</span> 版本更新</h2>
+            <h3>界面重构</h3>
+            <ol>
+                <li>设置页面：统一按钮圆角规范，移除冗余阴影，显著提升视觉简洁性与界面统一性</li>
+                <li>设置页面：优化多分辨率屏幕下右侧选项框的自适应显示效果</li>
+                <li>关于页面：采用全新卡片式布局设计，采用全新历史版本API接口</li>
+            </ol>
+            <h3>视觉效果增强</h3>
+            <ol>
+                <li>新增右键菜单渐入动画效果</li>
+                <li>新增应用按钮退出设置页面的动态过渡效果</li>
+                <li>新增设置页面、搜索框、搜索引擎切换按钮、快速访问链接及搜索历史框的毛玻璃模糊效果</li>
+                <li>新增动态背景粒子系统</li>
+                <li>优化壁纸模式进入动画流程</li>
+                <li>改进壁纸常显示模式的呈现效果</li>
+            </ol>
+            <h3>增强显示视效</h3>
+            <ol>
+                <li>新增全新光照效果</li>
+                <li>新增关于页面丝滑动画</li>
+            </ol>
+            <h3>新增功能</h3>
+            <ol>
+                <li>快速粘贴功能：支持在搜索框内右键快速插入剪贴板内容</li>
+                <li>搜索框一键清除：支持一键清除搜索框内容</li>
+                <li>壁纸显示：新增壁纸缩放功能，新增必应每日壁纸</li>
+                <li>提示框模块：可通过网络获取版本更新提示信息</li>
+                <li>用户反馈页面</li>
+            </ol>
+            <h3>开发者模式优化</h3>
+            <ol>
+                <li>加入全新代理配置入口</li>
+                <li>四项数据内容全面支持滑块拖动与数值输入双重调整方式</li>
+                <li>调整部分参数上限设置</li>
+                <li>字体粗细调整新增自动四舍五入功能</li>
+                <li>优化开发者模式在亮色主题下的显示效果</li>
+            </ol>
+            <h3>问题修复</h3>
+            <ol>
+                <li>修复右键菜单"设置"选项无法正常打开的问题</li>
+                <li>修复多页面间版本号显示不一致的问题</li>
+                <li>优化自定义Logo体验</li>
+                <li>优化自定义表单，提供删除按钮</li>
+            </ol>
+        </div>
+    </div>
+
     <div class="version-container">
         <div class="support-section">
             <h2><span class="ver-num">支持</span> 为更棒的OOOInterface预备好</h2>
@@ -1208,28 +1272,33 @@
     </footer>
 
     <button class="float-btn" id="floatBtn">
-        <svg class="icon-back-top" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
-            <path d="M160-760v-80h640v80H160Zm280 640v-408L336-424l-56-56 200-200 200 200-56 56-104-104v408h-80Z"/>
+        <svg class="icon-back-top" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+            width="24px" fill="currentColor">
+            <path d="M160-760v-80h640v80H160Zm280 640v-408L336-424l-56-56 200-200 200 200-56 56-104-104v408h-80Z" />
         </svg>
         <span class="theme-icons">
-            <svg class="icon-theme-logo" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
-                <path d="M324-111.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM520-163q119-15 199.5-104.5T800-480q0-123-80.5-212.5T520-797v634Z"/>
+            <svg class="icon-theme-logo" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                width="24px" fill="currentColor">
+                <path
+                    d="M324-111.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM520-163q119-15 199.5-104.5T800-480q0-123-80.5-212.5T520-797v634Z" />
             </svg>
-            <svg class="icon-lock" xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960" width="12px" fill="#ff4444" style="display: none;">
-                <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
+            <svg class="icon-lock" xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960"
+                width="12px" fill="#ff4444" style="display: none;">
+                <path
+                    d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z" />
             </svg>
         </span>
     </button>
 
     <script>
-        (function() {
+        (function () {
             var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent);
             var isSmallScreen = window.innerWidth <= 768;
             if (isMobile || isSmallScreen) {
                 document.documentElement.classList.add('mobile');
                 document.body.classList.add('mobile-device');
             }
-            window.addEventListener('resize', function() {
+            window.addEventListener('resize', function () {
                 if (window.innerWidth <= 768) {
                     document.documentElement.classList.add('mobile');
                     document.body.classList.add('mobile-device');
@@ -1289,7 +1358,7 @@
             }
         }
 
-        searchInput.addEventListener('input', function(e) {
+        searchInput.addEventListener('input', function (e) {
             filterVersions(e.target.value);
             if (e.target.value.trim() !== '') {
                 searchBox.classList.remove('sticky');
@@ -1344,21 +1413,21 @@
         }
         updateLockIcon();
 
-        floatBtn.addEventListener('mouseenter', function() {
+        floatBtn.addEventListener('mouseenter', function () {
             if (isScrolled) {
-                hoverTimer = setTimeout(function() {
+                hoverTimer = setTimeout(function () {
                     isThemeMode = true;
                     updateButtonState();
                 }, 1000);
             }
         });
 
-        floatBtn.addEventListener('mouseleave', function() {
+        floatBtn.addEventListener('mouseleave', function () {
             if (hoverTimer) {
                 clearTimeout(hoverTimer);
                 hoverTimer = null;
             }
-            setTimeout(function() {
+            setTimeout(function () {
                 if (!floatBtn.matches(':hover')) {
                     isThemeMode = false;
                     updateButtonState();
@@ -1366,11 +1435,11 @@
             }, 100);
         });
 
-        floatBtn.addEventListener('click', function(e) {
+        floatBtn.addEventListener('click', function (e) {
             if (isScrolled && isThemeMode) {
                 e.preventDefault();
                 const currentIsDark = document.body.classList.contains('dark-theme');
-                
+
                 if (currentIsDark) {
                     applyTheme('light');
                     if (isLocked) localStorage.setItem('currentTheme', 'light');
@@ -1382,7 +1451,7 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
                 const currentIsDark = document.body.classList.contains('dark-theme');
-                
+
                 if (currentIsDark) {
                     applyTheme('light');
                     if (isLocked) localStorage.setItem('currentTheme', 'light');
@@ -1393,11 +1462,11 @@
             }
         });
 
-        floatBtn.addEventListener('contextmenu', function(e) {
+        floatBtn.addEventListener('contextmenu', function (e) {
             e.preventDefault();
             isLocked = !isLocked;
             localStorage.setItem('themeLocked', isLocked);
-            
+
             if (isLocked) {
                 const theme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
                 localStorage.setItem('currentTheme', theme);
@@ -1409,7 +1478,7 @@
             updateLockIcon();
         });
 
-        window.addEventListener('scroll', function() {
+        window.addEventListener('scroll', function () {
             const dakuangRect = dakuang.getBoundingClientRect();
             if (dakuangRect.bottom < 0) {
                 searchBox.classList.add('sticky');
@@ -1427,4 +1496,5 @@
         });
     </script>
 </body>
+
 </html>
