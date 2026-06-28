@@ -228,8 +228,18 @@ body {
         transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* 侧边栏展开时：连续响应式推入和搜索框缩短 */
 body.sidebar-visible .container {
-    transform: translateX(-80px);
+    transform: translateX(clamp(-120px, -10vw, -50px));
+}
+
+body.sidebar-visible .search-section,
+body.sidebar-visible #quick-access-links {
+    max-width: min(600px, calc(100vw - 70px - 2 * clamp(50px, 10vw, 120px)));
+}
+
+body.scrolled.sidebar-visible .search-section {
+    max-width: calc(100% - 80px);
 }
 
 
@@ -273,10 +283,12 @@ body.sidebar-visible .container {
 
 .search-section {
     width: 100%;
+    max-width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: var(--transition);
+    transition: var(--transition),
+        max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     margin-bottom: 10px;
     margin-top: 0;
@@ -292,13 +304,14 @@ body.sidebar-visible .container {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     background: #F1F3F4;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
     box-shadow: none;
     padding: 0 16px;
     height: var(--search-box-height);
     width: 100%;
     max-width: 600px;
-    margin: 0 auto;
     backdrop-filter: blur(0);
     -webkit-backdrop-filter: blur(0);
 }
@@ -2846,20 +2859,11 @@ body.scrolled .search-history-container {
     flex-wrap: wrap;
     gap: 12px;
     margin-top: 8px;
+    margin-left: auto;
+    margin-right: auto;
     justify-content: center;
-    transition: transform 0.35s ease-out, opacity 0.3s ease;
-}
-
-
-
-/* 引擎按钮 - 间距 */
-
-.engine-buttons {
-    display: flex;
-    gap: 12px;
-    margin-top: 10px;
-    opacity: 1;
-    transition: margin-top 0.3s ease;
+    transition: transform 0.35s ease-out, opacity 0.3s ease,
+        max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -3899,9 +3903,7 @@ body.dynamic-blur .quick-access-sidebar-container {
 }
 
 /* 壁纸滚动模式下侧边栏不受影响 */
-body.scrolled .quick-access-sidebar-container,
-body.enter-animation .quick-access-sidebar-container,
-body.exit-animation .quick-access-sidebar-container {
+body.scrolled .quick-access-sidebar-container {
     transform: translateX(calc(100% + 20px));
     opacity: 0;
 }
@@ -4106,7 +4108,9 @@ body.scrolled #quick-access-links {
 
 body.scrolled .container {
     padding-top: calc(100dvh - 145px);
-    transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.3s ease,
+        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 

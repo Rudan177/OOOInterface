@@ -54,6 +54,7 @@ class OOOInterface {
         this.userChangedLogo = false; // 标记用户是否手动更改过Logo
         this.modalScrollHandler = null;
         this.currentVersion = VERSION; // 使用 version.js 中的版本号
+        this._sidebarPushing = false; // 侧边栏壁纸推入状态
 
         // 壁纸填充层
         this.wallpaperBlur = null;
@@ -2776,18 +2777,11 @@ class OOOInterface {
         const HIDE_DELAY = 0;
 
         const pushWallpaper = (pushIn) => {
-            const wm = this.wallpaperMain;
-            if (!wm || !this.settings.wallpaperScale ||
-                (!this.settings.persistentWallpaper && !this.isScrolled)) return;
-
-            if (pushIn) {
-                this._savedWallpaperTransform = wm.style.transform || '';
-                wm.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                wm.style.transform = 'scale(1.16) translateX(-80px)';
-            } else if (this._savedWallpaperTransform !== undefined) {
-                wm.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                wm.style.transform = this._savedWallpaperTransform || '';
-                this._savedWallpaperTransform = undefined;
+            this._sidebarPushing = pushIn;
+            if (this.wallpaperMain && this.settings.wallpaperScale &&
+                (this.settings.persistentWallpaper || this.isScrolled)) {
+                this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                this.applyWallpaperTransform();
             }
         };
 
@@ -2801,7 +2795,9 @@ class OOOInterface {
                 isVisible = true;
                 container.classList.remove('hiding');
                 container.classList.add('visible');
+
                 document.body.classList.add('sidebar-visible');
+
                 pushWallpaper(true);
             }
         };
@@ -3062,7 +3058,7 @@ class OOOInterface {
             // 填满模式：background-size: cover；适配模式：background-size: contain（CSS控制）
             this.wallpaperMain.style.backgroundSize = '';
             this.wallpaperMain.style.backgroundPosition = '';
-            this.wallpaperMain.style.transform = 'scale(1)';
+            // 不在此处设置 transform，保持当前状态作为动画起点
         } else if (this.wallpaperMain) {
             this.wallpaperMain.style.backgroundSize = '';
             this.wallpaperMain.style.backgroundPosition = '';
@@ -3092,7 +3088,7 @@ class OOOInterface {
         if (this.settings.persistentWallpaper && this.settings.wallpaperScale && this.wallpaperMain) {
             void this.wallpaperMain.offsetHeight;
             this.wallpaperMain.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
-            this.wallpaperMain.style.transform = 'scale(1.4)';
+            this.applyWallpaperTransform();
         }
 
         this.isAnimating = true;
@@ -3140,10 +3136,13 @@ class OOOInterface {
                 void this.wallpaperMain.offsetHeight;
                 // 两种模式统一使用 transform scale 回缩
                 this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                this.wallpaperMain.style.transform = 'scale(1)';
+                this.applyWallpaperTransform();
                 setTimeout(() => {
                     if (this.wallpaperMain) {
-                        this.wallpaperMain.style.transform = '';
+                        // 动画结束后若没有侧边栏推入，清除空变换
+                        if (!this._sidebarPushing) {
+                            this.wallpaperMain.style.transform = '';
+                        }
                         this.wallpaperMain.style.transition = '';
                     }
                 }, 400);
@@ -4061,6 +4060,41 @@ class OOOInterface {
             this.wallpaperMain.style.transform = '';
             this.wallpaperMain.style.transition = '';
         }
+    }
+
+    // 统一计算壁纸变换（合并壁纸缩放模式和侧边栏推入效果）
+    applyWallpaperTransform() {
+        const wm = this.wallpaperMain;
+        if (!wm || !this.settings.wallpaperScale) return;
+
+        let transform = '';
+
+        // 基础缩放：壁纸模式 scale(1.4)，主页模式不缩放
+        if (this.isScrolled) {
+            transform = 'scale(1.4)';
+        }
+
+        // 侧边栏推入：叠加偏移和额外缩放（仅在主页模式需要补偿）
+        if (this._sidebarPushing) {
+            if (transform) {
+                // 壁纸模式：已有 scale(1.4) 覆盖边缘，只需偏移
+                transform += ' translateX(-80px)';
+            } else {
+                // 主页模式：根据屏幕宽度动态计算缩放和偏移，确保不露黑边
+                const vw = window.innerWidth;
+                // 大屏固定偏移80px，窄屏按比例缩小偏移
+                const pushPx = Math.min(80, vw * 0.1);
+                // CSS transform 从右到左执行: scale(S) translateX(T) → 先平移再缩放
+                // 缩放原点在中心: 右边缘最终位置 = vw/2 + (vw/2 + T) * S
+                // 要求 >= vw → S >= vw / (vw + 2T), T = -pushPx
+                const neededScale = vw / (vw - 2 * pushPx);
+                // 取整到小数点后3位，加 10% 余量确保无黑边
+                const scale = Math.min(Math.max(Math.round(neededScale * 1.10 * 1000) / 1000, 1.16), 1.6);
+                transform = 'scale(' + scale + ') translateX(-' + pushPx + 'px)';
+            }
+        }
+
+        wm.style.transform = transform;
     }
 
     applyDefaultWallpaper() {
