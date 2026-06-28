@@ -2856,6 +2856,14 @@ class OOOInterface {
         container.addEventListener('mouseleave', () => {
             scheduleHide();
         });
+
+        // 禁用快速访问侧边栏内的滚轮事件触发壁纸模式
+        sidebar.addEventListener('wheel', (e) => {
+            e.stopPropagation();
+        }, { passive: true });
+        container.addEventListener('wheel', (e) => {
+            e.stopPropagation();
+        }, { passive: true });
     }
 
     // 设置文字Logo
@@ -5410,6 +5418,12 @@ OOOInterface.prototype.closeSettingsMenuInRightPanel = function () {
 
     rightPanelUpper.innerHTML = '';
     this.showDefaultRightPanelContent(rightPanelUpper);
+
+    // 清理 body 上的弹窗
+    const dd = document.querySelector('[data-import-dropdown]');
+    if (dd) dd.remove();
+    const fs = document.querySelector('[data-folder-submenu]');
+    if (fs) fs.remove();
 };
 
 OOOInterface.prototype.showDefaultRightPanelContent = function (rightPanelUpper) {
@@ -5460,6 +5474,24 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     plusBtn.textContent = '+';
     plusBtn.title = '添加快速访问链接';
 
+    // 书签导入按钮
+    const importBtn = document.createElement('button');
+    importBtn.className = 'settings-import-btn';
+    importBtn.title = '从Chrome书签导入';
+    importBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+    // 导入下拉菜单（挂到 body 避免被父容器裁剪）
+    const importDropdown = document.createElement('div');
+    importDropdown.className = 'bookmark-import-dropdown';
+    importDropdown.setAttribute('data-import-dropdown', '');
+    document.body.appendChild(importDropdown);
+
+    // 文件夹选择子菜单
+    const folderSubmenu = document.createElement('div');
+    folderSubmenu.className = 'bookmark-folder-submenu';
+    folderSubmenu.setAttribute('data-folder-submenu', '');
+    document.body.appendChild(folderSubmenu);
+
     const confirmBtn = document.createElement('button');
     confirmBtn.className = 'settings-menu-confirm';
     confirmBtn.textContent = '确定';
@@ -5467,8 +5499,12 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
         e.stopPropagation();
         e.preventDefault();
         self.closeSettingsMenuInRightPanel();
+        // 关闭弹窗
+        importDropdown.classList.remove('active');
+        folderSubmenu.classList.remove('active');
     };
 
+    buttonContainer.appendChild(importBtn);
     buttonContainer.appendChild(plusBtn);
     buttonContainer.appendChild(confirmBtn);
     container.appendChild(buttonContainer);
@@ -5481,6 +5517,21 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
         e.stopPropagation();
         e.preventDefault();
         self.showQuickLinksAddInterface(container, listContainer, buttonContainer);
+    });
+
+    // 导入按钮点击事件
+    importBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        self.toggleBookmarkImportDropdown(importDropdown, folderSubmenu, importBtn);
+    });
+
+    // 点击外部关闭下拉菜单
+    document.addEventListener('click', (e) => {
+        if (e.target !== importBtn && !importDropdown.contains(e.target) && !folderSubmenu.contains(e.target)) {
+            importDropdown.classList.remove('active');
+            folderSubmenu.classList.remove('active');
+        }
     });
 };
 
@@ -5632,30 +5683,425 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
             item.classList.add('dragging');
             e.dataTransfer.setData('text/plain', index.toString());
             e.dataTransfer.effectAllowed = 'move';
+            // 设置拖拽时的半透明预览
+            if (e.dataTransfer.setDragImage) {
+                const ghost = item.cloneNode(true);
+                ghost.style.position = 'absolute';
+                ghost.style.top = '-999px';
+                document.body.appendChild(ghost);
+                e.dataTransfer.setDragImage(ghost, 0, 0);
+                setTimeout(() => document.body.removeChild(ghost), 0);
+            }
         });
 
         item.addEventListener('dragend', () => {
             item.classList.remove('dragging');
+            // 移除所有拖拽指示线
+            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
+            listContainer.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
         });
 
         item.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
+            const dragged = listContainer.querySelector('.dragging');
+            if (!dragged || dragged === item) return;
+
+            // 移除其他指示线
+            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
+
+            // 根据鼠标在项目中的位置决定插入上方还是下方
+            const rect = item.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const insertBefore = e.clientY < midY;
+
+            const indicator = document.createElement('div');
+            indicator.className = 'drag-indicator';
+            if (insertBefore) {
+                item.parentNode.insertBefore(indicator, item);
+            } else {
+                item.parentNode.insertBefore(indicator, item.nextSibling);
+            }
+        });
+
+        item.addEventListener('dragleave', (e) => {
+            // 只在离开此元素时移除自身的指示线（不处理子元素冒泡）
+            if (e.target === item) {
+                const indicator = item.parentNode.querySelector('.drag-indicator');
+                if (indicator) indicator.remove();
+            }
         });
 
         item.addEventListener('drop', (e) => {
             e.preventDefault();
             const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-            const toIndex = index;
+            if (isNaN(fromIndex)) return;
+
+            const indicator = listContainer.querySelector('.drag-indicator');
+            let toIndex = index;
+
+            if (indicator) {
+                // 根据指示线的位置决定插入点
+                const allItems = listContainer.querySelectorAll('.quick-link-menu-item:not(.dragging)');
+                const beforeEl = indicator.nextSibling;
+                if (beforeEl) {
+                    const beforeIndex = parseInt(beforeEl.dataset.index);
+                    if (!isNaN(beforeIndex)) {
+                        toIndex = beforeIndex;
+                    }
+                } else {
+                    toIndex = self.settings.quickLinks.length - 1;
+                }
+                indicator.remove();
+            }
 
             if (fromIndex !== toIndex) {
                 const links = self.settings.quickLinks;
                 const [movedItem] = links.splice(fromIndex, 1);
-                links.splice(toIndex, 0, movedItem);
+                // 调整目标索引（如果从前面移走了一项，目标索引要减1）
+                const adjustedTo = fromIndex < toIndex ? toIndex - 1 : toIndex;
+                links.splice(adjustedTo, 0, movedItem);
                 self.saveSettings();
                 self.updateQuickLinksListInMenu(listContainer);
                 self.showNotification('顺序已调整');
             }
         });
     });
+
+    // 一键清除按钮（超过5个链接时显示）
+    if (this.settings.quickLinks.length > 5) {
+        const clearAllBtn = document.createElement('button');
+        clearAllBtn.className = 'quick-link-clear-all-btn';
+        clearAllBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> ';
+        clearAllBtn.title = '删除所有快速访问链接';
+        clearAllBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (self.settings.quickLinks.length === 0) {
+                self.showNotification('没有可清除的链接');
+                return;
+            }
+            self.settings.quickLinks = [];
+            self.saveSettings();
+            self.applyQuickLinks();
+            self.updateQuickLinksListInMenu(listContainer);
+            self.showNotification('已清除所有快速访问链接');
+        });
+        listContainer.appendChild(clearAllBtn);
+    }
+};
+
+// ========== Chrome 书签导入功能 ==========
+
+OOOInterface.prototype.toggleBookmarkImportDropdown = function (dropdown, folderSubmenu, anchorBtn) {
+    const isActive = dropdown.classList.contains('active');
+    folderSubmenu.classList.remove('active');
+    if (isActive) {
+        dropdown.classList.remove('active');
+        return;
+    }
+
+    // 先渲染内容
+    this.renderBookmarkImportDropdown(dropdown, folderSubmenu);
+
+    // 测量并定位到按钮上方
+    if (anchorBtn) {
+        const rect = anchorBtn.getBoundingClientRect();
+        const ddWidth = 200;
+        let leftPos = Math.round(rect.left + rect.width / 2 - ddWidth / 2);
+        if (leftPos < 8) leftPos = 8;
+
+        // 临时显示测量高度
+        dropdown.style.left = leftPos + 'px';
+        dropdown.style.top = '-999px';
+        dropdown.style.opacity = '0';
+        dropdown.style.visibility = 'visible';
+        dropdown.style.transform = 'none';
+
+        const ddHeight = dropdown.offsetHeight;
+        const gap = 10;
+        let topPos = Math.round(rect.top - ddHeight - gap);
+        if (topPos < 8) topPos = 8;
+
+        // 清除测量用内联样式
+        dropdown.style.top = topPos + 'px';
+        dropdown.style.left = leftPos + 'px';
+        dropdown.style.opacity = '';
+        dropdown.style.visibility = '';
+        dropdown.style.transform = '';
+
+        dropdown._anchorRect = rect;
+    }
+
+    // 显示弹窗（触发 CSS 动画）
+    requestAnimationFrame(() => {
+        dropdown.classList.add('active');
+    });
+};
+
+OOOInterface.prototype.renderBookmarkImportDropdown = function (dropdown, folderSubmenu) {
+    const self = this;
+    dropdown.innerHTML = '';
+
+    // 全部导入
+    const optionAll = document.createElement('div');
+    optionAll.className = 'bookmark-import-option';
+    optionAll.innerHTML = '<span class="bookmark-import-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span><span>全部导入</span>';
+    optionAll.addEventListener('click', (e) => {
+        e.stopPropagation();
+        self.importBookmarksFromChrome('all', null, dropdown, folderSubmenu);
+    });
+    dropdown.appendChild(optionAll);
+
+    // 指定文件夹
+    const optionFolder = document.createElement('div');
+    optionFolder.className = 'bookmark-import-option';
+    optionFolder.innerHTML = '<span class="bookmark-import-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span><span>指定文件夹</span>';
+    optionFolder.addEventListener('click', (e) => {
+        e.stopPropagation();
+        self.showBookmarkFolderSelection(folderSubmenu, dropdown);
+    });
+    dropdown.appendChild(optionFolder);
+
+    // 去重（开关样式）
+    const optionDedup = document.createElement('div');
+    optionDedup.className = 'bookmark-import-option';
+    optionDedup.style.justifyContent = 'space-between';
+    optionDedup.innerHTML = '<span style="display:flex;align-items:center;gap:10px;min-width:0"><span class="bookmark-import-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span>去重</span></span>';
+
+    const dedupToggle = document.createElement('label');
+    dedupToggle.className = 'switch bookmark-dedup-switch';
+    dedupToggle.style.margin = '0';
+    dedupToggle.style.flexShrink = '0';
+    dedupToggle.style.marginRight = '-5px';
+    const dedupCheckbox = document.createElement('input');
+    dedupCheckbox.type = 'checkbox';
+    dedupCheckbox.checked = true;
+    dedupCheckbox.id = 'bookmark-dedup-toggle';
+    const dedupSlider = document.createElement('span');
+    dedupSlider.className = 'slider';
+    dedupToggle.appendChild(dedupCheckbox);
+    dedupToggle.appendChild(dedupSlider);
+    optionDedup.appendChild(dedupToggle);
+    dropdown.appendChild(optionDedup);
+};
+
+OOOInterface.prototype.showBookmarkFolderSelection = function (folderSubmenu, dropdown) {
+    const self = this;
+    dropdown.classList.remove('active');
+    folderSubmenu.innerHTML = '';
+
+    // 定位文件夹子菜单位置
+    const anchor = dropdown._anchorRect;
+    if (anchor) {
+        folderSubmenu.style.left = Math.round(anchor.left + anchor.width / 2 - 120) + 'px';
+        folderSubmenu.style.top = Math.round(anchor.top - 8) + 'px';
+    }
+
+    // 返回按钮
+    const backBtn = document.createElement('div');
+    backBtn.className = 'bookmark-folder-back';
+    backBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>返回</span>';
+    backBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        folderSubmenu.classList.remove('active');
+        dropdown.classList.add('active');
+    });
+    folderSubmenu.appendChild(backBtn);
+
+    // 加载中提示
+    const loadingMsg = document.createElement('div');
+    loadingMsg.className = 'bookmark-import-option';
+    loadingMsg.style.justifyContent = 'center';
+    loadingMsg.style.color = 'var(--text-secondary)';
+    loadingMsg.textContent = '加载中...';
+    folderSubmenu.appendChild(loadingMsg);
+    folderSubmenu.classList.add('active');
+
+    // 获取书签文件夹
+    try {
+        chrome.bookmarks.getTree(function (bookmarkTree) {
+            // 移除加载提示
+            folderSubmenu.innerHTML = '';
+
+            // 重新添加返回按钮
+            const backBtn2 = document.createElement('div');
+            backBtn2.className = 'bookmark-folder-back';
+            backBtn2.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>返回</span>';
+            backBtn2.addEventListener('click', (e) => {
+                e.stopPropagation();
+                folderSubmenu.classList.remove('active');
+                dropdown.classList.add('active');
+            });
+            folderSubmenu.appendChild(backBtn2);
+
+            // 提取所有文件夹
+            const folders = [];
+            const extractFolders = (nodes, depth) => {
+                nodes.forEach(node => {
+                    // 是文件夹（有children且无url）
+                    if (node.children && !node.url) {
+                        const bookmarkCount = node.children.filter(c => c.url).length;
+                        folders.push({
+                            id: node.id,
+                            title: node.title || '书签',
+                            count: bookmarkCount,
+                            depth: depth
+                        });
+                        if (node.children) {
+                            extractFolders(node.children, depth + 1);
+                        }
+                    }
+                });
+            };
+            // 从根的子节点开始（跳过根节点本身）
+            if (bookmarkTree && bookmarkTree[0] && bookmarkTree[0].children) {
+                extractFolders(bookmarkTree[0].children, 0);
+            }
+
+            if (folders.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'bookmark-import-option';
+                emptyMsg.style.justifyContent = 'center';
+                emptyMsg.style.color = 'var(--text-secondary)';
+                emptyMsg.textContent = '未找到书签文件夹';
+                folderSubmenu.appendChild(emptyMsg);
+                return;
+            }
+
+            folders.forEach(folder => {
+                const item = document.createElement('div');
+                item.className = 'bookmark-folder-item';
+                item.style.paddingLeft = (14 + folder.depth * 16) + 'px';
+
+                const icon = document.createElement('span');
+                icon.className = 'bookmark-folder-item-icon';
+                icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+                item.appendChild(icon);
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'bookmark-folder-item-name';
+                nameSpan.textContent = folder.title || '(无标题)';
+                item.appendChild(nameSpan);
+
+                const countSpan = document.createElement('span');
+                countSpan.className = 'bookmark-folder-item-count';
+                countSpan.textContent = folder.count + '个链接';
+                item.appendChild(countSpan);
+
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    self.importBookmarksFromChrome('folder', folder.id, dropdown, folderSubmenu);
+                });
+
+                folderSubmenu.appendChild(item);
+            });
+        });
+    } catch (e) {
+        folderSubmenu.innerHTML = '';
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'bookmark-import-option';
+        errorMsg.style.justifyContent = 'center';
+        errorMsg.style.color = '#ef4444';
+        errorMsg.style.flexDirection = 'column';
+        errorMsg.style.alignItems = 'center';
+        errorMsg.style.gap = '8px';
+        errorMsg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span>无法访问书签数据</span>';
+        folderSubmenu.appendChild(errorMsg);
+    }
+};
+
+OOOInterface.prototype.importBookmarksFromChrome = function (mode, folderId, dropdown, folderSubmenu) {
+    const self = this;
+    dropdown.classList.remove('active');
+    folderSubmenu.classList.remove('active');
+
+    const dedupEnabled = document.getElementById('bookmark-dedup-toggle') ? document.getElementById('bookmark-dedup-toggle').checked : true;
+
+    try {
+        chrome.bookmarks.getTree(function (bookmarkTree) {
+            let bookmarksToImport = [];
+
+            if (mode === 'all') {
+                // 提取所有书签
+                const extractAll = (nodes) => {
+                    nodes.forEach(node => {
+                        if (node.url) {
+                            bookmarksToImport.push({
+                                name: node.title || self.extractDomain(node.url),
+                                url: node.url
+                            });
+                        }
+                        if (node.children) {
+                            extractAll(node.children);
+                        }
+                    });
+                };
+                extractAll(bookmarkTree);
+            } else if (mode === 'folder' && folderId) {
+                // 查找指定文件夹
+                const findFolderAndExtract = (nodes) => {
+                    for (const node of nodes) {
+                        if (node.id === folderId && node.children) {
+                            node.children.forEach(child => {
+                                if (child.url) {
+                                    bookmarksToImport.push({
+                                        name: child.title || self.extractDomain(child.url),
+                                        url: child.url
+                                    });
+                                }
+                            });
+                            return true;
+                        }
+                        if (node.children) {
+                            if (findFolderAndExtract(node.children)) return true;
+                        }
+                    }
+                    return false;
+                };
+                findFolderAndExtract(bookmarkTree);
+            }
+
+            if (bookmarksToImport.length === 0) {
+                self.showNotification('未找到可导入的书签');
+                return;
+            }
+
+            // 去重
+            let imported = 0;
+            let skipped = 0;
+
+            bookmarksToImport.forEach(bookmark => {
+                const exists = self.settings.quickLinks.some(
+                    link => link.url === bookmark.url || link.name === bookmark.name
+                );
+                if (dedupEnabled && exists) {
+                    skipped++;
+                } else {
+                    self.settings.quickLinks.push({
+                        name: bookmark.name,
+                        url: bookmark.url
+                    });
+                    imported++;
+                }
+            });
+
+            self.saveSettings();
+            // 更新侧边栏显示
+            self.applyQuickLinks();
+            // 查找当前活动的列表容器
+            const activeListContainer = document.querySelector('#right-panel-upper .quick-links-list-container');
+            if (activeListContainer) {
+                self.updateQuickLinksListInMenu(activeListContainer);
+            }
+
+            // 显示导入结果
+            if (imported > 0) {
+                self.showNotification('成功导入 ' + imported + ' 个书签' + (skipped > 0 ? '，已跳过 ' + skipped + ' 个重复项' : ''));
+            } else {
+                self.showNotification('未导入新书签' + (skipped > 0 ? '，已跳过 ' + skipped + ' 个重复项' : ''));
+            }
+        });
+    } catch (e) {
+        self.showNotification('无法访问Chrome书签数据');
+    }
 };

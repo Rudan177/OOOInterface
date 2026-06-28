@@ -14,7 +14,9 @@
     "https://*.bing.net/*"
   ],
   "permissions": [
-    "storage"
+    "storage",
+    "bookmarks",
+    "tabs"
   ],
   "icons": {
     "16": "images/icon16.png",
