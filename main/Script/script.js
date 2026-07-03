@@ -39,7 +39,10 @@ class OOOInterface {
             bingRefreshEveryTime: true,
             bingRefreshInterval: 0,
             newQuickLinkStyle: false,
-            showQuickLinkIcons: true
+            showQuickLinkIcons: true,
+            statusBarEnabled: false,
+            showStatusBarSeconds: false,
+            hideNotifications: false
         };
 
         this.currentEngine = 'google';
@@ -55,6 +58,11 @@ class OOOInterface {
         this.modalScrollHandler = null;
         this.currentVersion = VERSION; // 使用 version.js 中的版本号
         this._sidebarPushing = false; // 侧边栏壁纸推入状态
+        this.statusBarTimer = null;
+        this.statusBarContrastMode = 'dark';
+        this.wallpaperAnalysisImage = null;
+        this.wallpaperAnalysisUrl = null;
+        this.wallpaperAnalysisPromise = null;
 
         // 壁纸填充层
         this.wallpaperBlur = null;
@@ -103,6 +111,11 @@ class OOOInterface {
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
             this.isDarkMode = e.matches;
             this.applyLogo();
+            this.updateStatusBarTextContrast();
+        });
+
+        window.addEventListener('resize', () => {
+            this.updateStatusBarTextContrast();
         });
 
         let badgeClickCount = 0;
@@ -427,7 +440,7 @@ class OOOInterface {
             if (method === 'both' || method === 'dblclick') {
                 newBadge.addEventListener('dblclick', () => {
                     console.log('触发双击打开设置');
-                    this.openSettings();
+                    this.openSettings('badge');
                 });
             }
 
@@ -435,7 +448,7 @@ class OOOInterface {
                 newBadge.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
                     console.log('触发右键打开设置');
-                    this.openSettings();
+                    this.openSettings('badge');
                 });
             }
         } else {
@@ -483,6 +496,9 @@ class OOOInterface {
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
         if (savedSettings.newQuickLinkStyle !== undefined) result.newQuickLinkStyle = savedSettings.newQuickLinkStyle;
         if (savedSettings.showQuickLinkIcons !== undefined) result.showQuickLinkIcons = savedSettings.showQuickLinkIcons;
+        if (savedSettings.statusBarEnabled !== undefined) result.statusBarEnabled = savedSettings.statusBarEnabled;
+        if (savedSettings.showStatusBarSeconds !== undefined) result.showStatusBarSeconds = savedSettings.showStatusBarSeconds;
+        if (savedSettings.hideNotifications !== undefined) result.hideNotifications = savedSettings.hideNotifications;
 
         // 合并自定义Logo列表
         if (savedSettings.customLogos && Array.isArray(savedSettings.customLogos)) {
@@ -545,7 +561,46 @@ class OOOInterface {
     }
 
     // 显示通知
+    // 获取通知弹窗配色（与右键菜单相同的Logo配色逻辑）
+    getNotificationColors() {
+        const blackWhiteLogos = ['Apple', 'HUAWEI', 'text-logo'];
+        const isCustomLogo = !blackWhiteLogos.includes(this.settings.logo) &&
+            !['default', 'auto', 'Google', 'Microsoft', 'Bing', 'Baidu', 'DuckDuckGo', 'Sogou', '360', 'Yahoo', 'Yandex'].includes(this.settings.logo);
+
+        if (this.settings.dynamicBlur) {
+            // 高级视觉效果：背景/边框参考右键菜单表面色 + Logo主题色文字
+            if (this.settings.logo === 'default') {
+                // 右键菜单默认背景 #F1F3F4(浅) / #303134(深)，加上毛玻璃
+                const bgColor = this.isDarkMode ? 'rgba(48, 49, 52, 0.85)' : 'rgba(241, 243, 244, 0.85)';
+                const textColor = this.isDarkMode ? '#d0d0d0' : '#1a1a1a';
+                const borderColor = this.isDarkMode ? 'rgba(95, 99, 104, 0.5)' : 'rgba(223, 225, 229, 0.6)';
+                return { bg: bgColor, text: textColor, border: borderColor, blur: true };
+            }
+            if (blackWhiteLogos.includes(this.settings.logo) || isCustomLogo) {
+                const isDark = this.isDarkMode;
+                const bgColor = isDark ? 'rgba(0, 0, 0, 0.55)' : 'rgba(255, 255, 255, 0.75)';
+                const textColor = isDark ? '#ffffff' : '#000000';
+                const borderColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
+                return { bg: bgColor, text: textColor, border: borderColor, blur: true };
+            }
+            // Google、Microsoft等：蓝色主题
+            const bgColor = this.isDarkMode ? 'rgba(26, 115, 232, 0.35)' : 'rgba(26, 115, 232, 0.25)';
+            return { bg: bgColor, text: '#ffffff', border: 'rgba(26, 115, 232, 0.4)', blur: true };
+        }
+
+        // 非高级视觉效果：使用表面色
+        return { bg: 'var(--surface-color)', text: 'var(--text-color)', border: 'var(--border-color)', blur: false };
+    }
+
     showNotification(message) {
+        // 隐藏弹窗开启时，仅设置在设置页面内仍弹出
+        if (this.settings && this.settings.hideNotifications) {
+            const modal = document.getElementById('settings-modal');
+            if (!modal || !modal.classList.contains('show')) {
+                return;
+            }
+        }
+
         // 移除已存在的通知
         const existingNotification = document.getElementById('ooo-interface-notification');
         if (existingNotification) {
@@ -554,21 +609,32 @@ class OOOInterface {
 
         const notification = document.createElement('div');
         notification.id = 'ooo-interface-notification';
+
+        // 获取配色（与右键菜单一致：背景/描边/文字）
+        const colors = this.getNotificationColors();
+        const blurStyle = colors.blur
+            ? 'backdrop-filter: blur(40px) saturate(1.4); -webkit-backdrop-filter: blur(40px) saturate(1.4);'
+            : '';
+
         notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: var(--surface-color);
-            color: var(--text-color);
+            background: ${colors.bg};
+            color: ${colors.text};
             padding: 12px 20px;
             border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
             z-index: 1001;
-            border: 1px solid var(--border-color);
+            border: 1px solid ${colors.border};
             font-family: inherit;
-            transition: all 0.3s ease;
+            font-size: 14px;
+            line-height: 1.5;
+            ${blurStyle}
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
             opacity: 0;
-            transform: translateY(-10px);
+            transform: translateY(-12px) scale(0.96);
+            pointer-events: none;
         `;
         notification.textContent = message;
 
@@ -577,18 +643,18 @@ class OOOInterface {
         // 显示动画
         setTimeout(() => {
             notification.style.opacity = '1';
-            notification.style.transform = 'translateY(0)';
+            notification.style.transform = 'translateY(0) scale(1)';
         }, 10);
 
         // 3秒后自动隐藏
         setTimeout(() => {
             notification.style.opacity = '0';
-            notification.style.transform = 'translateY(-10px)';
+            notification.style.transform = 'translateY(-12px) scale(0.96)';
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.remove();
                 }
-            }, 300);
+            }, 350);
         }, 3000);
     }
 
@@ -754,6 +820,284 @@ class OOOInterface {
             console.error('保存设置失败:', error);
             this.showNotification('保存设置失败');
         }
+    }
+
+    formatStatusBarDateTime(date) {
+        const pad = (value) => String(value).padStart(2, '0');
+        const year = date.getFullYear();
+        const month = pad(date.getMonth() + 1);
+        const day = pad(date.getDate());
+        const hours = pad(date.getHours());
+        const minutes = pad(date.getMinutes());
+        const seconds = pad(date.getSeconds());
+
+        if (this.settings.showStatusBarSeconds) {
+            return `${year}年${month}月${day}日 ${hours}:${minutes}:${seconds}`;
+        }
+
+        return `${year}年${month}月${day}日 ${hours}:${minutes}`;
+    }
+
+    updateStatusBarText() {
+        const statusBar = document.getElementById('status-bar');
+        if (!statusBar) return;
+
+        statusBar.textContent = this.formatStatusBarDateTime(new Date());
+    }
+
+    stopStatusBarTimer() {
+        if (this.statusBarTimer) {
+            clearTimeout(this.statusBarTimer);
+            this.statusBarTimer = null;
+        }
+    }
+
+    applyStatusBarTextTone(mode) {
+        const statusBar = document.getElementById('status-bar');
+        if (!statusBar) return;
+
+        const resolvedMode = mode === 'light' ? 'light' : 'dark';
+        const color = resolvedMode === 'light' ? '#f8fafc' : '#202124';
+        const shadow = resolvedMode === 'light'
+            ? '0 1px 2px rgba(0, 0, 0, 0.28)'
+            : '0 1px 2px rgba(255, 255, 255, 0.18)';
+
+        this.statusBarContrastMode = resolvedMode;
+        statusBar.style.setProperty('--status-bar-text-color', color);
+        statusBar.style.textShadow = shadow;
+    }
+
+    getColorBrightness(colorString) {
+        const match = colorString && colorString.match(/rgba?\(([^)]+)\)/);
+        if (!match) {
+            return this.isDarkMode ? 32 : 245;
+        }
+
+        const parts = match[1].split(',').map(part => Number.parseFloat(part.trim()));
+        if (parts.length < 3 || parts.some(value => Number.isNaN(value))) {
+            return this.isDarkMode ? 32 : 245;
+        }
+
+        return (parts[0] * 0.299) + (parts[1] * 0.587) + (parts[2] * 0.114);
+    }
+
+    getFallbackStatusBarTextTone() {
+        return this.isDarkMode ? 'light' : 'dark';
+    }
+
+    async ensureWallpaperAnalysisImage(url) {
+        if (!url) {
+            this.wallpaperAnalysisImage = null;
+            this.wallpaperAnalysisUrl = null;
+            this.wallpaperAnalysisPromise = null;
+            return null;
+        }
+
+        if (this.wallpaperAnalysisImage && this.wallpaperAnalysisUrl === url) {
+            return this.wallpaperAnalysisImage;
+        }
+
+        if (this.wallpaperAnalysisPromise && this.wallpaperAnalysisUrl === url) {
+            return this.wallpaperAnalysisPromise;
+        }
+
+        this.wallpaperAnalysisUrl = url;
+        this.wallpaperAnalysisPromise = new Promise((resolve) => {
+            const image = new Image();
+            image.crossOrigin = 'anonymous';
+
+            image.onload = () => {
+                this.wallpaperAnalysisImage = image;
+                this.wallpaperAnalysisPromise = null;
+                resolve(image);
+            };
+
+            image.onerror = () => {
+                this.wallpaperAnalysisImage = null;
+                this.wallpaperAnalysisPromise = null;
+                resolve(null);
+            };
+
+            image.src = url;
+        });
+
+        return this.wallpaperAnalysisPromise;
+    }
+
+    drawWallpaperPreviewToCanvas(context, viewportWidth, viewportHeight, image) {
+        const fillMode = this.settings.wallpaperFill === true;
+        const scale = fillMode
+            ? Math.max(viewportWidth / image.width, viewportHeight / image.height)
+            : Math.min(viewportWidth / image.width, viewportHeight / image.height);
+
+        const drawWidth = image.width * scale;
+        const drawHeight = image.height * scale;
+        const drawX = (viewportWidth - drawWidth) / 2;
+        const drawY = (viewportHeight - drawHeight) / 2;
+        const wallpaperElement = this.wallpaperMain;
+        const transformValue = wallpaperElement ? getComputedStyle(wallpaperElement).transform : 'none';
+
+        context.save();
+        context.clearRect(0, 0, viewportWidth, viewportHeight);
+
+        if (transformValue && transformValue !== 'none') {
+            const matrix = new DOMMatrixReadOnly(transformValue);
+            context.translate(viewportWidth / 2, viewportHeight / 2);
+            context.transform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f);
+            context.translate(-viewportWidth / 2, -viewportHeight / 2);
+        }
+
+        context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+        context.restore();
+    }
+
+    getStatusBarSampleRect(viewportWidth, viewportHeight) {
+        const statusBar = document.getElementById('status-bar');
+        if (!statusBar) return null;
+
+        const rect = statusBar.getBoundingClientRect();
+        const sampleWidth = Math.max(120, rect.width * 0.42);
+        const sampleHeight = Math.max(18, rect.height * 0.7);
+        const sampleX = Math.max(0, (viewportWidth - sampleWidth) / 2);
+        const sampleY = Math.max(0, rect.top);
+
+        return {
+            x: sampleX,
+            y: sampleY,
+            width: Math.min(sampleWidth, viewportWidth - sampleX),
+            height: Math.min(sampleHeight, viewportHeight - sampleY)
+        };
+    }
+
+    getAverageBrightnessFromCanvas(context, sampleRect) {
+        try {
+            const imageData = context.getImageData(
+                Math.round(sampleRect.x),
+                Math.round(sampleRect.y),
+                Math.max(1, Math.round(sampleRect.width)),
+                Math.max(1, Math.round(sampleRect.height))
+            );
+
+            let totalBrightness = 0;
+            let pixelCount = 0;
+            const { data } = imageData;
+
+            for (let index = 0; index < data.length; index += 4) {
+                const alpha = data[index + 3] / 255;
+                if (alpha <= 0) continue;
+
+                totalBrightness += (
+                    (data[index] * 0.299) +
+                    (data[index + 1] * 0.587) +
+                    (data[index + 2] * 0.114)
+                ) * alpha;
+                pixelCount += alpha;
+            }
+
+            if (pixelCount === 0) {
+                return null;
+            }
+
+            return totalBrightness / pixelCount;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async updateStatusBarTextContrast() {
+        const statusBar = document.getElementById('status-bar');
+        if (!statusBar) return;
+
+        const wallpaperUrl = this.getWallpaperUrl();
+        const hasWallpaper = !!(wallpaperUrl && this.wallpaperMain && this.wallpaperMain.classList.contains('active'));
+
+        if (!hasWallpaper) {
+            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
+            return;
+        }
+
+        const analysisUrl = wallpaperUrl;
+        const image = await this.ensureWallpaperAnalysisImage(analysisUrl);
+        if (!image || analysisUrl !== this.getWallpaperUrl()) {
+            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
+            return;
+        }
+
+        const viewportWidth = Math.max(1, window.innerWidth);
+        const viewportHeight = Math.max(1, window.innerHeight);
+        const canvas = document.createElement('canvas');
+        canvas.width = viewportWidth;
+        canvas.height = viewportHeight;
+
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        if (!context) {
+            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
+            return;
+        }
+
+        this.drawWallpaperPreviewToCanvas(context, viewportWidth, viewportHeight, image);
+
+        const sampleRect = this.getStatusBarSampleRect(viewportWidth, viewportHeight);
+        if (!sampleRect) {
+            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
+            return;
+        }
+
+        const brightness = this.getAverageBrightnessFromCanvas(context, sampleRect);
+        if (brightness === null) {
+            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
+            return;
+        }
+
+        this.applyStatusBarTextTone(brightness >= 160 ? 'dark' : 'light');
+    }
+
+    startStatusBarTimer() {
+        this.stopStatusBarTimer();
+
+        const shouldShow = this.settings.developerMode && this.settings.statusBarEnabled;
+        if (!shouldShow) {
+            return;
+        }
+
+        const scheduleNextTick = () => {
+            const now = new Date();
+            const showSeconds = this.settings.showStatusBarSeconds;
+            let delay = showSeconds
+                ? 1000 - now.getMilliseconds()
+                : ((60 - now.getSeconds()) * 1000) - now.getMilliseconds();
+
+            if (delay <= 0) {
+                delay = showSeconds ? 1000 : 60000;
+            }
+
+            this.statusBarTimer = setTimeout(() => {
+                this.updateStatusBarText();
+                scheduleNextTick();
+            }, delay);
+        };
+
+        this.updateStatusBarText();
+        scheduleNextTick();
+    }
+
+    // 开发者模式关闭时仅隐藏状态栏，重新开启后恢复上次保存的显示偏好。
+    applyStatusBarSettings() {
+        const statusBar = document.getElementById('status-bar');
+        if (!statusBar) return;
+
+        const shouldShow = this.settings.developerMode && this.settings.statusBarEnabled;
+
+        if (!shouldShow) {
+            statusBar.classList.remove('visible');
+            statusBar.textContent = '';
+            this.stopStatusBarTimer();
+            return;
+        }
+
+        statusBar.classList.add('visible');
+        this.startStatusBarTimer();
+        this.updateStatusBarTextContrast();
     }
 
     bindEvents() {
@@ -940,6 +1284,21 @@ class OOOInterface {
             }
         });
 
+        // 状态栏主开关改变时，显示/隐藏子开关并保留上次保存的秒钟偏好
+        document.getElementById('status-bar-toggle').addEventListener('change', (e) => {
+            const showSecondsGroup = document.getElementById('show-seconds-group');
+            const showSecondsToggle = document.getElementById('show-seconds-toggle');
+            if (showSecondsGroup && showSecondsToggle) {
+                if (e.target.checked) {
+                    showSecondsGroup.style.display = 'block';
+                    showSecondsToggle.checked = this.settings.showStatusBarSeconds;
+                } else {
+                    showSecondsGroup.style.display = 'none';
+                    showSecondsToggle.checked = false;
+                }
+            }
+        });
+
         // 壁纸常显示开关改变时，实时显示/隐藏壁纸缩放开关
         document.getElementById('persistent-wallpaper-toggle').addEventListener('change', (e) => {
             const wallpaperScaleGroup = document.getElementById('wallpaper-scale-group');
@@ -981,6 +1340,22 @@ class OOOInterface {
                 this.settings.showQuickLinkIcons = showIconsToggle.checked;
             }
 
+            const statusBarToggle = document.getElementById('status-bar-toggle');
+            if (statusBarToggle) {
+                this.settings.statusBarEnabled = statusBarToggle.checked;
+            }
+
+            const showSecondsToggle = document.getElementById('show-seconds-toggle');
+            if (showSecondsToggle && this.settings.statusBarEnabled) {
+                this.settings.showStatusBarSeconds = showSecondsToggle.checked;
+            }
+
+            // 读取隐藏弹窗开关
+            const hideNotifToggle = document.getElementById('hide-notifications-toggle');
+            if (hideNotifToggle) {
+                this.settings.hideNotifications = hideNotifToggle.checked;
+            }
+
             // 保存设置打开方式
             const badgeMethodSelect = document.getElementById('badge-open-method-select');
             if (badgeMethodSelect) {
@@ -993,10 +1368,12 @@ class OOOInterface {
             }
 
             this.applySettings();
+            // 重新绑定底部铭牌打开方式（该设置不在 applySettings 中处理）
+            this.setupBadgeOpenMethod();
             this.saveSettings();
             this.closeSettings();
             this.showNotification('设置已应用');
-            location.reload();
+            // 无需刷新页面，所有设置已通过组件级更新即时生效
         });
 
         // 右键应用按钮打开/关闭开发者模式
@@ -1006,6 +1383,7 @@ class OOOInterface {
             this.saveSettings();
             this.updateDeveloperModeUI();
             this.applyDeveloperSettings();
+            this.applyStatusBarSettings();
             this.showNotification(this.settings.developerMode ? '开发者模式已开启' : '开发者模式已关闭');
         });
 
@@ -1513,7 +1891,7 @@ class OOOInterface {
                 this.pasteToSearch();
                 break;
             case 'settings':
-                this.openSettings();
+                this.openSettings('context');
                 break;
             case 'refresh':
                 location.reload();
@@ -1539,7 +1917,7 @@ class OOOInterface {
         if (searchInput && searchInput.value.trim()) {
             navigator.clipboard.writeText(searchInput.value.trim())
                 .then(() => {
-                    this.showNotification('已复制搜索框内容');
+                    this.showNotification('复制');
                 })
                 .catch(err => {
                     console.error('复制失败:', err);
@@ -1560,7 +1938,7 @@ class OOOInterface {
                 if (clearBtn) {
                     clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
                 }
-                this.showNotification('已粘贴到搜索框');
+                this.showNotification('粘贴');
             })
             .catch(err => {
                 console.error('粘贴失败:', err);
@@ -1573,7 +1951,7 @@ class OOOInterface {
         this.settings.searchHistory = !this.settings.searchHistory;
         this.saveSettings();
         this.updateContextMenuIcons();
-        this.showNotification(this.settings.searchHistory ? '搜索历史已开启' : '搜索历史已关闭');
+        this.showNotification(this.settings.searchHistory ? '搜索历史：开启' : '搜索历史：关闭');
     }
 
     // 切换壁纸常显示设置
@@ -1582,7 +1960,7 @@ class OOOInterface {
         this.applySettings();
         this.saveSettings();
         this.updateContextMenuIcons();
-        this.showNotification(this.settings.persistentWallpaper ? '壁纸常显示已开启' : '壁纸常显示已关闭');
+        this.showNotification(this.settings.persistentWallpaper ? '壁纸常显示：开启' : '壁纸常显示：关闭');
     }
 
     // 处理Logo选择变化
@@ -1746,7 +2124,7 @@ class OOOInterface {
                 this.updateCustomFontsList();
 
                 this.saveSettings();
-                this.showNotification(`字体 "${fontName}" 上传成功`);
+                this.showNotification(`字体"${fontName}"上传成功`);
 
                 // 刷新右侧面板菜单（如果打开）
                 const rightPanelUpper = document.getElementById('right-panel-upper');
@@ -1758,7 +2136,7 @@ class OOOInterface {
                 }
             }).catch((error) => {
                 console.error('字体加载失败:', error);
-                this.showNotification('字体加载失败，请检查文件格式');
+                this.showNotification('字体加载失败');
             });
         };
 
@@ -1786,7 +2164,7 @@ class OOOInterface {
 
             // 检查是否已存在同名Logo
             if (this.settings.customLogos.some(logo => logo.name === logoName)) {
-                this.showNotification(`Logo "${logoName}" 已存在`);
+                this.showNotification(`Logo"${logoName}"已存在`);
                 return;
             }
 
@@ -1801,7 +2179,7 @@ class OOOInterface {
             this.updateCustomLogosList();
 
             this.saveSettings();
-            this.showNotification(`Logo "${logoName}" 上传成功`);
+            this.showNotification(`Logo"${logoName}"上传成功`);
 
             // 刷新右侧面板菜单（如果打开）
             const rightPanelUpper = document.getElementById('right-panel-upper');
@@ -1843,7 +2221,7 @@ class OOOInterface {
                 customLogo.darkData = darkLogoData;
                 this.saveSettings();
                 this.applyLogo();
-                this.showNotification('暗色Logo上传成功');
+                this.showNotification('暗色Logo上传');
 
                 // 刷新右侧面板以更新按钮文字
                 const rightPanelUpper = document.getElementById('right-panel-upper');
@@ -1856,7 +2234,7 @@ class OOOInterface {
                     }
                 }
             } else {
-                this.showNotification('请先选择一个自定义Logo');
+                this.showNotification('请先选择一个Logo');
             }
 
             // 清除临时目标
@@ -1880,7 +2258,7 @@ class OOOInterface {
 
         // 检查文件大小 (限制10MB)
         if (file.size > 10 * 1024 * 1024) {
-            this.showNotification('图片文件过大（最大10MB）');
+            this.showNotification('图片文件过大，请选择小于10MB的文件');
             return;
         }
 
@@ -1891,7 +2269,7 @@ class OOOInterface {
 
             // 检查是否已存在同名壁纸
             if (this.settings.customWallpapers.some(wp => wp.name === wallpaperName)) {
-                this.showNotification(`壁纸 "${wallpaperName}" 已存在`);
+                this.showNotification(`壁纸"${wallpaperName}"已存在`);
                 return;
             }
 
@@ -1912,7 +2290,7 @@ class OOOInterface {
 
             this.applySettings();
             this.saveSettings();
-            this.showNotification(`壁纸 "${wallpaperName}" 上传成功`);
+            this.showNotification(`壁纸"${wallpaperName}"上传`);
 
             // 刷新右侧面板菜单（如果打开）
             const rightPanelUpper = document.getElementById('right-panel-upper');
@@ -1959,14 +2337,14 @@ class OOOInterface {
         const url = urlInput.value.trim();
 
         if (!url) {
-            this.showNotification('请输入壁纸URL');
+            this.showNotification('请输入URL');
             return;
         }
 
         try {
             new URL(url);
         } catch (e) {
-            this.showNotification('请输入有效的URL');
+            this.showNotification('URL格式错误');
             return;
         }
 
@@ -2055,7 +2433,7 @@ class OOOInterface {
 
         async function tryFetch(fetchFn, label) {
             try {
-                notify('正在获取必应壁纸' + (label ? ' (' + label + ')' : '') + '...');
+                notify('正在获取壁纸' + (label ? ' (' + label + ')' : ''));
                 var response = await fetchFn(apiUrl);
                 if (!response.ok) throw new Error('HTTP ' + response.status);
                 var data = await response.json();
@@ -2080,7 +2458,7 @@ class OOOInterface {
                     if (ProxyManager.isProxyEnabled()) {
                         notify('直连和代理均失败，请确认代理服务正常运行（端口:' + ProxyManager.getProxyPort() + '）');
                     } else {
-                        notify('网络请求被拦截（CORS限制）。请在开发者选项中配置代理端口，或以Chrome扩展模式加载');
+                        notify('网络请求被拦截');
                     }
                 } else {
                     notify('获取必应壁纸失败：' + (lastError ? lastError.message : '未知错误'));
@@ -2246,7 +2624,7 @@ class OOOInterface {
         // 更新自定义Logo列表显示（会自动清理DOM）
         this.updateCustomLogosList();
         this.saveSettings();
-        this.showNotification('自定义Logo已删除');
+        this.showNotification('自定义Logo删除');
     }
 
     // 删除自定义字体
@@ -2265,7 +2643,7 @@ class OOOInterface {
         // 更新自定义字体列表显示
         this.updateCustomFontsList();
         this.saveSettings();
-        this.showNotification('自定义字体已删除');
+        this.showNotification('字体已删除');
     }
 
     // 更新自定义字体列表
@@ -2326,7 +2704,7 @@ class OOOInterface {
         // 更新自定义壁纸列表显示
         this.updateCustomWallpapersList();
         this.saveSettings();
-        this.showNotification('自定义壁纸已删除');
+        this.showNotification('壁纸：删除');
     }
 
     // 更新自定义壁纸列表
@@ -2394,7 +2772,7 @@ class OOOInterface {
                 this.saveSettings();
                 this.applyLogo();
                 this.updateCustomLogosList();
-                this.showNotification('暗色Logo上传成功');
+                this.showNotification('暗色Logo上传');
             };
             reader.onerror = () => {
                 this.showNotification('文件读取失败');
@@ -2414,7 +2792,7 @@ class OOOInterface {
         this.saveSettings();
         this.applyLogo();
         this.updateCustomLogosList();
-        this.showNotification('暗色Logo已删除');
+        this.showNotification('暗色Logo删除');
     }
 
     // 添加快速访问链接
@@ -2763,7 +3141,7 @@ class OOOInterface {
         // 添加按钮：打开设置并跳转到快速链接管理
         if (addBtn) {
             addBtn.addEventListener('click', () => {
-                this.openSettings();
+                this.openSettings('badge');
                 // 等待设置面板打开后，显示快速链接管理
                 setTimeout(() => {
                     this.showQuickLinksMenuInRightPanel();
@@ -2898,7 +3276,7 @@ class OOOInterface {
             this.userChangedLogo = true;
             this.applyLogo();
             this.saveSettings();
-            this.showNotification('文字Logo已设置');
+            this.showNotification('文字Logo设置');
 
             // 更新select-selected的显示文本
             const selected = document.getElementById('logo-select-selected');
@@ -2918,7 +3296,7 @@ class OOOInterface {
                 items.classList.add('select-hide');
             }
         } else {
-            this.showNotification('请输入文字');
+            this.showNotification('请输入文本');
         }
     }
 
@@ -3422,7 +3800,7 @@ class OOOInterface {
         }
     }
 
-    openSettings() {
+    openSettings(source) {
         if (this.contextMenu) {
             this.hideContextMenu();
         }
@@ -3439,6 +3817,10 @@ class OOOInterface {
 
         // 禁用主页面滚动
         document.body.style.overflow = 'hidden';
+
+        // 清除上一次的来源标记类
+        modal.classList.remove('badge-source');
+        modal.classList.remove('context-source');
 
         // 如果开启了高级视效，给 modal 添加 blur-effect 类
         if (this.settings.dynamicBlur) {
@@ -3473,8 +3855,18 @@ class OOOInterface {
         if (this.settings.dynamicBlur) {
             // 移除no-animation类，启用动画
             if (modalContent) modalContent.classList.remove('no-animation');
+            // 根据来源添加标识类，用于差异化动画
+            if (source === 'badge') {
+                modal.classList.add('badge-source');
+            } else {
+                modal.classList.add('context-source');
+            }
             // 使用requestAnimationFrame确保动画在下一帧触发，更加流畅
             requestAnimationFrame(() => {
+                // 从铭牌打开：在渲染前计算铭牌相对弹窗的实际位置
+                if (source === 'badge') {
+                    this.calculateBadgeOrigin(modal);
+                }
                 requestAnimationFrame(() => {
                     modal.classList.add('show');
 
@@ -3487,6 +3879,11 @@ class OOOInterface {
         } else {
             // 添加no-animation类，禁用动画
             if (modalContent) modalContent.classList.add('no-animation');
+            // 无动画时仍记录来源，供关闭动画使用
+            if (source === 'badge') {
+                modal.classList.add('badge-source');
+                this.calculateBadgeOrigin(modal);
+            }
             // 直接添加show类，无动画
             modal.classList.add('show');
 
@@ -3683,6 +4080,7 @@ class OOOInterface {
                 // 移除 hiding 类和 blur-effect 类
                 modal.classList.remove('hiding');
                 modal.classList.remove('blur-effect');
+                modal.classList.remove('badge-source');
 
                 // 恢复主页面滚动
                 document.body.style.overflow = '';
@@ -3701,11 +4099,12 @@ class OOOInterface {
 
                 // 隐藏模态框
                 modal.style.display = 'none';
-            }, 350); // 等待动画完成，与CSS过渡时间匹配
+            }, 400); // 等待动画完成，与CSS过渡时间匹配
         } else {
             // 直接执行后续操作，无动画
             // 移除 hiding 类
             modal.classList.remove('hiding');
+            modal.classList.remove('badge-source');
 
             // 恢复主页面滚动
             document.body.style.overflow = '';
@@ -3728,6 +4127,29 @@ class OOOInterface {
             // 隐藏模态框
             modal.style.display = 'none';
         }
+    }
+
+    // 计算铭牌在弹窗内容区中的相对位置，使缩放动画精准指向铭牌
+    calculateBadgeOrigin(modal) {
+        const badge = document.getElementById('ooo-badge');
+        const content = modal.querySelector('.modal-content');
+        if (!badge || !content) return;
+
+        const badgeRect = badge.getBoundingClientRect();
+        const badgeCenterX = badgeRect.left + badgeRect.width / 2;
+        const badgeCenterY = badgeRect.top + badgeRect.height / 2;
+
+        // 临时候获取内容区未变换的尺寸（同在 rAF 内，不会触发重绘）
+        const origTransform = content.style.transform;
+        content.style.transform = 'none';
+        const contentRect = content.getBoundingClientRect();
+        content.style.transform = origTransform;
+
+        const originX = ((badgeCenterX - contentRect.left) / contentRect.width) * 100;
+        const originY = ((badgeCenterY - contentRect.top) / contentRect.height) * 100;
+
+        content.style.setProperty('--badge-origin-x', Math.max(0, Math.min(100, originX)) + '%');
+        content.style.setProperty('--badge-origin-y', Math.max(0, Math.min(100, originY)) + '%');
     }
 
     updateDeveloperModeUI() {
@@ -3772,6 +4194,33 @@ class OOOInterface {
                     showIconsToggle.checked = false;
                 }
             }
+
+            const statusBarToggle = document.getElementById('status-bar-toggle');
+            const showSecondsGroup = document.getElementById('show-seconds-group');
+            const showSecondsToggle = document.getElementById('show-seconds-toggle');
+            if (statusBarToggle) {
+                statusBarToggle.checked = this.settings.statusBarEnabled;
+            }
+            if (showSecondsGroup && showSecondsToggle) {
+                if (this.settings.statusBarEnabled) {
+                    showSecondsGroup.style.display = 'block';
+                    showSecondsToggle.checked = this.settings.showStatusBarSeconds;
+                } else {
+                    showSecondsGroup.style.display = 'none';
+                    showSecondsToggle.checked = false;
+                }
+            }
+
+            // 同步隐藏弹窗开关
+            const hideNotifToggle = document.getElementById('hide-notifications-toggle');
+            if (hideNotifToggle) {
+                hideNotifToggle.checked = this.settings.hideNotifications;
+            }
+        } else {
+            const showSecondsGroup = document.getElementById('show-seconds-group');
+            if (showSecondsGroup) {
+                showSecondsGroup.style.display = 'none';
+            }
         }
 
         const proxySelect = document.getElementById('proxy-select');
@@ -3807,6 +4256,9 @@ class OOOInterface {
         this.settings.fontWeight = 400;
         this.settings.searchBoxHeight = 50;
         this.settings.proxyPort = null;
+        this.settings.statusBarEnabled = false;
+        this.settings.showStatusBarSeconds = false;
+        this.settings.hideNotifications = false;
 
         const fontSizeSlider = document.getElementById('font-size-slider');
         const fontWeightSlider = document.getElementById('font-weight-slider');
@@ -3834,6 +4286,8 @@ class OOOInterface {
         ProxyManager.clearProxy();
 
         this.applyDeveloperSettings();
+        this.updateDeveloperModeUI();
+        this.applyStatusBarSettings();
         this.saveSettings();
     }
 
@@ -3925,6 +4379,7 @@ class OOOInterface {
         }
 
         this.handlePersistentWallpaperToggle();
+        this.applyStatusBarSettings();
     }
 
     // 应用右键菜单样式
@@ -4051,6 +4506,8 @@ class OOOInterface {
             // 根据 wallpaperFill 设置填充/适配模式
             this.wallpaperMain.classList.toggle('fill-mode', this.settings.wallpaperFill === true);
         }
+
+        this.updateStatusBarTextContrast();
     }
 
     // 清除两层壁纸
@@ -4068,6 +4525,11 @@ class OOOInterface {
             this.wallpaperMain.style.transform = '';
             this.wallpaperMain.style.transition = '';
         }
+
+        this.wallpaperAnalysisImage = null;
+        this.wallpaperAnalysisUrl = null;
+        this.wallpaperAnalysisPromise = null;
+        this.updateStatusBarTextContrast();
     }
 
     // 统一计算壁纸变换（合并壁纸缩放模式和侧边栏推入效果）
@@ -4103,6 +4565,7 @@ class OOOInterface {
         }
 
         wm.style.transform = transform;
+        this.updateStatusBarTextContrast();
     }
 
     applyDefaultWallpaper() {
@@ -4489,13 +4952,13 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         self.userChangedLogo = true;
                         self.applyLogo();
                         self.saveSettings();
-                        self.showNotification('文字Logo已设置');
+                        self.showNotification('文字Logo设置');
 
                         selected.textContent = '自定义文字Logo';
                         hiddenSelect.value = 'text-logo';
                         self.closeSettingsMenuInRightPanel();
                     } else {
-                        self.showNotification('请输入文字');
+                        self.showNotification('请输入文本');
                     }
                 });
             } else {
@@ -5108,13 +5571,13 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         e.stopPropagation();
                         const url = urlInput.value.trim();
                         if (!url) {
-                            self.showNotification('请输入壁纸URL');
+                            self.showNotification('请输入URL');
                             return;
                         }
                         try {
                             new URL(url);
                         } catch (err) {
-                            self.showNotification('请输入有效的URL');
+                            self.showNotification('URL格式错误');
                             return;
                         }
 
@@ -5386,7 +5849,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     self.userChangedLogo = true;
                     self.applyLogo();
                     self.saveSettings();
-                    self.showNotification('文字Logo已设置');
+                    self.showNotification('文字Logo设置');
 
                     selected.textContent = '自定义文字Logo';
                     hiddenSelect.value = 'text-logo';

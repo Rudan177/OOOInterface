@@ -15,6 +15,9 @@
 
 <body>
 
+    <div id="status-bar" class="status-bar" aria-live="polite"></div>
+    <div id="status-bar-blur" class="status-bar-blur"></div>
+
     <div class="container">
 
         <div class="logo-section">
@@ -307,11 +310,40 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div class="setting-group" id="show-quick-icons-group" style="padding-left: 20px;">
+                                <div class="setting-group" id="show-quick-icons-group"
+                                    style="padding-left: 20px; margin-bottom: 0;">
                                     <div class="switch-label">
                                         <span class="setting-label">显示图标</span>
                                         <label class="switch">
                                             <input type="checkbox" id="show-quick-icons">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="setting-group" style="margin-bottom: 0;">
+                                    <div class="switch-label">
+                                        <span class="setting-label">状态栏</span>
+                                        <label class="switch">
+                                            <input type="checkbox" id="status-bar-toggle">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="setting-group" id="show-seconds-group"
+                                    style="padding-left: 20px; margin-bottom: 0;">
+                                    <div class="switch-label">
+                                        <span class="setting-label">显示秒钟</span>
+                                        <label class="switch">
+                                            <input type="checkbox" id="show-seconds-toggle">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="setting-group">
+                                    <div class="switch-label">
+                                        <span class="setting-label">隐藏弹窗</span>
+                                        <label class="switch">
+                                            <input type="checkbox" id="hide-notifications-toggle">
                                             <span class="slider"></span>
                                         </label>
                                     </div>

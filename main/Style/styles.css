@@ -75,6 +75,9 @@
     --info-text-color: #3c4043;
     --info-close-color: #5f6368;
     --info-close-hover: #202124;
+    --status-bar-height: 36px;
+    --status-bar-offset: 44px;
+    --status-bar-text-color: #202124;
 }
 
 
@@ -124,8 +127,40 @@ body {
 }
 
 
+.status-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--status-bar-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    color: var(--status-bar-text-color);
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 25;
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+    transform: translateY(-100%);
+}
 
-/* 欢迎屏幕 */
+.status-bar.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+
+
 
 .welcome-screen {
     position: fixed;
@@ -994,7 +1029,7 @@ body.scrolled.dynamic-blur .ooo-badge {
     -webkit-backdrop-filter: blur(0px);
     z-index: 1000;
     opacity: 0;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.40s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -1040,6 +1075,7 @@ body.scrolled.dynamic-blur .ooo-badge {
     pointer-events: none;
     backdrop-filter: blur(0px);
     -webkit-backdrop-filter: blur(0px);
+    transition: all 0.40s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -1053,7 +1089,7 @@ body.scrolled.dynamic-blur .ooo-badge {
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
     transform: scale(0.92) translateY(20px);
     opacity: 0;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.40s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -1091,6 +1127,24 @@ body.scrolled.dynamic-blur .ooo-badge {
     }
 }
 
+/* 高级视觉效果 - 铭牌来源缩放打开 */
+
+.modal.blur-effect.badge-source .modal-content {
+    transform-origin: var(--badge-origin-x, 50%) var(--badge-origin-y, 100%);
+    transform: scale(0.45) translateY(70px);
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+    transition: all 0.40s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal.blur-effect.badge-source.show .modal-content {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    backdrop-filter: blur(80px) saturate(1.5);
+    -webkit-backdrop-filter: blur(80px) saturate(1.5);
+}
+
 
 
 /* 无动画 */
@@ -1111,13 +1165,47 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 
 
-.modal.hiding .modal-content {
-    transform: scale(0.95) translateY(-15px);
+/* 从底部铭牌缩放打开 - 弹窗从铭牌位置向上展开 */
+
+.modal.badge-source .modal-content {
+    transform-origin: var(--badge-origin-x, 50%) var(--badge-origin-y, 100%);
+    transform: scale(0.5) translateY(60px);
     opacity: 0;
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18);
+    transition: all 0.40s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal.badge-source.show .modal-content {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    box-shadow: 0 28px 56px rgba(0, 0, 0, 0.22);
 }
 
 
+
+/* 关闭弹窗动效 - 默认/右键来源：简单淡出收缩 */
+
+.modal.hiding .modal-content {
+    transform: scale(0.95) translateY(-8px);
+    opacity: 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 从铭牌打开时，关闭动画向铭牌实际位置收缩 */
+
+.modal.badge-source.hiding .modal-content {
+    transform-origin: var(--badge-origin-x, 50%) var(--badge-origin-y, 100%);
+    transform: scale(0.5) translateY(50px);
+    opacity: 0;
+}
+
+.modal.blur-effect.badge-source.hiding .modal-content {
+    transform-origin: var(--badge-origin-x, 50%) var(--badge-origin-y, 100%);
+    transform: scale(0.45) translateY(60px);
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+}
 
 .modal-header {
     display: flex;
@@ -2848,6 +2936,11 @@ body.dynamic-blur .bookmark-folder-submenu {
     gap: 16px;
 }
 
+#show-quick-icons-group,
+#show-seconds-group {
+    display: none;
+}
+
 
 
 .developer-control-item {
@@ -3984,9 +4077,9 @@ body.scrolled.dynamic-blur .quick-access-btn {
 
 .quick-access-sidebar {
     position: fixed;
-    top: 0;
+    top: var(--status-bar-offset);
     right: 0;
-    height: 100vh;
+    height: calc(100vh - var(--status-bar-offset));
     z-index: 500;
     pointer-events: none;
     display: none;
@@ -4018,10 +4111,10 @@ body.scrolled.dynamic-blur .quick-access-btn {
     border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 6px;
-    margin: 10px 10px 10px 0;
+    margin: 0 10px 10px 0;
     min-width: 160px;
     max-width: 220px;
-    height: calc(100vh - 20px);
+    height: calc(100vh - var(--status-bar-offset) - 10px);
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
