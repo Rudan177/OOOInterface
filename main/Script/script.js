@@ -30,9 +30,9 @@ class OOOInterface {
             fontSize: 1,
             fontWeight: 400,
             searchBoxHeight: 50,
-            wallpaperModeSearchHeight: 0,
             enhancedDisplay: false,
             wallpaperScale: false,
+            wallpaperFill: true,
             contextMenuStyle: 'default',
             hideInfoPopup: { enabled: false, type: null, timestamp: null },
             badgeOpenMethod: 'both',
@@ -53,11 +53,17 @@ class OOOInterface {
         this.modalScrollHandler = null;
         this.currentVersion = VERSION; // 使用 version.js 中的版本号
 
+        // 壁纸填充层
+        this.wallpaperBlur = null;
+        this.wallpaperMain = null;
+
         this.init();
     }
 
     init() {
         this.loadSettings();
+
+        this.createWallpaperLayers();
 
         this.preloadWallpaper();
 
@@ -66,7 +72,7 @@ class OOOInterface {
         this.initContextMenu();
 
         this.initAdvancedVisualEffects();
-        
+
         this.infoManager = new InfoManager(this);
         this.infoManager.init();
 
@@ -74,12 +80,14 @@ class OOOInterface {
         this.setupMouseScroll();
 
         this.loadCustomFonts();
-        
+
         this.updateCustomFontsList();
-        
+
         this.updateCustomWallpapersList();
 
         this.applySettings();
+
+        this.updateDeveloperModeUI();
 
         if (this.settings.wallpaper === 'bing') {
             this.checkAndFetchBingWallpaper();
@@ -303,7 +311,7 @@ class OOOInterface {
 
                     // 更新显示的选中值
                     const value = item.getAttribute('data-value');
-                    
+
                     // 如果是自定义文字Logo选项，特殊处理
                     if (value === 'text-logo') {
                         // 显示输入框
@@ -316,7 +324,7 @@ class OOOInterface {
                         // 不关闭下拉菜单，让用户可以输入
                         return;
                     }
-                    
+
                     // 隐藏文字Logo输入框并移除selected类
                     const textLogoGroup = document.getElementById('text-logo-inline-group');
                     const textLogoItem = document.querySelector('.select-item-text-logo');
@@ -326,7 +334,7 @@ class OOOInterface {
                     if (textLogoItem) {
                         textLogoItem.classList.remove('selected');
                     }
-                    
+
                     // 获取文本内容，优先使用span元素
                     const spanEl = item.querySelector('span');
                     const text = spanEl ? spanEl.textContent : item.textContent;
@@ -462,9 +470,9 @@ class OOOInterface {
         if (savedSettings.fontSize !== undefined) result.fontSize = savedSettings.fontSize;
         if (savedSettings.fontWeight !== undefined) result.fontWeight = savedSettings.fontWeight;
         if (savedSettings.searchBoxHeight !== undefined) result.searchBoxHeight = savedSettings.searchBoxHeight;
-        if (savedSettings.wallpaperModeSearchHeight !== undefined) result.wallpaperModeSearchHeight = savedSettings.wallpaperModeSearchHeight;
         if (savedSettings.enhancedDisplay !== undefined) result.enhancedDisplay = savedSettings.enhancedDisplay;
         if (savedSettings.wallpaperScale !== undefined) result.wallpaperScale = savedSettings.wallpaperScale;
+        if (savedSettings.wallpaperFill !== undefined) result.wallpaperFill = savedSettings.wallpaperFill;
         if (savedSettings.badgeOpenMethod !== undefined) result.badgeOpenMethod = savedSettings.badgeOpenMethod;
         if (savedSettings.bingRefreshEveryTime !== undefined) result.bingRefreshEveryTime = savedSettings.bingRefreshEveryTime;
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
@@ -930,6 +938,11 @@ class OOOInterface {
             const oldPersistentWallpaper = this.settings.persistentWallpaper;
             this.settings.persistentWallpaper = document.getElementById('persistent-wallpaper-toggle').checked;
             this.settings.wallpaperScale = document.getElementById('wallpaper-scale-toggle').checked;
+            // 读取右侧面板填满开关（如果面板打开时）
+            const panelFillToggle = document.getElementById('wallpaper-fill-toggle-panel');
+            if (panelFillToggle) {
+                this.settings.wallpaperFill = panelFillToggle.checked;
+            }
             this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
             this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
@@ -1097,34 +1110,6 @@ class OOOInterface {
             this.applyDeveloperSettings();
         });
 
-        // 壁纸模式搜索框位置滑块事件
-        document.getElementById('wallpaper-mode-search-height').addEventListener('input', (e) => {
-            const value = parseInt(e.target.value) || 0;
-            document.getElementById('wallpaper-mode-search-height-value').value = value;
-            this.settings.wallpaperModeSearchHeight = value;
-        });
-
-        // 壁纸模式搜索框位置输入框事件
-        document.getElementById('wallpaper-mode-search-height-value').addEventListener('input', (e) => {
-            let value = parseInt(e.target.value) || 0;
-            if (value < -300) value = -300;
-            if (value > 300) value = 300;
-            document.getElementById('wallpaper-mode-search-height').value = value;
-            this.settings.wallpaperModeSearchHeight = value;
-        });
-
-        // 壁纸模式搜索框位置输入框滚轮事件
-        document.getElementById('wallpaper-mode-search-height-value').addEventListener('wheel', (e) => {
-            e.preventDefault();
-            let value = parseInt(e.target.value) || 0;
-            value += e.deltaY > 0 ? -1 : 1;
-            if (value < -300) value = -300;
-            if (value > 300) value = 300;
-            e.target.value = value;
-            document.getElementById('wallpaper-mode-search-height').value = value;
-            this.settings.wallpaperModeSearchHeight = value;
-        });
-
         // 重置按钮事件
         document.querySelectorAll('.reset-control-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -1144,9 +1129,6 @@ class OOOInterface {
                     } else if (targetId === 'search-box-height') {
                         this.settings.searchBoxHeight = parseInt(defaultValue);
                         document.getElementById('search-box-height-value').value = defaultValue;
-                    } else if (targetId === 'wallpaper-mode-search-height') {
-                        this.settings.wallpaperModeSearchHeight = parseInt(defaultValue);
-                        document.getElementById('wallpaper-mode-search-height-value').value = defaultValue;
                     }
 
                     this.applyDeveloperSettings();
@@ -1224,7 +1206,7 @@ class OOOInterface {
         const textLogoInput = document.getElementById('text-logo-input');
         const textLogoInlineGroup = document.getElementById('text-logo-inline-group');
         const textLogoBtn = document.getElementById('set-text-logo');
-        
+
         // 计算字符长度（中文算2个字符）
         const getCharLength = (str) => {
             let length = 0;
@@ -1238,7 +1220,7 @@ class OOOInterface {
             }
             return length;
         };
-        
+
         // 检查输入长度
         const checkTextLogoInputLength = () => {
             if (!textLogoInput || !textLogoBtn) return true;
@@ -1257,7 +1239,7 @@ class OOOInterface {
                 return true;
             }
         };
-        
+
         if (textLogoInput) {
             textLogoInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -1274,7 +1256,7 @@ class OOOInterface {
                 e.stopPropagation();
             });
         }
-        
+
         if (textLogoInlineGroup) {
             textLogoInlineGroup.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1816,7 +1798,7 @@ class OOOInterface {
         const reader = new FileReader();
         reader.onload = (e) => {
             const darkLogoData = e.target.result;
-            
+
             // 优先使用_currentDarkLogoTarget，否则使用当前选中的Logo
             const targetLogoName = this._currentDarkLogoTarget || this.settings.logo;
 
@@ -1827,7 +1809,7 @@ class OOOInterface {
                 this.saveSettings();
                 this.applyLogo();
                 this.showNotification('暗色Logo上传成功');
-                
+
                 // 刷新右侧面板以更新按钮文字
                 const rightPanelUpper = document.getElementById('right-panel-upper');
                 if (rightPanelUpper && rightPanelUpper.querySelector('.settings-menu-container')) {
@@ -1841,7 +1823,7 @@ class OOOInterface {
             } else {
                 this.showNotification('请先选择一个自定义Logo');
             }
-            
+
             // 清除临时目标
             this._currentDarkLogoTarget = null;
         };
@@ -2052,10 +2034,10 @@ class OOOInterface {
         }
 
         try {
-            var result = await tryFetch(function(url) { return fetch(url); }, null);
+            var result = await tryFetch(function (url) { return fetch(url); }, null);
 
             if (!result.ok && ProxyManager.isProxyEnabled()) {
-                result = await tryFetch(function(url) { return ProxyManager.proxiedFetch(url); }, '代理');
+                result = await tryFetch(function (url) { return ProxyManager.proxiedFetch(url); }, '代理');
             }
 
             if (!result.ok) {
@@ -2124,16 +2106,16 @@ class OOOInterface {
         const logoSelectItems = document.getElementById('logo-select-items');
         const logoSelect = document.getElementById('logo-select');
         const logoSelectSelected = document.getElementById('logo-select-selected');
-        
+
         if (!logoSelectItems || !logoSelect) return;
-        
+
         // 移除已有的自定义Logo选项（支持多种标识符）
         const existingCustomItems = logoSelectItems.querySelectorAll('.select-item-custom-logo, .select-item[data-custom="true"]');
         existingCustomItems.forEach(item => item.remove());
-        
+
         const existingCustomOptions = logoSelect.querySelectorAll('option.custom-logo-option, option[data-custom="true"]');
         existingCustomOptions.forEach(option => option.remove());
-        
+
         // 添加自定义Logo选项
         this.settings.customLogos.forEach(logo => {
             // 添加到下拉菜单
@@ -2142,7 +2124,7 @@ class OOOInterface {
             selectItem.setAttribute('data-value', logo.name);
             selectItem.textContent = logo.name;
             logoSelectItems.appendChild(selectItem);
-            
+
             // 添加到隐藏的select
             const option = document.createElement('option');
             option.value = logo.name;
@@ -2150,7 +2132,7 @@ class OOOInterface {
             option.className = 'custom-logo-option';
             logoSelect.appendChild(option);
         });
-        
+
         // 更新显示的文本
         if (logoSelectSelected) {
             const selectedOption = logoSelect.querySelector(`option[value="${this.settings.logo}"]`);
@@ -2158,31 +2140,31 @@ class OOOInterface {
                 logoSelectSelected.textContent = selectedOption.textContent;
             }
         }
-        
+
         // 重新绑定下拉菜单点击事件
         this.rebindCustomSelectItems();
     }
-    
+
     // 重新绑定下拉菜单点击事件
     rebindCustomSelectItems() {
         const logoSelectItems = document.getElementById('logo-select-items');
         const logoSelect = document.getElementById('logo-select');
         const logoSelectSelected = document.getElementById('logo-select-selected');
-        
+
         if (!logoSelectItems || !logoSelect || !logoSelectSelected) return;
-        
+
         const selectItems = logoSelectItems.querySelectorAll('.select-item');
         selectItems.forEach(item => {
             // 移除旧的事件监听器（通过克隆节点）
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
-            
+
             // 添加新的事件监听器
             newItem.addEventListener('click', (e) => {
                 e.stopPropagation();
-                
+
                 const value = newItem.getAttribute('data-value');
-                
+
                 // 如果是自定义文字Logo选项，特殊处理
                 if (value === 'text-logo') {
                     const textLogoGroup = document.getElementById('text-logo-inline-group');
@@ -2192,21 +2174,21 @@ class OOOInterface {
                     newItem.classList.add('selected');
                     return;
                 }
-                
+
                 // 隐藏文字Logo输入框
                 const textLogoGroup = document.getElementById('text-logo-inline-group');
                 if (textLogoGroup) {
                     textLogoGroup.style.display = 'none';
                 }
-                
+
                 // 更新选中值
                 const text = newItem.textContent;
                 logoSelectSelected.textContent = text;
                 logoSelect.value = value;
-                
+
                 const event = new Event('change', { bubbles: true });
                 logoSelect.dispatchEvent(event);
-                
+
                 // 关闭下拉菜单
                 logoSelectItems.classList.add('select-hide');
             });
@@ -2256,16 +2238,16 @@ class OOOInterface {
         const fontSelectItems = document.getElementById('font-select-items');
         const fontSelect = document.getElementById('font-select');
         const fontSelectSelected = document.getElementById('font-select-selected');
-        
+
         if (!fontSelectItems || !fontSelect) return;
-        
+
         // 移除已有的自定义字体选项（支持多种标识符）
         const existingCustomItems = fontSelectItems.querySelectorAll('.select-item-custom-font, .select-item[data-custom="true"]');
         existingCustomItems.forEach(item => item.remove());
-        
+
         const existingCustomOptions = fontSelect.querySelectorAll('option.custom-font-option, option[data-custom="true"]');
         existingCustomOptions.forEach(option => option.remove());
-        
+
         // 添加自定义字体选项
         this.settings.customFonts.forEach(font => {
             // 添加到下拉菜单
@@ -2274,7 +2256,7 @@ class OOOInterface {
             selectItem.setAttribute('data-value', font.name);
             selectItem.textContent = font.name;
             fontSelectItems.appendChild(selectItem);
-            
+
             // 添加到隐藏的select
             const option = document.createElement('option');
             option.value = font.name;
@@ -2282,7 +2264,7 @@ class OOOInterface {
             option.className = 'custom-font-option';
             fontSelect.appendChild(option);
         });
-        
+
         // 更新显示的文本
         if (fontSelectSelected) {
             const selectedOption = fontSelect.querySelector(`option[value="${this.settings.font}"]`);
@@ -2317,16 +2299,16 @@ class OOOInterface {
         const wallpaperSelectItems = document.getElementById('wallpaper-select-items');
         const wallpaperSelect = document.getElementById('wallpaper-select');
         const wallpaperSelectSelected = document.getElementById('wallpaper-select-selected');
-        
+
         if (!wallpaperSelectItems || !wallpaperSelect) return;
-        
+
         // 移除已有的自定义壁纸选项（支持多种标识符）
         const existingCustomItems = wallpaperSelectItems.querySelectorAll('.select-item-custom-wallpaper, .select-item[data-custom="true"]');
         existingCustomItems.forEach(item => item.remove());
-        
+
         const existingCustomOptions = wallpaperSelect.querySelectorAll('option.custom-wallpaper-option, option[data-custom="true"]');
         existingCustomOptions.forEach(option => option.remove());
-        
+
         // 添加自定义壁纸选项
         this.settings.customWallpapers.forEach(wp => {
             // 添加到下拉菜单
@@ -2335,7 +2317,7 @@ class OOOInterface {
             selectItem.setAttribute('data-value', wp.name);
             selectItem.textContent = wp.name;
             wallpaperSelectItems.appendChild(selectItem);
-            
+
             // 添加到隐藏的select
             const option = document.createElement('option');
             option.value = wp.name;
@@ -2343,7 +2325,7 @@ class OOOInterface {
             option.className = 'custom-wallpaper-option';
             wallpaperSelect.appendChild(option);
         });
-        
+
         // 更新显示的文本
         if (wallpaperSelectSelected) {
             const selectedOption = wallpaperSelect.querySelector(`option[value="${this.settings.wallpaper}"]`);
@@ -2560,7 +2542,7 @@ class OOOInterface {
                 this.showNotification('超出输入范围');
                 return;
             }
-            
+
             this.settings.logoType = 'text';
             this.settings.logo = 'text-logo';
             this.settings.textLogo = text;
@@ -2568,19 +2550,19 @@ class OOOInterface {
             this.applyLogo();
             this.saveSettings();
             this.showNotification('文字Logo已设置');
-            
+
             // 更新select-selected的显示文本
             const selected = document.getElementById('logo-select-selected');
             if (selected) {
                 selected.textContent = '自定义文字Logo';
             }
-            
+
             // 更新隐藏的select元素的值
             const hiddenSelect = document.getElementById('logo-select');
             if (hiddenSelect) {
                 hiddenSelect.value = 'text-logo';
             }
-            
+
             // 关闭下拉菜单
             const items = document.getElementById('logo-select-items');
             if (items) {
@@ -2593,14 +2575,14 @@ class OOOInterface {
 
     handleScroll(e) {
         // Info框打开时，完全禁用滚动检测（避免误触壁纸模式）
-            if (this.infoPopupOpen) {
-                // 自动恢复：如果弹窗DOM已被外部移除，重置标志位
-                if (!document.querySelector('.ooo-info-popup')) {
-                    this.infoPopupOpen = false;
-                } else {
-                    return;
-                }
+        if (this.infoPopupOpen) {
+            // 自动恢复：如果弹窗DOM已被外部移除，重置标志位
+            if (!document.querySelector('.ooo-info-popup')) {
+                this.infoPopupOpen = false;
+            } else {
+                return;
             }
+        }
 
         // 节流：如果正在动画中，忽略新的滚动事件
         if (this.isAnimating) return;
@@ -2623,34 +2605,23 @@ class OOOInterface {
 
     // 预加载壁纸并立即设置（隐藏状态）
     preloadWallpaper() {
-        let wallpaperUrl;
-        if (this.settings.wallpaper === 'default') {
-            wallpaperUrl = this.onlineBackgroundUrl;
-        } else if (this.settings.wallpaper === 'bing' && this.settings.wallpaperUrl) {
-            wallpaperUrl = this.settings.wallpaperUrl;
-        } else if (this.settings.wallpaper === 'url' && this.settings.wallpaperUrl) {
-            wallpaperUrl = this.settings.wallpaperUrl;
-        } else {
-            wallpaperUrl = this.settings.wallpaper;
-        }
+        const wallpaperUrl = this.getWallpaperUrl();
 
         if (wallpaperUrl) {
+            // 预加载到浏览器缓存
             const img = new Image();
-            img.onload = () => {};
+            img.onload = () => { };
             img.src = wallpaperUrl;
-            
-            if (this.settings.wallpaper === 'default') {
-                document.body.style.backgroundImage = `url('${this.onlineBackgroundUrl}')`;
-            } else if ((this.settings.wallpaper === 'bing' || this.settings.wallpaper === 'url') && this.settings.wallpaperUrl) {
-                document.body.style.backgroundImage = `url('${this.settings.wallpaperUrl}')`;
-            } else {
-                document.body.style.backgroundImage = `url('${this.settings.wallpaper}')`;
-            }
-            
-            // 如果没有开启壁纸常显，并且不在壁纸模式，我们立即清除背景图片
-            // 但是浏览器已经缓存了图片
+
+            // 在两层的 blur 层和 main 层上设置背景图
+            this.setWallpaperOnLayers(wallpaperUrl);
+            // body上不设背景图（避免CSS类冲突和黑边）
+            document.body.style.backgroundImage = 'none';
+
+            // 如果没有开启壁纸常显，并且不在壁纸模式，立即隐藏层
             if (!this.settings.persistentWallpaper && !this.isScrolled) {
                 setTimeout(() => {
+                    this.clearWallpaperLayers();
                     document.body.style.backgroundImage = '';
                 }, 0);
             }
@@ -2730,18 +2701,29 @@ class OOOInterface {
             document.body.classList.remove('dynamic-blur');
         }
 
-        // 同步应用壁纸
-        if (this.settings.wallpaper === 'default') {
-            document.body.style.backgroundImage = `url('${this.onlineBackgroundUrl}')`;
-        } else if ((this.settings.wallpaper === 'bing' || this.settings.wallpaper === 'url') && this.settings.wallpaperUrl) {
-            document.body.style.backgroundImage = `url('${this.settings.wallpaperUrl}')`;
-        } else {
-            document.body.style.backgroundImage = `url('${this.settings.wallpaper}')`;
+        // 同步应用壁纸（使用模糊填充层，无黑边）
+        const url = this.getWallpaperUrl();
+        if (url) {
+            this.setWallpaperOnLayers(url);
         }
+        document.body.style.backgroundImage = 'none';
 
         document.body.style.transition = 'none';
-        document.body.style.backgroundSize = (this.settings.persistentWallpaper && this.settings.wallpaperScale) ? '100%' : '';
-        document.body.style.backgroundPosition = (this.settings.persistentWallpaper && this.settings.wallpaperScale) ? 'center' : '';
+
+        // 壁纸缩放动画：根据填充模式选择不同动画方式
+        if (this.settings.persistentWallpaper && this.settings.wallpaperScale && this.wallpaperMain) {
+            this.wallpaperMain.style.transition = 'none';
+            // 两种模式统一使用 transform scale 做缩放动画
+            // 填满模式：background-size: cover；适配模式：background-size: contain（CSS控制）
+            this.wallpaperMain.style.backgroundSize = '';
+            this.wallpaperMain.style.backgroundPosition = '';
+            this.wallpaperMain.style.transform = 'scale(1)';
+        } else if (this.wallpaperMain) {
+            this.wallpaperMain.style.backgroundSize = '';
+            this.wallpaperMain.style.backgroundPosition = '';
+            this.wallpaperMain.style.transform = '';
+            this.wallpaperMain.style.transition = '';
+        }
 
         const engineButtons = document.querySelector('.engine-buttons');
         if (engineButtons) {
@@ -2751,9 +2733,6 @@ class OOOInterface {
         const searchHistoryContainer = document.getElementById('search-history-container');
         if (searchHistoryContainer) {
             searchHistoryContainer.classList.remove('show');
-            searchHistoryContainer.style.display = 'none';
-            searchHistoryContainer.style.opacity = '0';
-            searchHistoryContainer.style.pointerEvents = 'none';
         }
 
         const quickAccessLinks = document.getElementById('quick-access-links');
@@ -2763,12 +2742,12 @@ class OOOInterface {
             quickAccessLinks.style.pointerEvents = '';
         }
 
-        // 壁纸缩放动画：仅在常显示模式下对已有壁纸进行连贯放大和偏移
-        if (this.settings.persistentWallpaper && this.settings.wallpaperScale) {
-            void document.body.offsetHeight;
-            document.body.style.transition = 'background-size 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-position 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
-            document.body.style.backgroundSize = '140%';
-            document.body.style.backgroundPosition = 'center 35%';
+        // 壁纸缩放动画：仅在常显示模式下对主层进行连贯放大和偏移
+        // 两种模式统一使用 transform scale 实现缩放，background-size 由 CSS fill-mode 类控制
+        if (this.settings.persistentWallpaper && this.settings.wallpaperScale && this.wallpaperMain) {
+            void this.wallpaperMain.offsetHeight;
+            this.wallpaperMain.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+            this.wallpaperMain.style.transform = 'scale(1.4)';
         }
 
         this.isAnimating = true;
@@ -2809,33 +2788,29 @@ class OOOInterface {
             document.body.classList.add('homepage-wallpaper');
         }
 
-        // 同步移除壁纸（不再延迟，避免壁纸在退出最后才消失）
+        // 同步移除壁纸（使用层系统，模糊层始终覆盖无黑边）
         if (this.settings.persistentWallpaper) {
-            if (this.settings.wallpaperScale) {
-                void document.body.offsetHeight;
-                document.body.style.transition = 'background-size 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-position 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                document.body.style.backgroundSize = '100%';
-                document.body.style.backgroundPosition = 'center';
+            // 壁纸常显模式下保持壁纸，但处理缩放动画
+            if (this.settings.wallpaperScale && this.wallpaperMain) {
+                void this.wallpaperMain.offsetHeight;
+                // 两种模式统一使用 transform scale 回缩
+                this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                this.wallpaperMain.style.transform = 'scale(1)';
                 setTimeout(() => {
-                    document.body.style.backgroundSize = '';
-                    document.body.style.backgroundPosition = '';
-                    document.body.style.transition = '';
+                    if (this.wallpaperMain) {
+                        this.wallpaperMain.style.transform = '';
+                        this.wallpaperMain.style.transition = '';
+                    }
                 }, 400);
             }
         } else {
-                document.body.style.backgroundImage = '';
-                document.body.style.backgroundSize = '';
-                document.body.style.backgroundPosition = '';
-                document.body.style.transition = '';
+            this.clearWallpaperLayers();
+            document.body.style.backgroundImage = '';
         }
 
-        // 恢复搜索历史框的状态
         const searchHistoryContainer = document.getElementById('search-history-container');
         if (searchHistoryContainer) {
             searchHistoryContainer.classList.remove('show');
-            searchHistoryContainer.style.display = '';
-            searchHistoryContainer.style.opacity = '';
-            searchHistoryContainer.style.pointerEvents = '';
         }
 
         if (!immediate) {
@@ -3004,18 +2979,12 @@ class OOOInterface {
             searchHistoryList.appendChild(historyItem);
         });
 
-        searchHistoryContainer.style.display = 'block';
-        void searchHistoryContainer.offsetWidth;
         searchHistoryContainer.classList.add('show');
 
         if (quickAccessLinks) {
             quickAccessLinks.style.transform = 'translateY(1000px)';
             quickAccessLinks.style.opacity = '0';
             quickAccessLinks.style.pointerEvents = 'none';
-        }
-
-        if (engineButtons) {
-            engineButtons.style.marginTop = '220px';
         }
     }
 
@@ -3026,21 +2995,12 @@ class OOOInterface {
 
         if (searchHistoryContainer) {
             searchHistoryContainer.classList.remove('show');
-            setTimeout(() => {
-                if (!searchHistoryContainer.classList.contains('show')) {
-                    searchHistoryContainer.style.display = 'none';
-                }
-            }, 200);
         }
 
         if (quickAccessLinks) {
             quickAccessLinks.style.transform = '';
             quickAccessLinks.style.opacity = '';
             quickAccessLinks.style.pointerEvents = '';
-        }
-
-        if (engineButtons) {
-            engineButtons.style.marginTop = '';
         }
     }
 
@@ -3424,6 +3384,16 @@ class OOOInterface {
             developerModeGroup.style.display = this.settings.developerMode ? 'block' : 'none';
         }
 
+        const feedbackBtn = document.getElementById('feedback-btn');
+        if (feedbackBtn) {
+            feedbackBtn.style.display = this.settings.developerMode ? 'flex' : 'none';
+        }
+
+        const contextFeedbackItem = document.querySelector('.context-menu-item[data-action="feedback"]');
+        if (contextFeedbackItem) {
+            contextFeedbackItem.style.display = this.settings.developerMode ? '' : 'none';
+        }
+
         if (this.settings.developerMode) {
             document.getElementById('font-size-slider').value = this.settings.fontSize;
             document.getElementById('font-size-value').value = this.settings.fontSize.toFixed(1);
@@ -3431,8 +3401,6 @@ class OOOInterface {
             document.getElementById('font-weight-value').value = this.settings.fontWeight;
             document.getElementById('search-box-height').value = this.settings.searchBoxHeight;
             document.getElementById('search-box-height-value').value = this.settings.searchBoxHeight;
-            document.getElementById('wallpaper-mode-search-height').value = this.settings.wallpaperModeSearchHeight;
-            document.getElementById('wallpaper-mode-search-height-value').value = this.settings.wallpaperModeSearchHeight;
         }
 
         const proxySelect = document.getElementById('proxy-select');
@@ -3453,7 +3421,6 @@ class OOOInterface {
         const root = document.documentElement;
         root.style.setProperty('--base-font-size', this.settings.fontSize);
         root.style.setProperty('--base-font-weight', this.settings.fontWeight);
-        root.style.setProperty('--wallpaper-mode-search-height', this.settings.wallpaperModeSearchHeight + 'px');
 
         if (this.settings.searchBoxHeight > 0) {
             root.style.setProperty('--search-box-height', this.settings.searchBoxHeight + 'px');
@@ -3468,13 +3435,11 @@ class OOOInterface {
         this.settings.fontSize = 1;
         this.settings.fontWeight = 400;
         this.settings.searchBoxHeight = 50;
-        this.settings.wallpaperModeSearchHeight = 0;
         this.settings.proxyPort = null;
 
         const fontSizeSlider = document.getElementById('font-size-slider');
         const fontWeightSlider = document.getElementById('font-weight-slider');
         const searchBoxHeightSlider = document.getElementById('search-box-height');
-        const wallpaperModeSearchHeightSlider = document.getElementById('wallpaper-mode-search-height');
 
         if (fontSizeSlider) {
             fontSizeSlider.value = 1;
@@ -3489,11 +3454,6 @@ class OOOInterface {
         if (searchBoxHeightSlider) {
             searchBoxHeightSlider.value = 50;
             document.getElementById('search-box-height-value').value = 50;
-        }
-
-        if (wallpaperModeSearchHeightSlider) {
-            wallpaperModeSearchHeightSlider.value = 0;
-            document.getElementById('wallpaper-mode-search-height-value').value = 0;
         }
 
         const proxySelect = document.getElementById('proxy-select');
@@ -3570,7 +3530,7 @@ class OOOInterface {
         this.applyWallpaper();
         this.applyDeveloperSettings();
         this.applyContextMenuStyle();
-        
+
         if (this.infoManager) {
             this.infoManager.applyHideInfoPopup();
         }
@@ -3602,11 +3562,13 @@ class OOOInterface {
         if (!contextMenuGrid) return;
 
         // 移除所有样式类
-        contextMenuGrid.classList.remove('compact');
+        contextMenuGrid.classList.remove('compact', 'minimal');
 
         // 添加选中的样式类
         if (this.settings.contextMenuStyle === 'compact') {
             contextMenuGrid.classList.add('compact');
+        } else if (this.settings.contextMenuStyle === 'minimal') {
+            contextMenuGrid.classList.add('minimal');
         }
 
         // 根据Logo选择更新右键菜单配色
@@ -3623,9 +3585,9 @@ class OOOInterface {
 
         // 根据Logo选择设置配色
         const blackWhiteLogos = ['Apple', 'HUAWEI', 'text-logo'];
-        const isCustomLogo = !blackWhiteLogos.includes(this.settings.logo) && 
-                             !['default', 'auto', 'Google', 'Microsoft', 'Bing', 'Baidu', 'DuckDuckGo', 'Sogou', '360', 'Yahoo', 'Yandex'].includes(this.settings.logo);
-        
+        const isCustomLogo = !blackWhiteLogos.includes(this.settings.logo) &&
+            !['default', 'auto', 'Google', 'Microsoft', 'Bing', 'Baidu', 'DuckDuckGo', 'Sogou', '360', 'Yahoo', 'Yandex'].includes(this.settings.logo);
+
         if (this.settings.logo === 'default') {
             // 默认Logo：使用绿色主题
             let hoverColor, textColor;
@@ -3664,24 +3626,95 @@ class OOOInterface {
         }
     }
 
+    // ========== 壁纸模糊填充系统 ==========
+
+    createWallpaperLayers() {
+        // 创建模糊填充层
+        this.wallpaperBlur = document.createElement('div');
+        this.wallpaperBlur.id = 'wallpaper-blur';
+        document.body.insertBefore(this.wallpaperBlur, document.body.firstChild);
+
+        // 创建清晰主层
+        this.wallpaperMain = document.createElement('div');
+        this.wallpaperMain.id = 'wallpaper-main';
+        document.body.insertBefore(this.wallpaperMain, document.body.firstChild);
+
+        // 标记body，CSS层面覆盖自带的背景图
+        document.body.classList.add('wallpaper-layers-ready');
+
+        // 如果没有启用壁纸，隐藏两层
+        if (!this.settings.persistentWallpaper && !this.isScrolled) {
+            this.wallpaperBlur.classList.remove('active');
+            this.wallpaperMain.classList.remove('active');
+        }
+    }
+
+    // 获取当前壁纸URL
+    getWallpaperUrl() {
+        if (this.settings.wallpaper === 'default') {
+            return this.onlineBackgroundUrl;
+        } else if (this.settings.wallpaper === 'bing' && this.settings.wallpaperUrl) {
+            return this.settings.wallpaperUrl;
+        } else if (this.settings.wallpaper === 'url' && this.settings.wallpaperUrl) {
+            return this.settings.wallpaperUrl;
+        } else if (this.settings.wallpaper && this.settings.wallpaper !== 'default' && this.settings.wallpaper !== 'bing' && this.settings.wallpaper !== 'url') {
+            return this.settings.wallpaper; // 自定义上传壁纸 data URL
+        }
+        return null;
+    }
+
+    // 更新两层壁纸（统一入口）
+    setWallpaperOnLayers(url) {
+        if (!url) {
+            this.clearWallpaperLayers();
+            return;
+        }
+        if (this.wallpaperBlur) {
+            this.wallpaperBlur.style.backgroundImage = `url('${url}')`;
+            // 填充模式下模糊层由CSS控制隐藏，适配模式下显示
+            this.wallpaperBlur.classList.add('active');
+        }
+        if (this.wallpaperMain) {
+            this.wallpaperMain.style.backgroundImage = `url('${url}')`;
+            this.wallpaperMain.classList.add('active');
+            // 根据 wallpaperFill 设置填充/适配模式
+            this.wallpaperMain.classList.toggle('fill-mode', this.settings.wallpaperFill === true);
+        }
+    }
+
+    // 清除两层壁纸
+    clearWallpaperLayers() {
+        if (this.wallpaperBlur) {
+            this.wallpaperBlur.style.backgroundImage = '';
+            this.wallpaperBlur.classList.remove('active');
+        }
+        if (this.wallpaperMain) {
+            this.wallpaperMain.style.backgroundImage = '';
+            this.wallpaperMain.classList.remove('active');
+            this.wallpaperMain.classList.remove('fill-mode');
+            this.wallpaperMain.style.backgroundSize = '';
+            this.wallpaperMain.style.backgroundPosition = '';
+            this.wallpaperMain.style.transform = '';
+            this.wallpaperMain.style.transition = '';
+        }
+    }
+
     applyDefaultWallpaper() {
-        document.body.style.backgroundImage = `url('${this.onlineBackgroundUrl}')`;
+        // 使用层系统，body上不设背景图
+        this.setWallpaperOnLayers(this.onlineBackgroundUrl);
+        document.body.style.backgroundImage = 'none';
     }
 
     applyWallpaper() {
         if (this.settings.persistentWallpaper || document.body.classList.contains('scrolled')) {
-            if (this.settings.wallpaper === 'default') {
-                this.applyDefaultWallpaper();
-            } else if (this.settings.wallpaper === 'bing') {
-                if (this.settings.wallpaperUrl) {
-                    document.body.style.backgroundImage = `url('${this.settings.wallpaperUrl}')`;
-                }
-            } else if (this.settings.wallpaper === 'url' && this.settings.wallpaperUrl) {
-                document.body.style.backgroundImage = `url('${this.settings.wallpaperUrl}')`;
-            } else {
-                document.body.style.backgroundImage = `url('${this.settings.wallpaper}')`;
+            const url = this.getWallpaperUrl();
+            if (url) {
+                this.setWallpaperOnLayers(url);
+                // body上不设背景图，避免与CSS类冲突和黑边
+                document.body.style.backgroundImage = 'none';
             }
         } else {
+            this.clearWallpaperLayers();
             document.body.style.backgroundImage = '';
         }
     }
@@ -3696,6 +3729,7 @@ class OOOInterface {
         } else {
             document.body.classList.remove('homepage-wallpaper');
             if (!this.isScrolled) {
+                this.clearWallpaperLayers();
                 document.body.style.backgroundImage = '';
             }
         }
@@ -3934,37 +3968,37 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         const option = document.createElement('div');
         option.className = 'settings-menu-option';
         option.setAttribute('data-value', originalItem.getAttribute('data-value'));
-        
+
         // 根据菜单类型处理
         if (menuType === 'logo') {
             // Logo菜单的特殊处理
             const isTextLogoOption = originalItem.getAttribute('data-value') === 'text-logo';
-            
+
             if (isTextLogoOption) {
                 // 创建包含文字和输入框的结构
                 const textSpan = document.createElement('span');
                 textSpan.textContent = '自定义文字Logo';
                 option.appendChild(textSpan);
-                
+
                 // 创建输入框组
                 const inputGroup = document.createElement('div');
                 inputGroup.className = 'text-logo-inline-group';
                 inputGroup.style.display = 'none';
-                
+
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.className = 'text-logo-inline-input';
                 input.placeholder = '输入文字';
                 input.id = 'text-logo-input-panel';
-                
+
                 const btn = document.createElement('button');
                 btn.className = 'text-logo-inline-btn';
                 btn.title = '确定';
-                
+
                 inputGroup.appendChild(input);
                 inputGroup.appendChild(btn);
                 option.appendChild(inputGroup);
-                
+
                 // 计算字符长度（中文算2个字符）
                 const getCharLength = (str) => {
                     let length = 0;
@@ -3978,7 +4012,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     }
                     return length;
                 };
-                
+
                 // 检查输入长度
                 const checkInputLength = () => {
                     const text = input.value;
@@ -3996,7 +4030,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         return true;
                     }
                 };
-                
+
                 // 检查是否是当前选中的值
                 if (self.settings.logo === 'text-logo') {
                     option.classList.add('selected');
@@ -4004,40 +4038,40 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     input.value = self.settings.textLogo || '';
                     checkInputLength();
                 }
-                
+
                 // 点击选项时显示输入框
                 option.addEventListener('click', (e) => {
                     // 如果点击的是输入框或按钮，不处理
                     if (e.target === input || e.target === btn) {
                         return;
                     }
-                    
+
                     // 显示输入框
                     inputGroup.style.display = 'flex';
                     option.classList.add('selected');
                     input.focus();
                 });
-                
+
                 // 输入框事件
                 input.addEventListener('click', (e) => {
                     e.stopPropagation();
                 });
-                
+
                 input.addEventListener('input', () => {
                     checkInputLength();
                 });
-                
+
                 input.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
                         btn.click();
                     }
                 });
-                
+
                 // 确定按钮事件
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (btn.disabled) return;
-                    
+
                     const text = input.value.trim();
                     if (text) {
                         self.settings.logoType = 'text';
@@ -4047,7 +4081,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         self.applyLogo();
                         self.saveSettings();
                         self.showNotification('文字Logo已设置');
-                        
+
                         selected.textContent = '自定义文字Logo';
                         hiddenSelect.value = 'text-logo';
                         self.closeSettingsMenuInRightPanel();
@@ -4059,15 +4093,15 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                 // 检查是否是自定义Logo
                 const logoValue = originalItem.getAttribute('data-value');
                 const isCustomLogoClass = originalItem.classList.contains('select-item-custom-logo');
-                
+
                 // 预设Logo列表
                 const presetLogos = ['default', 'auto', 'Google', 'Microsoft', 'Bing', 'Baidu', 'DuckDuckGo', 'Sogou', '360', 'Yahoo', 'Yandex', 'Apple', 'HUAWEI', 'text-logo'];
                 const isPresetLogo = presetLogos.includes(logoValue);
-                
+
                 // 如果是预设Logo，直接显示文本
                 if (isPresetLogo && !isCustomLogoClass) {
                     option.textContent = originalItem.textContent;
-                    
+
                     if (self.settings.logo === logoValue) {
                         option.classList.add('selected');
                     }
@@ -4089,12 +4123,12 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     // 直接从settings.customLogos中查找
                     const logoName = logoValue || originalItem.textContent.trim();
                     const customLogo = self.settings.customLogos.find(logo => logo.name === logoName);
-                    
+
                     if (customLogo) {
                         // 创建包含Logo名称和上传暗色Logo按钮的结构
                         const contentWrapper = document.createElement('div');
                         contentWrapper.className = 'custom-logo-option-wrapper';
-                        
+
                         const textSpan = document.createElement('span');
                         textSpan.className = 'custom-logo-name';
                         // 显示Logo名称，过长时用省略号
@@ -4102,55 +4136,55 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         textSpan.textContent = displayName;
                         textSpan.title = customLogo.name;
                         contentWrapper.appendChild(textSpan);
-                        
+
                         // 创建按钮容器
                         const btnContainer = document.createElement('div');
                         btnContainer.className = 'custom-logo-btn-container';
-                        
+
                         // 创建上传暗色Logo按钮
                         const darkLogoBtn = document.createElement('button');
                         darkLogoBtn.className = 'dark-logo-upload-btn-inline';
                         darkLogoBtn.textContent = customLogo.darkData ? '更换暗色' : '上传暗色';
                         darkLogoBtn.title = customLogo.darkData ? '更换暗色Logo' : '上传暗色Logo';
                         btnContainer.appendChild(darkLogoBtn);
-                        
+
                         // 创建删除按钮
                         const deleteBtn = document.createElement('button');
                         deleteBtn.className = 'custom-logo-delete-btn';
                         deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
                         deleteBtn.title = '删除此Logo';
                         btnContainer.appendChild(deleteBtn);
-                        
+
                         contentWrapper.appendChild(btnContainer);
-                        
+
                         option.appendChild(contentWrapper);
-                        
+
                         // 检查是否是当前选中的值
                         if (self.settings.logo === customLogo.name) {
                             option.classList.add('selected');
                         }
-                        
+
                         // 点击选项时选中并应用
                         option.addEventListener('click', (e) => {
                             if (e.target === darkLogoBtn || e.target === deleteBtn || e.target.closest('.custom-logo-delete-btn')) {
                                 return;
                             }
-                            
+
                             // 移除其他选项的selected类
                             optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                                 opt.classList.remove('selected');
                             });
                             option.classList.add('selected');
-                            
+
                             // 应用Logo
                             selected.textContent = displayName;
                             hiddenSelect.value = customLogo.name;
                             const event = new Event('change', { bubbles: true });
                             hiddenSelect.dispatchEvent(event);
-                            
+
                             self.closeSettingsMenuInRightPanel();
                         });
-                        
+
                         // 上传暗色Logo按钮点击事件
                         darkLogoBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
@@ -4158,7 +4192,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                             self._currentDarkLogoTarget = customLogo.name;
                             document.getElementById('dark-logo-upload').click();
                         });
-                        
+
                         // 删除按钮点击事件
                         deleteBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
@@ -4178,7 +4212,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                 } else {
                     // 其他情况，显示文本
                     option.textContent = originalItem.textContent;
-                    
+
                     if (self.settings.logo === logoValue) {
                         option.classList.add('selected');
                     }
@@ -4200,20 +4234,20 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             // 字体菜单的处理
             const fontValue = originalItem.getAttribute('data-value');
             const isCustomFontClass = originalItem.classList.contains('select-item-custom-font');
-            
+
             // 预设字体列表
             const presetFonts = ['Sans Flex', 'HMSC', 'Ginto', 'Josefin', 'Code'];
             const isPresetFont = presetFonts.includes(fontValue);
-            
+
             // 如果是自定义字体
             if (isCustomFontClass || !isPresetFont) {
                 const customFont = self.settings.customFonts.find(font => font.name === fontValue);
-                
+
                 if (customFont) {
                     // 创建包含字体名称和删除按钮的结构
                     const contentWrapper = document.createElement('div');
                     contentWrapper.className = 'custom-font-option-wrapper';
-                    
+
                     const textSpan = document.createElement('span');
                     textSpan.className = 'custom-font-name';
                     // 显示字体名称，过长时用省略号
@@ -4221,42 +4255,42 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     textSpan.textContent = displayName;
                     textSpan.title = customFont.name;
                     contentWrapper.appendChild(textSpan);
-                    
+
                     // 创建删除按钮
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'custom-font-delete-btn';
                     deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
                     deleteBtn.title = '删除此字体';
                     contentWrapper.appendChild(deleteBtn);
-                    
+
                     option.appendChild(contentWrapper);
-                    
+
                     // 检查是否是当前选中的值
                     if (self.settings.font === customFont.name) {
                         option.classList.add('selected');
                     }
-                    
+
                     // 点击选项时选中并应用
                     option.addEventListener('click', (e) => {
                         if (e.target === deleteBtn || e.target.closest('.custom-font-delete-btn')) {
                             return;
                         }
-                        
+
                         // 移除其他选项的selected类
                         optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                             opt.classList.remove('selected');
                         });
                         option.classList.add('selected');
-                        
+
                         // 应用字体
                         selected.textContent = displayName;
                         hiddenSelect.value = customFont.name;
                         const event = new Event('change', { bubbles: true });
                         hiddenSelect.dispatchEvent(event);
-                        
+
                         self.closeSettingsMenuInRightPanel();
                     });
-                    
+
                     // 删除按钮点击事件
                     deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -4276,7 +4310,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             } else {
                 // 预设字体，直接显示文本
                 option.textContent = originalItem.textContent;
-                
+
                 if (self.settings.font === fontValue) {
                     option.classList.add('selected');
                 }
@@ -4301,16 +4335,16 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             // 预设壁纸列表
             const presetWallpapers = ['default', 'bing', 'url'];
             const isPresetWallpaper = presetWallpapers.includes(wallpaperValue);
-            
+
             // 如果是自定义壁纸
             if (isCustomWallpaperClass || !isPresetWallpaper) {
                 const customWallpaper = self.settings.customWallpapers.find(wp => wp.name === wallpaperValue);
-                
+
                 if (customWallpaper) {
                     // 创建包含壁纸名称和删除按钮的结构
                     const contentWrapper = document.createElement('div');
                     contentWrapper.className = 'custom-wallpaper-option-wrapper';
-                    
+
                     const textSpan = document.createElement('span');
                     textSpan.className = 'custom-wallpaper-name';
                     // 显示壁纸名称，过长时用省略号
@@ -4318,42 +4352,42 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     textSpan.textContent = displayName;
                     textSpan.title = customWallpaper.name;
                     contentWrapper.appendChild(textSpan);
-                    
+
                     // 创建删除按钮
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'custom-wallpaper-delete-btn';
                     deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
                     deleteBtn.title = '删除此壁纸';
                     contentWrapper.appendChild(deleteBtn);
-                    
+
                     option.appendChild(contentWrapper);
-                    
+
                     // 检查是否是当前选中的值
                     if (self.settings.wallpaper === customWallpaper.data) {
                         option.classList.add('selected');
                     }
-                    
+
                     // 点击选项时选中并应用
                     option.addEventListener('click', (e) => {
                         if (e.target === deleteBtn || e.target.closest('.custom-wallpaper-delete-btn')) {
                             return;
                         }
-                        
+
                         // 移除其他选项的selected类
                         optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                             opt.classList.remove('selected');
                         });
                         option.classList.add('selected');
-                        
+
                         // 应用壁纸
                         selected.textContent = displayName;
                         hiddenSelect.value = customWallpaper.name;
                         const event = new Event('change', { bubbles: true });
                         hiddenSelect.dispatchEvent(event);
-                        
+
                         self.closeSettingsMenuInRightPanel();
                     });
-                    
+
                     // 删除按钮点击事件
                     deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -4605,19 +4639,19 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         if (e.target === intervalInput || e.target === confirmBtn || e.target.closest('.switch')) {
                             return;
                         }
-                        
+
                         // 移除其他选项的selected类
                         optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                             opt.classList.remove('selected');
                         });
                         option.classList.add('selected');
-                        
+
                         if (configWrapper.style.display === 'none') {
                             configWrapper.style.display = 'block';
                         } else {
                             configWrapper.style.display = 'none';
                         }
-                        
+
                         // 应用必应壁纸
                         selected.textContent = '必应每日壁纸';
                         hiddenSelect.value = 'bing';
@@ -4674,7 +4708,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                             self.showNotification('请输入有效的URL');
                             return;
                         }
-                        
+
                         self.settings.wallpaper = 'url';
                         self.settings.wallpaperUrl = url;
                         self.applySettings();
@@ -4701,13 +4735,13 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         if (e.target === urlInput || e.target === applyBtn) {
                             return;
                         }
-                        
+
                         // 移除其他选项的selected类
                         optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                             opt.classList.remove('selected');
                         });
                         option.classList.add('selected');
-                        
+
                         if (configWrapper.style.display === 'none') {
                             configWrapper.style.display = 'block';
                             urlInput.focus();
@@ -4830,7 +4864,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         } else {
             // 其他菜单的通用处理
             option.textContent = originalItem.textContent;
-            
+
             // 检查是否是当前选中的值
             const currentValue = originalItem.getAttribute('data-value');
             if (hiddenSelect.value === currentValue) {
@@ -4878,6 +4912,35 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         });
 
         buttonContainer.appendChild(plusBtn);
+
+        // 壁纸菜单：在加号旁边添加填满全屏开关
+        if (menuType === 'wallpaper') {
+            const fillLabel = document.createElement('label');
+            fillLabel.className = 'wallpaper-fill-toggle-label';
+            fillLabel.title = '壁纸填满全屏（关闭则显示完整画面，空隙用模糊填充）';
+
+            const fillSpan = document.createElement('span');
+            fillSpan.className = 'wallpaper-fill-toggle-text';
+            fillSpan.textContent = '填满';
+
+            const fillSwitch = document.createElement('label');
+            fillSwitch.className = 'switch wallpaper-fill-switch';
+
+            const fillInput = document.createElement('input');
+            fillInput.type = 'checkbox';
+            fillInput.id = 'wallpaper-fill-toggle-panel';
+            fillInput.checked = self.settings.wallpaperFill;
+
+            const fillSlider = document.createElement('span');
+            fillSlider.className = 'slider';
+
+            fillSwitch.appendChild(fillInput);
+            fillSwitch.appendChild(fillSlider);
+            fillLabel.appendChild(fillSpan);
+            fillLabel.appendChild(fillSwitch);
+
+            buttonContainer.insertBefore(fillLabel, plusBtn);
+        }
     }
 
     const confirmBtn = document.createElement('button');
@@ -4887,7 +4950,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
     confirmBtn.onclick = (e) => {
         e.stopPropagation();
         e.preventDefault();
-        
+
         // 检查是否有文字Logo输入框内容需要保存
         if (menuType === 'logo') {
             const textLogoInput = document.getElementById('text-logo-input-panel');
@@ -4906,7 +4969,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     }
                     return length;
                 };
-                
+
                 if (getCharLength(text) <= 25) {
                     self.settings.logoType = 'text';
                     self.settings.logo = 'text-logo';
@@ -4915,13 +4978,23 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     self.applyLogo();
                     self.saveSettings();
                     self.showNotification('文字Logo已设置');
-                    
+
                     selected.textContent = '自定义文字Logo';
                     hiddenSelect.value = 'text-logo';
                 }
             }
         }
-        
+
+        // 保存壁纸填满开关状态
+        if (menuType === 'wallpaper') {
+            const panelToggle = document.getElementById('wallpaper-fill-toggle-panel');
+            if (panelToggle) {
+                self.settings.wallpaperFill = panelToggle.checked;
+                self.saveSettings();
+                self.applyWallpaper();
+            }
+        }
+
         self.closeSettingsMenuInRightPanel();
     };
 

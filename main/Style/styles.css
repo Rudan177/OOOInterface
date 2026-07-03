@@ -1,181 +1,108 @@
-/* 氓颅聴盲陆聯氓庐職盲鹿聣 */
+/* 字体定义 */
 
 @font-face {
-
     font-family: 'Sans Flex';
-
     src: url('../fonts/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf') format('truetype');
-
     font-weight: normal;
-
     font-style: normal;
-
 }
 
 
 
 @font-face {
-
     font-family: 'Ginto';
-
     src: url('../fonts/ABCGintoVariable.ttf') format('truetype');
-
     font-weight: normal;
-
     font-style: normal;
-
 }
 
 
 
 @font-face {
-
     font-family: 'Josefin';
-
     src: url('../fonts/JosefinSans.ttf') format('truetype');
-
     font-weight: normal;
-
     font-style: normal;
-
 }
 
 
 
 @font-face {
-
     font-family: 'Code';
-
     src: url('../fonts/GoogleSansCode.ttf') format('truetype');
-
     font-weight: normal;
-
     font-style: normal;
-
 }
 
 
 
 @font-face {
-
     font-family: 'HMSC';
-
     src: url('../fonts/HarmonyOS_SansSC.ttf') format('truetype');
-
     font-weight: normal;
-
     font-style: normal;
-
 }
 
 
 
-/* 氓聼潞莽隆聙忙聽路氓录聫 */
+/* 全局重置 */
 
 * {
-
     margin: 0;
-
     padding: 0;
-
     box-sizing: border-box;
-
 }
 
 
 
 :root {
-
     --primary-color: #1a73e8;
-
     --background-color: #ffffff;
-
     --surface-color: #F1F3F4;
-
     --surface-color-rgb: 248, 249, 250;
-
     --surface-variant: #e2e8f0;
-
     --text-color: #3c4043;
-
     --text-secondary: #70757a;
-
     --border-color: #dfe1e5;
-
     --shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
-
     --border-radius: 28px;
-
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
     --custom-logo-color: #303134;
-
     --base-font-size: 1;
-
     --base-font-weight: 400;
-
     --search-box-height: 50px;
-
-    --wallpaper-mode-search-height: 0px;
-
     --info-bg-color: #F1F3F4;
     --info-text-color: #3c4043;
     --info-close-color: #5f6368;
     --info-close-hover: #202124;
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     :root {
-
         --background-color: #202124;
-
         --surface-color: #303134;
-
         --surface-color-rgb: 48, 49, 52;
-
         --surface-variant: #3c4043;
-
-        --text-color: #e8eaed;
-
-        --text-secondary: #9aa0a6;
-
+        --text-color: #dddddd;
+        --text-secondary: #aaaaaa;
         --border-color: #5f6368;
-
         --shadow: 0 1px 6px rgba(0, 0, 0, 0.28);
-
         --custom-logo-color: #303134;
-
         --info-bg-color: #303134;
-        --info-text-color: #e8eaed;
-        --info-close-color: #9aa0a6;
+        --info-text-color: #dddddd;
+        --info-close-color: #aaaaaa;
         --info-close-hover: #e8eaed;
-
     }
-
-    
-
-    /* 忙路卤猫聣虏忙篓隆氓录聫盲赂聥忙聬聹莽麓垄氓聸戮忙聽聡茅垄聹茂驴陆?*/
 
     .search-icon {
-
         color: #BFBFBF;
-
     }
-
-    
-
-    /* 莽隆庐盲驴聺SVG猫路炉氓戮聞盲鹿聼氓潞聰莽聰篓莽聸赂氓聬聦茅垄聹茂驴陆?*/
 
     .search-icon svg path {
-
         fill: #BFBFBF;
-
     }
-
 }
 
 
@@ -193,300 +120,194 @@ body {
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
+    isolation: isolate;
 }
 
 
 
-/* 忙卢垄猫驴聨莽聲聦茅聺垄忙聽路氓录聫 */
+/* 欢迎屏幕 */
 
 .welcome-screen {
-
     position: fixed;
-
     top: 0;
-
     left: 0;
-
     width: 100vw;
-
     height: 100vh;
-
     background-color: white;
-
     color: black;
-
     display: none;
-
     justify-content: center;
-
     align-items: center;
-
     z-index: 9999;
-
     transition: opacity 0.5s ease, transform 0.5s ease;
-
 }
 
 
 
 .welcome-content {
-
     text-align: center;
-
     padding: 40px;
-
     border-radius: 12px;
-
     background-color: white;
-
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-
 }
 
 
 
 .welcome-title {
-
     font-size: 2.5rem;
-
     margin-bottom: 20px;
-
     font-weight: 700;
-
 }
 
 
 
 .welcome-version {
-
     font-size: 1.2rem;
-
     margin-bottom: 30px;
-
     color: #666;
-
 }
 
 
 
 .welcome-close-btn {
-
     background-color: #1976d2;
-
     color: white;
-
     border: none;
-
     padding: 12px 24px;
-
     font-size: 1rem;
-
     border-radius: 8px;
-
     cursor: pointer;
-
     transition: background-color 0.2s ease;
-
 }
 
 
 
 .welcome-close-btn:hover {
-
     background-color: #1565c0;
-
 }
 
 
 
-/* 氓陇聹茅聴麓忙篓隆氓录聫盲赂聥莽職聞忙卢垄猫驴聨莽聲聦茅聺垄忙聽路氓录聫 */
+/* 深色模式 - 欢迎屏幕 */
 
 @media (prefers-color-scheme: dark) {
-
     .welcome-screen {
-
         background-color: black;
-
         color: white;
-
     }
-
-    
 
     .welcome-content {
-
         background-color: #1a1a1a;
-
         box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
-
     }
-
-    
 
     .welcome-title {
-
         color: white;
-
     }
-
-    
 
     .welcome-version {
-
         color: #aaa;
-
     }
-
 }
 
 
 
-/* 氓庐鹿氓聶篓氓赂聝氓卤聙 */
+/* 主容器 */
 
 .container {
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
-
     justify-content: flex-start;
-
-    min-height: 100vh;
-
-    padding: 120px 25px 25px;
-
-    gap: 10px;
-
+    min-height: 100dvh;
+    padding: calc(40vh - 133px) 25px 25px;
     position: relative;
-
     transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-
 }
 
 
 
-/* Logo 茅聝篓氓聢聠 */
+/* Logo区域 */
 
 .logo-section {
-
-    margin-bottom: 3px; /* 氓聡聫氓掳聭Logo盲赂聨忙聬聹莽麓垄忙隆聠莽職聞茅聴麓茂驴陆?*/
-
-    transition: opacity 0.3s ease;
-
+    height: 120px;
+    margin-bottom: 3px;
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        margin 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.3s ease;
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
-
 }
 
 
 
 .logo {
-
-    height: 120px; /* 氓聸潞氓庐職Logo氓陇搂氓掳聫 */
-
+    height: 120px;
+    /* 设置Logo尺寸 */
     width: auto;
-
     transition: var(--transition);
-
 }
 
 
 
 .text-logo {
-
     font-size: 80px;
-
     font-weight: bold;
-
     font-family: 'Ginto', system-ui, -apple-system, sans-serif;
-
     color: var(--text-color);
-
     text-align: center;
-
     line-height: 1;
-
 }
 
 
 
-/* 忙聬聹莽麓垄茅聝篓氓聢聠 - 氓聸潞氓庐職盲陆聧莽陆庐 */
+/* 搜索区域 - 宽度 */
 
 .search-section {
-
     width: 100%;
-
     display: flex;
-
     justify-content: center;
-
     align-items: center;
-
     transition: var(--transition);
-
     position: relative;
-
-    margin-top: 0; /* 莽搂禄茅聶陇盲赂聤猫戮鹿猫路聺茂录聦猫庐漏Logo猫路聼茅職聫忙聬聹莽麓垄茂驴陆?*/
-
+    margin-bottom: 10px;
+    margin-top: 0;
 }
 
 
 
 .search-container {
-
     position: relative;
-
+    z-index: 1;
     display: flex;
-
     align-items: center;
-
     border: 1px solid var(--border-color);
-
     border-radius: var(--border-radius);
-
     background: #F1F3F4;
-
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-
     box-shadow: none;
-
     padding: 0 16px;
-
     height: var(--search-box-height);
-
     width: 100%;
-
     max-width: 600px;
-
     margin: 0 auto;
-
     backdrop-filter: blur(0);
-
     -webkit-backdrop-filter: blur(0);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     .search-container {
-
-        background: #202124; /* 忙職聴茅禄聭忙篓隆氓录聫茂驴陆?202124猫聝聦忙聶炉 */
-
-        border: 1px solid var(--border-color); /* 忙職聴茅禄聭忙篓隆氓录聫茂录職忙路禄氓聤聽猫戮鹿茂驴陆?*/
-
+        background: #202124;
+        /* 深色模式 #202124 */
+        border: 1px solid var(--border-color);
+        /* 深色模式边框 */
         backdrop-filter: blur(0);
-
         -webkit-backdrop-filter: blur(0);
-
     }
-
 }
 
 
@@ -496,15 +317,10 @@ body {
 body:not(.dynamic-blur):not([style*="background-image: none"]) .search-container,
 
 body:not(.dynamic-blur).homepage-wallpaper .search-container {
-
     background: #F1F3F4;
-
     border: 1px solid var(--border-color);
-
     backdrop-filter: blur(0);
-
     -webkit-backdrop-filter: blur(0);
-
 }
 
 
@@ -514,15 +330,10 @@ body:not(.dynamic-blur).homepage-wallpaper .search-container {
 @media (prefers-color-scheme: dark) {
 
     body:not(.dynamic-blur):not([style*="background-image: none"]) .search-container,
-
     body:not(.dynamic-blur).homepage-wallpaper .search-container {
-
         background: #202124;
-
         border: 1px solid var(--border-color);
-
     }
-
 }
 
 
@@ -530,9 +341,7 @@ body:not(.dynamic-blur).homepage-wallpaper .search-container {
 .search-container:hover,
 
 .search-container:focus-within {
-
     border-color: transparent;
-
 }
 
 
@@ -540,9 +349,7 @@ body:not(.dynamic-blur).homepage-wallpaper .search-container {
 body:not(.enhanced-display) .search-container:hover,
 
 body:not(.enhanced-display) .search-container:focus-within {
-
     box-shadow: none;
-
 }
 
 
@@ -591,31 +398,20 @@ body:not(.enhanced-display) .search-container:focus-within {
 
 
 .search-input {
-
     flex: 1;
-
     border: none;
-
     outline: none;
-
     background: transparent;
-
     font-size: 16px;
-
     color: var(--text-color);
-
     font-family: inherit;
-
     height: 100%;
-
 }
 
 
 
 .search-input::placeholder {
-
     color: var(--text-secondary);
-
 }
 
 
@@ -624,74 +420,51 @@ body:not(.enhanced-display) .search-container:focus-within {
 
 
 
-/* 忙聬聹莽麓垄氓录聲忙聯聨忙聦聣茅聮庐 - 氓聡聫氓掳聭茅聴麓猫路聺 */
+/* 引擎按钮 - 间距 */
 
 .engine-buttons {
-
     display: flex;
-
     gap: 12px;
-
-    margin-top: 20px;
-
+    margin-top: 10px;
     opacity: 1;
-
-    transition: var(--transition);
-
+    transition: opacity 0.3s ease, margin-top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
 
 .engine-btn {
-
-    background-color: #F1F3F4; /* 忙碌聟猫聣虏忙篓隆氓录聫茂驴陆?F8F9FA猫聝聦忙聶炉 */
-
-    border: none; /* 忙碌聟猫聣虏忙篓隆氓录聫茂录職氓聫聳忙露聢猫戮鹿茂驴陆?*/
-
-    border-radius: 24px; /* 氓聤聽氓陇搂氓聹聠猫搂聮 */
-
-    color: var(--text-color); /* 盲陆驴莽聰篓忙聳聡忙聹卢茅垄聹猫聣虏茂录聦莽隆庐盲驴聺氓炉鹿忙炉聰氓潞娄 */
-
+    background-color: #F1F3F4;
+    /* 浅色模式 #F8F9FA */
+    border: none;
+    /* 浅色模式无边框 */
+    border-radius: 24px;
+    /* 圆角 */
+    color: var(--text-color);
+    /* 使用CSS变量适配浅色/深色 */
     font-family: inherit;
-
     font-size: 14px;
-
     font-weight: 500;
-
     padding: 12px 24px;
-
     cursor: pointer;
-
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-
     min-width: 100px;
-
     text-align: center;
-
     box-shadow: none;
-
     backdrop-filter: blur(0);
-
     -webkit-backdrop-filter: blur(0);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     .engine-btn {
-
-        background-color: #303134; /* 忙職聴茅禄聭忙篓隆氓录聫茂驴陆?303134猫聝聦忙聶炉 */
-
-        color: var(--text-color); /* 忙職聴茅禄聭忙篓隆氓录聫盲赂聥盲陆驴莽聰篓忙碌聟猫聣虏忙聳聡忙聹卢茂录聦莽隆庐盲驴聺氓炉鹿忙炉聰茂驴陆?*/
-
+        background-color: #303134;
+        /* 深色模式 #303134 */
+        color: var(--text-color);
+        /* 深色模式文本颜色适配 */
         backdrop-filter: blur(0);
-
         -webkit-backdrop-filter: blur(0);
-
     }
-
 }
 
 
@@ -701,15 +474,10 @@ body:not(.enhanced-display) .search-container:focus-within {
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn,
 
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn {
-
     background: #F1F3F4;
-
     border: none;
-
     backdrop-filter: blur(0);
-
     -webkit-backdrop-filter: blur(0);
-
 }
 
 
@@ -717,26 +485,18 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn {
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-google,
 
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-google {
-
     background: #F1F3F4;
-
     border: none;
-
     color: var(--text-color);
-
 }
 
 
 
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-microsoft,
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-microsoft {
-
     background: #F1F3F4;
-
     border: none;
-
     color: var(--text-color);
-
 }
 
 
@@ -744,15 +504,10 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-microsoft {
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-google,
 
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-google {
-
     background-color: #1a73e8;
-
     color: white;
-
     border-color: #1a73e8;
-
     box-shadow: 0 4px 16px rgba(26, 115, 232, 0.4);
-
 }
 
 
@@ -760,9 +515,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-google {
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-google:hover,
 
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-google:hover {
-
     box-shadow: 0 6px 20px rgba(26, 115, 232, 0.5);
-
 }
 
 
@@ -770,13 +523,9 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-google:hover 
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-default,
 
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-default {
-
     background: #F1F3F4;
-
     border: none;
-
     color: var(--text-color);
-
 }
 
 
@@ -784,15 +533,10 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-default {
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-default,
 
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default {
-
     background: #00AE90;
-
     color: #ffffff;
-
     border-color: #00AE90;
-
     box-shadow: 0 4px 16px rgba(0, 174, 144, 0.4);
-
 }
 
 
@@ -800,9 +544,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default {
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-default:hover,
 
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover {
-
     box-shadow: 0 6px 20px rgba(0, 174, 144, 0.5);
-
 }
 
 
@@ -812,140 +554,81 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 @media (prefers-color-scheme: dark) {
 
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn,
-
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn {
-
         background: #303134;
-
     }
-
-    
 
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-google,
-
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-google {
-
         background: #303134;
-
         border: none;
-
         color: var(--text-color);
-
     }
-
-    
 
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-microsoft,
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-microsoft {
-
         background: #303134;
-
         border: none;
-
         color: var(--text-color);
-
     }
-
-    
 
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-google,
-
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-google {
-
         background-color: #0d47a1;
-
         border-color: #0d47a1;
-
     }
-
-    
 
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-google:hover,
-
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-google:hover {
-
         box-shadow: 0 6px 20px rgba(13, 71, 161, 0.5);
-
     }
-
-    
 
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-default,
-
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-default {
-
         background: #303134;
-
         border: 1px solid #303134;
-
         color: #ffffff;
-
     }
-
-    
 
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-default,
-
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default {
-
         background: #00AE90;
-
         color: #ffffff;
-
         border-color: #00AE90;
-
         box-shadow: 0 4px 16px rgba(0, 174, 144, 0.4);
-
     }
-
-    
 
     body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-default:hover,
-
     body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover {
-
         box-shadow: 0 6px 20px rgba(0, 174, 144, 0.5);
-
     }
-
 }
 
 
 
 .engine-btn:hover {
-
     border-color: transparent;
-
     box-shadow: none;
-
     transform: translateY(-2px);
-
 }
 
 
 
 .engine-btn:active {
-
     transform: translateY(0);
-
 }
 
 
 
-/* Google氓聮聦Microsoft忙聦聣茅聮庐 - 忙聴楼茅聴麓忙篓隆氓录聫 */
+/* Google和Microsoft - 激活状态 */
 
 .engine-btn.active.logo-google,
 
 .engine-btn.active.logo-microsoft {
-
     background-color: var(--primary-color);
-
     color: white;
-
     border-color: var(--primary-color);
-
     box-shadow: 0 4px 16px rgba(26, 115, 232, 0.4);
-
 }
 
 
@@ -953,55 +636,40 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 .engine-btn.active.logo-google:hover,
 
 .engine-btn.active.logo-microsoft:hover {
-
     box-shadow: 0 6px 20px rgba(26, 115, 232, 0.5);
-
 }
 
 
 
-/* Google氓聮聦Microsoft忙聦聣茅聮庐 - 氓陇聹茅聴麓忙篓隆氓录聫 */
+/* Google和Microsoft - 深色模式 */
 
 @media (prefers-color-scheme: dark) {
 
     .engine-btn.active.logo-google,
-
     .engine-btn.active.logo-microsoft {
-
-        background-color: #0d47a1; /* 茅聶聧盲陆聨盲潞庐氓潞娄莽職聞猫聯聺茂驴陆?*/
-
+        background-color: #0d47a1;
+        /* 深蓝色激活颜色 */
         border-color: #0d47a1;
-
     }
-
-    
 
     .engine-btn.active.logo-google:hover,
-
     .engine-btn.active.logo-microsoft:hover {
-
         box-shadow: 0 6px 20px rgba(13, 71, 161, 0.5);
-
     }
-
 }
 
 
 
-/* Apple氓聮聦HUAWEI忙聦聣茅聮庐 - 忙聴楼茅聴麓忙篓隆氓录聫 */
+/* Apple和HUAWEI - 激活状态 */
 
 .engine-btn.logo-apple,
 
 .engine-btn.logo-huawei,
 
 .engine-btn.logo-default {
-
     background-color: #F1F3F4;
-
     border: none;
-
     color: var(--text-color);
-
 }
 
 
@@ -1009,29 +677,19 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 .engine-btn.active.logo-apple,
 
 .engine-btn.active.logo-huawei {
-
     background-color: #000000;
-
     color: #ffffff;
-
     border-color: #000000;
-
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-
 }
 
 
 
 .engine-btn.active.logo-default {
-
     background-color: #00AE90;
-
     color: #ffffff;
-
     border-color: #00AE90;
-
     box-shadow: 0 4px 16px rgba(0, 174, 144, 0.4);
-
 }
 
 
@@ -1039,103 +697,64 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 .engine-btn.active.logo-apple:hover,
 
 .engine-btn.active.logo-huawei:hover {
-
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-
 }
 
 
 
 .engine-btn.active.logo-default:hover {
-
     box-shadow: 0 6px 20px rgba(0, 174, 144, 0.5);
-
 }
 
 
 
-/* Apple氓聮聦HUAWEI忙聦聣茅聮庐 - 氓陇聹茅聴麓忙篓隆氓录聫 */
+/* Apple和HUAWEI - 深色模式 */
 
 @media (prefers-color-scheme: dark) {
 
     .engine-btn.logo-apple,
-
     .engine-btn.logo-huawei,
-
     .engine-btn.logo-default {
-
         background-color: #303134;
-
         border: none;
-
         color: var(--text-color);
-
     }
-
-    
 
     .engine-btn.active.logo-apple,
-
     .engine-btn.active.logo-huawei {
-
         background-color: #ffffff;
-
         color: #303134;
-
         border-color: #ffffff;
-
         box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
-
     }
-
-
 
     .engine-btn.active.logo-default {
-
         background-color: #00AE90;
-
         color: #ffffff;
-
         border-color: #00AE90;
-
         box-shadow: 0 4px 16px rgba(0, 174, 144, 0.4);
-
     }
-
-    
 
     .engine-btn.active.logo-apple:hover,
-
     .engine-btn.active.logo-huawei:hover {
-
         box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
-
     }
-
-
 
     .engine-btn.active.logo-default:hover {
-
         box-shadow: 0 6px 20px rgba(0, 174, 144, 0.5);
-
     }
-
 }
 
 
 
-/* 猫聡陋氓庐職盲鹿聣Logo氓聮聦忙聳聡氓颅聴Logo忙聦聣茅聮庐忙聽路氓录聫 - 茅禄聭莽聶陆茅拢聨忙聽录 */
+/* 自定义和文字Logo引擎 - 默认 */
 
 .engine-btn.logo-custom,
 
 .engine-btn.logo-text {
-
     background-color: #F1F3F4;
-
     border: none;
-
     color: var(--text-color);
-
 }
 
 
@@ -1143,15 +762,10 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 .engine-btn.active.logo-custom,
 
 .engine-btn.active.logo-text {
-
     background-color: #303134;
-
     color: #ffffff;
-
     border-color: #303134;
-
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-
 }
 
 
@@ -1159,9 +773,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 .engine-btn.active.logo-custom:hover,
 
 .engine-btn.active.logo-text:hover {
-
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-
 }
 
 
@@ -1169,118 +781,79 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 @media (prefers-color-scheme: dark) {
 
     .engine-btn.logo-custom,
-
     .engine-btn.logo-text {
-
         background-color: #303134;
-
         border: none;
-
         color: var(--text-color);
-
     }
-
-    
 
     .engine-btn.active.logo-custom,
-
     .engine-btn.active.logo-text {
-
         background-color: #ffffff;
-
         color: #303134;
-
         border-color: #303134;
-
         box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
-
     }
-
-    
 
     .engine-btn.active.logo-custom:hover,
-
     .engine-btn.active.logo-text:hover {
-
         box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
-
     }
-
 }
 
 
 
-/* 氓潞聲茅聝篓茅聯颅莽聣聦 */
+/* 底部 */
 
 .footer {
-
     position: absolute;
-
     bottom: 32px;
-
     left: 0;
-
     right: 0;
-
     display: flex;
-
     justify-content: center;
-
     transition: opacity 0.3s ease;
-
     z-index: 10;
-
     opacity: 1;
 }
 
 
 
 .ooo-badge {
-
     background-color: var(--surface-color);
-
     border-radius: 16px;
-
     padding: 12px 24px;
-
     font-size: 14px;
-
     color: var(--text-secondary);
-
     cursor: pointer;
-
-    transition: transform 0.35s ease-out, opacity 0.3s ease;
-
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
     border: 1px solid var(--border-color);
-
     font-family: inherit;
-
     position: relative;
-
     overflow: visible;
-
     white-space: nowrap;
-
     min-width: 120px;
-
     text-align: center;
-
     user-select: none;
-
     -webkit-user-select: none;
-
     -moz-user-select: none;
-
     -ms-user-select: none;
-
 }
 
 
 
 @keyframes badgeBounce {
-    0%   { transform: scale(1); }
-    50%  { transform: scale(0.98); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(0.98);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 .badge-bounce {
@@ -1290,82 +863,63 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
 
 
 
-/* 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹盲赂聥莽職聞氓潞聲茅聝篓茅聯颅莽聣聦氓聤篓莽聰禄 */
+/* 高级视觉效果 - 底部动画 */
 
 body.dynamic-blur .ooo-badge {
-
-    transition: background 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.35s ease-out, opacity 0.3s ease;
-
+    transition: background 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
 
 
 body.dynamic-blur .ooo-badge:hover {
-
     transform: translateY(-2px);
-
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     body.dynamic-blur .ooo-badge:hover {
-
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
     }
-
 }
 
 
 
 .ooo-badge:hover {
-
     background-color: rgba(0, 0, 0, 0.04);
-
     transform: translateY(-2px);
-
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     .ooo-badge:hover {
-
         background-color: rgba(255, 255, 255, 0.04);
-
         transform: translateY(-2px);
-
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
     }
-
 }
 
 /* 底部名片退出动画 - 由JavaScript控制时添加此效果 */
 body.exit-animation .ooo-badge {
-    transform: translateY(100px) !important;
+    transform: translateY(100%) !important;
     opacity: 0 !important;
-    transition: transform 0.35s ease-out, opacity 0.3s ease !important;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
     pointer-events: none !important;
 }
 
 /* 底部名片高级视觉效果 - 退出动画增强 */
 body.dynamic-blur.exit-animation .ooo-badge {
-    transform: translateY(100px) scale(0.9) !important;
+    transform: translateY(100%) scale(0.9) !important;
     filter: blur(4px) !important;
     opacity: 0 !important;
 }
 
 /* 底部名片进入动画 - Phase 1: 初始位置 */
 body.enter-animation .ooo-badge {
-    transform: translateY(100px) !important;
+    transform: translateY(100%) !important;
     opacity: 0 !important;
     pointer-events: none !important;
 }
@@ -1374,13 +928,13 @@ body.enter-animation .ooo-badge {
 body.enter-animation.enter-active .ooo-badge {
     transform: translateY(0) !important;
     opacity: 1 !important;
-    transition: transform 0.35s ease-out, opacity 0.3s ease !important;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
     pointer-events: auto !important;
 }
 
 /* 底部名片高级视觉效果 - 进入动画增强 */
 body.dynamic-blur.enter-animation .ooo-badge {
-    transform: translateY(100px) scale(0.9) !important;
+    transform: translateY(100%) scale(0.9) !important;
     filter: blur(4px) !important;
     opacity: 0 !important;
 }
@@ -1389,1024 +943,693 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
     transform: translateY(0) scale(1) !important;
     filter: blur(0) !important;
     opacity: 1 !important;
-    transition: transform 0.35s ease-out, opacity 0.3s ease, filter 0.35s ease-out !important;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, filter 0.35s ease-out !important;
     pointer-events: auto !important;
 }
 
-/* 猫庐戮莽陆庐氓录鹿莽陋聴 */
+/* 壁纸模式 - 底部名片保持隐藏（防止类切换时闪现） */
+body.scrolled .ooo-badge {
+    transform: translateY(100%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.scrolled.dynamic-blur .ooo-badge {
+    transform: translateY(100%) scale(0.9) !important;
+    filter: blur(4px) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* 模态框 */
 
 .modal {
-
     display: none;
-
     position: fixed;
-
     top: 0;
-
     left: 0;
-
     width: 100%;
-
     height: 100%;
-
     background: rgba(0, 0, 0, 0.5);
-
     backdrop-filter: blur(0px);
-
     -webkit-backdrop-filter: blur(0px);
-
     z-index: 1000;
-
     opacity: 0;
-
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠忙聲聢忙篓隆氓录聫盲赂聥莽職聞猫庐戮莽陆庐氓录鹿莽陋聴猫聝聦忙聶炉 - 莽聸麓忙聨楼茂驴陆?modal 盲赂聤氓潞聰茂驴陆?*/
+/* 高级视觉效果 - 模态框模糊容器 */
 
 .modal.blur-effect {
-
     background: rgba(255, 255, 255, 0.12) !important;
-
     backdrop-filter: blur(80px) saturate(1.5) !important;
-
     -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
-
 }
 
 
 
-/* 忙路卤猫聣虏忙篓隆氓录聫盲赂聥莽職聞猫庐戮莽陆庐氓录鹿莽陋聴猫聝聦忙聶炉 */
+/* 深色模式 - 模态框模糊容器 */
 
 @media (prefers-color-scheme: dark) {
-
     .modal.blur-effect {
-
         background: rgba(0, 0, 0, 0.2) !important;
-
         backdrop-filter: blur(80px) saturate(1.5) !important;
-
         -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
-
     }
-
 }
 
 
 
 .modal.show {
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     opacity: 1;
-
     backdrop-filter: blur(80px);
-
     -webkit-backdrop-filter: blur(80px);
-
 }
 
 
 
 .modal.hiding {
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     opacity: 0;
-
     pointer-events: none;
-
     backdrop-filter: blur(0px);
-
     -webkit-backdrop-filter: blur(0px);
-
 }
 
 
 
 .modal-content {
-
     background: var(--background-color);
-
     border-radius: 16px;
-
     padding: 0;
-
     width: 90%;
-
     max-width: 800px;
-
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
-
     transform: scale(0.92) translateY(20px);
-
     opacity: 0;
-
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠忙聲聢忙篓隆氓录聫盲赂聥莽職聞猫庐戮莽陆庐氓聠聟氓庐鹿 - 莽聸麓忙聨楼茂驴陆?modal-content 盲赂聤氓潞聰茂驴陆?*/
+/* 高级视觉效果 - 模态框内容 */
 
 .modal.blur-effect .modal-content {
-
     background: rgba(255, 255, 255, 0.12) !important;
-
     backdrop-filter: blur(80px) saturate(1.5) !important;
-
     -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
-
     border: 1px solid rgba(0, 0, 0, 0.08) !important;
-
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
-
 }
 
 
 
-/* 忙路卤猫聣虏忙篓隆氓录聫盲赂聥莽職聞猫庐戮莽陆庐氓聠聟氓庐鹿 */
+/* 深色模式 - 模态框内容 */
 
 @media (prefers-color-scheme: dark) {
-
     .modal.blur-effect .modal-content {
-
         background: rgba(0, 0, 0, 0.2) !important;
-
         backdrop-filter: blur(80px) saturate(1.5) !important;
-
         -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
-
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-
     }
-
 }
 
 
 
-/* 忙碌聟猫聣虏忙篓隆氓录聫盲赂聥猫庐戮莽陆庐忙隆聠忙聸麓盲潞庐 */
+/* 浅色模式 - 模态框标题 */
 
 @media (prefers-color-scheme: light) {
-
     .modal.blur-effect .modal-content {
-
         background: rgba(255, 255, 255, 0.18) !important;
-
     }
-
 }
 
 
 
-/* 莽娄聛莽聰篓氓聤篓莽聰禄莽職聞莽卤禄 */
+/* 无动画 */
 
 .modal-content.no-animation {
-
     transition: none !important;
-
     transform: scale(1) translateY(0);
-
     opacity: 1;
-
 }
 
 
 
 .modal.show .modal-content {
-
     transform: scale(1) translateY(0);
-
     opacity: 1;
-
     box-shadow: 0 28px 56px rgba(0, 0, 0, 0.22);
-
 }
 
 
 
 .modal.hiding .modal-content {
-
     transform: scale(0.95) translateY(-15px);
-
     opacity: 0;
-
     box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18);
-
 }
 
 
 
 .modal-header {
-
     display: flex;
-
     justify-content: space-between;
-
     align-items: center;
-
     padding: 24px;
-
     border-bottom: 1px solid var(--border-color);
+}
 
+.modal-header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 
 
 .modal-header h2 {
-
     font-size: 20px;
-
     font-weight: 500;
-
 }
 
 
 
+.material-icons {
+    font-family: 'Material Icons' !important;
+}
+
 .close-btn {
-
     background: rgba(255, 255, 255, 0.3);
-
     border: 1px solid rgba(0, 0, 0, 0.1);
-
     font-size: 28px;
-
     cursor: pointer;
-
     color: var(--text-color);
-
     padding: 8px;
-
     width: 40px;
-
     height: 40px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     border-radius: 50%;
-
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-
     backdrop-filter: blur(20px);
-
     -webkit-backdrop-filter: blur(20px);
+}
 
+.close-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     .close-btn {
-
         background: rgba(0, 0, 0, 0.3);
-
     }
-
 }
 
 
 
 .close-btn:hover {
-
     background-color: rgba(0, 0, 0, 0.08);
-
     transform: scale(1.1);
-
 }
 
 
 
 .close-btn:active {
-
     transform: scale(0.95);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     .close-btn:hover {
-
         background-color: rgba(255, 255, 255, 0.08);
-
     }
-
 }
 
 
 
 .modal-body {
-
     padding: 24px;
-
-    max-height: 70vh; /* 猫庐戮莽陆庐忙聹聙氓陇搂茅芦聵氓潞娄茂录聦盲陆驴氓聟露氓聫炉盲禄楼忙禄職氓聤篓 */
-
-    overflow-y: auto; /* 氓聟聛猫庐赂氓聻聜莽聸麓忙禄職氓聤篓 */
-
-    scrollbar-width: thin; /* Firefox */
-
-    scrollbar-color: var(--border-color) transparent; /* Firefox */
-
+    max-height: 70vh;
+    /* 模态框最大高度，使用vh */
+    overflow-y: auto;
+    /* 启用垂直滚动 */
+    scrollbar-width: thin;
+    /* Firefox */
+    scrollbar-color: var(--border-color) transparent;
+    /* Firefox */
 }
 
 
 
-/* Chrome, Safari 莽颅聣忙碌聫猫搂聢氓聶篓莽職聞忙禄職氓聤篓忙聺隆忙聽路氓录聫 */
+/* Chrome、Safari滚动条 */
 
 .modal-body::-webkit-scrollbar {
-
     width: 6px;
-
 }
 
 
 
 .modal-body::-webkit-scrollbar-track {
-
     background: transparent;
-
 }
 
 
 
 .modal-body::-webkit-scrollbar-thumb {
-
     background-color: var(--border-color);
-
     border-radius: 3px;
-
 }
 
 
 
-/* 氓路娄氓聫鲁氓聢聠忙聽聫氓赂聝氓卤聙 */
+/* 设置布局 */
 
 .settings-layout {
-
     display: flex;
-
     flex: 1;
-
     min-height: 0;
-
 }
 
 
 
 .settings-left-panel {
-
     flex: 1;
-
     display: flex;
-
     flex-direction: column;
-
     border-right: 1px solid var(--border-color);
-
     min-height: 0;
-
 }
 
 
 
 .settings-right-panel {
-
     flex: 0 0 320px;
-
     display: flex;
-
     flex-direction: column;
-
     min-width: 0;
-
 }
 
 
 
 .right-panel-content {
-
     display: flex;
-
     flex-direction: column;
-
     height: 100%;
-
     padding: 24px;
-
 }
 
 
 
 .right-panel-upper {
-
     flex: 1;
-
     margin-bottom: 16px;
-
     padding: 16px;
-
     border: 1px solid var(--border-color);
-
     border-radius: 16px;
-
     background-color: var(--surface-color);
-
     display: flex;
-
     flex-direction: column;
-
     position: relative;
-
     scrollbar-width: thin;
-
     scrollbar-color: var(--border-color) transparent;
-
     overflow: hidden;
-
 }
 
 
 
 .right-panel-upper::-webkit-scrollbar {
-
     width: 6px;
-
 }
 
 
 
 .right-panel-upper::-webkit-scrollbar-track {
-
     background: transparent;
-
 }
 
 
 
 .right-panel-upper::-webkit-scrollbar-thumb {
-
     background-color: var(--border-color);
-
     border-radius: 3px;
-
     border: 2px solid transparent;
-
 }
 
 
 
 .right-panel-upper::-webkit-scrollbar-thumb:hover {
-
     background-color: var(--text-secondary);
-
 }
 
 
 
 .right-panel-placeholder-container {
-
     flex: 1;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     width: 100%;
-
 }
 
 
 
 .right-panel-placeholder {
-
     color: var(--text-secondary);
-
     font-size: 16px;
-
     text-align: center;
-
     font-weight: 500;
-
 }
 
 
 
 .right-panel-lower {
-
     margin-top: auto;
-
 }
 
 
 
-/* 氓聫鲁盲戮搂茅聺垄忙聺驴氓聢聴猫隆篓忙聽路氓录聫 */
+/* 设置菜单容器 */
 
 .settings-menu-container {
-
     display: flex;
-
     flex-direction: column;
-
     height: 100%;
-
     min-height: 0;
-
 }
 
 
 
 .settings-menu-options {
-
     flex: 1 1 0;
-
     min-height: 0;
-
     overflow-y: auto;
-
     display: flex;
-
     flex-direction: column;
-
 }
 
 
 
 .settings-menu-option {
-
     padding: 12px 16px;
-
     border-radius: 16px;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
     margin-bottom: 4px;
-
     user-select: none;
-
     color: var(--text-color);
-
     flex-shrink: 0;
-
 }
 
 
 
 .settings-menu-option:hover {
-
     background-color: var(--surface-variant);
-
 }
 
 
 
 .settings-menu-option.selected {
-
     background-color: var(--primary-color);
-
     color: white;
-
 }
 
 
 
-/* 氓聫鲁盲戮搂茅聺垄忙聺驴盲赂颅莽職聞盲赂聤盲录聽忙聦聣茅聮庐忙聽路氓录聫 */
+/* 设置菜单底部区域 */
 
 .settings-plus-btn {
-
     padding: 12px !important;
-
     width: 40px !important;
-
     height: 40px !important;
-
     min-width: 40px !important;
-
     font-size: 16px !important;
-
     display: flex !important;
-
     align-items: center !important;
-
     justify-content: center !important;
-
 }
 
 
 
-/* 氓聫鲁盲戮搂茅聺垄忙聺驴忙聦聣茅聮庐氓庐鹿氓聶篓 */
+/* 设置菜单操作 */
 
 .settings-menu-button-container {
-
     flex: 0 0 auto;
-
     display: flex;
-
     gap: 12px;
-
     justify-content: flex-end;
-
     padding-top: 16px;
-
 }
 
 
 
-/* 氓驴芦茅聙聼茅聯戮忙聨楼猫戮聯氓聟楼忙隆聠氓庐鹿氓聶篓忙聽路氓录聫 */
+/* 快捷链接输入 */
 
 .quick-link-inputs-container {
-
     display: flex;
-
     flex-direction: column;
-
     height: 100%;
-
     gap: 16px;
-
 }
 
 
 
 .quick-link-inputs-wrapper {
-
     flex: 1;
-
     display: flex;
-
     flex-direction: column;
-
     gap: 8px;
-
     overflow-y: auto;
-
 }
 
 
 
 .quick-link-inputs-wrapper label {
-
     font-size: 14px;
-
     font-weight: 500;
-
     color: var(--text-color);
-
 }
 
 
 
 .quick-link-inputs-wrapper input {
-
     padding: 12px 16px;
-
     border: 1px solid var(--border-color);
-
     border-radius: 16px;
-
     font-size: 14px;
-
     font-family: inherit;
-
     background-color: var(--background-color);
-
     color: var(--text-color);
-
     transition: all 0.2s ease;
-
 }
 
 
 
 .quick-link-inputs-wrapper input:focus {
-
     outline: none;
-
     border-color: var(--primary-color);
-
 }
 
 
 
 .confirm-quick-link-btn {
-
     padding: 12px 24px;
-
     background-color: var(--primary-color);
-
     color: white;
-
     border: none;
-
     border-radius: 16px;
-
     font-size: 14px;
-
     font-weight: 500;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
     align-self: flex-end;
-
     min-width: 80px;
-
     box-sizing: border-box;
-
 }
 
 
 
 .confirm-quick-link-btn:hover {
-
     background-color: #1557b2;
-
 }
 
 
 
 .confirm-quick-link-btn:active {
-
     background-color: #0f4698;
-
     transform: translateY(0);
-
 }
 
 
 
 .settings-menu-confirm {
-
     padding: 0 28px;
-
     height: 40px;
-
     background-color: var(--primary-color);
-
     color: white;
-
     border: none;
-
     border-radius: 16px;
-
     font-size: 14px;
-
     font-weight: 500;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
     min-width: 100px;
-
     box-sizing: border-box;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
 }
 
 
 
 .settings-menu-confirm:hover {
-
     background-color: #1557b2;
-
 }
 
 
 
 .settings-menu-confirm:active {
-
     background-color: #0f4698;
-
     transform: translateY(0);
-
 }
 
 
 
 .setting-group {
-
-    margin-bottom: 20px;
-
+    margin-bottom: 14px;
     padding-bottom: 0;
-
     border-bottom: none;
-
 }
 
 
 
 .setting-group.action-buttons {
-
-    margin-bottom: 10;
-
+    margin-bottom: 0;
 }
 
 
 
 .setting-group label {
-
     display: block;
-
     margin-bottom: 8px;
-
-    font-weight: 500;
-
     color: var(--text-color);
-
 }
 
 
 
 .setting-select {
-
     width: 100%;
-
     padding: 16px 40px 16px 16px;
-
     border: 1px solid var(--border-color);
-
     border-radius: 16px;
-
     background: var(--background-color);
-
     color: var(--text-color);
-
     font-family: inherit;
-
     font-size: 14px;
-
     font-weight: 500;
-
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-
     background-repeat: no-repeat;
-
     background-position: right 16px center;
-
     background-size: 20px;
-
 }
 
 
 
 .custom-select {
-
     position: relative;
-
     display: inline-block;
-
     width: 100%;
-
 }
 
 
 
 .select-selected {
-
     width: 100%;
-
     padding: 16px 40px 16px 16px;
-
     border: 1px solid var(--border-color);
-
     border-radius: 16px;
-
     background: var(--background-color);
-
     color: var(--text-color);
-
     font-family: inherit;
-
     font-size: 14px;
-
     font-weight: 500;
-
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-
     background-repeat: no-repeat;
-
     background-position: right 16px center;
-
     background-size: 20px;
-
     cursor: pointer;
-
     user-select: none;
-
 }
 
 
 
 .select-items {
-
     position: absolute;
-
     top: 100%;
-
     left: 0;
-
     right: 0;
-
     z-index: 999;
-
     background: var(--background-color);
-
     border: 1px solid var(--border-color);
-
     border-radius: 16px;
-
     margin-top: 4px;
-
     max-height: 250px;
-
     overflow-y: auto;
-
 }
 
 
 
 .select-hide {
-
     display: none;
-
 }
 
 
 
 .select-item {
-
     padding: 14px 16px;
-
     cursor: pointer;
-
     user-select: none;
-
     transition: background-color 0.2s ease;
-
 }
 
 
 
 .select-item:hover {
-
     background-color: rgba(0, 0, 0, 0.04);
-
 }
 
 
 
 .select-item:first-child {
-
     border-radius: 16px 16px 0 0;
-
 }
 
 
 
 .select-item:last-child {
-
     border-radius: 0 0 16px 16px;
-
 }
 
 
 
-/* 鑷畾涔夋枃瀛桳ogo閫夐」鏍峰紡 */
-
+/* 自定义文字Logo样式 */
 .select-item-text-logo {
     display: flex;
     flex-direction: column;
@@ -2422,37 +1645,27 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 
 
 .select-items::-webkit-scrollbar {
-
     width: 6px;
-
 }
 
 
 
 .select-items::-webkit-scrollbar-track {
-
     background: transparent;
-
     border-radius: 6px;
-
 }
 
 
 
 .select-items::-webkit-scrollbar-thumb {
-
     background: rgba(0, 0, 0, 0.2);
-
     border-radius: 6px;
-
 }
 
 
 
 .select-items::-webkit-scrollbar-thumb:hover {
-
     background: rgba(0, 0, 0, 0.3);
-
 }
 
 .bing-wallpaper-item {
@@ -2475,49 +1688,31 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 }
 
 .setting-select:focus {
-
     outline: none;
-
     border-color: var(--primary-color);
-
     background-color: rgba(0, 0, 0, 0.02);
-
 }
 
 
 
 .setting-input {
-
     width: 100%;
-
     padding: 14px 16px;
-
     border: 1px solid var(--border-color);
-
     border-radius: 16px;
-
     background: var(--background-color);
-
     color: var(--text-color);
-
     font-family: inherit;
-
     font-size: 16px;
-
     transition: all 0.2s ease;
-
 }
 
 
 
 .setting-input:focus {
-
     outline: none;
-
     border-color: var(--primary-color);
-
     background-color: rgba(0, 0, 0, 0.02);
-
 }
 
 
@@ -2525,177 +1720,116 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 @media (prefers-color-scheme: dark) {
 
     .setting-select:focus,
-
     .setting-input:focus {
-
         background-color: rgba(255, 255, 255, 0.02);
-
     }
-
 }
 
 
 
-/* 茅聙聣忙聥漏氓聶篓盲赂聨盲赂聤盲录聽忙聦聣茅聮庐莽禄聞氓聬聢 */
-
+/* 下拉选择与上传组合样式 */
 .select-with-upload {
-
     display: flex;
-
     gap: 8px;
-
     align-items: stretch;
-
 }
 
 
 
 .upload-btn {
-
     padding: 16px;
-
     background-color: var(--primary-color);
-
     color: white;
-
     border: none;
-
     border-radius: 16px;
-
     font-family: inherit;
-
     font-size: 18px;
-
     font-weight: 500;
-
     cursor: pointer;
-
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
     min-width: 56px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
 }
 
 
 
 .upload-btn:hover {
-
-    background-color: #1557b2;
-
+    background-color: var(--primary-color);
 }
 
 
 
 .upload-btn:active {
-
     background-color: #0f4698;
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     .upload-btn {
-
         background-color: rgba(0, 0, 0, 0.3);
-
     }
-
 }
 
 
 
 .upload-btn:hover {
-
     background-color: #1557b2;
-
 }
 
 
 
 .upload-btn:active {
-
     background-color: #0f4698;
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     .upload-btn:hover {
-
         background-color: rgba(255, 255, 255, 0.05);
-
     }
-
 }
 
 
 
-/* 忙聳聡氓颅聴Logo猫戮聯氓聟楼茂驴陆?*/
+/* 文字Logo输入组 */
 
 .text-logo-input-group {
-
     display: flex;
-
     gap: 8px;
-
 }
 
 
 
 .text-logo-btn {
-
     padding: 10px 16px;
-
     background-color: var(--surface-color);
-
     color: var(--text-color);
-
     border: 1px solid var(--border-color);
-
     border-radius: 16px;
-
     font-family: inherit;
-
     font-size: 14px;
-
     font-weight: 500;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
     white-space: nowrap;
-
 }
 
 
 
 .text-logo-btn:hover {
-
     background-color: var(--surface-variant);
-
     border-color: var(--primary-color);
-
     transform: translateY(-1px);
-
 }
 
 
 
 .text-logo-btn:active {
-
     transform: translateY(0);
-
 }
 
 
@@ -3059,615 +2193,389 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 
 
 .wallpaper-url-group {
-
     display: flex;
-
     gap: 8px;
-
     margin-top: 8px;
-
 }
 
 
 
-/* 猫聡陋氓庐職盲鹿聣Logo氓聢聴猫隆篓 */
+/* 自定义Logo列表 */
 
 .custom-logos-list {
-
     display: flex;
-
     flex-direction: column;
-
     gap: 8px;
-
     max-height: 200px;
-
     overflow-y: auto;
-
 }
 
 
 
 .custom-logo-item {
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     padding: 12px 16px;
-
     background-color: var(--surface-color);
-
     border: 1px solid var(--border-color);
-
     border-radius: 16px;
-
     transition: all 0.2s ease;
-
 }
 
 
 
 .custom-logo-item:hover {
-
     background-color: rgba(0, 0, 0, 0.05);
-
 }
 
 
 
 .custom-logo-name {
-
     flex: 1;
-
     font-size: 14px;
-
     font-weight: 500;
-
 }
 
 
 
 .delete-logo-btn {
-
     padding: 8px 12px;
-
     background-color: var(--surface-color);
-
     color: var(--text-color);
-
     border: 1px solid var(--border-color);
-
     border-radius: 10px;
-
     font-family: inherit;
-
     font-size: 14px;
-
     font-weight: 500;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
 }
 
 
 
 .delete-logo-btn:hover {
-
     background-color: rgba(239, 68, 68, 0.1);
-
     border-color: #ef4444;
-
     color: #ef4444;
-
 }
 
 
 
 .delete-logo-btn:active {
-
     transform: translateY(0);
-
 }
 
 
 
-/* 氓驴芦茅聙聼猫庐驴茅聴庐茅聯戮忙聨楼氓聢聴猫隆篓茅隆鹿忙聽路氓录聫 */
+/* 快捷链接空状态 */
 
 .quick-links-empty {
-
     padding: 24px 16px;
-
     text-align: center;
-
     color: var(--text-secondary);
-
     font-size: 14px;
-
 }
 
 
 
 .quick-links-input-wrapper {
-
     flex: 0 0 auto;
-
     display: flex;
-
     flex-direction: column;
-
     gap: 12px;
-
 }
 
 
 
 .quick-links-input-wrapper .setting-input {
-
     width: 100%;
-
     padding: 12px 14px;
-
 }
 
 
 
 .quick-links-list-container {
-
     flex: 1 1 0;
-
     min-height: 0;
-
     overflow-y: auto;
-
     display: flex;
-
     flex-direction: column;
-
 }
 
 
 
 .quick-link-menu-item {
-
     display: flex;
-
     align-items: center;
-
     gap: 12px;
-
     padding: 12px 16px;
-
     border-radius: 16px;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
     margin-bottom: 4px;
-
     user-select: none;
-
     color: var(--text-color);
-
     flex-shrink: 0;
-
 }
 
 
 
 .quick-link-menu-item:hover {
-
     background-color: var(--surface-variant);
-
 }
 
 
 
 .quick-link-menu-item.dragging {
-
     opacity: 0.5;
-
     background-color: var(--surface-variant);
-
 }
 
 
 
 .quick-link-drag-handle {
-
     width: 24px;
-
     height: 24px;
-
     display: flex;
-
     flex-direction: column;
-
     justify-content: center;
-
     align-items: center;
-
     gap: 3px;
-
     cursor: grab;
-
     flex-shrink: 0;
-
     opacity: 0.4;
-
     transition: opacity 0.2s ease;
-
 }
 
 
 
 .quick-link-drag-handle:hover {
-
     opacity: 0.8;
-
 }
 
 
 
 .quick-link-drag-handle:active {
-
     cursor: grabbing;
-
 }
 
 
 
 .quick-link-drag-handle span {
-
     display: block;
-
     width: 14px;
-
     height: 2px;
-
     background-color: var(--text-secondary);
-
     border-radius: 2px;
-
 }
 
 
 
 .quick-link-menu-info {
-
     flex: 1;
-
     min-width: 0;
-
     display: flex;
-
     flex-direction: column;
-
     gap: 2px;
-
 }
 
 
 
 .quick-link-menu-name {
-
     font-weight: 500;
-
     font-size: 14px;
-
     white-space: nowrap;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
-
 }
 
 
 
 .quick-link-menu-url {
-
     font-size: 12px;
-
     color: var(--text-secondary);
-
     white-space: nowrap;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
-
 }
 
 
 
 .delete-link-menu-btn {
-
     width: 28px;
-
     height: 28px;
-
     padding: 0;
-
     background-color: transparent;
-
     color: var(--text-secondary);
-
     border: none;
-
     border-radius: 8px;
-
     font-family: inherit;
-
     font-size: 16px;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     flex-shrink: 0;
-
     opacity: 0.5;
-
 }
 
 
 
 .delete-link-menu-btn:hover {
-
     background-color: rgba(239, 68, 68, 0.1);
-
     color: #ef4444;
-
     opacity: 1;
-
 }
 
 
 
-/* 氓聟鲁盲潞聨氓聮聦氓聫聧茅娄聢忙聦聣茅聮庐氓庐鹿茂驴陆?*/
+/* 关于和反馈按钮 */
 
 .about-feedback-buttons {
-
     display: flex;
-
     gap: 12px;
-
 }
 
 
 
 .about-feedback-btn {
-
     flex: 1;
-
     padding: 10px 16px;
-
     background-color: var(--surface-color);
-
     color: var(--text-color);
-
     border: 1px solid var(--border-color);
-
     border-radius: 16px;
-
     font-family: inherit;
-
     font-size: 14px;
-
     font-weight: 500;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
 }
 
 
 
 .about-feedback-btn:hover {
-
     background-color: var(--surface-variant);
-
     border-color: var(--primary-color);
-
     transform: translateY(-1px);
-
 }
 
 
 
 .about-feedback-btn:active {
-
     transform: translateY(0);
-
 }
 
 
 
 .developer-mode-controls {
-
     display: flex;
-
     flex-direction: column;
-
     gap: 16px;
-
 }
 
 
 
 .developer-control-item {
-
     display: flex;
-
     flex-direction: column;
-
     gap: 8px;
-
 }
 
 
 
 .developer-control-item label {
-
     font-size: 14px;
-
-    color: var(--text-secondary);
-
+    color: var(--text-color);
     font-weight: 500;
-
 }
 
 
 
 .slider-input {
-
     width: 100%;
-
     height: 28px;
-
     border-radius: 6px;
-
     background: var(--primary-color);
-
     outline: none;
-
     -webkit-appearance: none;
-
     appearance: none;
-
 }
 
 
 
 .slider-input::-webkit-slider-thumb {
-
     -webkit-appearance: none;
-
     appearance: none;
-
     width: 2px;
-
     height: 32px;
-
     border-radius: 1px;
-
     background: var(--primary-color);
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
     position: relative;
-
     box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.8);
-
 }
 
 
 
 .slider-input::-webkit-slider-thumb:hover {
-
     transform: scale(1.05);
-
 }
 
 
 
 .slider-input::-moz-range-thumb {
-
     width: 2px;
-
     height: 32px;
-
     border-radius: 1px;
-
     background: var(--primary-color);
-
     cursor: pointer;
-
     border: none;
-
     transition: all 0.2s ease;
-
     box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.8);
-
 }
 
 
 
 .slider-input::-moz-range-thumb:hover {
-
     transform: scale(1.05);
-
 }
 
 
 
 .slider-value {
-
     font-size: 14px;
-
     color: var(--text-primary);
-
     font-weight: 500;
-
     min-width: 40px;
-
     text-align: right;
-
 }
 
 
 
 .slider-value-input {
-
     width: 60px;
-
     padding: 6px 8px;
-
     background-color: var(--surface-color);
-
     color: var(--text-color);
-
     border: 1px solid var(--border-color);
-
     border-radius: 10px;
-
     font-family: inherit;
-
     font-size: 14px;
-
     font-weight: 500;
-
     text-align: center;
-
     transition: all 0.2s ease;
-
 }
 
 
 
 .slider-value-input:focus {
-
     outline: none;
-
     border-color: var(--primary-color);
-
     box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
-
 }
 
 
@@ -3675,55 +2583,36 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 .slider-value-input::-webkit-outer-spin-button,
 
 .slider-value-input::-webkit-inner-spin-button {
-
     -webkit-appearance: none;
-
     margin: 0;
-
 }
 
 
 
 .slider-value-input {
-
     appearance: textfield;
-
     -moz-appearance: textfield;
-
 }
 
 
 
 .developer-control-item .setting-input {
-
     width: 100%;
-
     padding: 10px 12px;
-
     background-color: var(--surface-color);
-
     color: var(--text-color);
-
     border: 1px solid var(--border-color);
-
     border-radius: 12px;
-
     font-size: 14px;
-
     transition: all 0.2s ease;
-
 }
 
 
 
 .developer-control-item .setting-input:focus {
-
     outline: none;
-
     border-color: var(--primary-color);
-
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-
 }
 
 
@@ -3731,436 +2620,299 @@ body.dynamic-blur.enter-animation.enter-active .ooo-badge {
 .developer-control-item .setting-input.no-spin::-webkit-outer-spin-button,
 
 .developer-control-item .setting-input.no-spin::-webkit-inner-spin-button {
-
     -webkit-appearance: none;
-
     margin: 0;
-
 }
 
 
 
 .developer-control-item .setting-input.no-spin {
-
     appearance: textfield;
-
     -moz-appearance: textfield;
-
 }
 
 
 
 .control-with-reset {
-
     display: flex;
-
     align-items: center;
-
     gap: 8px;
-
 }
 
 
 
 .control-with-reset .slider-input {
-
     flex: 1;
-
 }
 
 
 
 .control-with-reset .slider-value {
-
     min-width: 50px;
-
     text-align: center;
-
 }
 
 
 
 .control-with-reset .setting-input {
-
     flex: 1;
-
 }
 
 
 
 .reset-developer-btn {
-
     width: 100%;
-
     padding: 8px 16px;
-
     background-color: var(--surface-color);
-
     color: var(--text-color);
-
     border: 1px solid var(--border-color);
-
     border-radius: 16px;
-
     font-family: inherit;
-
     font-size: 13px;
-
     font-weight: 500;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
     margin-top: 16px;
-
 }
 
 
 
 .reset-developer-btn:hover {
-
     background-color: rgba(239, 68, 68, 0.1);
-
     border-color: #ef4444;
-
     color: #ef4444;
-
 }
 
 
 
 .reset-developer-btn:active {
-
     transform: translateY(0);
-
 }
 
 
 
 .search-history-container {
-
-    position: absolute;
-
-    top: calc(220px + 105px);
-
-    left: 50%;
-
-    transform: translateX(-50%) translateY(10px);
-
+    position: relative;
+    margin: 0 auto;
     max-width: 600px;
-
     width: 100%;
-
     background-color: var(--surface-color);
-
     border-radius: 16px;
-
-    height: 180px;
-
-    overflow-y: auto;
-
+    max-height: 0;
+    overflow: hidden;
     z-index: 1000;
-
-    border: 1px solid var(--border-color);
-
+    border: 0 none;
     opacity: 0;
-
-    transition: opacity 0.2s ease, transform 0.2s ease;
-
+    transition: max-height 0.35s ease, opacity 0.2s ease, padding 0.35s ease, border 0.35s ease;
     pointer-events: none;
-
-    display: none;
-
-    padding: 10px 16px;
-
+    padding: 0 16px;
     scrollbar-width: thin;
-
     scrollbar-color: var(--border-color) transparent;
-
 }
 
 
 
-/* 忙聵戮莽陇潞忙聬聹莽麓垄氓聨聠氓聫虏忙聴露莽職聞氓聤篓莽聰禄忙聲聢忙聻聹 */
+/* 搜索历史 - 显示 */
 
 .search-history-container.show {
-
+    max-height: 200px;
     opacity: 1;
-
-    transform: translateX(-50%) translateY(0);
-
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+    overflow-y: auto;
     pointer-events: auto;
-
-    display: block;
-
 }
 
 
 
-/* 氓聹篓氓拢聛莽潞赂忙篓隆氓录聫盲赂聥盲赂聧忙聵戮莽陇潞忙聬聹莽麓垄氓聨聠氓聫虏忙隆聠 */
+/* 滚动时隐藏搜索历史 */
 
 body.scrolled .search-history-container {
-
-    display: none !important;
-
+    max-height: 0 !important;
     opacity: 0 !important;
-
+    padding: 0 16px !important;
+    border: 0 none !important;
+    overflow: hidden !important;
     pointer-events: none !important;
-
 }
 
 
 
-/* 忙聬聹莽麓垄氓聨聠氓聫虏氓聢聴猫隆篓忙聽路氓录聫 */
+/* 搜索历史列表 */
 
 .search-history-list {
-
     padding: 8px 0;
-
 }
 
 
 
-/* 忙聬聹莽麓垄氓聨聠氓聫虏忙聺隆莽聸庐忙聽路氓录聫 */
+/* 搜索历史项 */
 
 .search-history-item {
-
     display: flex;
-
     justify-content: space-between;
-
     align-items: center;
-
     padding: 12px 16px;
-
     cursor: pointer;
-
     transition: background-color 0.2s ease;
-
     font-size: 14px;
-
     color: var(--text-color);
-
     border-radius: 12px;
-
 }
-
-
 
 .search-history-item:hover {
-
     background-color: var(--surface-variant);
-
 }
 
 
 
-/* 忙聬聹莽麓垄氓聨聠氓聫虏氓聢聽茅聶陇忙聦聣茅聮庐忙聽路氓录聫 */
+/* 搜索历史删除按钮 */
 
 .search-history-delete {
-
-    width: 24px;
-
-    height: 24px;
-
     border: none;
-
     background: transparent;
-
     color: var(--text-secondary);
-
     cursor: pointer;
-
-    border-radius: 50%;
-
+    font-size: 20px;
+    line-height: 1;
+    padding: 0;
     display: flex;
-
     align-items: center;
-
     justify-content: center;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    flex-shrink: 0;
+    margin-left: 12px;
+    transform: scale(0.7);
+}
 
-    font-size: 16px;
+.search-history-item:hover .search-history-delete {
+    opacity: 0.5;
+    transform: scale(1) translateX(4px);
+}
 
-    transition: all 0.2s ease;
+.search-history-item:hover .search-history-delete:hover {
+    opacity: 1;
+    color: #d93025;
+    transform: scale(1.2) translateX(4px);
+}
 
-    margin-right: -15px;
-
+@media (prefers-color-scheme: dark) {
+    .search-history-item:hover .search-history-delete:hover {
+        color: #f28b82;
+    }
 }
 
 
 
-.search-history-delete:hover {
-
-    background-color: var(--surface-variant);
-
-}
-
-
-
-/* 忙聬聹莽麓垄氓聨聠氓聫虏忙禄職氓聤篓忙聺隆忙聽路茂驴陆?*/
+/* 搜索历史滚动条 */
 
 .search-history-container::-webkit-scrollbar {
-
     width: 6px;
-
 }
 
 
 
 .search-history-container::-webkit-scrollbar-track {
-
     background: var(--surface-variant);
-
     border-radius: 3px;
-
 }
 
 
 
 .search-history-container::-webkit-scrollbar-thumb {
-
     background: var(--border-color);
-
     border-radius: 3px;
-
 }
 
 
 
 .search-history-container::-webkit-scrollbar-thumb:hover {
-
     background: var(--text-secondary);
-
 }
 
 
 
-/* 氓驴芦茅聙聼猫庐驴茅聴庐茅聯戮忙聨楼忙聦聣茅聮庐氓庐鹿茂驴陆?*/
+/* 快捷访问链接 */
 
 .quick-access-links {
-
     display: flex;
-
     flex-wrap: wrap;
-
     gap: 12px;
-
     margin-top: 8px;
-
     justify-content: center;
-
     transition: transform 0.35s ease-out, opacity 0.3s ease;
-
 }
 
 
 
-/* 忙聬聹莽麓垄氓录聲忙聯聨忙聦聣茅聮庐 - 氓聡聫氓掳聭茅聴麓猫路聺 */
+/* 引擎按钮 - 间距 */
 
 .engine-buttons {
-
     display: flex;
-
     gap: 12px;
-
     margin-top: 10px;
-
     opacity: 1;
-
     transition: margin-top 0.3s ease;
-
 }
 
 
 
 .quick-access-btn {
-
-    background-color: #F1F3F4; 
-
-    border: none; 
-
-    border-radius: 24px; 
-
-    color: var(--text-color); 
-
+    background-color: #F1F3F4;
+    border: none;
+    border-radius: 24px;
+    color: var(--text-color);
     font-family: inherit;
-
     font-size: 14px;
-
     font-weight: 500;
-
     padding: 12px 24px;
-
     cursor: pointer;
-
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-
     min-width: 100px;
-
     text-align: center;
-
     box-shadow: none;
-
     backdrop-filter: blur(0);
-
     -webkit-backdrop-filter: blur(0);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     .quick-access-btn {
-
         background-color: #303134;
-
         color: var(--text-color);
-
         backdrop-filter: blur(0);
-
         -webkit-backdrop-filter: blur(0);
-
     }
-
 }
 
 
 
-/* 快速访问链接壁纸模式样式 */
+/* 快捷访问链接壁纸模式样式 */
 
 body:not(.dynamic-blur):not([style*="background-image: none"]) .quick-access-btn,
 
 body:not(.dynamic-blur).homepage-wallpaper .quick-access-btn {
-
     background: #F1F3F4;
-
     border: none;
-
     backdrop-filter: blur(0);
-
     -webkit-backdrop-filter: blur(0);
-
 }
 
 
 
-/* 快速访问链接壁纸模式深色样式 */
+/* 快捷访问链接壁纸模式深色样式 */
 
 @media (prefers-color-scheme: dark) {
 
     body:not(.dynamic-blur):not([style*="background-image: none"]) .quick-access-btn,
-
     body:not(.dynamic-blur).homepage-wallpaper .quick-access-btn {
-
         background: #303134;
-
     }
-
 }
 
-/* 快速访问链接容器退出动画 - 由JavaScript控制时添加此效果 */
+/* 快捷访问链接容器退出动画 - 由JavaScript控制时添加此效果 */
 body.exit-animation #quick-access-links {
     transform: translateY(200px) !important;
     opacity: 0 !important;
@@ -4169,14 +2921,14 @@ body.exit-animation #quick-access-links {
     pointer-events: none !important;
 }
 
-/* 快速访问链接容器高级视觉效果 - 退出动画增强 */
+/* 快捷访问链接容器高级视觉效果 - 退出动画增强 */
 body.dynamic-blur.exit-animation #quick-access-links {
     transform: translateY(200px) scale(0.9) !important;
     filter: blur(4px) !important;
     opacity: 0 !important;
 }
 
-/* 快速访问链接容器进入动画 - Phase 1: 初始位置 */
+/* 快捷访问链接容器进入动画 - Phase 1: 初始位置 */
 body.enter-animation #quick-access-links {
     transform: translateY(200px) !important;
     opacity: 0 !important;
@@ -4184,7 +2936,7 @@ body.enter-animation #quick-access-links {
     pointer-events: none !important;
 }
 
-/* 快速访问链接容器进入动画 - Phase 2: 过渡到最终位置 */
+/* 快捷访问链接容器进入动画 - Phase 2: 过渡到最终位置 */
 body.enter-animation.enter-active #quick-access-links {
     transform: translateY(0) !important;
     opacity: 1 !important;
@@ -4192,7 +2944,7 @@ body.enter-animation.enter-active #quick-access-links {
     pointer-events: auto !important;
 }
 
-/* 快速访问链接容器高级视觉效果 - 进入动画增强 */
+/* 快捷访问链接容器高级视觉效果 - 进入动画增强 */
 body.dynamic-blur.enter-animation #quick-access-links {
     transform: translateY(200px) scale(0.9) !important;
     filter: blur(4px) !important;
@@ -4212,537 +2964,392 @@ body.dynamic-blur .quick-access-btn,
 body.dynamic-blur:not(.scrolled) .quick-access-btn,
 
 body.scrolled.dynamic-blur .quick-access-btn {
-
     background: transparent !important;
-
 }
 
 
 
 .quick-access-btn:hover {
-
     border-color: transparent;
-
     box-shadow: none;
-
     transform: translateY(-2px);
-
 }
 
 
 
 .quick-access-btn:active {
-
     transform: translateY(0);
-
     box-shadow: none;
-
 }
 
 
 
-/* 忙聯聧盲陆聹忙聦聣茅聮庐茂驴陆?*/
+/* 操作按钮 */
 
 .action-buttons {
-
     display: flex;
-
     flex-direction: column;
-
-    gap: 12px; 
-
+    gap: 12px;
     margin-top: 10px;
-
 }
 
 
 
-/* 忙聯聧盲陆聹忙聦聣茅聮庐茂驴陆?- 氓聸潞氓庐職氓聹篓忙篓隆忙聙聛忙隆聠氓潞聲茅聝篓 */
+/* 操作按钮 - 设置上下文 */
 
 .setting-group.action-buttons {
-
     position: relative;
-
     display: flex;
-
     gap: 12px;
-
     padding: 16px 24px;
-
     background-color: transparent;
-
     backdrop-filter: none;
-
     -webkit-backdrop-filter: none;
-
     border-top: none;
-
     box-shadow: none;
-
     margin: 0;
-
     z-index: 10;
-
     box-sizing: border-box;
-
 }
 
 
 
-/* 忙職聴茅禄聭忙篓隆氓录聫盲赂聥莽職聞忙聯聧盲陆聹忙聦聣茅聮庐莽禄聞忙聽路茂驴陆?*/
+/* 深色模式 - 操作按钮 */
 
-/* 莽陆聭忙聽录氓赂聝氓卤聙氓聫鲁茅聰庐猫聫聹氓聧聲忙聽路氓录聫 */
+/* 右键菜单 */
 
-/* MD3E 茅拢聨忙聽录氓聫鲁茅聰庐猫聫聹氓聧聲 */
+/* MD3右键菜单 */
 
 .context-menu {
-
     position: fixed;
-
     background: var(--surface-color);
-
     border-radius: 16px;
-
-    box-shadow: 
-
+    box-shadow:
         0 8px 32px rgba(0, 0, 0, 0.15),
-
         0 2px 8px rgba(0, 0, 0, 0.1);
-
     z-index: 10000;
-
     min-width: 180px;
-
     font-family: 'Roboto', sans-serif;
-
     display: none;
-
     border: 1px solid var(--border-color);
-
     opacity: 0;
-
     transform: scale(0.85) translateY(-10px);
-
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-
     transform-origin: top left;
-
     overflow: hidden;
-
 }
 
 
 
-/* 莽娄聛莽聰篓氓聤篓莽聰禄莽職聞莽卤禄 */
+/* 无动画 */
 
 .context-menu.no-animation {
-
     transition: none;
-
 }
 
 
 
 .context-menu.no-animation .context-menu-item {
-
     animation: none !important;
-
     opacity: 1 !important;
-
     transform: none !important;
-
 }
 
 
 
-/* 氓聫鲁茅聰庐猫聫聹氓聧聲忙聵戮莽陇潞莽聤露茂驴陆?*/
+/* 右键菜单模糊 */
 
 .context-menu.show {
-
     display: block;
-
     opacity: 1;
-
     transform: scale(1) translateY(0);
-
 }
 
 
 
-/* 氓聫鲁茅聰庐猫聫聹氓聧聲茅職聬猫聴聫氓聤篓莽聰禄 */
+/* 右键菜单项动画 */
 
 .context-menu.hiding {
-
     display: block;
-
     opacity: 0;
-
     transform: scale(0.9) translateY(10px);
-
     pointer-events: none;
-
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-
 }
 
 
 
-/* 氓聫鲁茅聰庐猫聫聹氓聧聲茅隆鹿忙聽路茂驴陆?*/
+/* 右键菜单分隔线 */
 
 .context-menu-item {
-
     display: flex;
-
     align-items: center;
-
     gap: 12px;
-
     padding: 12px 16px;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
     user-select: none;
-
     color: var(--text-color);
-
     opacity: 0;
-
     transform: translateY(10px);
-
     animation: contextMenuItemFadeIn 0.2s ease forwards;
-
 }
 
 
 
 .context-menu-item:hover {
-
     background-color: var(--surface-variant);
-
 }
 
 
 
 .context-menu-item .context-menu-icon {
-
     width: 20px;
-
     height: 20px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     color: var(--text-secondary);
-
     flex-shrink: 0;
-
 }
 
 
 
 .context-menu-item .context-menu-text {
-
     flex: 1;
-
     font-size: 14px;
-
     font-weight: 500;
-
 }
 
 
 
-/* 氓聫鲁茅聰庐猫聫聹氓聧聲茅隆鹿氓聤篓莽聰禄氓禄露茂驴陆?*/
+/* 右键菜单分隔线动画 */
 
-.context-menu-item:nth-child(1) { animation-delay: 0.05s; }
+.context-menu-item:nth-child(1) {
+    animation-delay: 0.05s;
+}
 
-.context-menu-item:nth-child(2) { animation-delay: 0.1s; }
+.context-menu-item:nth-child(2) {
+    animation-delay: 0.1s;
+}
 
-.context-menu-item:nth-child(3) { animation-delay: 0.15s; }
+.context-menu-item:nth-child(3) {
+    animation-delay: 0.15s;
+}
 
-.context-menu-item:nth-child(4) { animation-delay: 0.2s; }
+.context-menu-item:nth-child(4) {
+    animation-delay: 0.2s;
+}
 
-.context-menu-item:nth-child(5) { animation-delay: 0.25s; }
+.context-menu-item:nth-child(5) {
+    animation-delay: 0.25s;
+}
 
 
 
-/* 氓聫鲁茅聰庐猫聫聹氓聧聲茅隆鹿忙路隆氓聟楼氓聤篓茂驴陆?*/
+/* 右键菜单分隔线隐藏 */
 
 @keyframes contextMenuItemFadeIn {
-
     to {
-
         opacity: 1;
-
         transform: translateY(0);
-
     }
-
 }
 
 
 
-/* 莽娄聛忙颅垄忙聫聬莽陇潞氓聣漏盲陆聶氓陇漏忙聲掳茅芦聵盲潞庐忙聽路氓录聫 */
+/* 信息提示 */
 
 .hide-info-popup-days {
-
     font-weight: 600;
-
     color: #ffffff;
-
     background: linear-gradient(to right, rgba(26, 115, 232, 0.2) 0%, rgba(26, 115, 232, 0.2) 100%);
-
     padding: 2px 8px;
-
     border-radius: 12px;
-
     margin: 0 2px;
-
     font-size: 0.9em;
-
     transition: all 0.2s ease;
-
     position: relative;
-
     overflow: hidden;
-
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-
     z-index: 1;
-
 }
 
 
 
-/* 猫驴聸氓潞娄忙聺隆忙聲聢茂驴陆?*/
+/* 隐藏信息提示天数 */
 
 .hide-info-popup-days::before {
-
     content: '';
-
     position: absolute;
-
     top: 0;
-
     left: 0;
-
     height: 100%;
-
     background-color: rgba(26, 115, 232, 0.8);
-
     border-radius: 12px;
-
     transition: width 0.3s ease;
-
     z-index: -1;
-
 }
 
 
 
-/* 忙聽鹿忙聧庐氓聣漏盲陆聶氓陇漏忙聲掳猫庐戮莽陆庐猫驴聸氓潞娄忙聺隆氓庐陆茂驴陆?*/
+/* 信息提示天数进度 */
 
 .hide-info-popup-days[data-days-left='7']::before {
-
     width: 100%;
-
 }
 
 
 
 .hide-info-popup-days[data-days-left='6']::before {
-
     width: 85.7%;
-
 }
 
 
 
 .hide-info-popup-days[data-days-left='5']::before {
-
     width: 71.4%;
-
 }
 
 
 
 .hide-info-popup-days[data-days-left='4']::before {
-
     width: 57.1%;
-
 }
 
 
 
 .hide-info-popup-days[data-days-left='3']::before {
-
     width: 42.9%;
-
 }
 
 
 
 .hide-info-popup-days[data-days-left='2']::before {
-
     width: 28.6%;
-
 }
 
 
 
 .hide-info-popup-days[data-days-left='1']::before {
-
     width: 14.3%;
-
 }
 
 
 
 .hide-info-popup-days[data-days-left='0']::before {
-
     width: 0%;
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     .hide-info-popup-days {
-
         background: linear-gradient(to right, rgba(26, 115, 232, 0.3) 0%, rgba(26, 115, 232, 0.3) 100%);
-
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-
     }
-
-    
 
     .hide-info-popup-days::before {
-
         background-color: rgba(26, 115, 232, 0.9);
-
     }
-
 }
 
 
 
-/* 茅聙職莽聰篓忙路隆氓聟楼氓聤篓莽聰禄 */
+/* 淡入 */
 
 @keyframes fadeIn {
-
     0% {
-
         opacity: 0;
-
         transform: scale(0.9);
-
     }
 
     100% {
-
         opacity: 1;
-
         transform: scale(1);
-
     }
-
 }
 
 
 
-/* 茅聙職莽聰篓忙路隆氓聡潞氓聤篓莽聰禄 */
+/* 淡出 */
 
 @keyframes fadeOut {
-
     0% {
-
         opacity: 1;
-
         transform: scale(1);
-
     }
 
     100% {
-
         opacity: 0;
-
         transform: scale(0.9);
-
     }
-
 }
 
 
 
-/* 猫聫聹氓聧聲茅隆鹿盲潞陇茅聰聶氓聤篓茂驴陆?*/
+/* 右键菜单分隔线动画 */
 
 @keyframes menuItemSlideIn {
-
     0% {
-
         opacity: 0;
-
         transform: translateX(-10px);
-
     }
 
     100% {
-
         opacity: 1;
-
         transform: translateX(0);
-
     }
-
 }
 
 
 
 .context-menu.show .context-menu-item {
-
     animation: menuItemSlideIn 0.3s ease forwards;
-
 }
 
 
 
-.context-menu.show .context-menu-item:nth-child(1) { animation-delay: 0.02s; }
+.context-menu.show .context-menu-item:nth-child(1) {
+    animation-delay: 0.02s;
+}
 
-.context-menu.show .context-menu-item:nth-child(2) { animation-delay: 0.04s; }
+.context-menu.show .context-menu-item:nth-child(2) {
+    animation-delay: 0.04s;
+}
 
-.context-menu.show .context-menu-item:nth-child(3) { animation-delay: 0.06s; }
+.context-menu.show .context-menu-item:nth-child(3) {
+    animation-delay: 0.06s;
+}
 
-.context-menu.show .context-menu-item:nth-child(4) { animation-delay: 0.08s; }
+.context-menu.show .context-menu-item:nth-child(4) {
+    animation-delay: 0.08s;
+}
 
-.context-menu.show .context-menu-item:nth-child(5) { animation-delay: 0.10s; }
+.context-menu.show .context-menu-item:nth-child(5) {
+    animation-delay: 0.10s;
+}
 
-.context-menu.show .context-menu-item:nth-child(6) { animation-delay: 0.12s; }
+.context-menu.show .context-menu-item:nth-child(6) {
+    animation-delay: 0.12s;
+}
 
-.context-menu.show .context-menu-item:nth-child(7) { animation-delay: 0.14s; }
+.context-menu.show .context-menu-item:nth-child(7) {
+    animation-delay: 0.14s;
+}
 
-.context-menu.show .context-menu-item:nth-child(8) { animation-delay: 0.16s; }
+.context-menu.show .context-menu-item:nth-child(8) {
+    animation-delay: 0.16s;
+}
 
 
 
 .context-menu-grid {
-
     display: grid;
-
     grid-template-columns: 1fr;
-
     gap: 0;
-
     padding: 0;
-
     min-width: 180px;
-
 }
 
 
@@ -4794,364 +3401,286 @@ body.scrolled.dynamic-blur .quick-access-btn {
     color: var(--context-menu-text-color, white);
 }
 
-.context-menu-item {
+.context-menu-grid.minimal {
+    grid-template-columns: 1fr;
+    min-width: auto;
+    padding: 4px;
+    gap: 2px;
+}
 
-    display: flex;
-
-    align-items: center;
-
-    gap: 12px;
-
-    padding: 12px 16px;
-
-    cursor: pointer;
-
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-    color: var(--context-menu-text-color, var(--text-color));
-
+#context-menu:has(.context-menu-grid.minimal) {
+    min-width: auto;
     border-radius: 12px;
+    padding: 0;
+}
 
+.context-menu-grid.minimal .context-menu-item[data-action="search-history-toggle"],
+.context-menu-grid.minimal .context-menu-item[data-action="wallpaper-toggle"] {
+    display: none;
+}
+
+.context-menu-grid.minimal .context-menu-item {
+    border: none;
+    border-radius: 6px;
+    padding: 9px;
+    justify-content: center;
+    line-height: 1;
+    margin: 0;
+    gap: 0;
+    width: 36px;
+    height: 36px;
+}
+
+.context-menu-grid.minimal .context-menu-item:hover {
+    background-color: var(--context-menu-color, var(--primary-color));
+    color: var(--context-menu-text-color, white);
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.context-menu-grid.minimal .context-menu-text {
+    display: none;
+}
+
+.context-menu-grid.minimal .context-menu-item:hover .context-menu-text {
+    color: var(--context-menu-text-color, white);
+}
+
+.context-menu-grid.minimal .md3-icon {
+    display: flex;
+    font-size: 18px;
+    color: var(--context-menu-text-color, var(--text-secondary));
+    transition: color 0.2s ease;
+}
+
+.context-menu-grid.minimal .context-menu-item:hover .md3-icon {
+    color: var(--context-menu-text-color, white);
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--context-menu-text-color, var(--text-color));
+    border-radius: 12px;
     margin: 4px 6px;
-
     user-select: none;
-
     opacity: 0;
-
     position: relative;
-
     overflow: hidden;
-
 }
 
 
 
 .context-menu-item:hover {
-
     background-color: var(--context-menu-color, #00AE00);
-
     color: var(--context-menu-text-color, white);
-
     transform: translateX(4px);
-
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-
 }
 
 
 
 .context-menu-item:active {
-
     transform: translateX(4px) scale(0.98);
-
 }
 
 
 
 .context-menu-text {
-
     font-size: 14px;
-
     font-weight: 500;
-
     letter-spacing: 0.1px;
-
     text-align: left;
-
 }
 
 
 
 .context-menu-item .md3-icon {
-
     font-size: 20px;
-
     color: var(--context-menu-text-color, var(--text-secondary));
-
     transition: all 0.2s ease;
-
 }
 
 
 
 .context-menu-item:hover .md3-icon {
-
     color: var(--context-menu-text-color, white);
-
     transform: scale(1.1);
-
 }
 
 @media (prefers-color-scheme: dark) {
-
     .setting-group.action-buttons {
-
         background-color: transparent;
-
         border-top: 1px solid transparent;
-
     }
-
 }
 
 
 
-/* 氓潞聰莽聰篓忙聦聣茅聮庐 - 氓聸潞氓庐職猫聯聺猫聣虏茂录聦盲赂聧氓聫聴Logo氓陆卤氓聯聧 */
+/* 应用按钮 - 适配Logo */
 
 .apply-btn {
-
     width: 100%;
-
     padding: 10px 14px;
-
     background-color: var(--primary-color);
-
     color: white;
-
     border: none;
-
     border-radius: 12px;
-
     font-family: inherit;
-
     font-size: 14px;
-
     font-weight: 500;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
 }
 
 
 
 .apply-btn:hover {
-
     background-color: #0d47a1;
-
     transform: translateY(-1px);
-
 }
 
 
 
 .apply-btn:active {
-
     transform: translateY(0);
-
 }
 
 
 
-/* 氓潞聰莽聰篓忙聦聣茅聮庐氓陇聹茅聴麓忙篓隆氓录聫 */
+/* 应用按钮 - 深色模式 */
 
 @media (prefers-color-scheme: dark) {
-
     .apply-btn {
-
         background-color: #0d47a1;
-
     }
-
-    
 
     .apply-btn:hover {
-
         background-color: #0b3d91;
-
     }
-
 }
 
 
 
-/* 忙聛垄氓陇聧氓聡潞氓聨聜猫庐戮莽陆庐忙聦聣茅聮庐 */
+/* 滑块模态框按钮 */
 
 .reset-btn {
-
     width: 100%;
-
     padding: 10px 14px;
-
     background-color: var(--surface-color);
-
     color: var(--text-color);
-
     border: 1px solid var(--border-color);
-
     border-radius: 12px;
-
     font-family: inherit;
-
     font-size: 14px;
-
     font-weight: 500;
-
     cursor: pointer;
-
     transition: all 0.2s ease;
-
 }
 
 
 
 .reset-btn:hover {
-
     background-color: rgba(239, 68, 68, 0.1);
-
     border-color: #ef4444;
-
     color: #ef4444;
-
     transform: translateY(-1px);
-
 }
 
 
 
 .reset-btn:active {
-
     transform: translateY(0);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     .reset-btn:hover {
-
         background-color: rgba(239, 68, 68, 0.15);
-
     }
-
-
 
     .slider-input {
-
         background: rgba(59, 130, 246, 0.3);
-
     }
-
-
 
     .slider-input::-webkit-slider-thumb {
-
         box-shadow: 0 0 0 4px rgba(20, 33, 36, 0.8);
-
     }
-
-
 
     .slider-input::-moz-range-thumb {
-
         box-shadow: 0 0 0 4px rgba(20, 33, 36, 0.8);
-
     }
-
 }
 
 
 
-/* Material Design 3 茅拢聨忙聽录 Switch 氓录聙茂驴陆?- 莽庐聙忙麓聛莽聣聢 */
+/* Material Design 3开关 - 浅色 */
 
 .switch {
-
     position: relative;
-
     display: inline-block;
-
     width: 52px;
-
     height: 28px;
-
     vertical-align: middle;
-
 }
 
 
 
 .switch input {
-
     opacity: 0;
-
     width: 0;
-
     height: 0;
-
 }
 
 
 
 .slider {
-
     position: absolute;
-
     cursor: pointer;
-
     top: 0;
-
     left: 0;
-
     right: 0;
-
     bottom: 0;
-
     background-color: var(--border-color);
-
     transition: all 0.2s ease;
-
     border-radius: 28px;
-
 }
 
 
 
 .slider:before {
-
     position: absolute;
-
     content: "";
-
     height: 22px;
-
     width: 22px;
-
     left: 3px;
-
     bottom: 3px;
-
     background-color: white;
-
     transition: all 0.2s ease;
-
     border-radius: 50%;
-
 }
 
 
 
-input:focus + .slider {
-
+input:focus+.slider {
     outline: none;
-
 }
 
 
 
-input:checked + .slider {
-
+input:checked+.slider {
     background-color: var(--primary-color);
-
 }
 
 
 
-input:checked + .slider:before {
-
+input:checked+.slider:before {
     transform: translateX(24px);
-
 }
 
 
@@ -5171,80 +3700,57 @@ input:checked + .slider:before {
 
 
 .switch-label {
-
     display: flex;
-
     align-items: center;
-
     gap: 16px;
-
-    margin-bottom: 16px;
-
-    padding: 8px 12px;
-
+    margin-bottom: -16px;
+    padding: 8px 8px;
     transition: all 0.2s ease;
-
     border-radius: 12px;
-
 }
 
 
 
 .setting-label {
-
     font-size: 16px;
-
     color: var(--text-color);
-
     font-weight: 500;
-
     flex: 1;
-
     text-align: left;
-
     letter-spacing: 0.0125em;
-
 }
 
 
 
 
 
-/* 氓颅聴盲陆聯茂驴陆?*/
+/* 字体类 */
 
 .font-ginto {
-
     font-family: 'Ginto', system-ui, -apple-system, sans-serif;
-
 }
 
 
 
 .font-josefin {
-
     font-family: 'Josefin', system-ui, -apple-system, sans-serif;
-
 }
 
 
 
 .font-code {
-
     font-family: 'Code', system-ui, -apple-system, sans-serif;
-
 }
 
 
 
 .font-hmsc {
-
     font-family: 'HMSC', system-ui, -apple-system, sans-serif;
-
 }
 
 
 
-/* 忙禄職氓聤篓氓聤篓莽聰禄莽聤露茂驴陆?- 盲驴庐忙聰鹿盲赂潞氓聬聭盲赂聥忙禄職氓聤篓氓聡潞莽聨掳氓拢聛茂驴陆?*/
+/* 滚动状态 - 默认壁纸 */
 
 body.scrolled {
     background-image: url('../images/back.png');
@@ -5254,73 +3760,43 @@ body.scrolled {
 
 
 
-/* 盲赂禄茅隆碌莽聤露忙聙聛盲赂聥莽職聞氓拢聛莽潞赂忙聵戮茂驴陆?*/
+/* 主页壁纸 - 全屏 */
 
 body.homepage-wallpaper {
-
     background-image: url('../images/back.png');
-
     background-size: cover;
-
     background-position: center;
-
     background-repeat: no-repeat;
-
 }
 
 
 
-/* 氓聤篓忙聙聛忙篓隆莽鲁聤忙聲聢茂驴陆?- 茅禄聵猫庐陇莽聤露茂驴陆?*/
+/* 壁纸模糊 - JS控制 */
 
 
 /* 壁纸缩放效果 - 由JS精确控制 */
 
 
 
-/* 氓拢聛莽赂聟忙聶掳莽聤露茂驴陆?- 忙赂聟忙聶掳莽聤露茂驴陆?*/
+/* 壁纸模糊 - 背景 */
 
 body.scrolled:not(.dynamic-blur) {
-
     backdrop-filter: blur(0);
-
     -webkit-backdrop-filter: blur(0);
-
-}
-
-
-
-/* 猫驴聸氓聟楼氓拢聛莽潞赂忙篓隆氓录聫忙聴露莽職聞氓聤篓忙聙聛忙篓隆莽鲁聤猫驴聡忙赂隆忙聲聢茂驴陆?*/
-
-body.dynamic-blur.scrolled {
-
-    backdrop-filter: saturate(1.3) brightness(1.05);
-
-    -webkit-backdrop-filter: saturate(1.3) brightness(1.05);
-
-    animation: fadeBlur 0.5s ease-out forwards;
-
 }
 
 
 
 @keyframes fadeBlur {
-
     0% {
-
         backdrop-filter: blur(30px) saturate(1.3) brightness(1.05);
-
         -webkit-backdrop-filter: blur(30px) saturate(1.3) brightness(1.05);
-
     }
 
     100% {
-
-        backdrop-filter: blur(0);
-
-        -webkit-backdrop-filter: blur(0);
-
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
-
 }
 
 
@@ -5335,20 +3811,19 @@ body.scrolled #quick-access-links {
 
 
 body.scrolled .container {
-    padding-top: 440px;
+    padding-top: calc(100dvh - 145px);
     transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
 
 
 body.scrolled .logo-section {
-
     opacity: 0;
-
     pointer-events: none;
-
     visibility: hidden;
-
+    height: 0;
+    margin: 0;
+    overflow: hidden;
 }
 
 
@@ -5360,262 +3835,170 @@ body.scrolled .footer {
 
 
 
-/* 氓拢聛莽潞赂忙篓隆氓录聫盲赂聥忙聵戮莽陇潞忙聬聹莽麓垄氓录聲忙聯聨氓聢聡忙聧垄忙聦聣茂驴陆?*/
+/* 壁纸模式 - 引擎按钮 */
 
 body.scrolled .engine-buttons {
-
     opacity: 1;
-
     pointer-events: auto;
-
-    transition: var(--transition);
-
+    transition: opacity 0.3s ease, margin-top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
 
-/* 氓拢聛莽潞赂忙篓隆氓录聫盲赂聥莽職聞忙聬聹莽麓垄忙隆聠忙聽路茂驴陆?*/
+/* 壁纸模式 - 搜索区域 */
 
 body.scrolled .search-section {
-
-    max-width: 584px; /* 盲赂聨茅娄聳茅隆碌盲驴聺忙聦聛盲赂聙茂驴陆?*/
-
+    max-width: 584px;
+    /* 标准Google搜索宽度 */
 }
 
 
-
-body.scrolled .search-container {
-
-    margin-top: var(--wallpaper-mode-search-height);
-
-}
+/* ========== 高级视觉效果 ========== */
 
 
 
-/* ========== 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹氓垄聻氓录潞 ========== */
-
-
-
-/* 莽虏聮氓颅聬忙聲聢忙聻聹氓庐鹿氓聶篓 */
+/* 粒子容器 */
 
 #particles-container {
-
     position: fixed;
-
     top: 0;
-
     left: 0;
-
     width: 100%;
-
     height: 100%;
-
     pointer-events: none;
-
     z-index: 0;
-
     overflow: hidden;
-
     opacity: 0;
-
     transition: opacity 0.3s ease;
-
 }
 
 .dynamic-blur #particles-container {
-
     opacity: 1;
-
 }
 
 
 
-/* 氓聧聲盲赂陋莽虏聮氓颅聬 */
+/* 粒子 */
 
 .particle {
-
     position: absolute;
-
     border-radius: 50%;
-
     pointer-events: none;
-
     animation: float-particle linear infinite;
-
     opacity: 0;
-
     will-change: transform, opacity;
-
 }
 
 
 
 @keyframes float-particle {
-
     0% {
-
         transform: translateY(100vh) rotate(0deg) scale(0);
-
         opacity: 0;
-
     }
 
     10% {
-
         opacity: 0.8;
-
     }
 
     90% {
-
         opacity: 0.8;
-
     }
 
     100% {
-
         transform: translateY(-100px) rotate(720deg) scale(1);
-
         opacity: 0;
-
     }
-
 }
 
 
 
-/* 氓聤篓忙聙聛氓聟聣忙聶聲忙聲聢茂驴陆?*/
+/* 光晕容器 */
 
 #glow-orbs-container {
-
     position: fixed;
-
     top: 0;
-
     left: 0;
-
     width: 100%;
-
     height: 100%;
-
     pointer-events: none;
-
     z-index: 0;
-
     overflow: hidden;
-
     opacity: 0;
-
     transition: opacity 0.3s ease;
-
 }
 
 .dynamic-blur #glow-orbs-container {
-
     opacity: 1;
-
 }
 
 
 
 .glow-orb {
-
     position: absolute;
-
     border-radius: 50%;
-
     filter: blur(60px);
-
     opacity: 0.3;
-
     animation: orb-float 20s ease-in-out infinite;
-
     will-change: transform;
-
 }
 
 
 
 @keyframes orb-float {
 
-    0%, 100% {
-
+    0%,
+    100% {
         transform: translate(0, 0) scale(1);
-
     }
 
     25% {
-
         transform: translate(50px, -30px) scale(1.1);
-
     }
 
     50% {
-
         transform: translate(-30px, 50px) scale(0.9);
-
     }
 
     75% {
-
         transform: translate(-50px, -20px) scale(1.05);
-
     }
-
 }
 
 
 
-/* 忙聬聹莽麓垄忙隆聠莽聨禄莽聮聝忙聥聼忙聙聛氓垄聻茂驴陆?- 氓拢聛莽潞赂忙篓隆氓录聫 */
+/* 搜索聚焦效果 - 壁纸模式 */
 
 body.scrolled:not(.dynamic-blur) .search-container {
-
     background: #F1F3F4;
-
     border: 1px solid var(--border-color);
-
     backdrop-filter: blur(0);
-
     -webkit-backdrop-filter: blur(0);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     body.scrolled:not(.dynamic-blur) .search-container {
-
         background: #202124;
-
         border: 1px solid var(--border-color);
-
     }
-
 }
 
 
 
 body.scrolled.dynamic-blur .search-container {
-
     background: rgba(255, 255, 255, 0.25);
-
     backdrop-filter: blur(120px) saturate(1.8);
-
     -webkit-backdrop-filter: blur(120px) saturate(1.8);
-
     border: 1px solid rgba(0, 0, 0, 0.08);
-
     transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-
 }
 
 
 
 body.scrolled.dynamic-blur .search-container:hover {
-
     background: rgba(255, 255, 255, 0.35);
-
 }
 
 
@@ -5623,15 +4006,10 @@ body.scrolled.dynamic-blur .search-container:hover {
 body.scrolled.dynamic-blur.enhanced-display .search-container:hover,
 
 body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
-
-    box-shadow: 
-
+    box-shadow:
         0 0 40px rgba(255, 255, 255, 0.2),
-
         0 0 80px rgba(255, 255, 255, 0.1),
-
         0 12px 40px rgba(0, 0, 0, 0.12);
-
 }
 
 
@@ -5639,79 +4017,52 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
 /* 暗色模式适配 */
 
 @media (prefers-color-scheme: dark) {
-
     body.scrolled.dynamic-blur .search-container {
-
         background: rgba(0, 0, 0, 0.35);
-
         border: 1px solid rgba(255, 255, 255, 0.1);
-
     }
-
-    
 
     body.scrolled.dynamic-blur .search-container:hover {
-
         background: rgba(0, 0, 0, 0.45);
-
     }
-
 }
 
 
 
 @keyframes breathe {
 
-    0%, 100% {
-
+    0%,
+    100% {
         opacity: 0.3;
-
         transform: scale(1);
-
     }
 
     50% {
-
         opacity: 0.6;
-
         transform: scale(1.02);
-
     }
-
 }
 
 
 
-/* 忙鲁垄莽潞鹿忙露聼忙录陋忙聲聢忙聻聹 */
+/* 波纹效果 */
 
 .ripple-effect {
-
     position: absolute;
-
     border-radius: 50%;
-
     background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
-
     transform: scale(0);
-
     animation: ripple 0.8s ease-out forwards;
-
     pointer-events: none;
-
 }
 
 
 
 @keyframes ripple {
-
     to {
-
         transform: scale(4);
-
         opacity: 0;
-
     }
-
 }
 
 
@@ -5721,136 +4072,93 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
 
 
 @keyframes border-flow {
-
     0% {
-
         background-position: -200% 0;
-
     }
 
     100% {
-
         background-position: 200% 0;
-
     }
-
 }
 
 
 
-/* ========== 茅芦聵莽潞搂猫搂聠忙聲聢忙篓隆氓录聫盲赂聥氓聟露盲禄聳氓聟聝莽麓聽忙篓隆莽鲁聤忙聲聢茂驴陆?========== */
+/* ========== 高级视觉模式与模糊 ========== */
 
 
 
-/* 忙聬聹莽麓垄氓录聲忙聯聨忙聦聣茅聮庐忙篓隆莽鲁聤忙聲聢忙聻聹 - 氓拢聛莽潞赂忙篓隆氓录聫 */
+/* 引擎按钮模糊 - 壁纸模式 */
 
-/* 鎼滅储寮曟搸鎸夐挳鏍峰紡 - 澹佺焊妯″紡鍏抽棴楂樼骇瑙嗘晥 */
+/* 引擎按钮 - 壁纸模式视觉 */
 
 body.scrolled:not(.dynamic-blur) .engine-btn {
-
     background: #F1F3F4;
-
     border: none;
-
     backdrop-filter: blur(0);
-
     -webkit-backdrop-filter: blur(0);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     body.scrolled:not(.dynamic-blur) .engine-btn {
-
         background: #303134;
-
         border: none;
-
     }
-
 }
 
 
 
 body.scrolled.dynamic-blur .engine-btn {
-
     background: rgba(255, 255, 255, 0.25);
-
     backdrop-filter: blur(100px) saturate(1.6);
-
     -webkit-backdrop-filter: blur(100px) saturate(1.6);
-
     border: 1px solid rgba(0, 0, 0, 0.06);
-
     transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
 }
 
 
 
 body.scrolled.dynamic-blur .engine-btn:hover {
-
     background: rgba(255, 255, 255, 0.35);
-
 }
 
 
 
 body.scrolled.dynamic-blur.enhanced-display .engine-btn:hover {
-
     transform: translateY(-2px);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     body.scrolled.dynamic-blur .engine-btn {
-
         background: rgba(0, 0, 0, 0.35);
-
         border: 1px solid rgba(255, 255, 255, 0.08);
-
     }
-
-    
 
     body.scrolled.dynamic-blur .engine-btn:hover {
-
         background: rgba(0, 0, 0, 0.45);
-
     }
-
 }
 
 
 
-/* 氓驴芦茅聙聼猫庐驴茅聴庐茅聯戮忙聨楼忙篓隆莽鲁聤忙聲聢茂驴陆?- 氓拢聛莽潞赂忙篓隆氓录聫 */
+/* 快捷访问链接模糊 - 壁纸 */
 
 body.scrolled.dynamic-blur #quick-access-links {
-
     background: transparent;
-
 }
 
 
 
 body.scrolled.dynamic-blur .quick-access-btn,
 body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
-
     background: transparent;
-
     backdrop-filter: blur(60px) saturate(1.4);
-
     -webkit-backdrop-filter: blur(60px) saturate(1.4);
-
     border: 1px solid rgba(0, 0, 0, 0.06);
-
     transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
 }
 
 
@@ -5858,9 +4166,7 @@ body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
 body.scrolled.dynamic-blur .quick-access-btn:hover,
 
 body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
-
     background: rgba(255, 255, 255, 0.18);
-
 }
 
 
@@ -5868,9 +4174,7 @@ body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
 body.scrolled.dynamic-blur.enhanced-display .quick-access-btn:hover,
 
 body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn:hover {
-
     transform: translateY(-2px);
-
 }
 
 
@@ -5878,131 +4182,59 @@ body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn
 @media (prefers-color-scheme: dark) {
 
     body.scrolled.dynamic-blur .quick-access-btn,
-
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
-
         background: transparent;
-
         border: 1px solid rgba(255, 255, 255, 0.1);
-
     }
-
-    
 
     body.scrolled.dynamic-blur .quick-access-btn:hover,
-
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
-
         background: rgba(0, 0, 0, 0.3);
-
     }
-
 }
 
 
 
-/* 盲赂禄茅隆碌莽聤露忙聙聛盲赂聥莽職聞氓驴芦茅聙聼猫庐驴茅聴庐茅聯戮忙聨楼忙篓隆莽鲁聤忙聲聢茂驴陆?*/
-
-body.dynamic-blur:not(.scrolled) #quick-access-links {
-
-    background: transparent;
-
-}
-
-
-
-body.dynamic-blur:not(.scrolled) .quick-access-btn,
-
-body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn {
-
-    background: transparent;
-
-    backdrop-filter: blur(60px) saturate(1.4);
-
-    -webkit-backdrop-filter: blur(60px) saturate(1.4);
-
-    border: 1px solid rgba(0, 0, 0, 0.06);
-
-}
-
-
-
-body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
-
-body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
-
-    background: rgba(255, 255, 255, 0.18);
-
-}
-
-
-
-body.dynamic-blur:not(.scrolled).enhanced-display .quick-access-btn:hover,
-
-body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-access-btn:hover {
-
-    transform: translateY(-2px);
-
-}
-
-
-
-@media (prefers-color-scheme: dark) {
-
-    body.dynamic-blur:not(.scrolled) .quick-access-btn,
-
-    body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn {
-
-        background: transparent;
-
-        border: 1px solid rgba(255, 255, 255, 0.1);
-
-    }
-
-    
-
-    body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
-
-    body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
-
-        background: rgba(0, 0, 0, 0.3);
-
-    }
-
-}
-
-
-
-/* 忙聬聹莽麓垄氓聨聠氓聫虏忙隆聠忙篓隆莽鲁聤忙聲聢茂驴陆?*/
+/* 搜索历史模糊 */
 
 body.dynamic-blur .search-history-container,
 
 body.scrolled.dynamic-blur .search-history-container {
-
     background: rgba(var(--surface-color-rgb), 0.5);
-
     backdrop-filter: blur(100px) saturate(1.6);
-
     -webkit-backdrop-filter: blur(100px) saturate(1.6);
-
     border: 1px solid rgba(255, 255, 255, 0.2);
-
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-
 }
 
 
 
 body.dynamic-blur .search-history-item:hover,
-
 body.scrolled.dynamic-blur .search-history-item:hover {
-
     background: rgba(255, 255, 255, 0.15);
-
     backdrop-filter: blur(30px);
-
     -webkit-backdrop-filter: blur(30px);
+}
 
+body.dynamic-blur .search-history-item:hover .search-history-delete,
+body.scrolled.dynamic-blur .search-history-item:hover .search-history-delete {
+    opacity: 0.4;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+body.dynamic-blur .search-history-delete:hover,
+body.scrolled.dynamic-blur .search-history-delete:hover {
+    opacity: 1 !important;
+    color: #d93025;
+    transform: scale(1.2) translateX(4px) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.dynamic-blur .search-history-delete:hover,
+    body.scrolled.dynamic-blur .search-history-delete:hover {
+        color: #f28b82;
+    }
 }
 
 
@@ -6010,43 +4242,27 @@ body.scrolled.dynamic-blur .search-history-item:hover {
 @media (prefers-color-scheme: dark) {
 
     body.dynamic-blur .search-history-container,
-
     body.scrolled.dynamic-blur .search-history-container {
-
         background: rgba(0, 0, 0, 0.4);
-
         border: 1px solid rgba(255, 255, 255, 0.1);
-
     }
-
-    
 
     body.dynamic-blur .search-history-item:hover,
-
     body.scrolled.dynamic-blur .search-history-item:hover {
-
         background: rgba(255, 255, 255, 0.1);
-
     }
-
 }
 
 
 
-/* 盲赂禄茅隆碌莽聤露忙聙聛盲赂聥莽職聞忙聬聹莽麓垄忙隆聠忙篓隆莽鲁聤忙聲聢忙聻聹 */
+/* 深色模式 - 搜索历史模糊 */
 
 body.dynamic-blur:not(.scrolled) .search-container {
-
     background: rgba(255, 255, 255, 0.12);
-
     backdrop-filter: blur(80px) saturate(1.5);
-
     -webkit-backdrop-filter: blur(80px) saturate(1.5);
-
     border: 1px solid rgba(0, 0, 0, 0.08);
-
     transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-
 }
 
 
@@ -6054,9 +4270,7 @@ body.dynamic-blur:not(.scrolled) .search-container {
 body.dynamic-blur:not(.scrolled) .search-container:hover,
 
 body.dynamic-blur:not(.scrolled) .search-container:focus-within {
-
     background: rgba(255, 255, 255, 0.18);
-
 }
 
 
@@ -6064,39 +4278,24 @@ body.dynamic-blur:not(.scrolled) .search-container:focus-within {
 body.dynamic-blur:not(.scrolled).enhanced-display .search-container:hover,
 
 body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within {
-
-    box-shadow: 
-
+    box-shadow:
         0 0 40px rgba(255, 255, 255, 0.2),
-
         0 0 80px rgba(255, 255, 255, 0.1),
-
         0 12px 40px rgba(0, 0, 0, 0.12);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     body.dynamic-blur:not(.scrolled) .search-container {
-
         background: rgba(0, 0, 0, 0.2);
-
         border: 1px solid rgba(255, 255, 255, 0.1);
-
     }
-
-    
 
     body.dynamic-blur:not(.scrolled) .search-container:hover,
-
     body.dynamic-blur:not(.scrolled) .search-container:focus-within {
-
         background: rgba(0, 0, 0, 0.3);
-
     }
-
 }
 
 
@@ -6104,55 +4303,36 @@ body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within
 /* 主页模式下的引擎按钮样式 */
 
 body.dynamic-blur:not(.scrolled) .engine-btn {
-
     background: transparent;
-
     backdrop-filter: blur(60px) saturate(1.4);
-
     -webkit-backdrop-filter: blur(60px) saturate(1.4);
-
     border: 1px solid rgba(0, 0, 0, 0.06);
-
     transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
 }
 
 
 
 body.dynamic-blur:not(.scrolled) .engine-btn:hover {
-
     background: rgba(255, 255, 255, 0.18);
-
 }
 
 
 
 body.dynamic-blur:not(.scrolled).enhanced-display .engine-btn:hover {
-
     transform: translateY(-2px);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     body.dynamic-blur:not(.scrolled) .engine-btn {
-
         background: transparent;
-
         border: 1px solid rgba(255, 255, 255, 0.08);
-
     }
-
-    
 
     body.dynamic-blur:not(.scrolled) .engine-btn:hover {
-
         background: rgba(0, 0, 0, 0.3);
-
     }
-
 }
 
 
@@ -6161,7 +4341,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display .engine-btn:hover {
 
 
 
-/* 楂樼骇瑙嗚鏁堟灉涓嬮€変腑鐨勬悳绱㈠紩鎿庢寜閽牱寮?*/
+/* 选中引擎按钮 - 高级视觉 */
 
 body.dynamic-blur .engine-btn.active.logo-google,
 body.dynamic-blur .engine-btn.active.logo-microsoft {
@@ -6191,19 +4371,20 @@ body.dynamic-blur .engine-btn.active.logo-text {
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur .engine-btn.active.logo-google,
     body.dynamic-blur .engine-btn.active.logo-microsoft {
         background: #0d47a1;
         border-color: #0d47a1;
     }
-    
+
     body.dynamic-blur .engine-btn.active.logo-apple,
     body.dynamic-blur .engine-btn.active.logo-huawei {
         background: #ffffff;
         color: #303134;
         border-color: #ffffff;
     }
-    
+
     body.dynamic-blur .engine-btn.active.logo-custom,
     body.dynamic-blur .engine-btn.active.logo-text {
         background: #ffffff;
@@ -6214,7 +4395,7 @@ body.dynamic-blur .engine-btn.active.logo-text {
 
 
 
-/* 楂樼骇瑙嗚鏁堟灉涓嬮€変腑鐨勬悳绱㈠紩鎿庢寜閽甴over鏍峰紡 */
+/* 选中引擎按钮悬停 - 高级视觉 */
 
 body.dynamic-blur .engine-btn.active.logo-google:hover,
 body.dynamic-blur .engine-btn.active.logo-microsoft:hover {
@@ -6244,19 +4425,20 @@ body.dynamic-blur .engine-btn.active.logo-text:hover {
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur .engine-btn.active.logo-google:hover,
     body.dynamic-blur .engine-btn.active.logo-microsoft:hover {
         background: #0d47a1;
         border-color: #0d47a1;
     }
-    
+
     body.dynamic-blur .engine-btn.active.logo-apple:hover,
     body.dynamic-blur .engine-btn.active.logo-huawei:hover {
         background: #ffffff;
         color: #303134;
         border-color: #ffffff;
     }
-    
+
     body.dynamic-blur .engine-btn.active.logo-custom:hover,
     body.dynamic-blur .engine-btn.active.logo-text:hover {
         background: #ffffff;
@@ -6268,186 +4450,128 @@ body.dynamic-blur .engine-btn.active.logo-text:hover {
 
 
 body.dynamic-blur .setting-group {
-
     background: transparent;
-
     border: none;
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹盲赂聥莽職聞氓聫鲁盲戮搂茅聺垄忙聺驴茂驴陆?- 茂驴陆?modal-content 盲赂聙茂驴陆?*/
+/* 高级视觉 - 设置菜单 */
 
 body.dynamic-blur .right-panel-upper {
-
     background: rgba(var(--surface-color-rgb), 0.5);
-
     backdrop-filter: blur(120px) saturate(1.6);
-
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
-
     border: 1px solid rgba(255, 255, 255, 0.3);
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹盲赂聥莽職聞氓潞聰莽聰篓忙聦聣茅聮庐 - 猫聯聺猫聣虏猫聝聦忙聶炉氓聤聽忙篓隆茂驴陆?*/
+/* 高级视觉 - 应用按钮 */
 
 body.dynamic-blur .apply-btn {
-
     background: rgba(26, 115, 232, 0.8);
-
     backdrop-filter: blur(120px) saturate(1.6);
-
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
-
     border: 1px solid rgba(255, 255, 255, 0.3);
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹盲赂聥莽職聞茅聡聧莽陆庐忙聦聣茅聮庐 - 茂驴陆?right-panel-upper 盲赂聙茂驴陆?*/
+/* 高级视觉 - 重置按钮 */
 
 body.dynamic-blur .reset-btn {
-
     background: rgba(var(--surface-color-rgb), 0.5);
-
     backdrop-filter: blur(120px) saturate(1.6);
-
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
-
     border: 1px solid rgba(255, 255, 255, 0.3);
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹盲赂聥莽職聞忙聯聧盲陆聹忙聦聣茅聮庐茂驴陆?- 茅聙聫忙聵聨盲禄楼莽禄搂忙聣驴莽聢露氓聟聝莽麓聽忙篓隆莽鲁聤 */
+/* 高级视觉 - 操作按钮 */
 
 body.dynamic-blur .setting-group.action-buttons {
-
     background: transparent;
-
     border: none;
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹盲赂聥莽職聞 modal-body - 茅聙聫忙聵聨 */
+/* 高级视觉 - 模态框主体 */
 
 body.dynamic-blur .modal-body {
-
     background: transparent;
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹盲赂聥莽職聞盲赂聥忙聥聣茅聙聣忙聥漏茂驴陆?- 茂驴陆?right-panel-upper 盲赂聙茂驴陆?*/
+/* 高级视觉 - 下拉选择 */
 
 body.dynamic-blur .select-selected {
-
     background: rgba(var(--surface-color-rgb), 0.5);
-
     backdrop-filter: blur(120px) saturate(1.6);
-
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
-
     border: 1px solid rgba(255, 255, 255, 0.3);
-
 }
 
 
 
 body.dynamic-blur .select-items {
-
     background: rgba(var(--surface-color-rgb), 0.5);
-
     backdrop-filter: blur(120px) saturate(1.6);
-
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
-
     border: 1px solid rgba(255, 255, 255, 0.3);
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹盲赂聥莽職聞忙聲掳氓颅聴猫戮聯氓聟楼茂驴陆?- 茂驴陆?right-panel-upper 盲赂聙茂驴陆?*/
+/* 高级视觉 - 滑块输入 */
 
 body.dynamic-blur .slider-value-input {
-
     background: rgba(var(--surface-color-rgb), 0.5);
-
     backdrop-filter: blur(120px) saturate(1.6);
-
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
-
     border: 1px solid rgba(255, 255, 255, 0.3);
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹盲赂聥莽職聞氓潞聲茅聝篓茅聯颅莽聣聦 - 盲赂聨忙聬聹莽麓垄忙隆聠盲赂聙茂驴陆?*/
+/* 高级视觉 - 底部徽章 */
 
 body.dynamic-blur:not(.scrolled) .ooo-badge {
-
     background: rgba(255, 255, 255, 0.12);
-
     backdrop-filter: blur(80px) saturate(1.5);
-
     -webkit-backdrop-filter: blur(80px) saturate(1.5);
-
     border: 1px solid rgba(0, 0, 0, 0.08);
-
 }
 
 
 
 body.dynamic-blur:not(.scrolled) .ooo-badge:hover {
-
     background: rgba(255, 255, 255, 0.18);
-
     transform: translateY(-2px);
-
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     body.dynamic-blur:not(.scrolled) .ooo-badge {
-
         background: rgba(0, 0, 0, 0.2);
-
         border: 1px solid rgba(255, 255, 255, 0.1);
-
     }
-
-
 
     body.dynamic-blur:not(.scrolled) .ooo-badge:hover {
-
         background: rgba(0, 0, 0, 0.3);
-
         transform: translateY(-2px);
-
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
     }
-
 }
 
 
 
-/* 茅芦聵莽潞搂猫搂聠猫搂聣忙聲聢忙聻聹盲赂聥莽職聞氓颅聴盲陆聯茅垄聹猫聣虏 - 忙碌聟猫聣虏忙篓隆氓录聫茅禄聭氓颅聴忙路卤猫聣虏忙篓隆氓录聫莽聶陆氓颅聴 */
+/* 高级视觉 - 全局颜色覆盖 */
 
 body.dynamic-blur:not(.scrolled) .search-input,
 
@@ -6456,17 +4580,13 @@ body.dynamic-blur:not(.scrolled) .engine-btn,
 body.dynamic-blur:not(.scrolled) .quick-access-btn,
 
 body.dynamic-blur:not(.scrolled) .ooo-badge {
-
     color: #1a1a1a;
-
 }
 
 
 
 body.dynamic-blur:not(.scrolled) .search-input::placeholder {
-
     color: rgba(0, 0, 0, 0.5);
-
 }
 
 
@@ -6474,30 +4594,20 @@ body.dynamic-blur:not(.scrolled) .search-input::placeholder {
 @media (prefers-color-scheme: dark) {
 
     body.dynamic-blur:not(.scrolled) .search-input,
-
     body.dynamic-blur:not(.scrolled) .engine-btn,
-
     body.dynamic-blur:not(.scrolled) .quick-access-btn,
-
     body.dynamic-blur:not(.scrolled) .ooo-badge {
-
         color: #ffffff;
-
     }
-
-    
 
     body.dynamic-blur:not(.scrolled) .search-input::placeholder {
-
         color: rgba(255, 255, 255, 0.5);
-
     }
-
 }
 
 
 
-/* 氓拢聛莽潞赂忙篓隆氓录聫盲赂聥莽職聞氓颅聴盲陆聯茅垄聹猫聣虏 */
+/* 壁纸模式 - 全局颜色 */
 
 body.scrolled.dynamic-blur .search-input,
 
@@ -6506,17 +4616,13 @@ body.scrolled.dynamic-blur .engine-btn,
 body.scrolled.dynamic-blur .quick-access-btn,
 
 body.scrolled.dynamic-blur .ooo-badge {
-
     color: #1a1a1a;
-
 }
 
 
 
 body.scrolled.dynamic-blur .search-input::placeholder {
-
     color: rgba(0, 0, 0, 0.5);
-
 }
 
 
@@ -6524,134 +4630,85 @@ body.scrolled.dynamic-blur .search-input::placeholder {
 @media (prefers-color-scheme: dark) {
 
     body.scrolled.dynamic-blur .search-input,
-
     body.scrolled.dynamic-blur .engine-btn,
-
     body.scrolled.dynamic-blur .quick-access-btn,
-
     body.scrolled.dynamic-blur .ooo-badge {
-
         color: #ffffff;
-
     }
-
-    
 
     body.scrolled.dynamic-blur .search-input::placeholder {
-
         color: rgba(255, 255, 255, 0.5);
-
     }
-
 }
 
 
 
-/* 氓拢聛莽潞赂忙篓隆氓录聫盲赂聥莽職聞氓潞聲茅聝篓茅聯颅莽聣聦忙篓隆莽鲁聤忙聲聢忙聻聹 */
+/* 壁纸模式 - 底部模糊 */
 
 body.scrolled.dynamic-blur .ooo-badge {
-
     background: rgba(255, 255, 255, 0.06);
-
     backdrop-filter: blur(180px) saturate(2) brightness(1.1);
-
     -webkit-backdrop-filter: blur(180px) saturate(2) brightness(1.1);
-
     border: 1px solid rgba(255, 255, 255, 0.3);
-
 }
 
 
 
 body.scrolled.dynamic-blur .ooo-badge:hover {
-
     background: rgba(255, 255, 255, 0.1);
-
     transform: translateY(-2px);
-
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
 }
 
 
 
 @media (prefers-color-scheme: dark) {
-
     body.scrolled.dynamic-blur .ooo-badge {
-
         background: rgba(0, 0, 0, 0.1);
-
         border: 1px solid rgba(255, 255, 255, 0.12);
-
     }
 
-
-
     body.scrolled.dynamic-blur .ooo-badge:hover {
-
         background: rgba(0, 0, 0, 0.15);
-
         transform: translateY(-2px);
-
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
     }
 }
 
 .info-indicator {
-
     position: absolute;
-
     top: -4px;
-
     right: -4px;
-
     width: 10px;
-
     height: 10px;
-
     border-radius: 50%;
-
     background-color: #1a73e8;
-
     animation: pulse 2s infinite;
-
     z-index: 9999;
-
     pointer-events: none;
-
     display: none;
-
 }
 
 
 
 .info-indicator.visible {
-
     display: block;
-
 }
 
 
 
 @keyframes pulse {
 
-    0%, 100% {
-
+    0%,
+    100% {
         opacity: 1;
-
         box-shadow: 0 0 6px currentColor;
-
     }
 
     50% {
-
         opacity: 0.6;
-
         box-shadow: 0 0 10px currentColor;
-
     }
-
 }
 
 .bing-tooltip {
@@ -6700,45 +4757,33 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
 
 
 .info-indicator.google {
-
     background-color: #1a73e8;
-
 }
 
 
 
 .info-indicator.microsoft {
-
     background-color: #00a4ef;
-
 }
 
 
 
 .info-indicator.apple {
-
     background-color: #000000;
-
     border: 1px solid rgba(255, 255, 255, 0.1);
-
 }
 
 
 
 .info-indicator.huawei {
-
     background-color: #000000;
-
     border: 1px solid rgba(255, 255, 255, 0.1);
-
 }
 
 
 
 .info-indicator.default {
-
     background-color: #00AE00;
-
 }
 
 
@@ -6778,13 +4823,118 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
 
 
 
+/* ========== 壁纸模糊填充系统 ========== */
+/* 原理：两层壁纸叠加，模糊层始终 cover 全屏，清晰层 contain 居中显示 */
+/* 当清晰层因宽高比不同出现空隙时，模糊层填充空隙，消除黑边 */
 
 
 
+#wallpaper-blur {
+    position: fixed;
+    top: -10%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    z-index: -2;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    filter: blur(40px) brightness(0.85);
+    transform: scale(1.1);
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    will-change: transform, opacity;
+}
+
+#wallpaper-blur.active {
+    opacity: 1;
+}
 
 
 
+@media (prefers-color-scheme: dark) {
+    #wallpaper-blur {
+        filter: blur(40px) brightness(0.6);
+    }
+}
 
 
 
+#wallpaper-main {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    will-change: background-size, background-position, opacity, transform;
+}
 
+#wallpaper-main.active {
+    opacity: 1;
+}
+
+/* 填充模式：壁纸铺满全屏，不留空隙 */
+#wallpaper-main.fill-mode {
+    background-size: cover;
+}
+
+/* 填充模式下模糊层不需要显示（壁纸已铺满） */
+#wallpaper-main.fill-mode~#wallpaper-blur {
+    opacity: 0 !important;
+}
+
+
+
+#wallpaper-main.no-transition {
+    transition: none !important;
+}
+
+
+
+/* 覆盖 body.scrolled / body.homepage-wallpaper 的 CSS 背景图，避免冲突 */
+body.wallpaper-layers-ready {
+    background-image: none !important;
+}
+
+/* ========== 右侧面板壁纸填满开关 ========== */
+
+.wallpaper-fill-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.wallpaper-fill-toggle-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+.wallpaper-fill-switch {
+    width: 36px !important;
+    height: 20px !important;
+}
+
+.wallpaper-fill-switch .slider:before {
+    height: 16px !important;
+    width: 16px !important;
+    left: 2px !important;
+    bottom: 2px !important;
+}
+
+.wallpaper-fill-switch input:checked+.slider:before {
+    transform: translateX(16px) !important;
+}

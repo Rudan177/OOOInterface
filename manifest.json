@@ -2,9 +2,12 @@
   "manifest_version": 3,
   "name": "OOOInterface",
   "version": "5.2",
-  "description": "RUDAN开发的浏览器首页插件。Release版本 5.2:25-RS120",
+  "description": "RUDAN开发的浏览器首页插件。Release版本 5.2:26-RS140",
   "chrome_url_overrides": {
     "newtab": "main/index.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline';"
   },
   "host_permissions": [
     "https://www.bing.com/*",

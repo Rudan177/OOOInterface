@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,33 +9,41 @@
     <link rel="stylesheet" href="Style/dynamic-blur.css">
     <link rel="stylesheet" href="Style/info.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+        rel="stylesheet">
 </head>
+
 <body>
 
     <div class="container">
+
         <div class="logo-section">
             <img id="logo" src="images/gll.png" alt="Logo" class="logo">
             <div id="text-logo" class="text-logo" style="display: none;"></div>
         </div>
-        
+
         <div class="search-section">
             <div class="search-container">
                 <div class="search-icon">
                     <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                        <path
+                            d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z">
+                        </path>
                     </svg>
                 </div>
                 <input type="text" id="search-input" class="search-input" placeholder="">
                 <div class="search-clear-btn" style="display: none;">
                     <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                        <path
+                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z">
+                        </path>
                     </svg>
                 </div>
             </div>
         </div>
-        
+
         <!-- 搜索历史显示区域 -->
-        <div id="search-history-container" class="search-history-container" style="display: none;">
+        <div id="search-history-container" class="search-history-container">
             <div class="search-history-list"></div>
         </div>
 
@@ -42,7 +51,7 @@
             <button id="google-engine" class="engine-btn active">Google</button>
             <button id="bing-engine" class="engine-btn">Bing</button>
         </div>
-        
+
         <!-- 快速访问链接按钮容器 -->
         <div id="quick-access-links" class="quick-access-links">
             <!-- 快速访问链接按钮将动态生成 -->
@@ -53,7 +62,7 @@
                 <span>OOOInterface</span>
                 <div id="info-indicator" class="info-indicator"></div>
             </div>
-            
+
             <!-- 信息容器 -->
             <div id="infoContainer" class="info-iframe-container">
                 <div class="info-container">
@@ -74,9 +83,16 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>设置</h2>
-                <button id="close-modal" class="close-btn">&times;</button>
+                <div class="modal-header-buttons">
+                    <button id="about-btn" class="close-btn"><svg viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="currentColor"
+                                d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+                        </svg></button>
+                    <button id="feedback-btn" class="close-btn"><span class="material-icons">bug_report</span></button>
+                    <button id="close-modal" class="close-btn">&times;</button>
+                </div>
             </div>
-            
+
             <!-- 左右分栏布局容器 -->
             <div class="settings-layout">
                 <!-- 左侧设置选项区域 -->
@@ -106,7 +122,7 @@
                             </div>
                             <input type="file" id="font-upload" accept=".ttf,.otf" style="display: none;">
                         </div>
-                        
+
                         <div class="setting-group">
                             <label for="logo-select">选择 Logo:</label>
                             <div class="custom-select">
@@ -120,8 +136,10 @@
                                     <div class="select-item" data-value="HUAWEI">HUAWEI</div>
                                     <div class="select-item select-item-text-logo" data-value="text-logo">
                                         <span>自定义文字Logo</span>
-                                        <div class="text-logo-inline-group" id="text-logo-inline-group" style="display: none;">
-                                            <input type="text" id="text-logo-input" class="text-logo-inline-input" placeholder="输入文字">
+                                        <div class="text-logo-inline-group" id="text-logo-inline-group"
+                                            style="display: none;">
+                                            <input type="text" id="text-logo-input" class="text-logo-inline-input"
+                                                placeholder="输入文字">
                                             <button id="set-text-logo" class="text-logo-inline-btn" title="确定"></button>
                                         </div>
                                     </div>
@@ -139,7 +157,7 @@
                             <input type="file" id="logo-upload" accept="image/*" style="display: none;">
                             <input type="file" id="dark-logo-upload" accept="image/*" style="display: none;">
                         </div>
-                        
+
                         <div class="setting-group">
                             <label for="wallpaper-select">选择壁纸:</label>
                             <div class="custom-select">
@@ -150,7 +168,8 @@
                                         <div class="select-item" data-value="default">默认壁纸</div>
                                         <div class="select-item bing-wallpaper-item" data-value="bing">
                                             必应每日壁纸
-                                            <span class="material-icons info-icon" id="bing-wallpaper-info" title="关于必应壁纸">info</span>
+                                            <span class="material-icons info-icon" id="bing-wallpaper-info"
+                                                title="关于必应壁纸">info</span>
                                         </div>
                                         <div class="select-item" data-value="url">URL链接</div>
                                     </div>
@@ -163,7 +182,8 @@
                             </div>
                             <input type="file" id="wallpaper-upload" accept="image/*" style="display: none;">
                             <div id="wallpaper-url-group" class="wallpaper-url-group" style="display: none;">
-                                <input type="text" id="wallpaper-url-input" class="setting-input" placeholder="输入壁纸图片URL链接">
+                                <input type="text" id="wallpaper-url-input" class="setting-input"
+                                    placeholder="输入壁纸图片URL链接">
                                 <button id="apply-wallpaper-url" class="text-logo-btn">应用</button>
                             </div>
                         </div>
@@ -175,10 +195,12 @@
                                 <div class="select-items select-hide" id="context-menu-style-items">
                                     <div class="select-item" data-value="default">默认</div>
                                     <div class="select-item" data-value="compact">紧凑</div>
+                                    <div class="select-item" data-value="minimal">极简</div>
                                 </div>
                                 <select id="context-menu-style" style="display: none;">
                                     <option value="default">默认</option>
                                     <option value="compact" selected>紧凑</option>
+                                    <option value="minimal">极简</option>
                                 </select>
                             </div>
                         </div>
@@ -231,7 +253,7 @@
                                 </label>
                             </div>
                         </div>
-                        
+
                         <div class="setting-group">
                             <div class="switch-label">
                                 <span class="setting-label">壁纸常显示</span>
@@ -242,7 +264,8 @@
                             </div>
                         </div>
 
-                        <div class="setting-group" id="wallpaper-scale-group" style="padding-left: 20px; display: none;">
+                        <div class="setting-group" id="wallpaper-scale-group"
+                            style="padding-left: 20px; display: none;">
                             <div class="switch-label">
                                 <span class="setting-label">壁纸缩放</span>
                                 <label class="switch">
@@ -273,34 +296,42 @@
                         </div>
 
                         <div class="setting-group" id="developer-mode-group" style="display: none;">
-                            <label>开发者模式:</label>
+                            <label style="font-size:1.2em; margin-top: 28px;">开发者模式:</label>
                             <div class="developer-mode-controls">
+                                <div class="setting-group">
+                                    <div class="switch-label">
+                                        <span class="setting-label">新一代快速链接</span>
+                                        <label class="switch">
+                                            <input type="checkbox" id="new-quick-link-style">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
                                 <div class="developer-control-item">
                                     <label for="font-size-slider">字体大小:</label>
                                     <div class="control-with-reset">
-                                        <input type="range" id="font-size-slider" class="slider-input" min="0.5" max="2" step="0.1" value="1">
-                                        <input type="number" id="font-size-value" class="slider-value-input" min="0.5" max="2" step="0.1" value="1">
+                                        <input type="range" id="font-size-slider" class="slider-input" min="0.5" max="2"
+                                            step="0.1" value="1">
+                                        <input type="number" id="font-size-value" class="slider-value-input" min="0.5"
+                                            max="2" step="0.1" value="1">
                                     </div>
                                 </div>
                                 <div class="developer-control-item">
                                     <label for="font-weight-slider">字体粗细:</label>
                                     <div class="control-with-reset">
-                                        <input type="range" id="font-weight-slider" class="slider-input" min="100" max="900" step="100" value="400">
-                                        <input type="number" id="font-weight-value" class="slider-value-input" min="100" max="900" step="100" value="400">
+                                        <input type="range" id="font-weight-slider" class="slider-input" min="100"
+                                            max="900" step="100" value="400">
+                                        <input type="number" id="font-weight-value" class="slider-value-input" min="100"
+                                            max="900" step="100" value="400">
                                     </div>
                                 </div>
                                 <div class="developer-control-item">
                                     <label for="search-box-height">搜索框厚度:</label>
                                     <div class="control-with-reset">
-                                        <input type="range" id="search-box-height" class="slider-input" min="0" max="600" step="1" value="50">
-                                        <input type="number" id="search-box-height-value" class="slider-value-input" min="0" max="600" step="1" value="50">
-                                    </div>
-                                </div>
-                                <div class="developer-control-item">
-                                    <label for="wallpaper-mode-search-height">壁纸模式搜索框位置:</label>
-                                    <div class="control-with-reset">
-                                        <input type="range" id="wallpaper-mode-search-height" class="slider-input" min="-300" max="300" step="1" value="0">
-                                        <input type="number" id="wallpaper-mode-search-height-value" class="slider-value-input" min="-300" max="300" step="1" value="0">
+                                        <input type="range" id="search-box-height" class="slider-input" min="0"
+                                            max="600" step="1" value="50">
+                                        <input type="number" id="search-box-height-value" class="slider-value-input"
+                                            min="0" max="600" step="1" value="50">
                                     </div>
                                 </div>
                                 <div class="developer-control-item">
@@ -328,16 +359,9 @@
                             </div>
                             <button id="reset-developer-settings" class="reset-developer-btn">重置开发者模式</button>
                         </div>
-                        
-                        <div class="setting-group">
-                            <div class="about-feedback-buttons">
-                                <button id="about-btn" class="about-feedback-btn">关于</button>
-                                <button id="feedback-btn" class="about-feedback-btn">反馈</button>
-                            </div>
-                        </div>
                     </div>
                 </div>
-                
+
                 <!-- 右侧操作区域 -->
                 <div class="settings-right-panel">
                     <div class="right-panel-content">
@@ -387,7 +411,7 @@
                 <span class="context-menu-text">关于</span>
             </div>
             <div class="context-menu-item" data-action="feedback">
-                <span class="material-icons md3-icon">feedback</span>
+                <span class="material-icons md3-icon">bug_report</span>
                 <span class="context-menu-text">反馈</span>
             </div>
         </div>
@@ -398,4 +422,5 @@
     <script src="Script/proxy.js"></script>
     <script src="Script/script.js"></script>
 </body>
+
 </html>
