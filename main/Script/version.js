@@ -1,5 +1,5 @@
-const VERSION = "5.2:27-BS149";
-const PACKAGE_ID = "bdeaa01007265306569dd5687c0ad038";
+const VERSION = "5.2:27-BS150";
+const PACKAGE_ID = "8adece00e18b71e790434b6f6d0f87ea";
 const PACKAGE_FLAG = "Beta";
 const PRODUCT_NAME = "OOOInterface5.2";
 const RELEASE_DATE = "2026年7月4日";

@@ -108,6 +108,14 @@ class OOOInterface {
 
         this.primeWallpaperEffects();
 
+        // 自动聚焦搜索框，解决浏览器新标签页地址栏抢焦点的问题
+        setTimeout(() => {
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }, 100);
+
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
             this.isDarkMode = e.matches;
             this.applyLogo();
