@@ -124,6 +124,9 @@ class OOOInterface {
 
         window.addEventListener('resize', () => {
             this.updateStatusBarTextContrast();
+            if (document.getElementById('settings-modal').style.display === 'flex') {
+                this.updateSettingsButtonsPosition();
+            }
         });
 
         let badgeClickCount = 0;
@@ -1203,6 +1206,7 @@ class OOOInterface {
 
         // 设置弹窗事件
         document.getElementById('close-modal').addEventListener('click', () => this.closeSettings());
+        document.getElementById('back-right-panel').addEventListener('click', () => this.closeSettingsMenuInRightPanel());
 
         // ESC键关闭设置窗口
         document.addEventListener('keydown', (e) => {
@@ -1573,8 +1577,30 @@ class OOOInterface {
             }
         });
 
-        // 滚轮事件 - 修改为向下滚动出现壁纸
+        // 滚轮事件 - 向下滚动出现壁纸，向上恢复
         window.addEventListener('wheel', (e) => this.handleScroll(e), { passive: true });
+
+        // 触摸滑动壁纸（移动端）
+        let touchStartY = 0;
+        let touchActive = false;
+
+        window.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.modal') ||
+                e.target.closest('.search-section') ||
+                e.target.closest('.engine-buttons') ||
+                e.target.closest('.quick-access-links')) return;
+            touchStartY = e.touches[0].pageY;
+            touchActive = true;
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!touchActive || this.isAnimating) return;
+            const deltaY = touchStartY - e.touches[0].pageY;
+            if (Math.abs(deltaY) > 15) {
+                this.handleScroll({ deltaY: deltaY, target: e.target });
+                touchActive = false;
+            }
+        }, { passive: true });
 
         // 防止页面滚动
         window.addEventListener('keydown', (e) => {
@@ -2079,32 +2105,6 @@ class OOOInterface {
             const walk = (y - startY) * 2; // 滚动速度
             modalBody.scrollTop = scrollTop - walk;
         });
-
-        // 触摸设备支持
-        let startTouchY;
-        let touchScrollTop;
-
-        // 触摸开始事件
-        modalBody.addEventListener('touchstart', (e) => {
-            // 如果触摸的是滑块、输入框或其他可交互元素，不处理
-            if (e.target.tagName === 'INPUT' ||
-                e.target.tagName === 'BUTTON' ||
-                e.target.tagName === 'SELECT' ||
-                e.target.tagName === 'TEXTAREA' ||
-                e.target.closest('.slider-input') ||
-                e.target.closest('input[type="range"]')) {
-                return;
-            }
-            startTouchY = e.touches[0].pageY - modalBody.offsetTop;
-            touchScrollTop = modalBody.scrollTop;
-        }, { passive: false });
-
-        // 触摸移动事件
-        modalBody.addEventListener('touchmove', (e) => {
-            const y = e.touches[0].pageY - modalBody.offsetTop;
-            const walk = (y - startTouchY) * 2; // 滚动速度
-            modalBody.scrollTop = touchScrollTop - walk;
-        }, { passive: false });
     }
 
     // 处理字体上传
@@ -3910,6 +3910,9 @@ class OOOInterface {
             document.getElementById('text-logo-inline-group').style.display = 'none';
             if (textLogoItem) textLogoItem.classList.remove('selected');
         }
+
+        // 根据窗口宽度调整按钮位置
+        this.updateSettingsButtonsPosition();
     }
 
     // 更新设置界面中的值
@@ -4823,6 +4826,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
+    document.getElementById('settings-modal').classList.add('right-panel-open');
 
     let menuType = '';
     if (selected.id === 'font-select-selected' || selected.parentElement.querySelector('#font-select')) {
@@ -5889,6 +5893,7 @@ OOOInterface.prototype.closeSettingsMenuInRightPanel = function () {
 
     rightPanelUpper.innerHTML = '';
     this.showDefaultRightPanelContent(rightPanelUpper);
+    document.getElementById('settings-modal').classList.remove('right-panel-open');
 
     // 清理 body 上的弹窗
     const dd = document.querySelector('[data-import-dropdown]');
@@ -5916,6 +5921,23 @@ OOOInterface.prototype.showDefaultRightPanelContent = function (rightPanelUpper)
     }
 };
 
+OOOInterface.prototype.updateSettingsButtonsPosition = function () {
+    var buttons = document.querySelector('.setting-group.action-buttons');
+    if (!buttons) return;
+    var mobileContainer = document.getElementById('mobile-buttons-container');
+    var rightPanelContent = document.querySelector('.right-panel-content');
+    if (!mobileContainer || !rightPanelContent) return;
+    if (window.innerWidth < 600) {
+        if (buttons.parentElement !== mobileContainer) {
+            mobileContainer.appendChild(buttons);
+        }
+    } else {
+        if (buttons.parentElement !== rightPanelContent) {
+            rightPanelContent.appendChild(buttons);
+        }
+    }
+};
+
 OOOInterface.prototype.initSettingsMenus = function () {
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (rightPanelUpper) {
@@ -5927,6 +5949,7 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
+    document.getElementById('settings-modal').classList.add('right-panel-open');
 
     rightPanelUpper.innerHTML = '';
 

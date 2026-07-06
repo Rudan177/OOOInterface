@@ -85,7 +85,14 @@
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>设置</h2>
+                <div class="modal-header-left">
+                    <button id="back-right-panel" class="close-btn back-btn">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                        </svg>
+                    </button>
+                    <h2>设置</h2>
+                </div>
                 <div class="modal-header-buttons">
                     <button id="about-btn" class="close-btn"><svg viewBox="0 0 24 24" width="20" height="20">
                             <path fill="currentColor"
@@ -98,6 +105,7 @@
 
             <!-- 左右分栏布局容器 -->
             <div class="settings-layout">
+                <div class="settings-content-area">
                 <!-- 左侧设置选项区域 -->
                 <div class="settings-left-panel">
                     <div class="modal-body">
@@ -416,6 +424,9 @@
                         </div>
                     </div>
                 </div>
+                </div>
+                <!-- 手机端专用按钮容器（JS动态移入） -->
+                <div id="mobile-buttons-container"></div>
             </div>
         </div>
     </div>

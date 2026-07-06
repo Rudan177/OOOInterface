@@ -51,6 +51,30 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+button,
+select,
+input,
+textarea,
+[role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
 }
 
 
@@ -1226,6 +1250,44 @@ body.scrolled.dynamic-blur .ooo-badge {
 .modal-header h2 {
     font-size: 20px;
     font-weight: 500;
+    transition: padding-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-header-left {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.back-btn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    z-index: 2;
+    transform: translateY(-50%) translateX(-10px) scale(0.7);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.15s linear, opacity 0.15s linear, background-color 0.2s ease;
+}
+
+.back-btn:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+    transform: translateY(-50%) scale(1.1) !important;
+}
+
+.back-btn:active {
+    transform: translateY(-50%) scale(0.95) !important;
+}
+
+.right-panel-open .back-btn {
+    transform: translateY(-50%) translateX(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+    transition: transform 0.15s linear 0.04s, opacity 0.15s linear 0.04s;
+}
+
+.right-panel-open .modal-header h2 {
+    padding-left: 44px;
 }
 
 
@@ -1265,6 +1327,22 @@ body.scrolled.dynamic-blur .ooo-badge {
     .close-btn {
         background: rgba(0, 0, 0, 0.3);
     }
+
+    .back-btn:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+}
+
+
+
+/* 触屏优化：去除浏览器默认蓝色高亮 */
+#settings-modal button,
+#settings-modal .select-selected,
+#settings-modal .select-item,
+#settings-modal input,
+#settings-modal select {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
 }
 
 
@@ -1300,6 +1378,8 @@ body.scrolled.dynamic-blur .ooo-badge {
     /* Firefox */
     scrollbar-color: var(--border-color) transparent;
     /* Firefox */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 
@@ -1331,6 +1411,16 @@ body.scrolled.dynamic-blur .ooo-badge {
     display: flex;
     flex: 1;
     min-height: 0;
+}
+
+.settings-content-area {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+#mobile-buttons-container {
+    display: none;
 }
 
 
@@ -5683,4 +5773,154 @@ body.wallpaper-layers-ready {
 
 .wallpaper-fill-switch input:checked+.slider:before {
     transform: translateX(16px) !important;
+}
+
+/* 屏幕高度500~700px时，按钮区域上下间距缩小 */
+
+@media (min-height: 500px) and (max-height: 700px) {
+    .setting-group.action-buttons {
+        padding: 10px 24px;
+        gap: 8px;
+    }
+}
+
+/* 屏幕高度低于500px时的设置面板紧凑布局 */
+
+@media (max-height: 499px) {
+    .settings-right-panel {
+        flex: 0 0 280px;
+    }
+
+    .right-panel-content {
+        padding: 20px;
+    }
+
+    .right-panel-upper {
+        padding: 28px 28px 16px;
+        margin-bottom: 12px;
+    }
+
+    .setting-group.action-buttons {
+        flex-direction: row;
+        padding: 8px 20px;
+        gap: 10px;
+    }
+
+    .setting-group.action-buttons .apply-btn,
+    .setting-group.action-buttons .reset-btn {
+        width: auto;
+        flex: 1;
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+
+    .modal-content {
+        max-width: 700px;
+    }
+
+    .modal-header {
+        padding: 12px 16px;
+    }
+
+    .modal-header h2 {
+        font-size: 18px;
+    }
+}
+
+/* 屏幕宽度小于600px时，设置页面改为单栏 */
+
+@media (max-width: 599px) {
+    .modal-content {
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: 90vh;
+    }
+
+    .settings-layout {
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .settings-content-area {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .settings-left-panel {
+        border-right: none;
+        flex: 0 0 100%;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        transform: translateX(0);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .settings-left-panel .modal-body {
+        flex: 1;
+        max-height: none;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
+    .settings-right-panel {
+        flex: 0 0 100%;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        transform: translateX(0);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body.dynamic-blur .settings-right-panel {
+        background: transparent;
+    }
+
+    .right-panel-open .settings-left-panel {
+        transform: translateX(-100%);
+    }
+
+    .right-panel-open .settings-right-panel {
+        transform: translateX(-100%);
+    }
+
+    #mobile-buttons-container {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: row;
+        gap: 12px;
+        padding: 12px 24px 16px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    #mobile-buttons-container .setting-group.action-buttons {
+        padding: 0;
+        border: none;
+        margin: 0;
+        background: transparent;
+        display: flex;
+        flex-direction: row;
+        flex: 1;
+        gap: 12px;
+    }
+
+    #mobile-buttons-container .apply-btn,
+    #mobile-buttons-container .reset-btn {
+        flex: 1;
+        padding: 12px 24px;
+        font-size: 15px;
+    }
+
+    body.dynamic-blur #mobile-buttons-container {
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
 }
