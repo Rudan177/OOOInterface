@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OOOInterface 运行时间</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+            background: transparent;
+        }
+
+        .counter-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 60px);
+            padding: 40px 20px;
+        }
+
+        .counter-section {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
+            padding: 50px 60px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            max-width: 520px;
+            width: 100%;
+            box-shadow: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .counter-section:hover {
+            transform: translateY(-3px);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body:not(.light-theme) .counter-section {
+                background: rgba(0, 80, 65, 0.5);
+                border-color: rgba(255, 255, 255, 0.15);
+            }
+        }
+
+        body.dark-theme .counter-section {
+            background: rgba(0, 80, 65, 0.5);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .counter-label {
+            font-family: 'HMPro', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--text-heading);
+            margin-bottom: 28px;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+        }
+
+        .counter-display {
+            font-family: 'HMPro', sans-serif;
+            font-size: 5rem;
+            font-weight: 900;
+            color: var(--bg-ver-num);
+            line-height: 1.1;
+            text-shadow: 0 2px 16px rgba(0, 168, 70, 0.25);
+            word-break: break-all;
+            margin-bottom: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .counter-unit {
+            font-family: 'HMPro', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            display: block;
+            margin-top: 12px;
+        }
+
+        .counter-sub {
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Stage 2: 轻微闪动 */
+        @keyframes subtleFlicker {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.92;
+            }
+        }
+
+        body.stage2 {
+            animation: subtleFlicker 2s ease-in-out infinite;
+        }
+
+        /* Stage 3: 剧烈闪动 + 框抖动 */
+        @keyframes violentFlicker {
+            0% {
+                opacity: 1;
+            }
+
+            10% {
+                opacity: 0.85;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            30% {
+                opacity: 0.7;
+            }
+
+            40% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+
+            60% {
+                opacity: 1;
+            }
+
+            70% {
+                opacity: 0.65;
+            }
+
+            80% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 0.9;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        body.stage3 {
+            animation: violentFlicker 0.3s linear infinite;
+        }
+
+        @keyframes glitchShake {
+
+            0%,
+            100% {
+                transform: translate(0) rotate(0deg);
+            }
+
+            10% {
+                transform: translate(-5px, 3px) rotate(-2deg);
+            }
+
+            20% {
+                transform: translate(4px, -4px) rotate(1deg);
+            }
+
+            30% {
+                transform: translate(-3px, -2px) rotate(-1deg);
+            }
+
+            40% {
+                transform: translate(5px, 2px) rotate(2deg);
+            }
+
+            50% {
+                transform: translate(-2px, 4px) rotate(-3deg);
+            }
+
+            60% {
+                transform: translate(3px, -3px) rotate(1deg);
+            }
+
+            70% {
+                transform: translate(-4px, 1px) rotate(-2deg);
+            }
+
+            80% {
+                transform: translate(2px, -5px) rotate(3deg);
+            }
+
+            90% {
+                transform: translate(-1px, 3px) rotate(-1deg);
+            }
+        }
+
+        @keyframes purpleGoldBorder {
+            0% {
+                border-color: #FFD700;
+            }
+
+            50% {
+                border-color: #6B238E;
+            }
+
+            100% {
+                border-color: #FFD700;
+            }
+        }
+
+        .counter-section.fadai {
+            animation: glitchShake 0.15s infinite, purpleGoldBorder 0.5s linear infinite;
+            border-width: 3px;
+        }
+
+        .counter-section.fadai .counter-label {
+            animation: glitchShake 0.1s infinite;
+        }
+
+        .counter-section.fadai .counter-display {
+            animation: glitchShake 0.08s infinite;
+        }
+
+        /* 音频按钮 */
+        #muteBtn {
+            display: none;
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            z-index: 9000;
+            width: 38px;
+            height: 38px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            color: var(--text-primary);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            padding: 0;
+        }
+
+        #muteBtn:hover {
+            background: rgba(255, 255, 255, 0.22);
+            transform: scale(1.08);
+        }
+
+        #muteBtn:active {
+            transform: scale(0.95);
+        }
+
+        /* 准备弹窗 */
+        #readyOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9500;
+            justify-content: center;
+            align-items: center;
+            background: #fff;
+        }
+
+        #readyOverlay .ready-card {
+            background: var(--bg-version);
+            border: none;
+            border-radius: 18px;
+            padding: 44px 52px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: none;
+        }
+
+        #readyOverlay .ready-title {
+            font-family: 'HMPro', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--text-heading);
+            margin: 0 0 12px;
+        }
+
+        #readyOverlay .ready-sub {
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin: 0 0 28px;
+        }
+
+        #readyOverlay .ready-btn {
+            display: inline-block;
+            background: var(--bg-download-btn);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 13px 40px;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        #readyOverlay .ready-btn:hover {
+            background: var(--bg-download-btn-hover);
+            transform: scale(1.04);
+        }
+
+        #readyOverlay .ready-btn:active {
+            transform: scale(0.97);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body:not(.light-theme) #readyOverlay {
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(6px);
+            }
+        }
+
+        body.dark-theme #readyOverlay {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+        }
+
+        /* 燃尽了 */
+        #blackout {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 9999;
+        }
+
+        #burnBox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #FFD700 0%, #FFD700 50%, #6B238E 50%, #6B238E 100%);
+        }
+
+        #burnBox .burn-card {
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(6px);
+            border: 2px solid rgba(255, 215, 0, 0.6);
+            border-radius: 20px;
+            padding: 44px 60px;
+            text-align: center;
+        }
+
+        #burnBox .burn-title {
+            font-family: 'HMPro', sans-serif;
+            font-size: 6rem;
+            font-weight: 900;
+            margin: 0;
+            background: linear-gradient(90deg, #000, #FFD700, #6B238E, #000);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: textGradient 3s linear infinite;
+        }
+
+        @keyframes textGradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 300% 50%;
+            }
+        }
+
+        @keyframes burnPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 60px rgba(107, 35, 142, 0.5), 0 0 120px rgba(255, 215, 0, 0.15);
+            }
+
+            50% {
+                box-shadow: 0 0 80px rgba(107, 35, 142, 0.7), 0 0 160px rgba(255, 215, 0, 0.25);
+            }
+        }
+
+        #burnBox.burn-fadai {
+            animation: burnShake 0.08s infinite;
+        }
+
+        #burnBox.burn-fadai .burn-card {
+            animation: burnCardSpin 0.5s linear infinite;
+        }
+
+        #burnBox.burn-fadai .burn-title {
+            animation: textGradient 0.3s linear infinite, burnTitleGlitch 0.15s infinite;
+        }
+
+        @keyframes burnShake {
+            0% { transform: translate(0) rotate(0deg); }
+            25% { transform: translate(-8px, 5px) rotate(-3deg); }
+            50% { transform: translate(6px, -7px) rotate(2deg); }
+            75% { transform: translate(-4px, -3px) rotate(-1deg); }
+            100% { transform: translate(7px, 4px) rotate(3deg); }
+        }
+
+        @keyframes burnCardSpin {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.05) rotate(2deg); }
+            50% { transform: scale(0.95) rotate(-2deg); }
+            75% { transform: scale(1.08) rotate(1deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        @keyframes burnTitleGlitch {
+            0%, 100% { transform: translate(0); filter: hue-rotate(0deg); }
+            20% { transform: translate(-3px, 2px); filter: hue-rotate(90deg); }
+            40% { transform: translate(2px, -3px); filter: hue-rotate(180deg); }
+            60% { transform: translate(-2px, -1px); filter: hue-rotate(270deg); }
+            80% { transform: translate(3px, 1px); filter: hue-rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .counter-section {
+                padding: 36px 28px;
+                border-radius: 14px;
+            }
+
+            .counter-display {
+                font-size: 3rem;
+            }
+
+            .counter-label {
+                font-size: 1.3rem;
+            }
+
+            .counter-unit {
+                font-size: 1.2rem;
+            }
+
+            .counter-sub {
+                font-size: 0.9rem;
+            }
+
+            #burnBox .burn-card {
+                padding: 30px 36px;
+            }
+
+            #burnBox .burn-title {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="decoration">ByRUDAN OOOInterface</div>
+
+    <button id="muteBtn" onclick="toggleMute()">
+        <svg id="iconSound" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+        <svg id="iconMute" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" style="display:none">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+    </button>
+
+    <div id="readyOverlay">
+        <div class="ready-card">
+            <div class="ready-title">为更棒的 OOOInterface 预备好</div>
+            <button class="ready-btn" id="readyBtn">继续</button>
+        </div>
+    </div>
+
+    <div class="counter-wrapper">
+        <div class="counter-section" id="counterSection">
+            <div class="counter-label" id="counterLabel">OOOInterface26</div>
+            <div class="counter-display">
+                <span id="counterValue">0.0</span>
+            </div>
+            <span class="counter-unit">小时 · <span id="counterSub">无任何报错</span></span>
+            <div style="margin-top:20px;">
+                <a href="laiyuan.html" style="font-family:'Harmony',system-ui,sans-serif; font-size:0.82rem; color:var(--text-muted); text-decoration:none; opacity:0.5; transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">数据来源</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="blackout"></div>
+    <div id="burnBox">
+        <div class="burn-card">
+            <div class="burn-title">燃尽了</div>
+        </div>
+    </div>
+
+    <audio id="wowAudio" src="/images/wow.mp3" loop></audio>
+    <audio id="burnAudio" src="/images/isolation.MP3"></audio>
+
+    <script>
+        var audioMuted = false;
+        var wowAudio = document.getElementById('wowAudio');
+        var burnAudio = document.getElementById('burnAudio');
+        wowAudio.muted = false;
+        burnAudio.muted = false;
+
+        function toggleMute() {
+            audioMuted = !audioMuted;
+            wowAudio.muted = audioMuted;
+            burnAudio.muted = audioMuted;
+            document.getElementById('iconSound').style.display = audioMuted ? 'none' : 'block';
+            document.getElementById('iconMute').style.display = audioMuted ? 'block' : 'none';
+        }
+
+        (function initCounter() {
+            try {
+                var start = null;
+                var delay = 500;
+                var val = 0;
+                var stage = 0;
+                var burned = false;
+                var paused = false;
+                var counterValue = document.getElementById('counterValue');
+                var counterLabel = document.getElementById('counterLabel');
+                var counterSub = document.getElementById('counterSub');
+                var counterSection = document.getElementById('counterSection');
+                var blackout = document.getElementById('blackout');
+                var burnBox = document.getElementById('burnBox');
+                var muteBtn = document.getElementById('muteBtn');
+                var readyOverlay = document.getElementById('readyOverlay');
+                var readyBtn = document.getElementById('readyBtn');
+                var chaosPool = '0123456789';
+                var vibrateTimer = null;
+                var canVibrate = 'vibrate' in navigator;
+
+                paused = true;
+                readyOverlay.style.display = 'flex';
+
+                readyBtn.addEventListener('click', function () {
+                    readyOverlay.style.display = 'none';
+                    paused = false;
+                    loop(performance.now());
+                });
+
+                function chaosChar() {
+                    return chaosPool[Math.floor(Math.random() * chaosPool.length)];
+                }
+
+                function chaosNumber(n) {
+                    var s = n.toFixed(1);
+                    var arr = s.split('');
+                    for (var i = 0; i < arr.length; i++) {
+                        if (arr[i] !== '.' && Math.random() < 0.4) {
+                            arr[i] = chaosChar();
+                        }
+                    }
+                    return arr.join('');
+                }
+
+                function applyStage(v) {
+                    if (v < 99 && stage !== 0) {
+                        stage = 0;
+                        document.body.classList.remove('stage2', 'stage3');
+                        counterLabel.textContent = 'OOOInterface26';
+                        counterSub.textContent = '无任何报错';
+                        counterSection.classList.remove('fadai');
+                    } else if (v >= 99 && v < 7971 && stage !== 1) {
+                        stage = 1;
+                        document.body.classList.remove('stage3');
+                        document.body.classList.add('stage2');
+                        counterLabel.textContent = 'OOOInterface';
+                        counterSub.textContent = '基本稳定运行';
+                        counterSection.classList.remove('fadai');
+                    } else if (v >= 7971 && stage !== 2) {
+                        stage = 2;
+                        document.body.classList.remove('stage2');
+                        document.body.classList.add('stage3');
+                        counterLabel.textContent = 'OOOInterface仍将服务';
+                        counterSub.textContent = '并持续高质量发展';
+                        counterSection.classList.add('fadai');
+                        muteBtn.style.display = 'flex';
+                        wowAudio.play().catch(function () {});
+                        if (canVibrate) {
+                            navigator.vibrate(400);
+                            vibrateTimer = setInterval(function () {
+                                navigator.vibrate(200);
+                            }, 250);
+                        }
+                    }
+                }
+
+                function triggerBurn() {
+                    burned = true;
+                    document.body.classList.remove('stage2', 'stage3');
+                    wowAudio.pause();
+                    wowAudio.currentTime = 0;
+                    blackout.style.display = 'block';
+                    counterSection.style.display = 'none';
+                    document.querySelector('.decoration').style.display = 'none';
+                    muteBtn.style.display = 'none';
+                    readyOverlay.style.display = 'none';
+                    if (canVibrate) {
+                        clearInterval(vibrateTimer);
+                        navigator.vibrate([500, 50, 500, 50, 800]);
+                    }
+                    setTimeout(function () {
+                        blackout.style.display = 'none';
+                        burnBox.style.display = 'flex';
+                        burnAudio.play().catch(function () {});
+                        if (canVibrate) {
+                            navigator.vibrate([400, 30, 400, 30, 400, 30, 600]);
+                        }
+                        setTimeout(function () {
+                            burnBox.classList.add('burn-fadai');
+                            if (canVibrate) {
+                                vibrateTimer = setInterval(function () {
+                                    navigator.vibrate(300);
+                                }, 100);
+                            }
+                        }, 3000);
+                    }, 600);
+                }
+
+                document.addEventListener('dblclick', function (e) {
+                    if (!burned && e.clientX > window.innerWidth * 0.88 && e.clientY > window.innerHeight * 0.85) {
+                        triggerBurn();
+                    }
+                });
+
+                function loop(ts) {
+                    if (paused) return;
+                    if (!start) start = ts;
+                    var elapsed = ts - start;
+                    if (elapsed > delay && !burned) {
+                        var t = elapsed - delay;
+                        if (t <= 9900) {
+                            val = t * 0.01;
+                        } else if (t <= 9900 + 7872) {
+                            val = 99 + (t - 9900) * 1;
+                        } else {
+                            val = 7971 + (t - 9900 - 7872) * 100;
+                        }
+                        applyStage(val);
+                        if (val >= 33550336) {
+                            triggerBurn();
+                            return;
+                        }
+                        if (paused) return;
+                        if (stage === 2) {
+                            counterValue.textContent = chaosNumber(val);
+                        } else {
+                            counterValue.textContent = val.toFixed(1);
+                        }
+                    }
+                    if (!burned && !paused) requestAnimationFrame(loop);
+                }
+            } catch (error) {
+                console.error('计数器初始化失败:', error);
+            }
+        })();
+    </script>
+</body>
+
+</html>

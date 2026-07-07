@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OOOInterface 数据来源技术文档</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        ::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+            background: transparent;
+        }
+
+        .doc-page {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 48px 32px 100px;
+        }
+
+        .doc-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .doc-nav a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 7px 14px;
+            border: 1px solid var(--bg-version-border);
+            border-radius: 8px;
+            background: var(--bg-version);
+            transition: all 0.2s ease;
+        }
+
+        .doc-nav a:hover {
+            color: var(--bg-ver-num);
+            border-color: var(--bg-ver-num);
+            background: rgba(0, 174, 0, 0.04);
+            text-decoration: none;
+        }
+
+        .doc-nav a:active {
+            transform: scale(0.97);
+        }
+
+        .doc-nav a svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .doc-brand {
+            font-family: 'HMPro', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 900;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .doc-head {
+            border-bottom: 2px solid var(--bg-ver-num);
+            padding-bottom: 28px;
+            margin-bottom: 36px;
+        }
+
+        .doc-head h1 {
+            font-family: 'HMPro', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--text-heading);
+            margin: 0 0 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .doc-head .doc-subtitle {
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .doc-meta {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--bg-version-border);
+            border: 1px solid var(--bg-version-border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .doc-meta-item {
+            background: var(--bg-version);
+            padding: 14px 18px;
+        }
+
+        .doc-meta-label {
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .doc-meta-value {
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-heading);
+        }
+
+        .doc-meta-value.status-active {
+            color: var(--bg-ver-num);
+        }
+
+        .doc-body {
+            display: flex;
+            gap: 0;
+            border: 1px solid var(--bg-version-border);
+            border-radius: 10px;
+            overflow: hidden;
+            min-height: 480px;
+        }
+
+        /* 立式标签栏 */
+        .tab-sidebar {
+            width: 200px;
+            flex-shrink: 0;
+            background: var(--bg-version);
+            border-right: 1px solid var(--bg-version-border);
+        }
+
+        .tab-sidebar-title {
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 18px 20px 12px;
+            border-bottom: 1px solid var(--bg-version-border);
+        }
+
+        .tab-sidebar-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            background: none;
+            border: none;
+            border-left: 3px solid transparent;
+            padding: 13px 20px;
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+
+        .tab-sidebar-btn:hover {
+            background: rgba(0, 174, 0, 0.04);
+            color: var(--text-heading);
+        }
+
+        .tab-sidebar-btn.active {
+            background: rgba(0, 174, 0, 0.06);
+            border-left-color: var(--bg-ver-num);
+            color: var(--bg-ver-num);
+            font-weight: 600;
+        }
+
+        .tab-sidebar-btn .s-num {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            opacity: 0.5;
+            width: 18px;
+            flex-shrink: 0;
+        }
+
+        .tab-sidebar-btn.active .s-num {
+            color: var(--bg-ver-num);
+            opacity: 1;
+        }
+
+        /* 内容区 */
+        .tab-content {
+            flex: 1;
+            padding: 32px 36px;
+            min-width: 0;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section-head {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 22px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--bg-version-border);
+        }
+
+        .section-num {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--bg-ver-num);
+            background: rgba(0, 174, 0, 0.08);
+            border-radius: 4px;
+            padding: 3px 8px;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin: 0;
+        }
+
+        .section-body p {
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 0.92rem;
+            color: var(--text-paragraph);
+            line-height: 1.9;
+            margin: 0 0 14px;
+        }
+
+        .section-body ul,
+        .section-body ol {
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 0.92rem;
+            color: var(--text-paragraph);
+            line-height: 1.9;
+            padding-left: 22px;
+            margin: 8px 0 16px;
+        }
+
+        .section-body li {
+            margin: 5px 0;
+        }
+
+        .section-body code {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.84rem;
+            background: var(--bg-version);
+            border: 1px solid var(--bg-version-border);
+            border-radius: 4px;
+            padding: 2px 6px;
+            color: var(--bg-ver-num);
+        }
+
+        .doc-footer {
+            border-top: 1px solid var(--bg-version-border);
+            padding-top: 20px;
+            margin-top: 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .doc-footer span {
+            font-family: 'Harmony', system-ui, sans-serif;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 700px) {
+            .doc-page {
+                padding: 32px 16px 60px;
+            }
+
+            .doc-head h1 {
+                font-size: 1.5rem;
+            }
+
+            .doc-meta {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .doc-body {
+                flex-direction: column;
+                min-height: auto;
+            }
+
+            .tab-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--bg-version-border);
+            }
+
+            .tab-sidebar-title {
+                display: none;
+            }
+
+            .tab-sidebar-btn {
+                border-left: none;
+                border-bottom: 3px solid transparent;
+                padding: 11px 16px;
+                justify-content: center;
+            }
+
+            .tab-sidebar-btn.active {
+                border-left-color: transparent;
+                border-bottom-color: var(--bg-ver-num);
+            }
+
+            .tab-content {
+                padding: 24px 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="doc-page">
+        <nav class="doc-nav">
+            <a href="261.html"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>返回</a>
+            <span class="doc-brand">OOOInterface</span>
+        </nav>
+
+        <header class="doc-head">
+            <h1>数据来源</h1>
+            <p class="doc-subtitle">OOOInterface 运行数据与技术规范文档</p>
+        </header>
+
+        <div class="doc-meta">
+            <div class="doc-meta-item">
+                <div class="doc-meta-label">文档编号</div>
+                <div class="doc-meta-value">BRD-OOO-260707.261</div>
+            </div>
+            <div class="doc-meta-item">
+                <div class="doc-meta-label">版本</div>
+                <div class="doc-meta-value">v1.0:01</div>
+            </div>
+            <div class="doc-meta-item">
+                <div class="doc-meta-label">发布日期</div>
+                <div class="doc-meta-value">2026-07-07</div>
+            </div>
+            <div class="doc-meta-item">
+                <div class="doc-meta-label">状态</div>
+                <div class="doc-meta-value status-active">现行有效</div>
+            </div>
+        </div>
+
+        <div class="doc-body">
+            <nav class="tab-sidebar" id="tabNav">
+                <div class="tab-sidebar-title">目录</div>
+                <button class="tab-sidebar-btn active" data-tab="0"><span class="s-num">01</span>标签一</button>
+                <button class="tab-sidebar-btn" data-tab="1"><span class="s-num">02</span>标签二</button>
+                <button class="tab-sidebar-btn" data-tab="2"><span class="s-num">03</span>标签三</button>
+                <button class="tab-sidebar-btn" data-tab="3"><span class="s-num">04</span>标签四</button>
+                <button class="tab-sidebar-btn" data-tab="4"><span class="s-num">05</span>标签五</button>
+                <button class="tab-sidebar-btn" data-tab="5"><span class="s-num">06</span>标签六</button>
+                <button class="tab-sidebar-btn" data-tab="6"><span class="s-num">07</span>标签七</button>
+                <button class="tab-sidebar-btn" data-tab="7"><span class="s-num">08</span>标签八</button>
+            </nav>
+
+            <div class="tab-content">
+                <div class="section active" id="sec-0">
+                    <div class="section-head">
+                        <span class="section-num">§1</span>
+                        <h2 class="section-title">标签一</h2>
+                    </div>
+                    <div class="section-body">
+                        <p>内容待补充。</p>
+                    </div>
+                </div>
+
+                <div class="section" id="sec-1">
+                    <div class="section-head">
+                        <span class="section-num">§2</span>
+                        <h2 class="section-title">标签二</h2>
+                    </div>
+                    <div class="section-body">
+                        <p>内容待补充。</p>
+                    </div>
+                </div>
+
+                <div class="section" id="sec-2">
+                    <div class="section-head">
+                        <span class="section-num">§3</span>
+                        <h2 class="section-title">标签三</h2>
+                    </div>
+                    <div class="section-body">
+                        <p>内容待补充。</p>
+                    </div>
+                </div>
+
+                <div class="section" id="sec-3">
+                    <div class="section-head">
+                        <span class="section-num">§4</span>
+                        <h2 class="section-title">标签四</h2>
+                    </div>
+                    <div class="section-body">
+                        <p>内容待补充。</p>
+                    </div>
+                </div>
+
+                <div class="section" id="sec-4">
+                    <div class="section-head">
+                        <span class="section-num">§5</span>
+                        <h2 class="section-title">标签五</h2>
+                    </div>
+                    <div class="section-body">
+                        <p>内容待补充。</p>
+                    </div>
+                </div>
+
+                <div class="section" id="sec-5">
+                    <div class="section-head">
+                        <span class="section-num">§6</span>
+                        <h2 class="section-title">标签六</h2>
+                    </div>
+                    <div class="section-body">
+                        <p>内容待补充。</p>
+                    </div>
+                </div>
+
+                <div class="section" id="sec-6">
+                    <div class="section-head">
+                        <span class="section-num">§7</span>
+                        <h2 class="section-title">标签七</h2>
+                    </div>
+                    <div class="section-body">
+                        <p>内容待补充。</p>
+                    </div>
+                </div>
+
+                <div class="section" id="sec-7">
+                    <div class="section-head">
+                        <span class="section-num">§8</span>
+                        <h2 class="section-title">标签八</h2>
+                    </div>
+                    <div class="section-body">
+                        <p>内容待补充。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="doc-footer">
+            <span>OOOInterface · ByRUDAN</span>
+            <span>BRD-OOO-260707.261 v1.0:01 · 2026-07-07</span>
+        </footer>
+    </div>
+
+    <script>
+        (function () {
+            var btns = document.querySelectorAll('.tab-sidebar-btn');
+            var secs = document.querySelectorAll('.section');
+            btns.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var idx = this.getAttribute('data-tab');
+                    btns.forEach(function (b) { b.classList.remove('active'); });
+                    secs.forEach(function (s) { s.classList.remove('active'); });
+                    this.classList.add('active');
+                    document.getElementById('sec-' + idx).classList.add('active');
+                });
+            });
+        })();
+    </script>
+</body>
+
+</html>
