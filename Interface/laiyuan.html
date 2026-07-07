@@ -377,97 +377,9 @@
         <div class="doc-body">
             <nav class="tab-sidebar" id="tabNav">
                 <div class="tab-sidebar-title">目录</div>
-                <button class="tab-sidebar-btn active" data-tab="0"><span class="s-num">01</span>标签一</button>
-                <button class="tab-sidebar-btn" data-tab="1"><span class="s-num">02</span>标签二</button>
-                <button class="tab-sidebar-btn" data-tab="2"><span class="s-num">03</span>标签三</button>
-                <button class="tab-sidebar-btn" data-tab="3"><span class="s-num">04</span>标签四</button>
-                <button class="tab-sidebar-btn" data-tab="4"><span class="s-num">05</span>标签五</button>
-                <button class="tab-sidebar-btn" data-tab="5"><span class="s-num">06</span>标签六</button>
-                <button class="tab-sidebar-btn" data-tab="6"><span class="s-num">07</span>标签七</button>
-                <button class="tab-sidebar-btn" data-tab="7"><span class="s-num">08</span>标签八</button>
             </nav>
 
-            <div class="tab-content">
-                <div class="section active" id="sec-0">
-                    <div class="section-head">
-                        <span class="section-num">§1</span>
-                        <h2 class="section-title">标签一</h2>
-                    </div>
-                    <div class="section-body">
-                        <p>内容待补充。</p>
-                    </div>
-                </div>
-
-                <div class="section" id="sec-1">
-                    <div class="section-head">
-                        <span class="section-num">§2</span>
-                        <h2 class="section-title">标签二</h2>
-                    </div>
-                    <div class="section-body">
-                        <p>内容待补充。</p>
-                    </div>
-                </div>
-
-                <div class="section" id="sec-2">
-                    <div class="section-head">
-                        <span class="section-num">§3</span>
-                        <h2 class="section-title">标签三</h2>
-                    </div>
-                    <div class="section-body">
-                        <p>内容待补充。</p>
-                    </div>
-                </div>
-
-                <div class="section" id="sec-3">
-                    <div class="section-head">
-                        <span class="section-num">§4</span>
-                        <h2 class="section-title">标签四</h2>
-                    </div>
-                    <div class="section-body">
-                        <p>内容待补充。</p>
-                    </div>
-                </div>
-
-                <div class="section" id="sec-4">
-                    <div class="section-head">
-                        <span class="section-num">§5</span>
-                        <h2 class="section-title">标签五</h2>
-                    </div>
-                    <div class="section-body">
-                        <p>内容待补充。</p>
-                    </div>
-                </div>
-
-                <div class="section" id="sec-5">
-                    <div class="section-head">
-                        <span class="section-num">§6</span>
-                        <h2 class="section-title">标签六</h2>
-                    </div>
-                    <div class="section-body">
-                        <p>内容待补充。</p>
-                    </div>
-                </div>
-
-                <div class="section" id="sec-6">
-                    <div class="section-head">
-                        <span class="section-num">§7</span>
-                        <h2 class="section-title">标签七</h2>
-                    </div>
-                    <div class="section-body">
-                        <p>内容待补充。</p>
-                    </div>
-                </div>
-
-                <div class="section" id="sec-7">
-                    <div class="section-head">
-                        <span class="section-num">§8</span>
-                        <h2 class="section-title">标签八</h2>
-                    </div>
-                    <div class="section-body">
-                        <p>内容待补充。</p>
-                    </div>
-                </div>
-            </div>
+            <div class="tab-content" id="tabContent"></div>
         </div>
 
         <footer class="doc-footer">
@@ -476,10 +388,31 @@
         </footer>
     </div>
 
+    <script src="laiyuan.js"></script>
     <script>
         (function () {
-            var btns = document.querySelectorAll('.tab-sidebar-btn');
-            var secs = document.querySelectorAll('.section');
+            var nav = document.getElementById('tabNav');
+            var content = document.getElementById('tabContent');
+            var sections = DOC_DATA.sections;
+
+            sections.forEach(function (sec, i) {
+                var num = String(i + 1).padStart(2, '0');
+
+                var btn = document.createElement('button');
+                btn.className = 'tab-sidebar-btn' + (i === 0 ? ' active' : '');
+                btn.setAttribute('data-tab', i);
+                btn.innerHTML = '<span class="s-num">' + num + '</span>' + sec.label;
+                nav.appendChild(btn);
+
+                var div = document.createElement('div');
+                div.className = 'section' + (i === 0 ? ' active' : '');
+                div.id = 'sec-' + i;
+                div.innerHTML = '<div class="section-head"><span class="section-num">\u00a7' + (i + 1) + '</span><h2 class="section-title">' + sec.title + '</h2></div><div class="section-body">' + sec.content + '</div>';
+                content.appendChild(div);
+            });
+
+            var btns = nav.querySelectorAll('.tab-sidebar-btn');
+            var secs = content.querySelectorAll('.section');
             btns.forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     var idx = this.getAttribute('data-tab');
