@@ -409,7 +409,7 @@
                 var div = document.createElement('div');
                 div.className = 'section' + (i === 0 ? ' active' : '');
                 div.id = 'sec-' + i;
-                div.innerHTML = '<div class="section-head"><span class="section-num">\u00a7' + (i + 1) + '</span><h2 class="section-title">' + sec.title + '</h2></div><div class="section-body">' + sec.content + '</div>';
+                div.innerHTML = '<div class="section-head"><span class="section-num">\u00a7' + (i + 1) + '</span><h2 class="section-title">' + sec.title + '</h2></div><div class="section-body">' + sec.content.join('') + '</div>';
                 content.appendChild(div);
             });
 
