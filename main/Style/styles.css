@@ -1463,36 +1463,21 @@ body.scrolled.dynamic-blur .ooo-badge {
     display: flex;
     flex-direction: column;
     position: relative;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-color) transparent;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     overflow-y: auto;
     min-height: 0;
 }
 
-
-
-.right-panel-upper::-webkit-scrollbar {
-    width: 6px;
+.right-panel-upper::-webkit-scrollbar,
+.right-panel-upper *::-webkit-scrollbar {
+    display: none;
 }
 
-
-
-.right-panel-upper::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-
-
-.right-panel-upper::-webkit-scrollbar-thumb {
-    background-color: var(--border-color);
-    border-radius: 3px;
-    border: 2px solid transparent;
-}
-
-
-
-.right-panel-upper::-webkit-scrollbar-thumb:hover {
-    background-color: var(--text-secondary);
+.right-panel-upper .settings-menu-options,
+.right-panel-upper .quick-links-list-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 
@@ -1529,6 +1514,7 @@ body.scrolled.dynamic-blur .ooo-badge {
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    position: relative;
 }
 
 
@@ -1539,6 +1525,7 @@ body.scrolled.dynamic-blur .ooo-badge {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    padding-bottom: 60px;
 }
 
 
@@ -1572,14 +1559,28 @@ body.scrolled.dynamic-blur .ooo-badge {
 /* 设置菜单底部区域 */
 
 .settings-plus-btn {
-    padding: 12px !important;
+    padding: 8px !important;
     width: 40px !important;
     height: 40px !important;
     min-width: 40px !important;
-    font-size: 16px !important;
+    font-size: 18px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 16px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.settings-plus-btn:hover {
+    background-color: #1557b2 !important;
+}
+
+.settings-plus-btn:active {
+    background-color: #0f4698 !important;
+    transform: scale(0.95);
 }
 
 
@@ -1587,17 +1588,17 @@ body.scrolled.dynamic-blur .ooo-badge {
 /* 书签导入按钮 */
 
 .settings-import-btn {
-    padding: 10px !important;
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
+    padding: 8px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     background-color: var(--primary-color) !important;
     color: white !important;
     border: none !important;
-    border-radius: 14px !important;
+    border-radius: 16px !important;
     cursor: pointer !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     position: relative !important;
@@ -1609,7 +1610,7 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 .settings-import-btn:active {
     background-color: #0f4698 !important;
-    transform: translateY(0) !important;
+    transform: scale(0.95) !important;
 }
 
 .settings-import-btn svg {
@@ -1619,12 +1620,28 @@ body.scrolled.dynamic-blur .ooo-badge {
 }
 
 @media (prefers-color-scheme: dark) {
+    .settings-plus-btn {
+        background-color: rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .settings-plus-btn:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
     .settings-import-btn {
         background-color: rgba(0, 0, 0, 0.3) !important;
     }
 
     .settings-import-btn:hover {
         background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .wallpaper-fill-toggle-wrapper {
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .wallpaper-fill-toggle-wrapper:hover {
+        background-color: rgba(255, 255, 255, 0.05);
     }
 }
 
@@ -1874,11 +1891,21 @@ body.dynamic-blur .bookmark-folder-submenu {
 /* 设置菜单操作 */
 
 .settings-menu-button-container {
-    flex: 0 0 auto;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     gap: 12px;
     justify-content: flex-end;
-    padding-top: 16px;
+    align-items: center;
+    padding: 8px 0 4px;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.settings-menu-button-container > * {
+    pointer-events: auto;
 }
 
 
@@ -2097,7 +2124,7 @@ body.dynamic-blur .bookmark-folder-submenu {
 
 
 .select-item:hover {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: rgba(0, 0, 0, 0.02);
 }
 
 
@@ -5292,6 +5319,63 @@ body.dynamic-blur .setting-group {
 
 
 
+/* 高级视觉 - 设置菜单操作按钮 */
+
+body.dynamic-blur .settings-plus-btn {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .settings-plus-btn:hover {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    transform: scale(1.1);
+}
+
+body.dynamic-blur .settings-plus-btn:active {
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .settings-import-btn {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .settings-import-btn:hover {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    transform: scale(1.1);
+}
+
+body.dynamic-blur .settings-import-btn:active {
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper:hover {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    transform: scale(1.05);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper:active {
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-text {
+    color: var(--text-color) !important;
+}
+
 /* 高级视觉 - 设置菜单 */
 
 body.dynamic-blur .right-panel-upper {
@@ -5358,6 +5442,10 @@ body.dynamic-blur .select-items {
     backdrop-filter: blur(120px) saturate(1.6);
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .select-item:hover {
+    background: rgba(0, 0, 0, 0.01);
 }
 
 
@@ -5742,6 +5830,30 @@ body.wallpaper-layers-ready {
 
 /* ========== 右侧面板壁纸填满开关 ========== */
 
+.wallpaper-fill-toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 12px 0 14px;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wallpaper-fill-toggle-wrapper:hover {
+    background-color: #1557b2;
+}
+
+.wallpaper-fill-toggle-wrapper:active {
+    background-color: #0f4698;
+    transform: scale(0.95);
+}
+
 .wallpaper-fill-toggle-label {
     display: flex;
     align-items: center;
@@ -5754,7 +5866,7 @@ body.wallpaper-layers-ready {
 .wallpaper-fill-toggle-text {
     font-size: 12px;
     font-weight: 500;
-    color: var(--text-secondary);
+    color: white;
     white-space: nowrap;
     transition: color 0.2s ease;
 }

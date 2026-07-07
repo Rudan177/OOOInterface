@@ -1206,14 +1206,22 @@ class OOOInterface {
 
         // 设置弹窗事件
         document.getElementById('close-modal').addEventListener('click', () => this.closeSettings());
-        document.getElementById('back-right-panel').addEventListener('click', () => this.closeSettingsMenuInRightPanel());
+        document.getElementById('back-right-panel').addEventListener('click', () => {
+            this.confirmRightPanelChanges();
+            this.closeSettingsMenuInRightPanel();
+        });
 
         // ESC键关闭设置窗口
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const modal = document.getElementById('settings-modal');
                 if (modal && modal.classList.contains('show')) {
-                    this.closeSettings();
+                    if (modal.classList.contains('right-panel-open')) {
+                        this.confirmRightPanelChanges();
+                        this.closeSettingsMenuInRightPanel();
+                    } else {
+                        this.closeSettings();
+                    }
                 }
             }
         });
@@ -4840,6 +4848,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
     }
 
     rightPanelUpper.innerHTML = '';
+    rightPanelUpper.dataset.menuType = menuType;
 
     const container = document.createElement('div');
     container.className = 'settings-menu-container';
@@ -5799,9 +5808,12 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
         // 壁纸菜单：在加号旁边添加填满全屏开关
         if (menuType === 'wallpaper') {
+            const fillWrapper = document.createElement('div');
+            fillWrapper.className = 'wallpaper-fill-toggle-wrapper';
+            fillWrapper.title = '壁纸填满全屏（关闭则显示完整画面，空隙用模糊填充）';
+
             const fillLabel = document.createElement('label');
             fillLabel.className = 'wallpaper-fill-toggle-label';
-            fillLabel.title = '壁纸填满全屏（关闭则显示完整画面，空隙用模糊填充）';
 
             const fillSpan = document.createElement('span');
             fillSpan.className = 'wallpaper-fill-toggle-text';
@@ -5822,67 +5834,12 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             fillSwitch.appendChild(fillSlider);
             fillLabel.appendChild(fillSpan);
             fillLabel.appendChild(fillSwitch);
+            fillWrapper.appendChild(fillLabel);
 
-            buttonContainer.insertBefore(fillLabel, plusBtn);
+            buttonContainer.insertBefore(fillWrapper, plusBtn);
         }
     }
 
-    const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'settings-menu-confirm';
-    confirmBtn.textContent = '确定';
-
-    confirmBtn.onclick = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-
-        // 检查是否有文字Logo输入框内容需要保存
-        if (menuType === 'logo') {
-            const textLogoInput = document.getElementById('text-logo-input-panel');
-            if (textLogoInput && textLogoInput.value.trim()) {
-                const text = textLogoInput.value.trim();
-                // 计算字符长度
-                const getCharLength = (str) => {
-                    let length = 0;
-                    for (let i = 0; i < str.length; i++) {
-                        const charCode = str.charCodeAt(i);
-                        if (charCode > 127) {
-                            length += 2;
-                        } else {
-                            length += 1;
-                        }
-                    }
-                    return length;
-                };
-
-                if (getCharLength(text) <= 25) {
-                    self.settings.logoType = 'text';
-                    self.settings.logo = 'text-logo';
-                    self.settings.textLogo = text;
-                    self.userChangedLogo = true;
-                    self.applyLogo();
-                    self.saveSettings();
-                    self.showNotification('文字Logo设置');
-
-                    selected.textContent = '自定义文字Logo';
-                    hiddenSelect.value = 'text-logo';
-                }
-            }
-        }
-
-        // 保存壁纸填满开关状态
-        if (menuType === 'wallpaper') {
-            const panelToggle = document.getElementById('wallpaper-fill-toggle-panel');
-            if (panelToggle) {
-                self.settings.wallpaperFill = panelToggle.checked;
-                self.saveSettings();
-                self.applyWallpaper();
-            }
-        }
-
-        self.closeSettingsMenuInRightPanel();
-    };
-
-    buttonContainer.appendChild(confirmBtn);
     container.appendChild(buttonContainer);
     rightPanelUpper.appendChild(container);
 };
@@ -5892,6 +5849,7 @@ OOOInterface.prototype.closeSettingsMenuInRightPanel = function () {
     if (!rightPanelUpper) return;
 
     rightPanelUpper.innerHTML = '';
+    delete rightPanelUpper.dataset.menuType;
     this.showDefaultRightPanelContent(rightPanelUpper);
     document.getElementById('settings-modal').classList.remove('right-panel-open');
 
@@ -5900,6 +5858,55 @@ OOOInterface.prototype.closeSettingsMenuInRightPanel = function () {
     if (dd) dd.remove();
     const fs = document.querySelector('[data-folder-submenu]');
     if (fs) fs.remove();
+};
+
+OOOInterface.prototype.confirmRightPanelChanges = function () {
+    const rightPanelUpper = document.getElementById('right-panel-upper');
+    if (!rightPanelUpper) return;
+    const menuType = rightPanelUpper.dataset.menuType;
+
+    // 保存文字Logo输入
+    if (menuType === 'logo') {
+        const textLogoInput = document.getElementById('text-logo-input-panel');
+        if (textLogoInput && textLogoInput.value.trim()) {
+            const text = textLogoInput.value.trim();
+            const getCharLength = (str) => {
+                let length = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const charCode = str.charCodeAt(i);
+                    if (charCode > 127) {
+                        length += 2;
+                    } else {
+                        length += 1;
+                    }
+                }
+                return length;
+            };
+            if (getCharLength(text) <= 25) {
+                this.settings.logoType = 'text';
+                this.settings.logo = 'text-logo';
+                this.settings.textLogo = text;
+                this.userChangedLogo = true;
+                this.applyLogo();
+                this.saveSettings();
+                this.showNotification('文字Logo设置');
+                const selected = document.getElementById('logo-select-selected');
+                const hiddenSelect = document.getElementById('logo-select');
+                if (selected) selected.textContent = '自定义文字Logo';
+                if (hiddenSelect) hiddenSelect.value = 'text-logo';
+            }
+        }
+    }
+
+    // 保存壁纸填满开关状态
+    if (menuType === 'wallpaper') {
+        const panelToggle = document.getElementById('wallpaper-fill-toggle-panel');
+        if (panelToggle) {
+            this.settings.wallpaperFill = panelToggle.checked;
+            this.saveSettings();
+            this.applyWallpaper();
+        }
+    }
 };
 
 OOOInterface.prototype.showDefaultRightPanelContent = function (rightPanelUpper) {
@@ -5986,21 +5993,8 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     folderSubmenu.setAttribute('data-folder-submenu', '');
     document.body.appendChild(folderSubmenu);
 
-    const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'settings-menu-confirm';
-    confirmBtn.textContent = '确定';
-    confirmBtn.onclick = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        self.closeSettingsMenuInRightPanel();
-        // 关闭弹窗
-        importDropdown.classList.remove('active');
-        folderSubmenu.classList.remove('active');
-    };
-
     buttonContainer.appendChild(importBtn);
     buttonContainer.appendChild(plusBtn);
-    buttonContainer.appendChild(confirmBtn);
     container.appendChild(buttonContainer);
 
     rightPanelUpper.appendChild(container);
@@ -6164,7 +6158,8 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
             e.stopPropagation();
             this.settings.quickLinks.splice(index, 1);
             this.saveSettings();
-            this.updateQuickLinksListInMenu(listContainer);
+    this.updateQuickLinksListInMenu(listContainer);
+
             this.showNotification('快速访问链接已删除');
         });
 
