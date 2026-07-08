@@ -38,11 +38,12 @@ class OOOInterface {
             badgeOpenMethod: 'both',
             bingRefreshEveryTime: true,
             bingRefreshInterval: 0,
-            newQuickLinkStyle: false,
+            quickAccessSidebar: false,
             showQuickLinkIcons: true,
             statusBarEnabled: false,
             showStatusBarSeconds: false,
-            hideNotifications: false
+            hideNotifications: false,
+            contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle']
         };
 
         this.currentEngine = 'google';
@@ -154,20 +155,126 @@ class OOOInterface {
         this.contextMenu = document.getElementById('context-menu');
         this.contextMenuItems = document.querySelectorAll('.context-menu-item');
         this.updateContextMenuIcons();
+        this.initContextMenuCustomize();
     }
 
     updateContextMenuIcons() {
-        // 更新搜索历史开关图标
-        const searchHistoryItem = document.querySelector('[data-action="search-history-toggle"] .md3-icon');
-        if (searchHistoryItem) {
-            searchHistoryItem.textContent = this.settings.searchHistory ? 'check_box' : 'check_box_outline_blank';
+        // 更新所有可切换菜单项的图标
+        const toggleMap = {
+            'search-history-toggle': () => this.settings.searchHistory ? 'check_box' : 'check_box_outline_blank',
+            'wallpaper-toggle': () => this.settings.persistentWallpaper ? 'check_box' : 'check_box_outline_blank',
+            'enhanced-display-toggle': () => this.settings.enhancedDisplay ? 'check_box' : 'check_box_outline_blank',
+            'hide-notifications-toggle': () => this.settings.hideNotifications ? 'check_box' : 'check_box_outline_blank',
+            'hide-info-popup-toggle': () => this.settings.hideInfoPopup.enabled ? 'check_box' : 'check_box_outline_blank'
+        };
+        Object.keys(toggleMap).forEach(action => {
+            const el = document.querySelector(`[data-action="${action}"] .md3-icon`);
+            if (el) el.textContent = toggleMap[action]();
+        });
+    }
+
+    // 初始化右键菜单项自定义面板
+    initContextMenuCustomize() {
+        const btn = document.getElementById('context-menu-customize-btn');
+        const panel = document.getElementById('context-menu-customize-panel');
+        if (!btn || !panel) return;
+
+        // 切换面板显示
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.settings.contextMenuStyle === 'minimal') return;
+            const isOpen = !panel.classList.contains('select-hide');
+            panel.classList.toggle('select-hide');
+            this.syncCustomizePanelUI();
+        });
+
+        // 面板内选项点击
+        panel.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const item = e.target.closest('.customize-item');
+            if (!item || item.classList.contains('disabled')) return;
+            const key = item.dataset.key;
+            const idx = this.settings.contextMenuCustomItems.indexOf(key);
+            if (idx >= 0) {
+                // 取消选择
+                this.settings.contextMenuCustomItems.splice(idx, 1);
+            } else {
+                // 选择（最多3个）
+                if (this.settings.contextMenuCustomItems.length >= 3) return;
+                this.settings.contextMenuCustomItems.push(key);
+            }
+            this.syncCustomizePanelUI();
+            this.saveSettings();
+        });
+
+        // 点击外部关闭面板
+        document.addEventListener('click', (e) => {
+            if (!btn.contains(e.target) && !panel.contains(e.target)) {
+                panel.classList.add('select-hide');
+            }
+        });
+    }
+
+    // 同步自定义面板UI
+    syncCustomizePanelUI() {
+        const panel = document.getElementById('context-menu-customize-panel');
+        const btn = document.getElementById('context-menu-customize-btn');
+        if (!panel) return;
+
+        const items = panel.querySelectorAll('.customize-item');
+        const selected = this.settings.contextMenuCustomItems;
+        const atMax = selected.length >= 3;
+
+        items.forEach(item => {
+            const key = item.dataset.key;
+            const isSelected = selected.includes(key);
+            item.classList.toggle('selected', isSelected);
+            item.classList.toggle('disabled', !isSelected && atMax);
+            const icon = item.querySelector('.checkbox-icon');
+            if (icon) {
+                icon.textContent = isSelected ? 'check_box' : 'check_box_outline_blank';
+            }
+        });
+
+        // 更新计数
+        const countEl = document.getElementById('customize-selected-count');
+        if (countEl) {
+            countEl.textContent = `${selected.length}/5 已选择`;
         }
 
-        // 更新壁纸常显示开关图标
-        const wallpaperItem = document.querySelector('[data-action="wallpaper-toggle"] .md3-icon');
-        if (wallpaperItem) {
-            wallpaperItem.textContent = this.settings.persistentWallpaper ? 'check_box' : 'check_box_outline_blank';
+        // 极简模式下禁用
+        const isMinimal = this.settings.contextMenuStyle === 'minimal';
+        if (btn) btn.disabled = isMinimal;
+        if (isMinimal) {
+            panel.classList.add('select-hide');
         }
+    }
+
+    // 应用右键菜单项自定义（在显示菜单时调用）
+    applyContextMenuCustomItems() {
+        const toggleActions = [
+            'search-history-toggle',
+            'wallpaper-toggle',
+            'enhanced-display-toggle',
+            'hide-notifications-toggle',
+            'hide-info-popup-toggle'
+        ];
+        const selected = this.settings.contextMenuCustomItems;
+        const isMinimal = this.settings.contextMenuStyle === 'minimal';
+
+        toggleActions.forEach(action => {
+            const el = document.querySelector(`.context-menu-item[data-action="${action}"]`);
+            if (el) {
+                if (isMinimal || !selected.includes(action)) {
+                    el.style.display = 'none';
+                } else {
+                    el.style.display = '';
+                }
+            }
+        });
+
+        // 同步更新面板UI
+        this.syncCustomizePanelUI();
     }
 
     // 初始化高级视觉效果
@@ -505,11 +612,16 @@ class OOOInterface {
         if (savedSettings.badgeOpenMethod !== undefined) result.badgeOpenMethod = savedSettings.badgeOpenMethod;
         if (savedSettings.bingRefreshEveryTime !== undefined) result.bingRefreshEveryTime = savedSettings.bingRefreshEveryTime;
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
-        if (savedSettings.newQuickLinkStyle !== undefined) result.newQuickLinkStyle = savedSettings.newQuickLinkStyle;
+        if (savedSettings.quickAccessSidebar !== undefined) result.quickAccessSidebar = savedSettings.quickAccessSidebar;
         if (savedSettings.showQuickLinkIcons !== undefined) result.showQuickLinkIcons = savedSettings.showQuickLinkIcons;
         if (savedSettings.statusBarEnabled !== undefined) result.statusBarEnabled = savedSettings.statusBarEnabled;
         if (savedSettings.showStatusBarSeconds !== undefined) result.showStatusBarSeconds = savedSettings.showStatusBarSeconds;
         if (savedSettings.hideNotifications !== undefined) result.hideNotifications = savedSettings.hideNotifications;
+        if (savedSettings.contextMenuCustomItems && Array.isArray(savedSettings.contextMenuCustomItems)) {
+            result.contextMenuCustomItems = savedSettings.contextMenuCustomItems.filter(
+                item => ['enhanced-display-toggle', 'wallpaper-toggle', 'search-history-toggle', 'hide-notifications-toggle', 'hide-info-popup-toggle'].includes(item)
+            );
+        }
 
         // 合并自定义Logo列表
         if (savedSettings.customLogos && Array.isArray(savedSettings.customLogos)) {
@@ -1207,8 +1319,13 @@ class OOOInterface {
         // 设置弹窗事件
         document.getElementById('close-modal').addEventListener('click', () => this.closeSettings());
         document.getElementById('back-right-panel').addEventListener('click', () => {
-            this.confirmRightPanelChanges();
-            this.closeSettingsMenuInRightPanel();
+            const rpu = document.getElementById('right-panel-upper');
+            if (rpu && rpu.dataset.subView === 'customize-items') {
+                this.backToContextMenuStyleView(rpu);
+            } else {
+                this.confirmRightPanelChanges();
+                this.closeSettingsMenuInRightPanel();
+            }
         });
 
         // ESC键关闭设置窗口
@@ -1217,8 +1334,13 @@ class OOOInterface {
                 const modal = document.getElementById('settings-modal');
                 if (modal && modal.classList.contains('show')) {
                     if (modal.classList.contains('right-panel-open')) {
-                        this.confirmRightPanelChanges();
-                        this.closeSettingsMenuInRightPanel();
+                        const rpu = document.getElementById('right-panel-upper');
+                        if (rpu && rpu.dataset.subView === 'customize-items') {
+                            this.backToContextMenuStyleView(rpu);
+                        } else {
+                            this.confirmRightPanelChanges();
+                            this.closeSettingsMenuInRightPanel();
+                        }
                     } else {
                         this.closeSettings();
                     }
@@ -1288,8 +1410,8 @@ class OOOInterface {
             }
         });
 
-        // 新一代快速链接开关改变时，显示/隐藏子开关并同步状态
-        document.getElementById('new-quick-link-style').addEventListener('change', (e) => {
+        // 快速访问侧边栏开关改变时，显示/隐藏子开关并同步状态
+        document.getElementById('quick-access-sidebar-toggle').addEventListener('change', (e) => {
             const iconsGroup = document.getElementById('show-quick-icons-group');
             const iconsToggle = document.getElementById('show-quick-icons');
             if (iconsGroup && iconsToggle) {
@@ -1348,10 +1470,10 @@ class OOOInterface {
             this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
             this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
-            // 读取新一代快速链接开关
-            const newQuickLinkToggle = document.getElementById('new-quick-link-style');
+            // 读取快速访问侧边栏开关
+            const newQuickLinkToggle = document.getElementById('quick-access-sidebar-toggle');
             if (newQuickLinkToggle) {
-                this.settings.newQuickLinkStyle = newQuickLinkToggle.checked;
+                this.settings.quickAccessSidebar = newQuickLinkToggle.checked;
             }
 
             // 读取显示图标开关
@@ -1840,6 +1962,12 @@ class OOOInterface {
     showContextMenu(e) {
         if (!this.contextMenu) return;
 
+        // 应用右键菜单样式（compact/minimal 类）
+        this.applyContextMenuStyle();
+
+        // 根据自定义设置显示/隐藏菜单项
+        this.applyContextMenuCustomItems();
+
         // 先设置位置，再显示菜单
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
@@ -1944,6 +2072,15 @@ class OOOInterface {
             case 'wallpaper-toggle':
                 this.toggleWallpaperSetting();
                 break;
+            case 'enhanced-display-toggle':
+                this.toggleEnhancedDisplaySetting();
+                break;
+            case 'hide-notifications-toggle':
+                this.toggleHideNotificationsSetting();
+                break;
+            case 'hide-info-popup-toggle':
+                this.toggleHideInfoPopupSetting();
+                break;
             case 'about':
                 window.location.href = 'about/about.html';
                 break;
@@ -2003,6 +2140,35 @@ class OOOInterface {
         this.saveSettings();
         this.updateContextMenuIcons();
         this.showNotification(this.settings.persistentWallpaper ? '壁纸常显示：开启' : '壁纸常显示：关闭');
+    }
+
+    // 切换高级视觉效果设置
+    toggleEnhancedDisplaySetting() {
+        this.settings.enhancedDisplay = !this.settings.enhancedDisplay;
+        this.applySettings();
+        this.saveSettings();
+        this.updateContextMenuIcons();
+        this.showNotification(this.settings.enhancedDisplay ? '高级视觉效果：开启' : '高级视觉效果：关闭');
+    }
+
+    // 切换隐藏弹窗设置
+    toggleHideNotificationsSetting() {
+        this.settings.hideNotifications = !this.settings.hideNotifications;
+        this.saveSettings();
+        this.updateContextMenuIcons();
+        this.showNotification(this.settings.hideNotifications ? '隐藏弹窗：开启' : '隐藏弹窗：关闭');
+    }
+
+    // 切换禁止提示设置
+    toggleHideInfoPopupSetting() {
+        if (this.settings.hideInfoPopup.enabled) {
+            this.settings.hideInfoPopup = { enabled: false, type: null, timestamp: null };
+        } else {
+            this.settings.hideInfoPopup = { enabled: true, type: 'permanent', timestamp: Date.now() };
+        }
+        this.saveSettings();
+        this.updateContextMenuIcons();
+        this.showNotification(this.settings.hideInfoPopup.enabled ? '禁止提示：开启' : '禁止提示：关闭');
     }
 
     // 处理Logo选择变化
@@ -2929,8 +3095,8 @@ class OOOInterface {
 
         if (this.settings.quickLinks.length === 0) {
             quickAccessContainer.style.display = 'none';
-        } else if (this.settings.newQuickLinkStyle) {
-            // 新一代快速链接：隐藏原始底部链接，显示侧边栏
+        } else if (this.settings.quickAccessSidebar) {
+            // 快速访问侧边栏：隐藏原始底部链接，显示侧边栏
             quickAccessContainer.style.display = 'none';
         } else {
             quickAccessContainer.style.display = 'flex';
@@ -3127,12 +3293,12 @@ class OOOInterface {
         }
     }
 
-    // 根据 newQuickLinkStyle 设置更新侧边栏可见性
+    // 根据 quickAccessSidebar 设置更新侧边栏可见性
     updateSidebarVisibility() {
         const sidebar = document.getElementById('quick-access-sidebar');
         if (!sidebar) return;
 
-        if (this.settings.newQuickLinkStyle) {
+        if (this.settings.quickAccessSidebar) {
             sidebar.classList.add('active');
         } else {
             sidebar.classList.remove('active');
@@ -3180,7 +3346,7 @@ class OOOInterface {
         };
 
         const showSidebar = () => {
-            if (!this.settings.newQuickLinkStyle) return;
+            if (!this.settings.quickAccessSidebar) return;
             if (hideTimeout) {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
@@ -3212,7 +3378,7 @@ class OOOInterface {
 
         // 全局鼠标移动检测：在右侧边缘触发区域显示容器
         document.addEventListener('mousemove', (e) => {
-            if (!this.settings.newQuickLinkStyle) return;
+            if (!this.settings.quickAccessSidebar) return;
             const viewportWidth = window.innerWidth;
             const mouseX = e.clientX;
 
@@ -3235,7 +3401,7 @@ class OOOInterface {
 
         // 容器悬停维持显示
         container.addEventListener('mouseenter', () => {
-            if (!this.settings.newQuickLinkStyle) return;
+            if (!this.settings.quickAccessSidebar) return;
             if (hideTimeout) {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
@@ -4187,6 +4353,25 @@ class OOOInterface {
             contextFeedbackItem.style.display = this.settings.developerMode ? '' : 'none';
         }
 
+        // 更新快速访问侧边栏开关（始终运行，不依赖开发者模式）
+        const sidebarToggle = document.getElementById('quick-access-sidebar-toggle');
+        if (sidebarToggle) {
+            sidebarToggle.checked = this.settings.quickAccessSidebar;
+        }
+
+        // 根据快速访问侧边栏开关状态显示/隐藏子开关
+        const iconsGroup = document.getElementById('show-quick-icons-group');
+        const showIconsToggle = document.getElementById('show-quick-icons');
+        if (iconsGroup && showIconsToggle) {
+            if (this.settings.quickAccessSidebar) {
+                iconsGroup.style.display = 'block';
+                showIconsToggle.checked = this.settings.showQuickLinkIcons;
+            } else {
+                iconsGroup.style.display = 'none';
+                showIconsToggle.checked = false;
+            }
+        }
+
         if (this.settings.developerMode) {
             document.getElementById('font-size-slider').value = this.settings.fontSize;
             document.getElementById('font-size-value').value = this.settings.fontSize.toFixed(1);
@@ -4194,25 +4379,6 @@ class OOOInterface {
             document.getElementById('font-weight-value').value = this.settings.fontWeight;
             document.getElementById('search-box-height').value = this.settings.searchBoxHeight;
             document.getElementById('search-box-height-value').value = this.settings.searchBoxHeight;
-
-            // 更新新一代快速链接开关
-            const newQuickLinkToggle = document.getElementById('new-quick-link-style');
-            if (newQuickLinkToggle) {
-                newQuickLinkToggle.checked = this.settings.newQuickLinkStyle;
-            }
-
-            // 根据新一代快速链接开关状态显示/隐藏子开关
-            const iconsGroup = document.getElementById('show-quick-icons-group');
-            const showIconsToggle = document.getElementById('show-quick-icons');
-            if (iconsGroup && showIconsToggle) {
-                if (this.settings.newQuickLinkStyle) {
-                    iconsGroup.style.display = 'block';
-                    showIconsToggle.checked = this.settings.showQuickLinkIcons;
-                } else {
-                    iconsGroup.style.display = 'none';
-                    showIconsToggle.checked = false;
-                }
-            }
 
             const statusBarToggle = document.getElementById('status-bar-toggle');
             const showSecondsGroup = document.getElementById('show-seconds-group');
@@ -4230,16 +4396,17 @@ class OOOInterface {
                 }
             }
 
-            // 同步隐藏弹窗开关
-            const hideNotifToggle = document.getElementById('hide-notifications-toggle');
-            if (hideNotifToggle) {
-                hideNotifToggle.checked = this.settings.hideNotifications;
-            }
         } else {
             const showSecondsGroup = document.getElementById('show-seconds-group');
             if (showSecondsGroup) {
                 showSecondsGroup.style.display = 'none';
             }
+        }
+
+        // 同步隐藏弹窗开关（始终运行，不依赖开发者模式）
+        const hideNotifToggle = document.getElementById('hide-notifications-toggle');
+        if (hideNotifToggle) {
+            hideNotifToggle.checked = this.settings.hideNotifications;
         }
 
         const proxySelect = document.getElementById('proxy-select');
@@ -4418,6 +4585,9 @@ class OOOInterface {
 
         // 根据Logo选择更新右键菜单配色
         this.updateContextMenuColors();
+
+        // 同步自定义面板状态（极简模式禁用）
+        this.syncCustomizePanelUI();
     }
 
     // 更新右键菜单配色
@@ -4845,9 +5015,12 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         menuType = 'wallpaper';
     } else if (selected.id === 'proxy-select-selected' || selected.parentElement.querySelector('#proxy-select')) {
         menuType = 'proxy';
+    } else if (selected.id === 'context-menu-style-selected' || selected.parentElement.querySelector('#context-menu-style')) {
+        menuType = 'context-menu';
     }
 
     rightPanelUpper.innerHTML = '';
+    delete rightPanelUpper.dataset.subView;
     rightPanelUpper.dataset.menuType = menuType;
 
     const container = document.createElement('div');
@@ -5754,6 +5927,44 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     self.closeSettingsMenuInRightPanel();
                 });
             }
+        } else if (menuType === 'context-menu') {
+            // 右键菜单样式选项
+            option.textContent = originalItem.textContent;
+
+            const currentValue = originalItem.getAttribute('data-value');
+            if (hiddenSelect.value === currentValue) {
+                option.classList.add('selected');
+            }
+
+            option.addEventListener('click', () => {
+                const value = option.getAttribute('data-value');
+                const text = option.textContent;
+                selected.textContent = text;
+                hiddenSelect.value = value;
+
+                // 更新选中态
+                optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                option.classList.add('selected');
+
+                self.settings.contextMenuStyle = value;
+
+                // 实时切换设置图标显隐（需 important 覆盖 CSS）
+                const btn = rightPanelUpper.querySelector('.upload-btn.settings-plus-btn');
+                if (btn) {
+                    if (value === 'minimal') {
+                        btn.style.setProperty('display', 'none', 'important');
+                    } else {
+                        btn.style.removeProperty('display');
+                    }
+                }
+
+                // 立即应用到右键菜单（添加/移除 compact/minimal 类）
+                self.applyContextMenuStyle();
+
+                self.closeSettingsMenuInRightPanel();
+            });
         } else {
             // 其他菜单的通用处理
             option.textContent = originalItem.textContent;
@@ -5840,7 +6051,134 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         }
     }
 
+    if (menuType === 'context-menu') {
+        const customizeBtn = document.createElement('button');
+        customizeBtn.className = 'upload-btn settings-plus-btn';
+        customizeBtn.innerHTML = '<span class="material-icons md3-icon" style="font-size:18px;display:flex;">settings</span>';
+        customizeBtn.title = '自定义菜单项';
+        if (self.settings.contextMenuStyle === 'minimal') {
+            customizeBtn.style.setProperty('display', 'none', 'important');
+        }
+
+        customizeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            self.renderContextMenuCustomizeView(rightPanelUpper);
+        });
+
+        buttonContainer.appendChild(customizeBtn);
+    }
+
     container.appendChild(buttonContainer);
+    rightPanelUpper.appendChild(container);
+};
+
+OOOInterface.prototype.backToContextMenuStyleView = function (rightPanelUpper) {
+    const self = this;
+    const container = rightPanelUpper.querySelector('.settings-menu-container');
+    if (container) {
+        container.classList.remove('slide-in-right');
+        container.classList.add('slide-out-right');
+        setTimeout(() => {
+            self._doBackToContextMenuStyleView(rightPanelUpper);
+        }, 180);
+    } else {
+        self._doBackToContextMenuStyleView(rightPanelUpper);
+    }
+};
+
+OOOInterface.prototype._doBackToContextMenuStyleView = function (rightPanelUpper) {
+    delete rightPanelUpper.dataset.customizeEntered;
+    const items = document.getElementById('context-menu-style-items');
+    if (!items) return;
+    const selected = document.getElementById('context-menu-style-selected');
+    const hiddenSelect = document.getElementById('context-menu-style');
+    if (!selected || !hiddenSelect) return;
+    this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
+};
+
+OOOInterface.prototype.renderContextMenuCustomizeView = function (rightPanelUpper) {
+    const self = this;
+
+    rightPanelUpper.innerHTML = '';
+    rightPanelUpper.dataset.subView = 'customize-items';
+
+    const isFirstEnter = !rightPanelUpper.dataset.customizeEntered;
+    if (isFirstEnter) {
+        rightPanelUpper.dataset.customizeEntered = 'true';
+    }
+
+    const container = document.createElement('div');
+    container.className = 'settings-menu-container' + (isFirstEnter ? ' slide-in-right' : '');
+
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:14px;font-weight:600;color:var(--text-color);margin-bottom:12px;';
+    title.textContent = '自定义菜单项 (' + self.settings.contextMenuCustomItems.length + '/3)';
+    container.appendChild(title);
+
+    const itemsList = document.createElement('div');
+    itemsList.className = 'settings-menu-options';
+
+    const allItems = [
+        { key: 'search-history-toggle', label: '搜索历史' },
+        { key: 'wallpaper-toggle', label: '壁纸常显示' },
+        { key: 'enhanced-display-toggle', label: '高级视觉效果' },
+        { key: 'hide-notifications-toggle', label: '隐藏弹窗' },
+        { key: 'hide-info-popup-toggle', label: '禁止提示' }
+    ];
+
+    allItems.forEach(item => {
+        const isSelected = self.settings.contextMenuCustomItems.includes(item.key);
+        const atMax = self.settings.contextMenuCustomItems.length >= 3;
+
+        const icon = document.createElement('span');
+        icon.className = 'material-icons md3-icon';
+        icon.textContent = isSelected ? 'check_box' : 'check_box_outline_blank';
+        icon.style.cssText = 'font-size:20px;color:var(--text-secondary);transition:all 0.2s ease;';
+
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        label.style.cssText = 'font-size:13px;color:var(--text-color);flex:1;';
+
+        const option = document.createElement('div');
+        option.className = 'settings-menu-option';
+        option.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-radius:8px;transition:background 0.15s;user-select:none;';
+        option.addEventListener('mouseenter', () => {
+            option.style.background = 'rgba(128,128,128,0.08)';
+            icon.style.transform = 'scale(1.1)';
+        });
+        option.addEventListener('mouseleave', () => {
+            option.style.background = 'transparent';
+            icon.style.transform = 'scale(1)';
+        });
+
+        option.appendChild(icon);
+        option.appendChild(label);
+
+        if (!isSelected && atMax) {
+            option.style.opacity = '0.4';
+            option.style.cursor = 'not-allowed';
+        } else {
+            option.addEventListener('click', () => {
+                const idx = self.settings.contextMenuCustomItems.indexOf(item.key);
+                if (idx >= 0) {
+                    self.settings.contextMenuCustomItems.splice(idx, 1);
+                } else {
+                    if (self.settings.contextMenuCustomItems.length >= 3) {
+                        self.showNotification('最多只能选择3个菜单项');
+                        return;
+                    }
+                    self.settings.contextMenuCustomItems.push(item.key);
+                }
+                self.saveSettings();
+                self.renderContextMenuCustomizeView(rightPanelUpper);
+            });
+        }
+
+        itemsList.appendChild(option);
+    });
+
+    container.appendChild(itemsList);
     rightPanelUpper.appendChild(container);
 };
 
@@ -5850,6 +6188,7 @@ OOOInterface.prototype.closeSettingsMenuInRightPanel = function () {
 
     rightPanelUpper.innerHTML = '';
     delete rightPanelUpper.dataset.menuType;
+    delete rightPanelUpper.dataset.subView;
     this.showDefaultRightPanelContent(rightPanelUpper);
     document.getElementById('settings-modal').classList.remove('right-panel-open');
 

@@ -1517,6 +1517,38 @@ body.scrolled.dynamic-blur .ooo-badge {
     position: relative;
 }
 
+/* 右键菜单自定义项面板滑入动画 */
+.settings-menu-container.slide-in-right {
+    animation: slideInFromRight 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(24px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* 右键菜单自定义项面板滑出动画 */
+.settings-menu-container.slide-out-right {
+    animation: slideOutToRight 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideOutToRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(24px);
+        opacity: 0;
+    }
+}
+
 
 
 .settings-menu-options {
@@ -2192,8 +2224,9 @@ body.dynamic-blur .bookmark-folder-submenu {
     cursor: pointer;
     opacity: 0.7;
     transition: opacity 0.2s ease;
-    margin-left: 8px;
 }
+
+/* ========== 右键菜单项自定义面板（已移至右面板） ========== */
 
 .bing-wallpaper-item .info-icon:hover {
     opacity: 1;
@@ -3718,7 +3751,29 @@ body.scrolled.dynamic-blur .quick-access-btn {
     animation-delay: 0.25s;
 }
 
+.context-menu-item:nth-child(6) {
+    animation-delay: 0.3s;
+}
 
+.context-menu-item:nth-child(7) {
+    animation-delay: 0.35s;
+}
+
+.context-menu-item:nth-child(8) {
+    animation-delay: 0.4s;
+}
+
+.context-menu-item:nth-child(9) {
+    animation-delay: 0.45s;
+}
+
+.context-menu-item:nth-child(10) {
+    animation-delay: 0.5s;
+}
+
+.context-menu-item:nth-child(11) {
+    animation-delay: 0.55s;
+}
 
 /* 右键菜单分隔线隐藏 */
 
@@ -3915,6 +3970,18 @@ body.scrolled.dynamic-blur .quick-access-btn {
     animation-delay: 0.16s;
 }
 
+.context-menu.show .context-menu-item:nth-child(9) {
+    animation-delay: 0.18s;
+}
+
+.context-menu.show .context-menu-item:nth-child(10) {
+    animation-delay: 0.20s;
+}
+
+.context-menu.show .context-menu-item:nth-child(11) {
+    animation-delay: 0.22s;
+}
+
 
 
 .context-menu-grid {
@@ -3988,7 +4055,10 @@ body.scrolled.dynamic-blur .quick-access-btn {
 }
 
 .context-menu-grid.minimal .context-menu-item[data-action="search-history-toggle"],
-.context-menu-grid.minimal .context-menu-item[data-action="wallpaper-toggle"] {
+.context-menu-grid.minimal .context-menu-item[data-action="wallpaper-toggle"],
+.context-menu-grid.minimal .context-menu-item[data-action="enhanced-display-toggle"],
+.context-menu-grid.minimal .context-menu-item[data-action="hide-notifications-toggle"],
+.context-menu-grid.minimal .context-menu-item[data-action="hide-info-popup-toggle"] {
     display: none;
 }
 
