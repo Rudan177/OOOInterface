@@ -2831,11 +2831,26 @@ body.dynamic-blur .bookmark-folder-submenu {
     gap: 12px;
 }
 
+.quick-links-input-wrapper.slide-in-right {
+    animation: slideInFromRight 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-links-input-wrapper.slide-out-right {
+    animation: slideOutToRight 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
 
 
 .quick-links-input-wrapper .setting-input {
     width: 100%;
     padding: 12px 14px;
+}
+
+.quick-links-add-buttons {
+    animation: slideInFromRight 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-links-add-buttons.slide-out-right {
+    animation: slideOutToRight 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 
@@ -4267,7 +4282,7 @@ body.scrolled.dynamic-blur .quick-access-btn {
     top: var(--status-bar-offset);
     right: 0;
     height: calc(100vh - var(--status-bar-offset));
-    z-index: 500;
+    z-index: 1001;
     pointer-events: none;
     display: none;
     align-items: flex-start;
@@ -4546,6 +4561,22 @@ body.scrolled .quick-access-sidebar-container {
 body.scrolled .quick-access-sidebar-container.visible {
     transform: translateX(0);
     opacity: 1;
+}
+
+/* 窄屏（<750px）侧边栏推出不推动其他元素 */
+@media (max-width: 749px) {
+    body.sidebar-visible .container {
+        transform: none;
+    }
+
+    body.sidebar-visible .search-section,
+    body.sidebar-visible #quick-access-links {
+        max-width: none;
+    }
+
+    body.scrolled.sidebar-visible .search-section {
+        max-width: none;
+    }
 }
 
 

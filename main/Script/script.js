@@ -1215,10 +1215,12 @@ class OOOInterface {
             statusBar.classList.remove('visible');
             statusBar.textContent = '';
             this.stopStatusBarTimer();
+            document.documentElement.style.setProperty('--status-bar-offset', '10px');
             return;
         }
 
         statusBar.classList.add('visible');
+        document.documentElement.style.setProperty('--status-bar-offset', '44px');
         this.startStatusBarTimer();
         this.updateStatusBarTextContrast();
     }
@@ -1322,9 +1324,24 @@ class OOOInterface {
             const rpu = document.getElementById('right-panel-upper');
             if (rpu && rpu.dataset.subView === 'customize-items') {
                 this.backToContextMenuStyleView(rpu);
+            } else if (rpu && rpu.dataset.subView === 'quick-link-add') {
+                const container = rpu.querySelector('.settings-menu-container');
+                if (container && container._qlinput) {
+                    this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
+                }
             } else {
-                this.confirmRightPanelChanges();
-                this.closeSettingsMenuInRightPanel();
+                const container = rpu?.querySelector('.settings-menu-container');
+                if (container) {
+                    container.classList.remove('slide-in-right');
+                    container.classList.add('slide-out-right');
+                    setTimeout(() => {
+                        this.confirmRightPanelChanges();
+                        this.closeSettingsMenuInRightPanel();
+                    }, 180);
+                } else {
+                    this.confirmRightPanelChanges();
+                    this.closeSettingsMenuInRightPanel();
+                }
             }
         });
 
@@ -1337,9 +1354,24 @@ class OOOInterface {
                         const rpu = document.getElementById('right-panel-upper');
                         if (rpu && rpu.dataset.subView === 'customize-items') {
                             this.backToContextMenuStyleView(rpu);
+                        } else if (rpu && rpu.dataset.subView === 'quick-link-add') {
+                            const container = rpu.querySelector('.settings-menu-container');
+                            if (container && container._qlinput) {
+                                this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
+                            }
                         } else {
-                            this.confirmRightPanelChanges();
-                            this.closeSettingsMenuInRightPanel();
+                            const container = rpu?.querySelector('.settings-menu-container');
+                            if (container) {
+                                container.classList.remove('slide-in-right');
+                                container.classList.add('slide-out-right');
+                                setTimeout(() => {
+                                    this.confirmRightPanelChanges();
+                                    this.closeSettingsMenuInRightPanel();
+                                }, 180);
+                            } else {
+                                this.confirmRightPanelChanges();
+                                this.closeSettingsMenuInRightPanel();
+                            }
                         }
                     } else {
                         this.closeSettings();
@@ -3337,7 +3369,7 @@ class OOOInterface {
         const HIDE_DELAY = 0;
 
         const pushWallpaper = (pushIn) => {
-            this._sidebarPushing = pushIn;
+            this._sidebarPushing = pushIn && window.innerWidth >= 750;
             if (this.wallpaperMain && this.settings.wallpaperScale &&
                 (this.settings.persistentWallpaper || this.isScrolled)) {
                 this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
@@ -4157,6 +4189,8 @@ class OOOInterface {
         document.getElementById('wallpaper-scale-toggle').checked = this.settings.wallpaperScale;
         document.getElementById('search-history-toggle').checked = this.settings.searchHistory;
         document.getElementById('hide-info-popup-toggle').checked = this.settings.hideInfoPopup.enabled;
+        document.getElementById('quick-access-sidebar-toggle').checked = this.settings.quickAccessSidebar;
+        document.getElementById('hide-notifications-toggle').checked = this.settings.hideNotifications;
         this.updateHideInfoPopupLabel();
 
         // 根据动态模糊的状态显示/隐藏增强显示开关
@@ -4169,6 +4203,14 @@ class OOOInterface {
         const wallpaperScaleGroup = document.getElementById('wallpaper-scale-group');
         if (wallpaperScaleGroup) {
             wallpaperScaleGroup.style.display = this.settings.persistentWallpaper ? 'block' : 'none';
+        }
+
+        // 根据快速访问侧边栏开关状态显示/隐藏子开关
+        const iconsGroup = document.getElementById('show-quick-icons-group');
+        const showIconsToggle = document.getElementById('show-quick-icons');
+        if (iconsGroup && showIconsToggle) {
+            iconsGroup.style.display = this.settings.quickAccessSidebar ? 'block' : 'none';
+            showIconsToggle.checked = this.settings.quickAccessSidebar ? this.settings.showQuickLinkIcons : false;
         }
 
         // 更新设置打开方式
@@ -4353,25 +4395,6 @@ class OOOInterface {
             contextFeedbackItem.style.display = this.settings.developerMode ? '' : 'none';
         }
 
-        // 更新快速访问侧边栏开关（始终运行，不依赖开发者模式）
-        const sidebarToggle = document.getElementById('quick-access-sidebar-toggle');
-        if (sidebarToggle) {
-            sidebarToggle.checked = this.settings.quickAccessSidebar;
-        }
-
-        // 根据快速访问侧边栏开关状态显示/隐藏子开关
-        const iconsGroup = document.getElementById('show-quick-icons-group');
-        const showIconsToggle = document.getElementById('show-quick-icons');
-        if (iconsGroup && showIconsToggle) {
-            if (this.settings.quickAccessSidebar) {
-                iconsGroup.style.display = 'block';
-                showIconsToggle.checked = this.settings.showQuickLinkIcons;
-            } else {
-                iconsGroup.style.display = 'none';
-                showIconsToggle.checked = false;
-            }
-        }
-
         if (this.settings.developerMode) {
             document.getElementById('font-size-slider').value = this.settings.fontSize;
             document.getElementById('font-size-value').value = this.settings.fontSize.toFixed(1);
@@ -4401,12 +4424,6 @@ class OOOInterface {
             if (showSecondsGroup) {
                 showSecondsGroup.style.display = 'none';
             }
-        }
-
-        // 同步隐藏弹窗开关（始终运行，不依赖开发者模式）
-        const hideNotifToggle = document.getElementById('hide-notifications-toggle');
-        if (hideNotifToggle) {
-            hideNotifToggle.checked = this.settings.hideNotifications;
         }
 
         const proxySelect = document.getElementById('proxy-select');
@@ -5000,7 +5017,7 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 // 右侧面板设置菜单方法
-OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected, hiddenSelect) {
+OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected, hiddenSelect, skipAnimation) {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
@@ -5024,7 +5041,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
     rightPanelUpper.dataset.menuType = menuType;
 
     const container = document.createElement('div');
-    container.className = 'settings-menu-container';
+    container.className = 'settings-menu-container' + (skipAnimation ? '' : ' slide-in-right');
 
     const optionsList = document.createElement('div');
     optionsList.className = 'settings-menu-options';
@@ -5268,7 +5285,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                                 self.deleteCustomLogo(logoIndex);
                                 // 重新获取更新后的items
                                 const updatedItems = document.getElementById('logo-select-items');
-                                self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect);
+                                self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect, true);
                             }
                         });
                     } else {
@@ -5366,7 +5383,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                             self.deleteCustomFont(fontIndex);
                             // 重新获取更新后的items
                             const updatedItems = document.getElementById('font-select-items');
-                            self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect);
+                            self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect, true);
                         }
                     });
                 } else {
@@ -5463,7 +5480,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                             self.deleteCustomWallpaper(wallpaperIndex);
                             // 重新获取更新后的items
                             const updatedItems = document.getElementById('wallpaper-select-items');
-                            self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect);
+                            self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect, true);
                         }
                     });
                 } else {
@@ -6094,7 +6111,7 @@ OOOInterface.prototype._doBackToContextMenuStyleView = function (rightPanelUpper
     const selected = document.getElementById('context-menu-style-selected');
     const hiddenSelect = document.getElementById('context-menu-style');
     if (!selected || !hiddenSelect) return;
-    this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
+    this.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
 };
 
 OOOInterface.prototype.renderContextMenuCustomizeView = function (rightPanelUpper) {
@@ -6300,7 +6317,7 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     rightPanelUpper.innerHTML = '';
 
     const container = document.createElement('div');
-    container.className = 'settings-menu-container';
+    container.className = 'settings-menu-container slide-in-right';
 
     const listContainer = document.createElement('div');
     listContainer.className = 'quick-links-list-container';
@@ -6384,14 +6401,7 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
     urlInput.placeholder = '网站地址';
 
     const buttonsWrapper = document.createElement('div');
-    buttonsWrapper.className = 'settings-menu-button-container';
-
-    const cancelButton = document.createElement('button');
-    cancelButton.className = 'settings-menu-confirm';
-    cancelButton.textContent = '取消';
-    cancelButton.style.backgroundColor = 'var(--surface-color)';
-    cancelButton.style.color = 'var(--text-color)';
-    cancelButton.style.border = '1px solid var(--border-color)';
+    buttonsWrapper.className = 'settings-menu-button-container quick-links-add-buttons';
 
     const confirmAddBtn = document.createElement('button');
     confirmAddBtn.className = 'settings-menu-confirm';
@@ -6425,11 +6435,6 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
 
     confirmAddBtn.addEventListener('click', handleAdd);
 
-    cancelButton.addEventListener('click', () => {
-        self.hideQuickLinksAddInterface(container, inputWrapper, listContainer, buttonContainer);
-    });
-
-    buttonsWrapper.appendChild(cancelButton);
     buttonsWrapper.appendChild(confirmAddBtn);
 
     inputWrapper.appendChild(nameInput);
@@ -6437,17 +6442,49 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
     container.appendChild(inputWrapper);
     container.appendChild(buttonsWrapper);
 
+    document.getElementById('right-panel-upper').dataset.subView = 'quick-link-add';
+
+    container._qlinput = inputWrapper;
+    container._qllist = listContainer;
+    container._qlbtn = buttonContainer;
+
+    requestAnimationFrame(() => {
+        inputWrapper.classList.add('slide-in-right');
+        buttonsWrapper.classList.add('slide-in-right');
+    });
+
     nameInput.focus();
 };
 
 OOOInterface.prototype.hideQuickLinksAddInterface = function (container, inputWrapper, listContainer, buttonContainer) {
-    const buttonsWrapper = container.querySelector('.settings-menu-button-container:last-of-type');
-    if (buttonsWrapper && buttonsWrapper !== buttonContainer) {
-        container.removeChild(buttonsWrapper);
+    const buttonsWrapper = container.querySelector('.quick-links-add-buttons');
+
+    delete container._qlinput;
+    delete container._qllist;
+    delete container._qlbtn;
+
+    const rpu = document.getElementById('right-panel-upper');
+    if (rpu && rpu.dataset.subView === 'quick-link-add') {
+        delete rpu.dataset.subView;
     }
-    container.removeChild(inputWrapper);
-    listContainer.style.display = 'flex';
-    buttonContainer.style.display = 'flex';
+
+    inputWrapper.classList.remove('slide-in-right');
+    inputWrapper.classList.add('slide-out-right');
+    if (buttonsWrapper) {
+        buttonsWrapper.classList.remove('slide-in-right');
+        buttonsWrapper.classList.add('slide-out-right');
+    }
+
+    setTimeout(() => {
+        if (buttonsWrapper && buttonsWrapper.parentNode) {
+            container.removeChild(buttonsWrapper);
+        }
+        if (inputWrapper.parentNode) {
+            container.removeChild(inputWrapper);
+        }
+        listContainer.style.display = 'flex';
+        buttonContainer.style.display = 'flex';
+    }, 180);
 };
 
 OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
