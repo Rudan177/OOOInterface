@@ -216,7 +216,7 @@ body.dark-theme {
 }
 
 .hero-logo {
-    width: 128px;
+    width: auto;
     height: 128px;
     margin-bottom: 20px;
     transition: transform 0.3s ease;
@@ -316,8 +316,9 @@ h3 {
     background-color: var(--bg-ver-num);
     border-radius: 9px;
     text-decoration: none;
-    padding: 3px 12px;
+    padding: 4px 12px;
     margin-left: 6px;
+    margin-top: -4px;
     letter-spacing: 1px;
 }
 
