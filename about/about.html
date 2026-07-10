@@ -146,6 +146,111 @@
             animation: kuangjia 0.6s cubic-bezier(0.22, 1, 0.36, 1) 1;
         }
 
+        .erkuang {
+            width: 100%;
+            height: auto;
+            min-height: 50px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            padding: 20px 0 25px 0;
+            border-radius: 12px;
+            background: rgba(0, 174, 144, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: kuangjia 0.6s cubic-bezier(0.22, 1, 0.36, 1) 1;
+            position: relative;
+        }
+
+        .erkuang .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .erkuang .close-btn:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .erkuang .close-btn svg {
+            width: 14px;
+            height: 14px;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .erkuang .close-btn:hover svg {
+            opacity: 1;
+        }
+
+        body.dark-theme .erkuang .close-btn,
+        body:not(.light-theme) .erkuang .close-btn {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        body.dark-theme .erkuang .close-btn:hover,
+        body:not(.light-theme) .erkuang .close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        body.dark-theme .erkuang .close-btn svg,
+        body:not(.light-theme) .erkuang .close-btn svg {
+            stroke: #ffffff;
+            opacity: 0.8;
+        }
+
+        .erkuang.hidden {
+            display: none;
+        }
+
+        .erkuang h3 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #000000;
+            margin: 0 0 10px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .erkuang p {
+            font-size: 18px;
+            font-weight: 400;
+            color: #333333;
+            margin: 0 0 15px 0;
+            line-height: 1.6;
+        }
+
+        .download-btn {
+            display: inline-block;
+            background: rgba(0, 174, 144, 0.3);
+            color: black;
+            font-family: serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 10px 35px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 0;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: rgba(0, 174, 144, 0.4);
+        }
+
         .ultra {
             display: block;
             text-align: center;
@@ -428,8 +533,24 @@
             .dakuang {
                 margin-top: 15px;
                 margin-bottom: 12px;
-                padding: 50px 0;
+                padding: 0 0 40px 0;
                 border-radius: 16px;
+                height: 90px;
+            }
+
+            .erkuang {
+                margin-top: -5px;
+                margin-bottom: 12px;
+                padding: 25px 0 25px 0;
+                border-radius: 16px;
+                height: auto;
+                min-height: 50px;
+            }
+
+            .download-btn {
+                font-size: 14px;
+                padding: 8px 30px;
+                border-radius: 8px;
             }
 
             .ultra {
@@ -965,6 +1086,10 @@
             color: #e0e0e0;
         }
 
+        body.dark-theme .download-btn {
+            color: #ffffff;
+        }
+
         body.dark-theme .verson {
             background: rgba(30, 30, 30, 0.6);
             border-color: rgba(255, 255, 255, 0.15);
@@ -1028,6 +1153,18 @@
         <div class="dakuang">
             <div class="ultra">历史版本</div>
             <div class="pro">OOOInterface所有版本的列表</div>
+        </div>
+        <div class="erkuang" id="erkuang">
+            <button class="close-btn" id="closeErkuang"
+                onclick="document.getElementById('erkuang').classList.add('hidden')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <h3>新版本发布</h3>
+            <p>全新 OOOInterface 27 现已发布！</p>
+            <a href="/Interface/27.html" class="download-btn">即将发布</a>
         </div>
 
         <div class="search-box">
