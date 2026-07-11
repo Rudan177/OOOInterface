@@ -15,6 +15,9 @@
 
 <body>
 
+    <div id="status-bar" class="status-bar" aria-live="polite"></div>
+    <div id="status-bar-blur" class="status-bar-blur"></div>
+
     <div class="container">
 
         <div class="logo-section">
@@ -31,7 +34,7 @@
                         </path>
                     </svg>
                 </div>
-                <input type="text" id="search-input" class="search-input" placeholder="">
+                <input type="text" id="search-input" class="search-input" placeholder="" autofocus>
                 <div class="search-clear-btn" style="display: none;">
                     <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <path
@@ -82,7 +85,14 @@
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>设置</h2>
+                <div class="modal-header-left">
+                    <button id="back-right-panel" class="close-btn back-btn">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                        </svg>
+                    </button>
+                    <h2>设置</h2>
+                </div>
                 <div class="modal-header-buttons">
                     <button id="about-btn" class="close-btn"><svg viewBox="0 0 24 24" width="20" height="20">
                             <path fill="currentColor"
@@ -95,6 +105,7 @@
 
             <!-- 左右分栏布局容器 -->
             <div class="settings-layout">
+                <div class="settings-content-area">
                 <!-- 左侧设置选项区域 -->
                 <div class="settings-left-panel">
                     <div class="modal-body">
@@ -277,6 +288,26 @@
 
                         <div class="setting-group">
                             <div class="switch-label">
+                                <span class="setting-label">快速访问侧边栏</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="quick-access-sidebar-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-group" id="show-quick-icons-group"
+                            style="padding-left: 20px;">
+                            <div class="switch-label">
+                                <span class="setting-label">显示图标</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="show-quick-icons">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <div class="switch-label">
                                 <span class="setting-label">搜索历史</span>
                                 <label class="switch">
                                     <input type="checkbox" id="search-history-toggle">
@@ -285,6 +316,15 @@
                             </div>
                         </div>
 
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">隐藏弹窗</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="hide-notifications-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
                         <div class="setting-group">
                             <div class="switch-label">
                                 <span class="setting-label">禁止提示</span>
@@ -298,11 +338,22 @@
                         <div class="setting-group" id="developer-mode-group" style="display: none;">
                             <label style="font-size:1.2em; margin-top: 28px;">开发者模式:</label>
                             <div class="developer-mode-controls">
-                                <div class="setting-group">
+
+                                <div class="setting-group" style="margin-bottom: 0;">
                                     <div class="switch-label">
-                                        <span class="setting-label">新一代快速链接</span>
+                                        <span class="setting-label">状态栏</span>
                                         <label class="switch">
-                                            <input type="checkbox" id="new-quick-link-style">
+                                            <input type="checkbox" id="status-bar-toggle">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="setting-group" id="show-seconds-group"
+                                    style="padding-left: 20px; margin-bottom: 0;">
+                                    <div class="switch-label">
+                                        <span class="setting-label">显示秒钟</span>
+                                        <label class="switch">
+                                            <input type="checkbox" id="show-seconds-toggle">
                                             <span class="slider"></span>
                                         </label>
                                     </div>
@@ -375,6 +426,23 @@
                         </div>
                     </div>
                 </div>
+                </div>
+                <!-- 手机端专用按钮容器（JS动态移入） -->
+                <div id="mobile-buttons-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速访问链接侧边栏 -->
+    <div id="quick-access-sidebar" class="quick-access-sidebar">
+        <div class="quick-access-sidebar-trigger" id="quick-access-sidebar-trigger"></div>
+        <div class="quick-access-sidebar-container" id="quick-access-sidebar-container">
+            <div class="quick-access-sidebar-links" id="quick-access-sidebar-links"></div>
+            <div class="quick-access-sidebar-add" id="quick-access-sidebar-add">
+                <button class="quick-access-sidebar-add-btn" id="quick-access-sidebar-add-btn">
+                    <span class="quick-access-sidebar-add-icon">+</span>
+                    <span class="quick-access-sidebar-add-text">添加</span>
+                </button>
             </div>
         </div>
     </div>
@@ -400,11 +468,23 @@
             </div>
             <div class="context-menu-item" data-action="search-history-toggle">
                 <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
-                <span class="context-menu-text">搜索历史开关</span>
+                <span class="context-menu-text">搜索历史</span>
             </div>
             <div class="context-menu-item" data-action="wallpaper-toggle">
                 <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
-                <span class="context-menu-text">壁纸常显示开关</span>
+                <span class="context-menu-text">壁纸常显示</span>
+            </div>
+            <div class="context-menu-item" data-action="enhanced-display-toggle">
+                <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
+                <span class="context-menu-text">高级视觉效果</span>
+            </div>
+            <div class="context-menu-item" data-action="hide-notifications-toggle">
+                <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
+                <span class="context-menu-text">隐藏弹窗</span>
+            </div>
+            <div class="context-menu-item" data-action="hide-info-popup-toggle">
+                <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
+                <span class="context-menu-text">禁止提示</span>
             </div>
             <div class="context-menu-item" data-action="about">
                 <span class="material-icons md3-icon">info</span>

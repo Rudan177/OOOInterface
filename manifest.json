@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "OOOInterface",
   "version": "5.2",
-  "description": "RUDAN开发的浏览器首页插件。Release版本 5.2:26-RS140",
+  "description": "RUDAN开发的浏览器首页插件。Release版本 5.2:27-RS160",
   "chrome_url_overrides": {
     "newtab": "main/index.html"
   },
@@ -14,7 +14,9 @@
     "https://*.bing.net/*"
   ],
   "permissions": [
-    "storage"
+    "storage",
+    "bookmarks",
+    "tabs"
   ],
   "icons": {
     "16": "images/icon16.png",

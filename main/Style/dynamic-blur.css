@@ -201,32 +201,18 @@ body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within
 /* 滚动模式搜索框 */
 body.scrolled.dynamic-blur .search-container,
 body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
-    background: transparent !important;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+    border: 1px solid transparent;
     transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-body.scrolled.dynamic-blur .search-container::before,
-body.scrolled.dynamic-blur.homepage-wallpaper .search-container::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(80px) saturate(1.5);
-    -webkit-backdrop-filter: blur(80px) saturate(1.5);
-    border-radius: inherit;
-    z-index: -1;
-    pointer-events: none;
-}
-
 body.scrolled.dynamic-blur .search-container:hover,
-body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover {
-    background: transparent !important;
-}
-
-body.scrolled.dynamic-blur .search-container:hover::before,
-body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover::before {
-    background: rgba(255, 255, 255, 0.3);
+body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover,
+body.scrolled.dynamic-blur .search-container:focus-within,
+body.scrolled.dynamic-blur.homepage-wallpaper .search-container:focus-within {
+    background: rgba(255, 255, 255, 0.28) !important;
 }
 
 body.scrolled.dynamic-blur.enhanced-display .search-container:hover,
@@ -241,20 +227,15 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
 
     body.scrolled.dynamic-blur .search-container,
     body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
-        background: transparent !important;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    body.scrolled.dynamic-blur .search-container::before,
-    body.scrolled.dynamic-blur.homepage-wallpaper .search-container::before {
-        background: rgba(0, 0, 0, 0.25);
-        backdrop-filter: blur(80px) saturate(1.5);
-        -webkit-backdrop-filter: blur(80px) saturate(1.5);
+        background: rgba(0, 0, 0, 0.25) !important;
+        border: 1px solid transparent;
     }
 
     body.scrolled.dynamic-blur .search-container:hover,
-    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover {
-        background: rgba(0, 0, 0, 0.38) !important;
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover,
+    body.scrolled.dynamic-blur .search-container:focus-within,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:focus-within {
+        background: rgba(0, 0, 0, 0.35) !important;
     }
 }
 
@@ -262,12 +243,14 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
 
     body.scrolled.dynamic-blur .search-container,
     body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
-        background: rgba(240, 240, 240, 0.6) !important;
+        background: rgba(240, 240, 240, 0.55) !important;
     }
 
     body.scrolled.dynamic-blur .search-container:hover,
-    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover {
-        background: rgba(240, 240, 240, 0.7) !important;
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover,
+    body.scrolled.dynamic-blur .search-container:focus-within,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:focus-within {
+        background: rgba(240, 240, 240, 0.65) !important;
     }
 }
 
@@ -716,11 +699,27 @@ body.dynamic-blur .select-items {
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+body.dynamic-blur .select-item:hover {
+    background: rgba(0, 0, 0, 0.01);
+}
+
 body.dynamic-blur .slider-value-input {
     background: rgba(var(--surface-color-rgb), 0.5);
     backdrop-filter: blur(120px) saturate(1.6);
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .switch input:not(:checked) + .slider {
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.dynamic-blur .switch .slider:before {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 @media (prefers-color-scheme: light) {
@@ -753,6 +752,71 @@ body.dynamic-blur .slider-value-input {
         background: rgba(225, 228, 232, 0.7) !important;
         border: 1px solid rgba(0, 0, 0, 0.1) !important;
     }
+
+    body.dynamic-blur .switch input:not(:checked) + .slider {
+        background: rgba(0, 0, 0, 0.07) !important;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.dynamic-blur .switch .slider:before {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+    }
+}
+
+/* 高级视觉 - 设置菜单操作按钮 */
+body.dynamic-blur .settings-plus-btn {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .settings-plus-btn:hover {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    transform: scale(1.1);
+}
+
+body.dynamic-blur .settings-plus-btn:active {
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .settings-import-btn {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .settings-import-btn:hover {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    transform: scale(1.1);
+}
+
+body.dynamic-blur .settings-import-btn:active {
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper:hover {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    transform: scale(1.05);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper:active {
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-text {
+    color: var(--text-color) !important;
 }
 
 /* 右键菜单 */
@@ -815,6 +879,65 @@ body.dynamic-blur .context-menu.show .context-menu-item:hover .context-menu-icon
     body.dynamic-blur .context-menu.show .context-menu-item:hover .md3-icon,
     body.dynamic-blur .context-menu.show .context-menu-item:hover .context-menu-icon {
         color: var(--context-menu-text-color, #dcdcdc);
+    }
+}
+
+/* 侧边栏容器 - 高级进/退动画 */
+body.dynamic-blur .quick-access-sidebar-container {
+    transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1),
+        opacity 0.3s ease,
+        filter 0.3s ease;
+    transform-origin: right center;
+}
+
+body.dynamic-blur .quick-access-sidebar-container.visible {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+}
+
+body.dynamic-blur .quick-access-sidebar-container.hiding {
+    transform: translateX(calc(100% + 20px)) scale(0.9);
+    opacity: 0;
+    filter: blur(4px);
+}
+
+/* 侧边栏文字颜色（与右键菜单一致） */
+body.dynamic-blur .quick-access-sidebar-link {
+    color: #1a1a1a;
+}
+
+body.dynamic-blur .quick-access-sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.45);
+    color: #1a1a1a;
+}
+
+body.dynamic-blur .quick-access-sidebar-add-btn {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+body.dynamic-blur .quick-access-sidebar-add-btn:hover {
+    background: rgba(255, 255, 255, 0.45);
+    color: #1a1a1a;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur .quick-access-sidebar-link {
+        color: #c8c8c8;
+    }
+
+    body.dynamic-blur .quick-access-sidebar-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #dcdcdc;
+    }
+
+    body.dynamic-blur .quick-access-sidebar-add-btn {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    body.dynamic-blur .quick-access-sidebar-add-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #dcdcdc;
     }
 }
 
