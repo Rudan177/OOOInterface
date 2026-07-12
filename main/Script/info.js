@@ -156,25 +156,8 @@ class InfoManager {
         this.infoIndicator.className = 'info-indicator';
         if (isVisible) this.infoIndicator.classList.add('visible');
 
-        const logoColorMap = {
-            'default': 'default',
-            'Google': 'google',
-            'Microsoft': 'microsoft',
-            'Apple': 'apple',
-            'HUAWEI': 'huawei',
-            'text-logo': 'text-logo'
-        };
-
-        const blackWhiteLogos = ['Apple', 'HUAWEI', 'text-logo'];
-        const presetLogos = ['default', 'auto', 'Google', 'Microsoft', 'Bing', 'Baidu', 'DuckDuckGo', 'Sogou', '360', 'Yahoo', 'Yandex'];
-        const isCustomLogo = !blackWhiteLogos.includes(this.app.settings.logo) && !presetLogos.includes(this.app.settings.logo);
-        
-        let colorClass;
-        if (isCustomLogo) {
-            colorClass = 'text-logo';
-        } else {
-            colorClass = logoColorMap[this.app.settings.logo] || 'default';
-        }
+        const colorScheme = this.app.settings.colorScheme || 'green';
+        const colorClass = getColorConfig(colorScheme).infoClass;
         
         this.infoIndicator.classList.add(colorClass);
     }

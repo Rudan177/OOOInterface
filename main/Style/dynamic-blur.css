@@ -357,31 +357,9 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .engine-btn
     }
 }
 
-/* 选中的搜索引擎按钮 */
-body.dynamic-blur .engine-btn.active.logo-google,
-body.dynamic-blur .engine-btn.active.logo-microsoft,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-google,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-microsoft {
-    background: var(--primary-color) !important;
-    color: white !important;
-    border: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-body.dynamic-blur .engine-btn.active.logo-apple,
-body.dynamic-blur .engine-btn.active.logo-huawei,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-apple,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-huawei {
-    background: #000000 !important;
-    color: white !important;
-    border: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-body.dynamic-blur .engine-btn.active.logo-default,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-default {
+/* 选中的搜索引擎按钮 - 配色方案 */
+body.dynamic-blur.color-scheme-green .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active {
     background: #00AE90 !important;
     color: white !important;
     border: none !important;
@@ -389,11 +367,34 @@ body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-default {
     -webkit-backdrop-filter: none !important;
 }
 
-body.dynamic-blur .engine-btn.active.logo-custom,
-body.dynamic-blur .engine-btn.active.logo-text,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-custom,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-text {
-    background: #303134 !important;
+body.dynamic-blur.color-scheme-blue .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.dynamic-blur.color-scheme-black-white .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active {
+    background: #000000 !important;
+    color: white !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* 新星调配色方案 - 选中搜索引擎按钮 */
+body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active,
+body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active,
+body.dynamic-blur.color-scheme-classic-gold .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active,
+body.dynamic-blur.color-scheme-isolation .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active {
+    background-image: var(--scheme-gradient) !important;
     color: white !important;
     border: none !important;
     backdrop-filter: none !important;
@@ -402,20 +403,24 @@ body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-text {
 
 @media (prefers-color-scheme: dark) {
 
-    body.dynamic-blur .engine-btn.active.logo-google,
-    body.dynamic-blur .engine-btn.active.logo-microsoft,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-google,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-microsoft {
-        background: #0d47a1 !important;
+    body.dynamic-blur.color-scheme-green .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active {
+        background: #00AE90 !important;
         border: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
 
-    body.dynamic-blur .engine-btn.active.logo-apple,
-    body.dynamic-blur .engine-btn.active.logo-huawei,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-apple,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-huawei {
+    body.dynamic-blur.color-scheme-blue .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active {
+        background: var(--scheme-accent) !important;
+        border: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    body.dynamic-blur.color-scheme-black-white .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active {
         background: #ffffff !important;
         color: #303134 !important;
         border: none !important;
@@ -423,64 +428,138 @@ body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-text {
         -webkit-backdrop-filter: none !important;
     }
 
-    body.dynamic-blur .engine-btn.active.logo-custom,
-    body.dynamic-blur .engine-btn.active.logo-text,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-custom,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-text {
-        background: #ffffff !important;
-        color: #303134 !important;
+    /* 新星调配色方案 - 暗色模式 */
+    body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active,
+    body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active,
+    body.dynamic-blur.color-scheme-classic-gold .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active,
+    body.dynamic-blur.color-scheme-isolation .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active {
+        background-image: var(--scheme-gradient) !important;
         border: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
 }
 
-body.dynamic-blur .engine-btn.active.logo-google:hover,
-body.dynamic-blur .engine-btn.active.logo-microsoft:hover {
-    background: var(--primary-color) !important;
-    color: white !important;
+/* 新星调配色方案 - dynamic-blur 模式下保留渐变 */
+body.dynamic-blur.color-scheme-tianyi-blue .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .apply-btn,
+body.dynamic-blur.color-scheme-vibrant-red .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .apply-btn,
+body.dynamic-blur.color-scheme-classic-gold .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .apply-btn,
+body.dynamic-blur.color-scheme-isolation .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .apply-btn {
+    background-image: var(--scheme-gradient) !important;
+    backdrop-filter: blur(120px) saturate(1.6) !important;
+    -webkit-backdrop-filter: blur(120px) saturate(1.6) !important;
     border: none !important;
 }
 
-body.dynamic-blur .engine-btn.active.logo-apple:hover,
-body.dynamic-blur .engine-btn.active.logo-huawei:hover {
-    background: #000000 !important;
-    color: white !important;
+body.dynamic-blur.color-scheme-tianyi-blue .settings-plus-btn,
+body.dynamic-blur.color-scheme-vibrant-red .settings-plus-btn,
+body.dynamic-blur.color-scheme-classic-gold .settings-plus-btn,
+body.dynamic-blur.color-scheme-isolation .settings-plus-btn {
+    background-image: var(--scheme-gradient) !important;
     border: none !important;
+    color: white !important;
 }
 
-body.dynamic-blur .engine-btn.active.logo-default:hover {
+body.dynamic-blur.color-scheme-tianyi-blue .settings-import-btn,
+body.dynamic-blur.color-scheme-vibrant-red .settings-import-btn,
+body.dynamic-blur.color-scheme-classic-gold .settings-import-btn,
+body.dynamic-blur.color-scheme-isolation .settings-import-btn {
+    background-image: var(--scheme-gradient) !important;
+    border: none !important;
+    color: white !important;
+}
+
+body.dynamic-blur.color-scheme-tianyi-blue .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-vibrant-red .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-classic-gold .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-isolation .wallpaper-fill-toggle-wrapper {
+    background-image: var(--scheme-gradient) !important;
+    border: none !important;
+    color: white !important;
+}
+
+body.dynamic-blur.color-scheme-tianyi-blue .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-vibrant-red .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-classic-gold .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-isolation .context-menu.show .context-menu-item:hover {
+    background-image: var(--scheme-gradient) !important;
+    color: white !important;
+}
+
+body.dynamic-blur.color-scheme-green .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active:hover {
     background: #00AE90 !important;
     color: white !important;
     border: none !important;
 }
 
-body.dynamic-blur .engine-btn.active.logo-custom:hover,
-body.dynamic-blur .engine-btn.active.logo-text:hover {
-    background: #303134 !important;
+body.dynamic-blur.color-scheme-blue .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active:hover {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
+}
+
+body.dynamic-blur.color-scheme-black-white .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active:hover {
+    background: #000000 !important;
+    color: white !important;
+    border: none !important;
+}
+
+/* 新星调配色方案 - 选中搜索引擎按钮悬停 */
+body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-classic-gold .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-isolation .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active:hover {
+    background-image: var(--scheme-gradient) !important;
     color: white !important;
     border: none !important;
 }
 
 @media (prefers-color-scheme: dark) {
 
-    body.dynamic-blur .engine-btn.active.logo-google:hover,
-    body.dynamic-blur .engine-btn.active.logo-microsoft:hover {
-        background: #0d47a1 !important;
+    body.dynamic-blur.color-scheme-green .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active:hover {
+        background: #00AE90 !important;
         border: none !important;
     }
 
-    body.dynamic-blur .engine-btn.active.logo-apple:hover,
-    body.dynamic-blur .engine-btn.active.logo-huawei:hover {
+    body.dynamic-blur.color-scheme-blue .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active:hover {
+        background: var(--scheme-accent) !important;
+        border: none !important;
+    }
+
+    body.dynamic-blur.color-scheme-black-white .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active:hover {
         background: #ffffff !important;
         color: #303134 !important;
         border: none !important;
     }
 
-    body.dynamic-blur .engine-btn.active.logo-custom:hover,
-    body.dynamic-blur .engine-btn.active.logo-text:hover {
-        background: #ffffff !important;
-        color: #303134 !important;
+    /* 新星调配色方案 - 暗色模式悬停 */
+    body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-classic-gold .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-isolation .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active:hover {
+        background-image: var(--scheme-gradient) !important;
         border: none !important;
     }
 }
@@ -649,7 +728,7 @@ body.dynamic-blur .right-panel-upper {
 }
 
 body.dynamic-blur .apply-btn {
-    background: rgba(26, 115, 232, 0.8);
+    background: rgba(var(--scheme-accent-rgb), 0.8);
     backdrop-filter: blur(120px) saturate(1.6);
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -729,7 +808,7 @@ body.dynamic-blur .switch .slider:before {
     }
 
     body.dynamic-blur .apply-btn {
-        background: rgba(26, 115, 232, 0.85) !important;
+        background: rgba(var(--scheme-accent-rgb), 0.85) !important;
         border: 1px solid rgba(0, 0, 0, 0.08) !important;
     }
 
@@ -989,5 +1068,17 @@ body.scrolled.dynamic-blur .search-input::placeholder {
 
     body.scrolled.dynamic-blur .search-input::placeholder {
         color: rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* 黑白配色 - 暀色模式 + 高级视觉：引擎按钮黑色文字 */
+@media (prefers-color-scheme: dark) {
+    body.color-scheme-black-white.dynamic-blur .engine-btn.active,
+    body.color-scheme-black-white.dynamic-blur .apply-btn,
+    body.color-scheme-black-white.dynamic-blur .settings-plus-btn,
+    body.color-scheme-black-white.dynamic-blur .upload-btn,
+    body.color-scheme-black-white.dynamic-blur .settings-import-btn,
+    body.color-scheme-black-white.dynamic-blur .wallpaper-fill-toggle-wrapper {
+        color: #000000 !important;
     }
 }

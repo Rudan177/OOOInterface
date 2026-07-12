@@ -200,6 +200,52 @@
                         </div>
 
                         <div class="setting-group">
+                            <label for="color-scheme-select">选择配色:</label>
+                            <div class="custom-select">
+                                <div class="select-selected" id="color-scheme-select-selected">林绿色</div>
+                                <div class="select-items select-hide" id="color-scheme-select-items">
+                                    <div class="select-item color-scheme-item" data-value="green" data-group="classic">
+                                        <span class="color-scheme-dot" style="background: linear-gradient(135deg, #00AE00, #10BF90);"></span>
+                                        <span>林绿色</span>
+                                    </div>
+                                    <div class="select-item color-scheme-item" data-value="blue" data-group="classic">
+                                        <span class="color-scheme-dot" style="background: linear-gradient(135deg, #1a73e8, #0d47a1);"></span>
+                                        <span>经典蓝</span>
+                                    </div>
+                                    <div class="select-item color-scheme-item" data-value="black-white" data-group="classic">
+                                        <span class="color-scheme-dot" style="background: linear-gradient(135deg, #000000, #ffffff);"></span>
+                                        <span>黑白色</span>
+                                    </div>
+                                    <div class="select-item color-scheme-item" data-value="tianyi-blue" data-group="newstar">
+                                        <span class="color-scheme-dot" style="background: linear-gradient(135deg, #66ccff, #C0C0C0);"></span>
+                                        <span>天依蓝</span>
+                                    </div>
+                                    <div class="select-item color-scheme-item" data-value="vibrant-red" data-group="newstar">
+                                        <span class="color-scheme-dot" style="background: linear-gradient(135deg, #FF0000, #F5F5DC);"></span>
+                                        <span>活力红</span>
+                                    </div>
+                                    <div class="select-item color-scheme-item" data-value="classic-gold" data-group="newstar">
+                                        <span class="color-scheme-dot" style="background: linear-gradient(135deg, #4A2F00, #B46300, #FFDB8F);"></span>
+                                        <span>典藏金</span>
+                                    </div>
+                                    <div class="select-item color-scheme-item" data-value="isolation" data-group="newstar">
+                                        <span class="color-scheme-dot" style="background: linear-gradient(135deg, #FFD700, #6B238E);"></span>
+                                        <span>隔离色</span>
+                                    </div>
+                                </div>
+                                <select id="color-scheme-select" style="display: none;">
+                                    <option value="green">林绿色</option>
+                                    <option value="blue">经典蓝</option>
+                                    <option value="black-white">黑白色</option>
+                                    <option value="tianyi-blue">天依蓝</option>
+                                    <option value="vibrant-red">活力红</option>
+                                    <option value="classic-gold">典藏金</option>
+                                    <option value="isolation">隔离色</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
                             <label for="context-menu-style">右键菜单样式:</label>
                             <div class="custom-select">
                                 <div class="select-selected" id="context-menu-style-selected">默认</div>
@@ -500,6 +546,7 @@
     <script src="Script/version.js"></script>
     <script src="Script/info.js"></script>
     <script src="Script/proxy.js"></script>
+    <script src="Script/color.js"></script>
     <script src="Script/script.js"></script>
 </body>
 
