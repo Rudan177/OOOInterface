@@ -157,9 +157,20 @@ class InfoManager {
         if (isVisible) this.infoIndicator.classList.add('visible');
 
         const colorScheme = this.app.settings.colorScheme || 'green';
-        const colorClass = getColorConfig(colorScheme).infoClass;
-        
-        this.infoIndicator.classList.add(colorClass);
+        if (colorScheme === 'custom') {
+            const customColors = {
+                primaryColor: this.app.settings.customPrimaryColor || '#1a73e8',
+                secondaryColor: this.app.settings.customSecondaryColor || '',
+                gradientEnabled: this.app.settings.customGradientEnabled || false
+            };
+            const config = getColorConfig('custom', customColors);
+            this.infoIndicator.classList.add('custom');
+            this.infoIndicator.style.backgroundColor = config.accent;
+        } else {
+            const colorClass = getColorConfig(colorScheme).infoClass;
+            this.infoIndicator.classList.add(colorClass);
+            this.infoIndicator.style.backgroundColor = '';
+        }
     }
 
     refreshInfoIndicator() {

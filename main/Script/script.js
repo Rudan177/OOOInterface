@@ -35,6 +35,11 @@ class OOOInterface {
             wallpaperScale: false,
             wallpaperFill: true,
             colorScheme: 'green',
+            customPrimaryColor: '#1a73e8',
+            customSecondaryColor: '',
+            customGradientEnabled: false,
+            customGradientStart: 0,
+            customGradientEnd: 100,
             contextMenuStyle: 'default',
             hideInfoPopup: { enabled: false, type: null, timestamp: null },
             badgeOpenMethod: 'both',
@@ -102,6 +107,8 @@ class OOOInterface {
         this.initQuickAccessSidebar();
 
         this.applySettings();
+
+        this.updateCustomSchemeDropdownDots();
 
         this.updateDeveloperModeUI();
 
@@ -634,6 +641,11 @@ class OOOInterface {
         if (savedSettings.wallpaperScale !== undefined) result.wallpaperScale = savedSettings.wallpaperScale;
         if (savedSettings.wallpaperFill !== undefined) result.wallpaperFill = savedSettings.wallpaperFill;
         if (savedSettings.colorScheme !== undefined) result.colorScheme = savedSettings.colorScheme;
+        if (savedSettings.customPrimaryColor !== undefined) result.customPrimaryColor = savedSettings.customPrimaryColor;
+        if (savedSettings.customSecondaryColor !== undefined) result.customSecondaryColor = savedSettings.customSecondaryColor;
+        if (savedSettings.customGradientEnabled !== undefined) result.customGradientEnabled = savedSettings.customGradientEnabled;
+        if (savedSettings.customGradientStart !== undefined) result.customGradientStart = savedSettings.customGradientStart;
+        if (savedSettings.customGradientEnd !== undefined) result.customGradientEnd = savedSettings.customGradientEnd;
         if (savedSettings.badgeOpenMethod !== undefined) result.badgeOpenMethod = savedSettings.badgeOpenMethod;
         if (savedSettings.bingRefreshEveryTime !== undefined) result.bingRefreshEveryTime = savedSettings.bingRefreshEveryTime;
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
@@ -727,6 +739,10 @@ class OOOInterface {
                 const textColor = isDark ? colorConfig.notificationTextDark : colorConfig.notificationText;
                 const borderColor = isDark ? colorConfig.notificationBorderDark : colorConfig.notificationBorder;
                 return { bg: bgColor, text: textColor, border: borderColor, blur: true };
+            }
+            if (scheme === 'custom') {
+                const bgColor = this.isDarkMode ? colorConfig.notificationBgDark : colorConfig.notificationBg;
+                return { bg: bgColor, text: colorConfig.notificationText, border: colorConfig.notificationBorder, blur: true };
             }
             // 蓝色主题
             const bgColor = this.isDarkMode ? colorConfig.notificationBgDark : colorConfig.notificationBg;
@@ -1351,6 +1367,8 @@ class OOOInterface {
                 if (container && container._qlinput) {
                     this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
                 }
+            } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
+                this.backToCustomColorView(rpu);
             } else {
                 const container = rpu?.querySelector('.settings-menu-container');
                 if (container) {
@@ -1381,6 +1399,8 @@ class OOOInterface {
                             if (container && container._qlinput) {
                                 this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
                             }
+                        } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
+                            this.backToCustomColorView(rpu);
                         } else {
                             const container = rpu?.querySelector('.settings-menu-container');
                             if (container) {
@@ -4761,7 +4781,7 @@ class OOOInterface {
             colorSchemeSelect.value = colorSchemeValue;
             const colorSchemeSelected = document.getElementById('color-scheme-select-selected');
             if (colorSchemeSelected) {
-                colorSchemeSelected.textContent = COLOR_SCHEME_NAMES[colorSchemeValue] || '绿色';
+                colorSchemeSelected.textContent = COLOR_SCHEME_NAMES[colorSchemeValue] || '自定义';
             }
         }
 
@@ -5153,6 +5173,16 @@ class OOOInterface {
     // 获取配色方案配置
     getColorConfig() {
         const scheme = this.settings.colorScheme || 'green';
+        if (scheme === 'custom') {
+            const customColors = {
+                primaryColor: this.settings.customPrimaryColor || '#1a73e8',
+                secondaryColor: this.settings.customSecondaryColor || '',
+                gradientEnabled: this.settings.customGradientEnabled || false,
+                gradientStart: this.settings.customGradientStart !== undefined ? this.settings.customGradientStart : 0,
+                gradientEnd: this.settings.customGradientEnd !== undefined ? this.settings.customGradientEnd : 100
+            };
+            return getColorConfig('custom', customColors);
+        }
         return getColorConfig(scheme);
     }
 
@@ -5163,10 +5193,14 @@ class OOOInterface {
         const colorConfig = this.getColorConfig();
 
         // 移除所有旧的配色方案类
-        const colorClasses = ['color-scheme-green', 'color-scheme-blue', 'color-scheme-black-white', 'color-scheme-tianyi-blue', 'color-scheme-vibrant-red', 'color-scheme-classic-gold', 'color-scheme-isolation'];
+        const colorClasses = ['color-scheme-green', 'color-scheme-blue', 'color-scheme-black-white', 'color-scheme-tianyi-blue', 'color-scheme-vibrant-red', 'color-scheme-classic-gold', 'color-scheme-isolation', 'color-scheme-custom'];
         body.classList.remove(...colorClasses);
         // 添加新的配色方案类
         body.classList.add('color-scheme-' + scheme);
+
+        if (scheme === 'custom') {
+            this.updateCustomSchemeDropdownDots();
+        }
 
         // 设置 CSS 自定义属性，让所有 UI 元素跟随配色方案
         const isDark = this.isDarkMode;
@@ -5192,6 +5226,20 @@ class OOOInterface {
         // 重新创建光晕（如果高级视觉效果已激活）
         if (this.isAdvancedEffectsActive) {
             this.createGlowOrbs();
+        }
+    }
+
+    // 更新下拉列表中自定义配色的颜色圆点
+    updateCustomSchemeDropdownDots() {
+        const primary = this.settings.customPrimaryColor || '#1a73e8';
+        const secondary = this.settings.customSecondaryColor || '';
+        const dot = document.querySelector('#color-scheme-select-items .color-scheme-item[data-value="custom"] .color-scheme-dot');
+        if (dot) {
+            if (secondary) {
+                dot.style.background = 'linear-gradient(135deg, ' + primary + ', ' + secondary + ')';
+            } else {
+                dot.style.background = primary;
+            }
         }
     }
 
@@ -5674,6 +5722,8 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
     let colorSchemeGroupList = null;
     let colorSchemeGroup2 = null;
     let colorSchemeGroupList2 = null;
+    let colorSchemeGroup3 = null;
+    let colorSchemeGroupList3 = null;
     if (menuType === 'color-scheme') {
         // 经典色组
         colorSchemeGroup = document.createElement('div');
@@ -5700,6 +5750,19 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         colorSchemeGroupList2 = document.createElement('div');
         colorSchemeGroupList2.className = 'color-scheme-group-list';
         colorSchemeGroup2.appendChild(colorSchemeGroupList2);
+
+        // 自定义组
+        colorSchemeGroup3 = document.createElement('div');
+        colorSchemeGroup3.className = 'color-scheme-group';
+
+        const groupLabel3 = document.createElement('div');
+        groupLabel3.className = 'color-scheme-group-label';
+        groupLabel3.textContent = '自定义';
+        colorSchemeGroup3.appendChild(groupLabel3);
+
+        colorSchemeGroupList3 = document.createElement('div');
+        colorSchemeGroupList3.className = 'color-scheme-group-list';
+        colorSchemeGroup3.appendChild(colorSchemeGroupList3);
     }
 
     const originalItems = items.querySelectorAll('.select-item');
@@ -6659,6 +6722,23 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                 const value = option.getAttribute('data-value');
                 const text = textSpan.textContent;
 
+                // 自定义配色 - 点开立即应用
+                if (value === 'custom') {
+                    self.settings.colorScheme = 'custom';
+                    self.saveSettings();
+                    self.applyColorScheme();
+                    optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    option.classList.add('selected');
+                    selected.textContent = text;
+                    hiddenSelect.value = value;
+                    const event = new Event('change', { bubbles: true });
+                    hiddenSelect.dispatchEvent(event);
+                    self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, text, optionsList);
+                    return;
+                }
+
                 optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                     opt.classList.remove('selected');
                 });
@@ -6700,6 +6780,8 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             colorSchemeGroupList.appendChild(option);
         } else if (itemGroup === 'newstar' && colorSchemeGroupList2) {
             colorSchemeGroupList2.appendChild(option);
+        } else if (itemGroup === 'custom' && colorSchemeGroupList3) {
+            colorSchemeGroupList3.appendChild(option);
         } else if (colorSchemeGroupList) {
             colorSchemeGroupList.appendChild(option);
         } else {
@@ -6713,11 +6795,20 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
     if (colorSchemeGroup2) {
         optionsList.appendChild(colorSchemeGroup2);
     }
+    if (colorSchemeGroup3) {
+        optionsList.appendChild(colorSchemeGroup3);
+    }
     // 选中新星调时滚动到新星调组
     const newSchemes = ['tianyi-blue', 'vibrant-red', 'classic-gold', 'isolation'];
     if (colorSchemeGroup2 && newSchemes.includes(self.settings.colorScheme)) {
         requestAnimationFrame(() => {
             colorSchemeGroup2.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'start' });
+        });
+    }
+    // 选中自定义时滚动到自定义组
+    if (colorSchemeGroup3 && self.settings.colorScheme === 'custom') {
+        requestAnimationFrame(() => {
+            colorSchemeGroup3.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'start' });
         });
     }
 
@@ -6933,6 +7024,344 @@ OOOInterface.prototype.renderContextMenuCustomizeView = function (rightPanelUppe
 
     container.appendChild(itemsList);
     rightPanelUpper.appendChild(container);
+};
+
+OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper, selected, hiddenSelect, text, optionsList) {
+    const self = this;
+
+    rightPanelUpper.innerHTML = '';
+    rightPanelUpper.dataset.subView = 'custom-color-editor';
+
+    const container = document.createElement('div');
+    container.className = 'settings-menu-container slide-in-right';
+
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:14px;font-weight:600;color:var(--text-color);margin-bottom:16px;';
+    title.textContent = '自定义配色';
+    container.appendChild(title);
+
+    const updatePreview = (hexInput, previewEl) => {
+        let val = hexInput.value.trim();
+        if (val.startsWith('#')) val = val.substring(1);
+        if (/^[0-9a-f]{6}$/i.test(val)) {
+            previewEl.style.background = '#' + val;
+        }
+    };
+
+    // 主色
+    const primaryRow = document.createElement('div');
+    primaryRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;';
+    const primaryLabel = document.createElement('span');
+    primaryLabel.style.cssText = 'font-size:13px;color:var(--text-color);font-weight:500;';
+    primaryLabel.textContent = '主色';
+    primaryRow.appendChild(primaryLabel);
+    const primaryWrapper = document.createElement('div');
+    primaryWrapper.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const primaryPreview = document.createElement('span');
+    primaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:' + (self.settings.customPrimaryColor || '#1a73e8') + ';';
+    primaryWrapper.appendChild(primaryPreview);
+    const primaryHex = document.createElement('input');
+    primaryHex.type = 'text';
+    primaryHex.value = self.settings.customPrimaryColor || '#1a73e8';
+    primaryHex.placeholder = '#RRGGBB';
+    primaryHex.maxLength = 7;
+    primaryHex.spellcheck = false;
+    primaryHex.style.cssText = 'width:90px;padding:8px 10px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;font-family:\'SF Mono\',\'Cascadia Code\',Consolas,monospace;color:var(--text-color);background:transparent;text-transform:uppercase;letter-spacing:0.3px;';
+    primaryWrapper.appendChild(primaryHex);
+    primaryRow.appendChild(primaryWrapper);
+    container.appendChild(primaryRow);
+
+    // 副色
+    const secondaryRow = document.createElement('div');
+    secondaryRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;';
+    const secondaryLabel = document.createElement('span');
+    secondaryLabel.style.cssText = 'font-size:13px;color:var(--text-color);font-weight:500;';
+    secondaryLabel.textContent = '副色（可选）';
+    secondaryRow.appendChild(secondaryLabel);
+    const secondaryWrapper = document.createElement('div');
+    secondaryWrapper.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const secondaryPreview = document.createElement('span');
+    const secVal = self.settings.customSecondaryColor || '';
+    secondaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:' + (secVal || 'transparent') + ';';
+    secondaryWrapper.appendChild(secondaryPreview);
+    const secondaryHex = document.createElement('input');
+    secondaryHex.type = 'text';
+    secondaryHex.value = secVal;
+    secondaryHex.placeholder = '#RRGGBB';
+    secondaryHex.maxLength = 7;
+    secondaryHex.spellcheck = false;
+    secondaryHex.style.cssText = 'width:90px;padding:8px 10px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;font-family:\'SF Mono\',\'Cascadia Code\',Consolas,monospace;color:var(--text-color);background:transparent;text-transform:uppercase;letter-spacing:0.3px;';
+    secondaryWrapper.appendChild(secondaryHex);
+    secondaryRow.appendChild(secondaryWrapper);
+    container.appendChild(secondaryRow);
+
+    // 渐变开关
+    const gradientRow = document.createElement('div');
+    gradientRow.style.cssText = 'display:none;align-items:center;justify-content:space-between;margin-bottom:12px;';
+    const gradientLabel = document.createElement('span');
+    gradientLabel.style.cssText = 'font-size:13px;color:var(--text-color);font-weight:500;';
+    gradientLabel.textContent = '渐变开关';
+    gradientRow.appendChild(gradientLabel);
+    const gradientSwitch = document.createElement('label');
+    gradientSwitch.className = 'switch';
+    const gradientCheckbox = document.createElement('input');
+    gradientCheckbox.type = 'checkbox';
+    gradientCheckbox.checked = self.settings.customGradientEnabled || false;
+    const gradientSlider = document.createElement('span');
+    gradientSlider.className = 'slider';
+    gradientSwitch.appendChild(gradientCheckbox);
+    gradientSwitch.appendChild(gradientSlider);
+    gradientRow.appendChild(gradientSwitch);
+    container.appendChild(gradientRow);
+
+    // 渐变位置控制（直接在渐变条上拖拽）
+    const gPosRow = document.createElement('div');
+    gPosRow.style.cssText = 'display:none;margin-bottom:0;';
+    gPosRow.id = 'gradient-position-row';
+
+    const gStartVal = self.settings.customGradientStart !== undefined ? self.settings.customGradientStart : 0;
+    const gEndVal = self.settings.customGradientEnd !== undefined ? self.settings.customGradientEnd : 100;
+
+    // 拖拽状态
+    let dragging = null; // 'start' | 'end' | null
+
+    const commitGradientPos = () => {
+        self.settings.customGradientStart = curS;
+        self.settings.customGradientEnd = curE;
+        self.saveSettings();
+        if (self.settings.colorScheme === 'custom') self.applyColorScheme();
+    };
+
+    let curS = gStartVal, curE = gEndVal;
+
+    const updateGradientUI = () => {
+        gMarkerS.style.left = curS + '%';
+        gMarkerE.style.left = curE + '%';
+        gStartInput.value = curS;
+        gEndInput.value = curE;
+    };
+
+    const posFromEvent = (e) => {
+        const rect = gPreview.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        return Math.round(Math.max(0, Math.min(100, (x / rect.width) * 100)));
+    };
+
+    const onPointerDown = (e) => {
+        e.preventDefault();
+        const pos = posFromEvent(e);
+        const dS = Math.abs(pos - curS);
+        const dE = Math.abs(pos - curE);
+        dragging = dS <= dE ? 'start' : 'end';
+        gPreview.setPointerCapture(e.pointerId);
+        gPreview.style.cursor = 'grabbing';
+    };
+
+    const onPointerMove = (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        const pos = posFromEvent(e);
+        if (dragging === 'start') {
+            curS = Math.min(pos, curE);
+        } else {
+            curE = Math.max(pos, curS);
+        }
+        updateGradientUI();
+    };
+
+    const onPointerUp = (e) => {
+        if (!dragging) return;
+        dragging = null;
+        gPreview.style.cursor = 'grab';
+        commitGradientPos();
+    };
+
+    // 渐变条（可拖拽）
+    const gPreview = document.createElement('div');
+    gPreview.style.cssText = 'height:20px;border-radius:8px;margin:8px 0 12px;background:linear-gradient(90deg, ' + (self.settings.customPrimaryColor || '#1a73e8') + ' 0%, ' + (self.settings.customSecondaryColor || '#1a73e8') + ' 100%);border:1px solid var(--border-color);position:relative;cursor:grab;touch-action:none;';
+    gPreview.addEventListener('pointerdown', onPointerDown);
+    gPreview.addEventListener('pointermove', onPointerMove);
+    gPreview.addEventListener('pointerup', onPointerUp);
+    gPreview.addEventListener('pointercancel', onPointerUp);
+    const gMarkerS = document.createElement('div');
+    gMarkerS.style.cssText = 'position:absolute;top:-4px;left:' + curS + '%;width:4px;height:28px;border-radius:2px;background:var(--text-color);transform:translateX(-50%);transition:left 0.05s;pointer-events:none;';
+    const gMarkerE = document.createElement('div');
+    gMarkerE.style.cssText = 'position:absolute;top:-4px;left:' + curE + '%;width:4px;height:28px;border-radius:2px;background:var(--text-color);transform:translateX(-50%);transition:left 0.05s;pointer-events:none;';
+    gPreview.appendChild(gMarkerS);
+    gPreview.appendChild(gMarkerE);
+    gPosRow.appendChild(gPreview);
+
+    // 数值输入行（左右对称带标签）
+    const gInputRow = document.createElement('div');
+    gInputRow.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:4px;';
+
+    const makeInputGroup = (label, value, onChange) => {
+        const group = document.createElement('div');
+        group.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;';
+        const lbl = document.createElement('span');
+        lbl.style.cssText = 'font-size:12px;color:var(--text-secondary);font-weight:500;';
+        lbl.textContent = label;
+        group.appendChild(lbl);
+        const inp = document.createElement('input');
+        inp.type = 'number';
+        inp.className = 'slider-value-input';
+        inp.min = 0;
+        inp.max = 100;
+        inp.step = 1;
+        inp.value = value;
+        inp.style.width = '100%';
+        inp.addEventListener('change', onChange);
+        group.appendChild(inp);
+        return group;
+    };
+
+    const gStartGroup = makeInputGroup('起始', curS, () => {
+        let v = parseInt(gStartInput.value);
+        if (isNaN(v) || v < 0) v = 0; if (v > 100) v = 100;
+        if (v > curE) v = curE;
+        curS = v; gStartInput.value = v;
+        updateGradientUI();
+        commitGradientPos();
+    });
+    const gStartInput = gStartGroup.querySelector('input');
+
+    const gEndGroup = makeInputGroup('结束', curE, () => {
+        let v = parseInt(gEndInput.value);
+        if (isNaN(v) || v < 0) v = 0; if (v > 100) v = 100;
+        if (v < curS) v = curS;
+        curE = v; gEndInput.value = v;
+        updateGradientUI();
+        commitGradientPos();
+    });
+    const gEndInput = gEndGroup.querySelector('input');
+
+    gInputRow.appendChild(gStartGroup);
+    gInputRow.appendChild(gEndGroup);
+    gPosRow.appendChild(gInputRow);
+
+    updateGradientUI();
+    container.appendChild(gPosRow);
+
+    // 渐变行可见性
+    const updateGradientRowVisibility = () => {
+        const hasSec = secondaryHex.value.trim() ? true : false;
+        gradientRow.style.display = hasSec ? 'flex' : 'none';
+        gPosRow.style.display = (hasSec && gradientCheckbox.checked) ? 'block' : 'none';
+    };
+    updateGradientRowVisibility();
+
+    const parseHex = (raw) => {
+        let val = raw.trim();
+        if (!val) return '';
+        if (val.startsWith('#')) val = val.substring(1);
+        if (/^[0-9a-f]{6}$/i.test(val)) return '#' + val.toUpperCase();
+        return null;
+    };
+
+    // 事件 - 立即生效
+    primaryHex.addEventListener('input', () => updatePreview(primaryHex, primaryPreview));
+    primaryHex.addEventListener('change', () => {
+        const parsed = parseHex(primaryHex.value);
+        if (parsed) {
+            primaryHex.value = parsed;
+            self.settings.customPrimaryColor = parsed;
+            primaryPreview.style.background = parsed;
+            self.saveSettings();
+            if (self.settings.colorScheme === 'custom') {
+                self.applyColorScheme();
+                self.updateCustomSchemeDropdownDots();
+            }
+            if (gPreview) gPreview.style.background = 'linear-gradient(90deg, ' + parsed + ' 0%, ' + (self.settings.customSecondaryColor || parsed) + ' 100%)';
+        }
+    });
+    primaryHex.addEventListener('blur', () => {
+        const val = primaryHex.value.trim();
+        if (!val) { primaryHex.value = self.settings.customPrimaryColor || '#1A73E8'; return; }
+        const parsed = parseHex(primaryHex.value);
+        if (!parsed) primaryHex.value = self.settings.customPrimaryColor || '#1A73E8';
+        else primaryHex.value = parsed;
+    });
+
+    secondaryHex.addEventListener('input', () => {
+        updatePreview(secondaryHex, secondaryPreview);
+        updateGradientRowVisibility();
+    });
+    secondaryHex.addEventListener('change', () => {
+        const parsed = parseHex(secondaryHex.value);
+        if (parsed) {
+            secondaryHex.value = parsed;
+            self.settings.customSecondaryColor = parsed;
+            secondaryPreview.style.background = parsed;
+        } else if (!secondaryHex.value.trim()) {
+            self.settings.customSecondaryColor = '';
+            secondaryPreview.style.background = 'transparent';
+        }
+        self.saveSettings();
+        updateGradientRowVisibility();
+        if (self.settings.colorScheme === 'custom') {
+            self.applyColorScheme();
+            self.updateCustomSchemeDropdownDots();
+        }
+        if (gPreview) {
+            const p = self.settings.customPrimaryColor || '#1a73e8';
+            const s = self.settings.customSecondaryColor || p;
+            gPreview.style.background = 'linear-gradient(90deg, ' + p + ' 0%, ' + s + ' 100%)';
+        }
+    });
+    secondaryHex.addEventListener('blur', () => {
+        const val = secondaryHex.value.trim();
+        if (!val) { secondaryHex.value = ''; return; }
+        const parsed = parseHex(secondaryHex.value);
+        if (!parsed) secondaryHex.value = self.settings.customSecondaryColor || '';
+        else secondaryHex.value = parsed;
+    });
+
+    gradientCheckbox.addEventListener('change', () => {
+        self.settings.customGradientEnabled = gradientCheckbox.checked;
+        self.saveSettings();
+        if (gradientCheckbox.checked && secondaryHex.value.trim()) {
+            gPosRow.style.display = 'block';
+        } else {
+            gPosRow.style.display = 'none';
+        }
+        if (self.settings.colorScheme === 'custom') {
+            self.applyColorScheme();
+        }
+    });
+
+    rightPanelUpper.appendChild(container);
+};
+
+OOOInterface.prototype.backToCustomColorView = function (rightPanelUpper) {
+    const self = this;
+    if (this.settings.colorScheme !== 'custom') {
+        this.settings.colorScheme = 'custom';
+        this.saveSettings();
+        this.applyColorScheme();
+        const colorSchemeSelect = document.getElementById('color-scheme-select');
+        const colorSchemeSelected = document.getElementById('color-scheme-select-selected');
+        if (colorSchemeSelect) colorSchemeSelect.value = 'custom';
+        if (colorSchemeSelected) colorSchemeSelected.textContent = '自定义';
+    }
+    const container = rightPanelUpper.querySelector('.settings-menu-container');
+    if (container) {
+        container.classList.remove('slide-in-right');
+        container.classList.add('slide-out-right');
+        setTimeout(() => {
+            self._doBackToCustomColorView(rightPanelUpper);
+        }, 180);
+    } else {
+        self._doBackToCustomColorView(rightPanelUpper);
+    }
+};
+
+OOOInterface.prototype._doBackToCustomColorView = function (rightPanelUpper) {
+    const items = document.getElementById('color-scheme-select-items');
+    if (!items) return;
+    const selected = document.getElementById('color-scheme-select-selected');
+    const hiddenSelect = document.getElementById('color-scheme-select');
+    if (!selected || !hiddenSelect) return;
+    this.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
 };
 
 OOOInterface.prototype.closeSettingsMenuInRightPanel = function () {

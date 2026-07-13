@@ -9,7 +9,8 @@ const COLOR_SCHEME_NAMES = {
     'tianyi-blue': '天依蓝',
     'vibrant-red': '活力红',
     'classic-gold': '典藏金',
-    'isolation': '隔离色'
+    'isolation': '隔离色',
+    'custom': '自定义'
 };
 
 const COLOR_SCHEME_CONFIGS = {
@@ -211,9 +212,107 @@ const COLOR_SCHEME_CONFIGS = {
             'rgba(255, 230, 100, 0.2)',
             'rgba(150, 80, 180, 0.15)'
         ]
+    },
+    'custom': {
+        accent: '#1a73e8',
+        accentRgb: '26, 115, 232',
+        accentDark: '#0d47a1',
+        accentDarkRgb: '13, 71, 161',
+        accentHover: '#1557b2',
+        accentActive: '#0f4698',
+        contextMenuHover: 'var(--primary-color)',
+        contextMenuHoverDark: 'var(--primary-color)',
+        contextMenuTextColor: '#1a1a1a',
+        contextMenuTextColorDark: '#d0d0d0',
+        sidebarIcon: 'var(--primary-color)',
+        notificationBg: 'rgba(26, 115, 232, 0.25)',
+        notificationBgDark: 'rgba(26, 115, 232, 0.35)',
+        notificationText: '#ffffff',
+        notificationBorder: 'rgba(26, 115, 232, 0.4)',
+        infoClass: 'custom',
+        particleHueMin: 180,
+        particleHueRange: 60,
+        particleSaturation: 80,
+        glowOrbs: [
+            'rgba(100, 150, 255, 0.25)',
+            'rgba(100, 200, 255, 0.2)',
+            'rgba(100, 255, 200, 0.2)',
+            'rgba(255, 180, 120, 0.15)'
+        ]
     }
 };
 
-function getColorConfig(scheme) {
+function parseRgb(hex) {
+    const val = hex.replace('#', '');
+    if (val.length === 6) {
+        const r = parseInt(val.substring(0, 2), 16);
+        const g = parseInt(val.substring(2, 4), 16);
+        const b = parseInt(val.substring(4, 6), 16);
+        return `${r}, ${g}, ${b}`;
+    }
+    return '0, 0, 0';
+}
+
+function darkenColor(hex, amount) {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const r = Math.max(0, (num >> 16) - amount);
+    const g = Math.max(0, ((num >> 8) & 0x00FF) - amount);
+    const b = Math.max(0, (num & 0x0000FF) - amount);
+    return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+}
+
+function buildCustomColorConfig(customColors) {
+    const { primaryColor, secondaryColor, gradientEnabled, gradientStart, gradientEnd } = customColors;
+    const hasSecondary = secondaryColor && secondaryColor.trim();
+    const hasGradient = hasSecondary && gradientEnabled;
+    const gStart = (gradientStart !== undefined ? gradientStart : 0);
+    const gEnd = (gradientEnd !== undefined ? gradientEnd : 100);
+    const rgb = parseRgb(primaryColor);
+    const hoverColor = darkenColor(primaryColor, 30);
+    const activeColor = darkenColor(primaryColor, 50);
+
+    const config = {
+        accent: primaryColor,
+        accentRgb: rgb,
+        accentDark: primaryColor,
+        accentDarkRgb: rgb,
+        accentHover: hoverColor,
+        accentActive: activeColor,
+        contextMenuHover: primaryColor,
+        contextMenuHoverDark: primaryColor,
+        contextMenuTextColor: '#1a1a1a',
+        contextMenuTextColorDark: '#d0d0d0',
+        sidebarIcon: primaryColor,
+        notificationBg: `rgba(${rgb}, 0.25)`,
+        notificationBgDark: `rgba(${rgb}, 0.35)`,
+        notificationText: '#ffffff',
+        notificationBorder: `rgba(${rgb}, 0.4)`,
+        infoClass: 'custom',
+        particleHueMin: 180,
+        particleHueRange: 60,
+        particleSaturation: 80,
+        glowOrbs: [
+            `rgba(${rgb}, 0.25)`,
+            `rgba(${rgb}, 0.2)`,
+            `rgba(${rgb}, 0.15)`,
+            `rgba(${rgb}, 0.1)`
+        ]
+    };
+
+    if (hasGradient) {
+        config.gradient = `linear-gradient(135deg, ${primaryColor} ${gStart}%, ${secondaryColor} ${gEnd}%)`;
+        config.gradientDark = `linear-gradient(135deg, ${primaryColor} ${gStart}%, ${secondaryColor} ${gEnd}%)`;
+    }
+
+    return config;
+}
+
+function getColorConfig(scheme, customColors) {
+    if (scheme === 'custom') {
+        if (customColors && customColors.primaryColor) {
+            return buildCustomColorConfig(customColors);
+        }
+        return COLOR_SCHEME_CONFIGS['blue'];
+    }
     return COLOR_SCHEME_CONFIGS[scheme] || COLOR_SCHEME_CONFIGS['green'];
 }

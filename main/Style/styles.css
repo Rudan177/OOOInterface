@@ -518,6 +518,7 @@ body:not(.enhanced-display) .search-container:focus-within {
     background-color: #F1F3F4;
     /* 浅色模式 #F8F9FA */
     border: none;
+    outline: none;
     /* 浅色模式无边框 */
     border-radius: 24px;
     /* 圆角 */
@@ -927,16 +928,28 @@ body.color-scheme-classic-gold .engine-btn.active,
 body.color-scheme-isolation .engine-btn.active {
     background-image: var(--scheme-gradient) !important;
     color: #ffffff !important;
-    border-color: var(--scheme-accent) !important;
-    box-shadow: 0 4px 16px rgba(var(--scheme-accent-rgb), 0.4) !important;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
 }
 
 body.color-scheme-tianyi-blue .engine-btn.active:hover,
 body.color-scheme-vibrant-red .engine-btn.active:hover,
 body.color-scheme-classic-gold .engine-btn.active:hover,
 body.color-scheme-isolation .engine-btn.active:hover {
-    box-shadow: 0 6px 20px rgba(var(--scheme-accent-rgb), 0.5) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
 }
+
+body.color-scheme-custom .engine-btn.active {
+    background: var(--scheme-gradient) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.color-scheme-custom .engine-btn.active:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
 
 @media (prefers-color-scheme: dark) {
     body.color-scheme-green .engine-btn.active {
@@ -976,14 +989,22 @@ body.color-scheme-isolation .engine-btn.active:hover {
     body.color-scheme-classic-gold .engine-btn.active,
     body.color-scheme-isolation .engine-btn.active {
         background-image: var(--scheme-gradient) !important;
-        border-color: var(--scheme-accent) !important;
+        border: none !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    body.color-scheme-custom .engine-btn.active {
+        background: var(--scheme-gradient) !important;
+        border: none !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
     }
 
     body.color-scheme-tianyi-blue .engine-btn.active:hover,
     body.color-scheme-vibrant-red .engine-btn.active:hover,
     body.color-scheme-classic-gold .engine-btn.active:hover,
-    body.color-scheme-isolation .engine-btn.active:hover {
-        box-shadow: 0 6px 20px rgba(var(--scheme-accent-rgb), 0.5) !important;
+    body.color-scheme-isolation .engine-btn.active:hover,
+    body.color-scheme-custom .engine-btn.active:hover {
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
     }
 }
 
@@ -6082,6 +6103,10 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
 
 .info-indicator.text-logo {
     background-color: #000000;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-indicator.custom {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
