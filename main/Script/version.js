@@ -1,4 +1,4 @@
-const VERSION = "5.2:28-BS163";
+const VERSION = "5.2:28-BS164";
 const PACKAGE_ID = "0x8F3a9B2c7D1e4A6f";
 const PACKAGE_FLAG = "Beta";
 const PRODUCT_NAME = "OOOInterface 28";
