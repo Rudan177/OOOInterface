@@ -50,7 +50,8 @@ class OOOInterface {
             statusBarEnabled: false,
             showStatusBarSeconds: false,
             hideNotifications: false,
-            contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle']
+            contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle'],
+            shortcutsEnabled: false
         };
 
         this.currentEngine = 'google';
@@ -654,6 +655,7 @@ class OOOInterface {
         if (savedSettings.statusBarEnabled !== undefined) result.statusBarEnabled = savedSettings.statusBarEnabled;
         if (savedSettings.showStatusBarSeconds !== undefined) result.showStatusBarSeconds = savedSettings.showStatusBarSeconds;
         if (savedSettings.hideNotifications !== undefined) result.hideNotifications = savedSettings.hideNotifications;
+        if (savedSettings.shortcutsEnabled !== undefined) result.shortcutsEnabled = savedSettings.shortcutsEnabled;
         if (savedSettings.contextMenuCustomItems && Array.isArray(savedSettings.contextMenuCustomItems)) {
             result.contextMenuCustomItems = savedSettings.contextMenuCustomItems.filter(
                 item => ['enhanced-display-toggle', 'wallpaper-toggle', 'search-history-toggle', 'hide-notifications-toggle', 'hide-info-popup-toggle'].includes(item)
@@ -930,6 +932,143 @@ class OOOInterface {
             }
         };
         document.addEventListener('keydown', handleEsc);
+    }
+
+    showShortcutsHint() {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        const box = document.createElement('div');
+        box.style.cssText = `
+            background: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+            font-family: inherit;
+        `;
+
+        const title = document.createElement('div');
+        title.textContent = '快捷键说明';
+        title.style.cssText = `
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-color);
+            letter-spacing: 0.0125em;
+            margin-bottom: 16px;
+        `;
+
+        box.appendChild(title);
+
+        const items = [
+            { key: 'Tab', desc: '快速聚焦到搜索框' },
+            { key: 'Ctrl + ,', desc: '打开设置页面' },
+            { key: 'Ctrl + H', desc: '展开 / 收起搜索历史框' },
+            { key: 'Ctrl + S（设置页面内）', desc: '应用当前设置' }
+        ];
+
+        items.forEach((item, i) => {
+            const row = document.createElement('div');
+            row.style.cssText = `
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 12px;
+                background: var(--surface-color);
+                border-radius: 12px;
+                ${i < items.length - 1 ? 'margin-bottom: 8px;' : ''}
+            `;
+
+            const keySpan = document.createElement('span');
+            keySpan.textContent = item.key;
+            keySpan.style.cssText = `
+                display: inline-block;
+                background: var(--background-color);
+                padding: 4px 12px;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--text-color);
+                white-space: nowrap;
+                border: 1px solid var(--border-color);
+                min-width: 100px;
+                text-align: center;
+            `;
+
+            const descSpan = document.createElement('span');
+            descSpan.textContent = item.desc;
+            descSpan.style.cssText = `
+                font-size: 14px;
+                color: var(--text-color);
+                flex: 1;
+                line-height: 1.5;
+            `;
+
+            row.appendChild(keySpan);
+            row.appendChild(descSpan);
+            box.appendChild(row);
+        });
+
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '关闭';
+        closeBtn.style.cssText = `
+            margin-top: 16px;
+            padding: 8px 24px;
+            background: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: block;
+            margin-left: auto;
+        `;
+        closeBtn.addEventListener('mouseenter', () => {
+            closeBtn.style.background = 'var(--surface-variant)';
+            closeBtn.style.borderColor = 'var(--primary-color)';
+        });
+        closeBtn.addEventListener('mouseleave', () => {
+            closeBtn.style.background = 'var(--surface-color)';
+            closeBtn.style.borderColor = 'var(--border-color)';
+        });
+        closeBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            document.removeEventListener('keydown', handleEsc);
+        });
+
+        box.appendChild(closeBtn);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                if (overlay.parentNode) {
+                    document.body.removeChild(overlay);
+                }
+                document.removeEventListener('keydown', handleEsc);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+                document.removeEventListener('keydown', handleEsc);
+            }
+        });
     }
 
     // 获取操作系统信息
@@ -1534,6 +1673,16 @@ class OOOInterface {
             }
         });
 
+        document.getElementById('shortcuts-toggle').addEventListener('change', (e) => {
+            this.settings.shortcutsEnabled = e.target.checked;
+            this.saveSettings();
+        });
+
+        document.getElementById('shortcuts-hint').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showShortcutsHint();
+        });
+
         // 壁纸常显示开关改变时，实时显示/隐藏壁纸缩放开关
         document.getElementById('persistent-wallpaper-toggle').addEventListener('change', (e) => {
             const wallpaperScaleGroup = document.getElementById('wallpaper-scale-group');
@@ -1840,6 +1989,56 @@ class OOOInterface {
         window.addEventListener('keydown', (e) => {
             if (e.key === ' ' && e.target === document.body) {
                 e.preventDefault();
+            }
+        });
+
+        // 快捷键（开发者模式）
+        document.addEventListener('keydown', (e) => {
+            if (!this.settings.shortcutsEnabled) return;
+
+            const ctrl = e.ctrlKey || e.metaKey;
+            const modal = document.getElementById('settings-modal');
+            const inSettings = modal && modal.classList.contains('show');
+
+            // Ctrl+S - 应用设置（仅在设置页面中）
+            if (ctrl && (e.key === 's' || e.key === 'S')) {
+                e.preventDefault();
+                if (inSettings) {
+                    document.getElementById('apply-settings').click();
+                }
+                return;
+            }
+
+            // Ctrl+H - 切换搜索历史框
+            if (ctrl && (e.key === 'h' || e.key === 'H')) {
+                e.preventDefault();
+                if (!inSettings) {
+                    const container = document.getElementById('search-history-container');
+                    if (container && container.classList.contains('show')) {
+                        this.hideSearchHistory();
+                    } else {
+                        this.showSearchHistory(document.getElementById('search-input').value);
+                    }
+                }
+                return;
+            }
+
+            // Ctrl+, - 打开设置页面
+            if (ctrl && e.key === ',') {
+                e.preventDefault();
+                if (!inSettings) {
+                    this.openSettings('shortcut');
+                }
+                return;
+            }
+
+            // Tab - 聚焦搜索框（不在设置页面时）
+            if (e.key === 'Tab' && !inSettings && !e.shiftKey) {
+                const searchInput = document.getElementById('search-input');
+                if (searchInput && document.activeElement !== searchInput) {
+                    e.preventDefault();
+                    searchInput.focus();
+                }
             }
         });
 
@@ -5036,6 +5235,10 @@ class OOOInterface {
                 }
             }
 
+            const shortcutsToggle = document.getElementById('shortcuts-toggle');
+            if (shortcutsToggle) {
+                shortcutsToggle.checked = this.settings.shortcutsEnabled;
+            }
         } else {
             const showSecondsGroup = document.getElementById('show-seconds-group');
             if (showSecondsGroup) {
@@ -5079,6 +5282,7 @@ class OOOInterface {
         this.settings.statusBarEnabled = false;
         this.settings.showStatusBarSeconds = false;
         this.settings.hideNotifications = false;
+        this.settings.shortcutsEnabled = false;
 
         const fontSizeSlider = document.getElementById('font-size-slider');
         const fontWeightSlider = document.getElementById('font-weight-slider');
