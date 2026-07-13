@@ -6414,6 +6414,9 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                 // 预设壁纸处理
                 if (wallpaperValue === 'bing') {
                     // 必应壁纸特殊处理：显示文本、图标和配置
+                    option.style.flexDirection = 'column';
+                    option.style.alignItems = 'stretch';
+                    option.style.gap = '0';
                     const contentWrapper = document.createElement('div');
                     contentWrapper.className = 'bing-wallpaper-option-wrapper';
                     contentWrapper.style.display = 'flex';

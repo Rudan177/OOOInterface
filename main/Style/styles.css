@@ -4971,15 +4971,15 @@ input:checked+.slider:before {
     letter-spacing: 0.0125em;
 }
 
-.info-icon {
-    font-size: 16px !important;
+#shortcuts-hint {
+    font-size: 16px;
     cursor: pointer;
     opacity: 0.6;
     transition: opacity 0.2s ease;
     vertical-align: middle;
     margin-left: 4px;
 }
-.info-icon:hover {
+#shortcuts-hint:hover {
     opacity: 1;
 }
 
