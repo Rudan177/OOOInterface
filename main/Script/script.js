@@ -710,6 +710,7 @@ class OOOInterface {
         // 重置欢迎界面状态
         localStorage.removeItem('hasVisited');
         localStorage.removeItem('oooInterfaceFirstRun');
+        localStorage.removeItem('welcVersion');
         // 重置后刷新页面以显示欢迎页面
         location.reload();
 
@@ -6136,7 +6137,18 @@ class OOOInterface {
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
-    // 检查是否需要显示欢迎页面 - 仅在首次安装或重置后显示
+    var storedVersion = localStorage.getItem('welcVersion');
+    if (storedVersion && compareVersions(VERSION, storedVersion) > 0) {
+        localStorage.removeItem('hasVisited');
+        localStorage.removeItem('welcVersion');
+        window.location.href = 'welc/welc.html';
+        return;
+    }
+    if (!storedVersion && localStorage.getItem('hasVisited')) {
+        localStorage.removeItem('hasVisited');
+        window.location.href = 'welc/welc.html';
+        return;
+    }
     if (!localStorage.getItem('hasVisited')) {
         window.location.href = 'welc/welc.html';
     } else {
