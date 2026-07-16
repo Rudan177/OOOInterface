@@ -4998,6 +4998,7 @@ class OOOInterface {
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
+    localStorage.setItem('welcVersion', VERSION);
     // 检查是否需要显示欢迎页面 - 仅在首次安装或重置后显示
     if (!localStorage.getItem('hasVisited')) {
         window.location.href = 'welc/welc.html';
