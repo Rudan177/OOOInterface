@@ -1702,6 +1702,12 @@ body.scrolled.dynamic-blur .ooo-badge {
     display: none;
 }
 
+.settings-menu-options.dragging {
+    cursor: grabbing;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
 
 
 .settings-menu-option {

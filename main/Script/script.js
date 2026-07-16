@@ -35,7 +35,7 @@ class OOOInterface {
             wallpaperScale: false,
             wallpaperFill: true,
             colorScheme: 'green',
-            customPrimaryColor: '#1a73e8',
+            customPrimaryColor: '',
             customSecondaryColor: '',
             customGradientEnabled: false,
             customGradientStart: 0,
@@ -2214,6 +2214,8 @@ class OOOInterface {
         // 点击弹窗外部关闭
         document.getElementById('settings-modal').addEventListener('click', (e) => {
             if (e.target.id === 'settings-modal') {
+                const rpu = document.getElementById('right-panel-upper');
+                if (rpu && rpu.querySelector('[data-drag-just-happened]')) return;
                 this.closeSettings();
             }
         });
@@ -5637,7 +5639,7 @@ class OOOInterface {
         const scheme = this.settings.colorScheme || 'green';
         if (scheme === 'custom') {
             const customColors = {
-                primaryColor: this.settings.customPrimaryColor || '#1a73e8',
+                primaryColor: this.settings.customPrimaryColor || '',
                 secondaryColor: this.settings.customSecondaryColor || '',
                 gradientEnabled: this.settings.customGradientEnabled || false,
                 gradientStart: this.settings.customGradientStart !== undefined ? this.settings.customGradientStart : 0,
@@ -5693,14 +5695,18 @@ class OOOInterface {
 
     // 更新下拉列表中自定义配色的颜色圆点
     updateCustomSchemeDropdownDots() {
-        const primary = this.settings.customPrimaryColor || '#1a73e8';
+        const primary = this.settings.customPrimaryColor || '';
         const secondary = this.settings.customSecondaryColor || '';
         const dot = document.querySelector('#color-scheme-select-items .color-scheme-item[data-value="custom"] .color-scheme-dot');
         if (dot) {
-            if (secondary) {
-                dot.style.background = 'linear-gradient(135deg, ' + primary + ', ' + secondary + ')';
+            if (primary) {
+                if (secondary) {
+                    dot.style.background = 'linear-gradient(135deg, ' + primary + ', ' + secondary + ')';
+                } else {
+                    dot.style.background = primary;
+                }
             } else {
-                dot.style.background = primary;
+                dot.style.background = 'linear-gradient(135deg, #cccccc, #dddddd)';
             }
         }
     }
@@ -6199,6 +6205,10 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         colorSchemeGroupList = document.createElement('div');
         colorSchemeGroupList.className = 'color-scheme-group-list';
         colorSchemeGroup.appendChild(colorSchemeGroupList);
+        colorSchemeGroup.addEventListener('click', (e) => {
+            if (e.target.closest('.color-scheme-group-list')) return;
+            colorSchemeGroup.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+        });
 
         // 新星调组
         colorSchemeGroup2 = document.createElement('div');
@@ -6212,6 +6222,10 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         colorSchemeGroupList2 = document.createElement('div');
         colorSchemeGroupList2.className = 'color-scheme-group-list';
         colorSchemeGroup2.appendChild(colorSchemeGroupList2);
+        colorSchemeGroup2.addEventListener('click', (e) => {
+            if (e.target.closest('.color-scheme-group-list')) return;
+            colorSchemeGroup2.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+        });
 
         // 自定义组
         colorSchemeGroup3 = document.createElement('div');
@@ -6225,6 +6239,10 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         colorSchemeGroupList3 = document.createElement('div');
         colorSchemeGroupList3.className = 'color-scheme-group-list';
         colorSchemeGroup3.appendChild(colorSchemeGroupList3);
+        colorSchemeGroup3.addEventListener('click', (e) => {
+            if (e.target.closest('.color-scheme-group-list')) return;
+            colorSchemeGroup3.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+        });
     }
 
     const originalItems = items.querySelectorAll('.select-item');
@@ -7187,19 +7205,22 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                 const value = option.getAttribute('data-value');
                 const text = textSpan.textContent;
 
-                // 自定义配色 - 点开立即应用
+                // 自定义配色
                 if (value === 'custom') {
-                    self.settings.colorScheme = 'custom';
-                    self.saveSettings();
-                    self.applyColorScheme();
-                    optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
-                        opt.classList.remove('selected');
-                    });
-                    option.classList.add('selected');
-                    selected.textContent = text;
-                    hiddenSelect.value = value;
-                    const event = new Event('change', { bubbles: true });
-                    hiddenSelect.dispatchEvent(event);
+                    const hasColor = self.settings.customPrimaryColor && self.settings.customPrimaryColor.trim();
+                    if (hasColor) {
+                        self.settings.colorScheme = 'custom';
+                        self.saveSettings();
+                        self.applyColorScheme();
+                        optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        option.classList.add('selected');
+                        selected.textContent = text;
+                        hiddenSelect.value = value;
+                        const event = new Event('change', { bubbles: true });
+                        hiddenSelect.dispatchEvent(event);
+                    }
                     self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, text, optionsList);
                     return;
                 }
@@ -7263,21 +7284,68 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
     if (colorSchemeGroup3) {
         optionsList.appendChild(colorSchemeGroup3);
     }
-    // 选中新星调时滚动到新星调组
+    // 选中经典色时居中经典色组
+    const classicSchemes = ['green', 'blue', 'black-white'];
+    if (colorSchemeGroup && classicSchemes.includes(self.settings.colorScheme)) {
+        requestAnimationFrame(() => {
+            colorSchemeGroup.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+        });
+    }
+    // 选中新星调时居中新星调组
     const newSchemes = ['tianyi-blue', 'vibrant-red', 'classic-gold', 'isolation'];
     if (colorSchemeGroup2 && newSchemes.includes(self.settings.colorScheme)) {
         requestAnimationFrame(() => {
-            colorSchemeGroup2.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'start' });
+            colorSchemeGroup2.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
         });
     }
-    // 选中自定义时滚动到自定义组
+    // 选中自定义时居中自定义组
     if (colorSchemeGroup3 && self.settings.colorScheme === 'custom') {
         requestAnimationFrame(() => {
-            colorSchemeGroup3.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'start' });
+            colorSchemeGroup3.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
         });
     }
 
     container.appendChild(optionsList);
+
+    if (menuType === 'color-scheme') {
+        let isDragging = false;
+        let dragStarted = false;
+        let startX = 0;
+        let scrollLeft = 0;
+        const onMouseMove = (e) => {
+            if (!isDragging) return;
+            const dx = e.pageX - startX;
+            if (Math.abs(dx) > 5) {
+                if (!dragStarted) {
+                    dragStarted = true;
+                }
+                e.preventDefault();
+                optionsList.scrollLeft = scrollLeft - dx;
+            }
+        };
+        const onMouseUp = () => {
+            if (isDragging) {
+                isDragging = false;
+                optionsList.classList.remove('dragging');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                if (dragStarted) {
+                    optionsList.dataset.dragJustHappened = 'true';
+                    setTimeout(() => { delete optionsList.dataset.dragJustHappened; }, 200);
+                }
+                dragStarted = false;
+            }
+        };
+        optionsList.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStarted = false;
+            startX = e.pageX;
+            scrollLeft = optionsList.scrollLeft;
+            optionsList.classList.add('dragging');
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    }
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'settings-menu-button-container';
@@ -7510,6 +7578,8 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
         if (val.startsWith('#')) val = val.substring(1);
         if (/^[0-9a-f]{6}$/i.test(val)) {
             previewEl.style.background = '#' + val;
+        } else if (!val) {
+            previewEl.style.background = 'transparent';
         }
     };
 
@@ -7523,11 +7593,12 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     const primaryWrapper = document.createElement('div');
     primaryWrapper.style.cssText = 'display:flex;align-items:center;gap:8px;';
     const primaryPreview = document.createElement('span');
-    primaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:' + (self.settings.customPrimaryColor || '#1a73e8') + ';';
+    const hasPrimary = self.settings.customPrimaryColor && self.settings.customPrimaryColor.trim();
+    primaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:' + (hasPrimary ? self.settings.customPrimaryColor : 'transparent') + ';';
     primaryWrapper.appendChild(primaryPreview);
     const primaryHex = document.createElement('input');
     primaryHex.type = 'text';
-    primaryHex.value = self.settings.customPrimaryColor || '#1a73e8';
+    primaryHex.value = hasPrimary ? self.settings.customPrimaryColor : '';
     primaryHex.placeholder = '#RRGGBB';
     primaryHex.maxLength = 7;
     primaryHex.spellcheck = false;
@@ -7643,7 +7714,9 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
 
     // 渐变条（可拖拽）
     const gPreview = document.createElement('div');
-    gPreview.style.cssText = 'height:20px;border-radius:8px;margin:8px 0 12px;background:linear-gradient(90deg, ' + (self.settings.customPrimaryColor || '#1a73e8') + ' 0%, ' + (self.settings.customSecondaryColor || '#1a73e8') + ' 100%);border:1px solid var(--border-color);position:relative;cursor:grab;touch-action:none;';
+    const gp = hasPrimary ? self.settings.customPrimaryColor : '#cccccc';
+    const gs = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : gp;
+    gPreview.style.cssText = 'height:20px;border-radius:8px;margin:8px 0 12px;background:linear-gradient(90deg, ' + gp + ' 0%, ' + gs + ' 100%);border:1px solid var(--border-color);position:relative;cursor:grab;touch-action:none;';
     gPreview.addEventListener('pointerdown', onPointerDown);
     gPreview.addEventListener('pointermove', onPointerMove);
     gPreview.addEventListener('pointerup', onPointerUp);
@@ -7736,14 +7809,26 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
                 self.applyColorScheme();
                 self.updateCustomSchemeDropdownDots();
             }
-            if (gPreview) gPreview.style.background = 'linear-gradient(90deg, ' + parsed + ' 0%, ' + (self.settings.customSecondaryColor || parsed) + ' 100%)';
+            if (gPreview) {
+                const p = parsed;
+                const s = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : p;
+                gPreview.style.background = 'linear-gradient(90deg, ' + p + ' 0%, ' + s + ' 100%)';
+            }
+        } else if (!primaryHex.value.trim()) {
+            self.settings.customPrimaryColor = '';
+            primaryPreview.style.background = 'transparent';
+            self.saveSettings();
+            if (gPreview) {
+                const s = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : '#cccccc';
+                gPreview.style.background = 'linear-gradient(90deg, #cccccc 0%, ' + s + ' 100%)';
+            }
         }
     });
     primaryHex.addEventListener('blur', () => {
         const val = primaryHex.value.trim();
-        if (!val) { primaryHex.value = self.settings.customPrimaryColor || '#1A73E8'; return; }
+        if (!val) { primaryHex.value = ''; return; }
         const parsed = parseHex(primaryHex.value);
-        if (!parsed) primaryHex.value = self.settings.customPrimaryColor || '#1A73E8';
+        if (!parsed) primaryHex.value = self.settings.customPrimaryColor || '';
         else primaryHex.value = parsed;
     });
 
@@ -7768,8 +7853,8 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
             self.updateCustomSchemeDropdownDots();
         }
         if (gPreview) {
-            const p = self.settings.customPrimaryColor || '#1a73e8';
-            const s = self.settings.customSecondaryColor || p;
+            const p = self.settings.customPrimaryColor && self.settings.customPrimaryColor.trim() ? self.settings.customPrimaryColor : '#cccccc';
+            const s = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : p;
             gPreview.style.background = 'linear-gradient(90deg, ' + p + ' 0%, ' + s + ' 100%)';
         }
     });
@@ -7799,7 +7884,7 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
 
 OOOInterface.prototype.backToCustomColorView = function (rightPanelUpper) {
     const self = this;
-    if (this.settings.colorScheme !== 'custom') {
+    if (this.settings.colorScheme !== 'custom' && this.settings.customPrimaryColor && this.settings.customPrimaryColor.trim()) {
         this.settings.colorScheme = 'custom';
         this.saveSettings();
         this.applyColorScheme();
