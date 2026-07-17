@@ -1,12 +1,12 @@
 {
   "1": {
-    "title": "测试",
-    "text": "测试",
-    "link": "https://rudan177.github.io/OOOInterface/"  
+  "title": "通知",
+  "link": "https://ooointerface.byrudan.workers.dev/OUA/PB",
+  "text": "OOOInterface易升公测！"
   },
   "2": {
-  "title": "通知",
-  "link": "https://ooointerface.byrudan.workers.dev/",
-  "text": "OOOInterface LTS 5.2 现已发布！"
+  "title": "重要通知",
+  "link": "https://ooointerface.byrudan.workers.dev/Interface/bd",
+  "text": "在安装最新OOOInterface前，前往安装适用于旧版本更新的补丁包"
   }
 }

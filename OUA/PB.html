@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUA_PB</title>
+</head>
+<style>
+    body {
+        width: auto;
+        background-image: url("../images/back.png");
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-attachment: fixed;
+        background-position: center;
+    }
+
+    /* 深色模式壁纸压暗层 */
+    body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0);
+        pointer-events: none;
+        transition: background-color 0.3s ease;
+        z-index: -1;
+    }
+
+    @font-face {
+        font-family: 'RUDAN';
+        src: url('../font/RUDAN.otf');
+    }
+
+    @font-face {
+        font-family: 'HMSC';
+        src: url('../font/HarmonyOS_SansSC.ttf');
+    }
+
+    .WenBen {
+        width: 80%; 
+        margin-top: 25px; 
+        margin-left: 50%; 
+        margin-bottom: 50px;
+        transform: translateX(-50%); 
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 20px;
+        transition: background-color 0.3s ease;
+    }
+
+    h1 {
+        padding: 25px 10px;
+        text-align: center;
+        font-size: 32px;
+        font-weight: 800;
+        color: #000;
+        transition: color 0.3s ease;
+    }
+
+    hr {
+        margin-top: -30px;
+        color: #11111130;
+        border: none;
+        height: 2px;
+        background-color: #11111130;
+        transition: background-color 0.3s ease;
+    }
+
+    h2 {
+        font-family: 'HMSC';
+        padding-left: 10%;
+        width: 80%;
+        font-size: 28px;
+        font-weight: 800;
+        color: #000;
+        transition: color 0.3s ease;
+    }
+
+    p {
+        margin-bottom: 50px;
+        padding-bottom: 25px;
+        padding-left: 10%;
+        width: 80%;
+        font-size: 24px;
+        font-weight: 500;
+        color: #000;
+        font-family: serif;
+        text-indent: 2em;
+        transition: color 0.3s ease;
+    }
+
+    ul,ol {
+        padding-left: 10%;
+        width: 80%;
+    }
+
+    li {
+        margin: -20px 50px;
+        padding-bottom: 25px;
+        font-size: 24px;
+        font-weight: 500;
+        color: #000;
+        font-family: serif;
+        transition: color 0.3s ease;
+    }
+
+    a {
+        color: #00ae00;
+        text-decoration: underline;
+        font-weight: 100;
+        transition: all 0.1s ease-in-out;
+    }
+
+    a:hover {
+        color: #10bf90;
+        font-weight: 800;
+        font-size: 1.5em;
+    }
+
+    /* ===== 深色模式 ===== */
+    @media (prefers-color-scheme: dark) {
+        body::after {
+            background-color: rgba(0, 0, 0, 0.55);
+        }
+
+        .WenBen {
+            background-color: rgba(20, 20, 30, 0.5);
+        }
+
+        h1, h2, p, li {
+            color: #e0e0e0;
+        }
+
+        hr {
+            background-color: #ffffff30;
+        }
+
+        a {
+            color: #00ae00;
+        }
+
+        a:hover {
+            color: #10bf90;
+        }
+    }
+
+    /* ===== 小屏幕适配 ===== */
+    @media (max-width: 768px) {
+        .WenBen {
+            width: 92%;
+            margin-top: 15px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 24px;
+            padding: 18px 8px;
+        }
+
+        hr {
+            margin-top: -22px;
+        }
+
+        h2 {
+            font-size: 20px;
+            padding-left: 6%;
+            width: 88%;
+        }
+
+        p {
+            font-size: 17px;
+            padding-left: 6%;
+            width: 88%;
+            margin-bottom: 30px;
+            padding-bottom: 18px;
+        }
+
+        ul, ol {
+            padding-left: 6%;
+            width: 88%;
+        }
+
+        li {
+            font-size: 17px;
+            margin: -16px 20px;
+            padding-bottom: 18px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .WenBen {
+            width: 96%;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            border-radius: 14px;
+        }
+
+        h1 {
+            font-size: 20px;
+            padding: 14px 6px;
+        }
+
+        hr {
+            margin-top: -18px;
+        }
+
+        h2 {
+            font-size: 17px;
+            padding-left: 4%;
+            width: 92%;
+        }
+
+        p {
+            font-size: 15px;
+            padding-left: 4%;
+            width: 92%;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+        }
+
+        ul, ol {
+            padding-left: 4%;
+            width: 92%;
+        }
+
+        li {
+            font-size: 15px;
+            margin: -12px 10px;
+            padding-bottom: 14px;
+        }
+    }
+   </style>
+<body>
+    <div class="WenBen">
+        <h1><span style="font-family: 'RUDAN';">OOOInterface</span><span style="font-family: 'HMSC';">易升</span>&nbsp;<span style="font-family: serif;">公测开启</span></h1>
+        <hr>
+        <h2>核心信息一览</h2>
+        <ul>
+            <li>产品名称：OOOInterface易升/OOOInterface Update Assistant</li>
+            <li>公测版本：0.5.1:01-BS72</li>
+            <li>适用操作系统：Windows 10/11</li>
+            <li>开启时间：2026年7月17日</li>
+            <li>面向用户：面向所有OOOInterface插件用户开放免费公测体验</li>
+        </ul>
+        <hr>
+        <h2>使用方式</h2>
+        <ol>
+            <li>联系<a href="mailto:wyjcrtu@proton.me?subject=参与OUA公测&body=我希望参与OOOInterface易升公测。%0D%0A我保证：%0D%0A 1.遇到问题不发癫，通过正规渠道反馈问题；%0D%0A 2.了解测试版可能导致OOOInterface插件异常，并愿意承担相关后果；%0D%0A 3.正常使用工具，拒绝将其二次分发或进行任何商业用途。">ByRUDAN</a>获取OUA安装包</li>
+            <li>双击安装OUA应用程序并启动</li>
+            <li>启动后选择你的OOOInterface安装目录</li>
+            <li>选择你更喜爱的更新方式（远程/本地）（远程可能出现网络不稳定、下载速度慢等问题，遇到请不要发癫）</li>
+            <li>
+                <ul style="padding-left: 10%;">
+                    <li style="margin: -20px -20px;">若选择远程，再次选择更新分支（LTS/正式版/尝鲜版）（推荐使用正式版，搭配OOOInterface 28一起食用）</li>
+                    <li style="margin: -20px -20px;">若选择本地，将从OOOInterface官方网站下载的最新zip压缩包导入或拖入到OUA窗口内部</li>
+                </ul>
+            </li>
+            <li>等待进度条加载完成，启动OOOInterface（可通过底部铭牌检测是否完成更新）</li>
+        </ol>
+        <hr>
+        <h2>进阶技巧</h2>
+        <ul>
+            <li>点击检查更新（远程）/ 导入（本地）右侧垃圾桶图标即可卸载OOOInterface，同时关闭应用程序。详情见卸载确认弹窗。</li>
+            <li>点击垃圾桶图标右侧设置按钮可展开设置面板。内包含开机自启动、最小化到托盘、自动更新等功能。</li>
+            <li>若远程频繁拉取失败，可尝试多次点击OUA版本号（注意不是OOOInterface版本号）展开设置页面进行手动配置代理。</li>
+        </ul>
+    </div>
+</body>
+<footer style="text-align: center;font-size: 18px; margin-bottom: 30px; ;">
+    <a href="../index.html" style="margin-right: 10px;">返回首页</a>
+    <a href="../Interface/28.html" style="margin-left: 10px;">下载 OOOInterface 28</a>
+</footer>
+</html>
