@@ -559,6 +559,125 @@
           ]
         }
       ]
+    },
+    {
+      "version": "5.1.4:24.4",
+      "title": "提供最新补丁",
+      "content": [
+        {
+          "type": "heading",
+          "text": "更新内容"
+        },
+        {
+          "type": "list",
+          "items": [
+            "为更棒的下一代OOOInterface预备好。"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "修复内容"
+        },
+        {
+          "type": "list",
+          "items": [
+            "修复了一些已知Bug。"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "5.2.1:25.1",
+      "title": "提供最新补丁",
+      "content": [
+        {
+          "type": "heading",
+          "text": "更新内容"
+        },
+        {
+          "type": "list",
+          "items": [
+            "为更棒的下一代OOOInterface预备好。"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "修复内容"
+        },
+        {
+          "type": "list",
+          "items": [
+            "修复了一些已知Bug。"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "5.2:27.1",
+      "title": "提供最新补丁",
+      "content": [
+        {
+          "type": "heading",
+          "text": "更新内容"
+        },
+        {
+          "type": "list",
+          "items": [
+            "为更棒的下一代OOOInterface预备好。"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "修复内容"
+        },
+        {
+          "type": "list",
+          "items": [
+            "修复了一些已知Bug。"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "5.2.1:28",
+      "title": "版本更新",
+      "content": [
+        {
+          "type": "heading",
+          "text": "壁纸设置"
+        },
+        {
+          "type": "list",
+          "items": [
+            "推出一键导入系列壁纸，爸爸妈妈再也不怕我大量壁纸同时导入累死了",
+            "新增大量壁纸一键清除，爸爸妈妈再也不怕我手删除一堆张壁纸累死了",
+            "优化壁纸导入速度",
+            "优化清除壁纸效果"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "主题色设置"
+        },
+        {
+          "type": "list",
+          "items": [
+            "新增主题色自定义功能，爸爸妈妈再也不怕我看破绿色视觉疲劳了",
+            "优化页面配色显示效果"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "快捷键操作"
+        },
+        {
+          "type": "list",
+          "items": [
+            "新增快捷键操作，爸爸妈妈再也不怕我各种操作繁杂难操作崩溃了",
+            "优化 ESC 关闭窗口体验"
+          ]
+        }
+      ]
     }
   ]
 }
