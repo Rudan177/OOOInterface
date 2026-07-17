@@ -1,6 +1,6 @@
-const VERSION = "5.2:28-BS167";
+const VERSION = "5.2:28-RS170";
 const PACKAGE_ID = "0x032FEBeB433c3EAF";
-const PACKAGE_FLAG = "Beta";
+const PACKAGE_FLAG = "Release";
 const PRODUCT_NAME = "OOOInterface 28";
 const RELEASE_DATE = "2026年7月17日";
 const LICENSE_ID = "ABCD-26W08A";
