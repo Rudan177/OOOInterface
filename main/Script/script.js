@@ -1768,18 +1768,8 @@ class OOOInterface {
             } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
                 this.backToCustomColorView(rpu);
             } else {
-                const container = rpu?.querySelector('.settings-menu-container');
-                if (container) {
-                    container.classList.remove('slide-in-right');
-                    container.classList.add('slide-out-right');
-                    setTimeout(() => {
-                        this.confirmRightPanelChanges();
-                        this.closeSettingsMenuInRightPanel();
-                    }, 180);
-                } else {
-                    this.confirmRightPanelChanges();
-                    this.closeSettingsMenuInRightPanel();
-                }
+                this.confirmRightPanelChanges();
+                this.closeSettingsMenuInRightPanel();
             }
         });
 
@@ -1799,19 +1789,9 @@ class OOOInterface {
                             }
                         } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
                             this.backToCustomColorView(rpu);
-                        } else {
-                            const container = rpu?.querySelector('.settings-menu-container');
-                            if (container) {
-                                container.classList.remove('slide-in-right');
-                                container.classList.add('slide-out-right');
-                                setTimeout(() => {
-                                    this.confirmRightPanelChanges();
-                                    this.closeSettingsMenuInRightPanel();
-                                }, 180);
-                            } else {
-                                this.confirmRightPanelChanges();
-                                this.closeSettingsMenuInRightPanel();
-                            }
+                        } else if (rpu) {
+                            this.confirmRightPanelChanges();
+                            this.closeSettingsMenuInRightPanel();
                         }
                     } else {
                         this.closeSettings();
@@ -6171,7 +6151,6 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
-    document.getElementById('settings-modal').classList.add('right-panel-open');
 
     let menuType = '';
     if (selected.id === 'font-select-selected' || selected.parentElement.querySelector('#font-select')) {
@@ -7460,20 +7439,11 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
     container.appendChild(buttonContainer);
     rightPanelUpper.appendChild(container);
+    document.getElementById('settings-modal').classList.add('right-panel-open');
 };
 
 OOOInterface.prototype.backToContextMenuStyleView = function (rightPanelUpper) {
-    const self = this;
-    const container = rightPanelUpper.querySelector('.settings-menu-container');
-    if (container) {
-        container.classList.remove('slide-in-right');
-        container.classList.add('slide-out-right');
-        setTimeout(() => {
-            self._doBackToContextMenuStyleView(rightPanelUpper);
-        }, 180);
-    } else {
-        self._doBackToContextMenuStyleView(rightPanelUpper);
-    }
+    this._doBackToContextMenuStyleView(rightPanelUpper);
 };
 
 OOOInterface.prototype._doBackToContextMenuStyleView = function (rightPanelUpper) {
@@ -7905,16 +7875,7 @@ OOOInterface.prototype.backToCustomColorView = function (rightPanelUpper) {
         if (colorSchemeSelect) colorSchemeSelect.value = 'custom';
         if (colorSchemeSelected) colorSchemeSelected.textContent = '自定义';
     }
-    const container = rightPanelUpper.querySelector('.settings-menu-container');
-    if (container) {
-        container.classList.remove('slide-in-right');
-        container.classList.add('slide-out-right');
-        setTimeout(() => {
-            self._doBackToCustomColorView(rightPanelUpper);
-        }, 180);
-    } else {
-        self._doBackToCustomColorView(rightPanelUpper);
-    }
+    this._doBackToCustomColorView(rightPanelUpper);
 };
 
 OOOInterface.prototype._doBackToCustomColorView = function (rightPanelUpper) {
@@ -7930,11 +7891,14 @@ OOOInterface.prototype.closeSettingsMenuInRightPanel = function () {
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
 
-    rightPanelUpper.innerHTML = '';
-    delete rightPanelUpper.dataset.menuType;
-    delete rightPanelUpper.dataset.subView;
-    this.showDefaultRightPanelContent(rightPanelUpper);
     document.getElementById('settings-modal').classList.remove('right-panel-open');
+
+    requestAnimationFrame(() => {
+        rightPanelUpper.innerHTML = '';
+        delete rightPanelUpper.dataset.menuType;
+        delete rightPanelUpper.dataset.subView;
+        this.showDefaultRightPanelContent(rightPanelUpper);
+    });
 
     // 清理 body 上的弹窗
     const dd = document.querySelector('[data-import-dropdown]');
