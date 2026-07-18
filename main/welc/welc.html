@@ -30,12 +30,10 @@
             0% {
                 opacity: 0;
                 transform: translateY(40px);
-                filter: blur(4px);
             }
             100% {
                 opacity: 1;
                 transform: translateY(0);
-                filter: blur(0);
             }
         }
 
@@ -161,8 +159,8 @@
 
         .splash-logo {
             position: fixed;
-            width: 200px;
-            height: 200px;
+            width: clamp(80px, 20vw, 200px);
+            height: clamp(80px, 20vw, 200px);
             top: 38%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -187,11 +185,11 @@
 
         .splash-title {
             position: fixed;
-            font-size: 48px;
+            font-size: clamp(20px, 5vw, 48px);
             font-weight: 700;
             font-family: 'RUDAN', 'Sans Flex', sans-serif;
             color: var(--text-primary);
-            top: calc(38% + 110px);
+            top: calc(38% + clamp(40px, 12vw, 110px));
             left: 50%;
             transform: translate(-50%, 0);
             letter-spacing: 4px;
@@ -214,15 +212,15 @@
 
         .splash-hint {
             position: fixed;
-            top: calc(38% + 200px);
+            top: calc(38% + clamp(90px, 25vw, 200px));
             left: 50%;
             transform: translate(-50%, 0);
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            padding: 14px 36px;
+            padding: clamp(8px, 1.8vw, 14px) clamp(18px, 4vw, 36px);
             border-radius: 24px;
-            font-size: 15px;
+            font-size: clamp(11px, 1.8vw, 15px);
             font-weight: 600;
             color: #FFFFFF;
             background: var(--primary-color);
@@ -289,12 +287,12 @@
 
         .hero-section {
             text-align: center;
-            padding: 16px 20px 8px;
+            padding: clamp(8px, 2vw, 16px) 20px 8px;
             position: relative;
         }
 
         .hero-tagline {
-            font-size: 28px;
+            font-size: clamp(16px, 3.5vw, 28px);
             font-weight: 700;
             color: var(--text-muted);
             letter-spacing: 4px;
@@ -555,7 +553,6 @@
         body.dynamic-blur .welcome-card.show {
             opacity: 1;
             transform: translateY(0);
-            filter: blur(0);
         }
 
         body.dynamic-blur .hero-logo:hover {

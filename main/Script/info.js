@@ -156,27 +156,21 @@ class InfoManager {
         this.infoIndicator.className = 'info-indicator';
         if (isVisible) this.infoIndicator.classList.add('visible');
 
-        const logoColorMap = {
-            'default': 'default',
-            'Google': 'google',
-            'Microsoft': 'microsoft',
-            'Apple': 'apple',
-            'HUAWEI': 'huawei',
-            'text-logo': 'text-logo'
-        };
-
-        const blackWhiteLogos = ['Apple', 'HUAWEI', 'text-logo'];
-        const presetLogos = ['default', 'auto', 'Google', 'Microsoft', 'Bing', 'Baidu', 'DuckDuckGo', 'Sogou', '360', 'Yahoo', 'Yandex'];
-        const isCustomLogo = !blackWhiteLogos.includes(this.app.settings.logo) && !presetLogos.includes(this.app.settings.logo);
-        
-        let colorClass;
-        if (isCustomLogo) {
-            colorClass = 'text-logo';
+        const colorScheme = this.app.settings.colorScheme || 'green';
+        if (colorScheme === 'custom') {
+            const customColors = {
+                primaryColor: this.app.settings.customPrimaryColor || '#1a73e8',
+                secondaryColor: this.app.settings.customSecondaryColor || '',
+                gradientEnabled: this.app.settings.customGradientEnabled || false
+            };
+            const config = getColorConfig('custom', customColors);
+            this.infoIndicator.classList.add('custom');
+            this.infoIndicator.style.backgroundColor = config.accent;
         } else {
-            colorClass = logoColorMap[this.app.settings.logo] || 'default';
+            const colorClass = getColorConfig(colorScheme).infoClass;
+            this.infoIndicator.classList.add(colorClass);
+            this.infoIndicator.style.backgroundColor = '';
         }
-        
-        this.infoIndicator.classList.add(colorClass);
     }
 
     refreshInfoIndicator() {

@@ -61,7 +61,10 @@
     var isManualOpen = urlParams.get('manual') === 'true';
 
     if (localStorage.getItem('hasVisited') === 'true' && !isManualOpen) {
-        window.location.href = '../index.html';
+        var lastVersion = localStorage.getItem('welcVersion');
+        if (!lastVersion || compareVersions(VERSION, lastVersion) <= 0) {
+            window.location.href = '../index.html';
+        }
     }
 
     function enterMain() {
@@ -101,6 +104,7 @@
             }
         } else {
             localStorage.setItem('hasVisited', 'true');
+            localStorage.setItem('welcVersion', VERSION);
             window.location.href = '../index.html';
         }
     }
