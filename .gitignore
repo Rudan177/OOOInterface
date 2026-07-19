@@ -17,3 +17,9 @@ Thumbs.db
 
 # GitHub
 .github/
+
+# needs
+needs/
+
+# Agnes plan documents
+.trae/
