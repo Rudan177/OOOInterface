@@ -51,7 +51,7 @@ class OOOInterface {
             showStatusBarSeconds: false,
             hideNotifications: false,
             contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle'],
-            shortcutsEnabled: false,
+            shortcutsEnabled: true,
             theme: 'default',           // 当前主题 key（文件 basename 去扩展名）
             themeEnabled: false,        // 主题功能是否开启
             themeColorScheme: null,     // 当主题 color.colorGroup === 'add' 时存放完整配色配置
@@ -3991,9 +3991,15 @@ class OOOInterface {
 
         // 更新显示的文本
         if (logoSelectSelected) {
-            const selectedOption = logoSelect.querySelector(`option[value="${this.settings.logo}"]`);
-            if (selectedOption) {
-                logoSelectSelected.textContent = selectedOption.textContent;
+            // 主题模式下保持"主题名：Logo名"格式，不覆盖
+            const themeInfo = this.getThemeDisplayInfo();
+            if (themeInfo && themeInfo.logoName) {
+                // 保持不变
+            } else {
+                const selectedOption = logoSelect.querySelector(`option[value="${this.settings.logo}"]`);
+                if (selectedOption) {
+                    logoSelectSelected.textContent = selectedOption.textContent;
+                }
             }
         }
 
@@ -4123,9 +4129,12 @@ class OOOInterface {
 
         // 更新显示的文本
         if (fontSelectSelected) {
-            const selectedOption = fontSelect.querySelector(`option[value="${this.settings.font}"]`);
-            if (selectedOption) {
-                fontSelectSelected.textContent = selectedOption.textContent;
+            const themeInfo = this.getThemeDisplayInfo();
+            if (!themeInfo || !themeInfo.fontName) {
+                const selectedOption = fontSelect.querySelector(`option[value="${this.settings.font}"]`);
+                if (selectedOption) {
+                    fontSelectSelected.textContent = selectedOption.textContent;
+                }
             }
         }
     }
@@ -4184,9 +4193,12 @@ class OOOInterface {
 
         // 更新显示的文本
         if (wallpaperSelectSelected) {
-            const selectedOption = wallpaperSelect.querySelector(`option[value="${this.settings.wallpaper}"]`);
-            if (selectedOption) {
-                wallpaperSelectSelected.textContent = selectedOption.textContent;
+            const themeInfo = this.getThemeDisplayInfo();
+            if (!themeInfo || !themeInfo.wallpaperName) {
+                const selectedOption = wallpaperSelect.querySelector(`option[value="${this.settings.wallpaper}"]`);
+                if (selectedOption) {
+                    wallpaperSelectSelected.textContent = selectedOption.textContent;
+                }
             }
         }
     }
@@ -5695,16 +5707,17 @@ class OOOInterface {
                     showSecondsToggle.checked = false;
                 }
             }
-
-            const shortcutsToggle = document.getElementById('shortcuts-toggle');
-            if (shortcutsToggle) {
-                shortcutsToggle.checked = this.settings.shortcutsEnabled;
-            }
         } else {
             const showSecondsGroup = document.getElementById('show-seconds-group');
             if (showSecondsGroup) {
                 showSecondsGroup.style.display = 'none';
             }
+        }
+
+        // 快捷键开关独立于开发者模式
+        const shortcutsToggle = document.getElementById('shortcuts-toggle');
+        if (shortcutsToggle) {
+            shortcutsToggle.checked = this.settings.shortcutsEnabled;
         }
 
         const proxySelect = document.getElementById('proxy-select');
@@ -5758,7 +5771,6 @@ class OOOInterface {
         this.settings.statusBarEnabled = false;
         this.settings.showStatusBarSeconds = false;
         this.settings.hideNotifications = false;
-        this.settings.shortcutsEnabled = false;
 
         const fontSizeSlider = document.getElementById('font-size-slider');
         const fontWeightSlider = document.getElementById('font-weight-slider');

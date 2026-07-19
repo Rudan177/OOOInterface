@@ -1,17 +1,14 @@
 var DEFAULT_THEME = {
     "info": {
-        "name": "默认主题",
+        "name": "爱上雷神",
         "designer": "RUDAN",
         "version": "0.1"
     },
     "details": {
         "logo": {
-            "name": "默认图标",
-            "location": "../images/dll.png",
+            "name": "隔离色",
+            "location": "https://rudan177.github.io/OOOInterface/images/logo/iso.png",
             "specialStyle": {
-                "dark": "../images/dln.png",
-                "online": "https://rudan177.github.io/OOOInterface/images/dll.png",
-                "onlineDark": "https://rudan177.github.io/OOOInterface/images/dln.png",
                 "width": "120px",
                 "height": "120px"
             }
@@ -25,18 +22,17 @@ var DEFAULT_THEME = {
             }
         },
         "wallpaper": {
-            "name": "默认壁纸",
-            "location": "../images/back.png",
+            "name": "白厄",
+            "location": "https://upload-bbs.miyoushe.com/upload/2025/06/22/279608080/0c48f537ae30e0aa59a37ed5d4d21322_6708113479381968384.jpeg?x-oss-process=image/resize,s_600/quality,q_80/auto-orient,0/interlace,1/format,jpeg",
             "specialStyle": {
-                "online": "https://rudan177.github.io/OOOInterface/images/back.png",
                 "wallpaperFill": true
             }
         },
         "color": {
-            "name": "林绿色",
+            "name": "隔离色",
             "specialStyle": {
                 "colorGroup": "cjs",
-                "colorScheme": "green"
+                "colorScheme": "isolation"
             }
         },
         "more": false

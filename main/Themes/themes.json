@@ -1,5 +1,8 @@
 {
     "themes": [
-        "default.js"
+        "default.js",
+        "classic.js",
+        "lty.js",
+        "isolation.js"
     ]
 }
