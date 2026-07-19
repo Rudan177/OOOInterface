@@ -1744,6 +1744,52 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 
 
+/* 主题菜单项：左上角主题名称+版本号，换行小字显示设计师 */
+.theme-menu-option {
+    height: 50px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 6px 16px;
+    gap: 2px;
+    box-sizing: border-box;
+}
+
+.theme-option-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.theme-option-version {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.theme-option-designer {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.2;
+}
+
+/* 选中态：名称/版本/设计师全部反白，版本与设计师略降不透明度 */
+.settings-menu-option.selected .theme-option-name,
+.settings-menu-option.selected .theme-option-version,
+.settings-menu-option.selected .theme-option-designer {
+    color: #ffffff;
+}
+
+.settings-menu-option.selected .theme-option-version,
+.settings-menu-option.selected .theme-option-designer {
+    opacity: 0.85;
+}
+
+
+
 /* 设置菜单底部区域 */
 
 .settings-plus-btn {

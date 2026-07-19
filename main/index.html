@@ -110,6 +110,19 @@
                 <div class="settings-left-panel">
                     <div class="modal-body">
                         <div class="setting-group">
+                            <label for="theme-select">选择主题:</label>
+                            <div class="custom-select">
+                                <div class="select-selected" id="theme-select-selected">默认主题</div>
+                                <div class="select-items select-hide" id="theme-select-items">
+                                    <!-- JS 动态填充 -->
+                                </div>
+                                <select id="theme-select" style="display: none;">
+                                    <option value="default">默认主题</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
                             <label for="font-select">选择字体:</label>
                             <div class="custom-select">
                                 <!-- 自定义下拉菜单 -->
@@ -192,11 +205,6 @@
                                 </div>
                             </div>
                             <input type="file" id="wallpaper-upload" accept="image/*" style="display: none;">
-                            <div id="wallpaper-url-group" class="wallpaper-url-group" style="display: none;">
-                                <input type="text" id="wallpaper-url-input" class="setting-input"
-                                    placeholder="输入壁纸图片URL链接">
-                                <button id="apply-wallpaper-url" class="text-logo-btn">应用</button>
-                            </div>
                         </div>
 
                         <div class="setting-group">
