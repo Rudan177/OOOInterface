@@ -1,3 +1,5 @@
 {
-    "themes": ["default.js", "lqbz.js"]
+    "themes": [
+        "default.js"
+    ]
 }

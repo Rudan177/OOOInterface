@@ -2982,6 +2982,70 @@ body.dynamic-blur .bookmark-folder-submenu {
     border-color: white;
 }
 
+/* 自定义主题删除按钮 */
+.custom-theme-delete-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    border-radius: 6px;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+}
+
+.custom-theme-delete-btn:hover {
+    background: rgba(220, 53, 69, 0.25);
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.custom-theme-delete-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+.settings-menu-option.selected .custom-theme-delete-btn {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.settings-menu-option.selected .custom-theme-delete-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: white;
+}
+
+/* 自定义主题分隔线 */
+/* 主题拖放覆盖层 */
+.theme-drop-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.theme-drop-overlay-text {
+    font-size: 16px;
+    color: white;
+    padding: 24px 40px;
+    border: 2px dashed rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
 
 .wallpaper-url-group {
     display: flex;

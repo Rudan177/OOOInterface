@@ -9,7 +9,7 @@ var DEFAULT_THEME = {
             "name": "default",
             "location": "../images/dll.png",
             "specialStyle": {
-                "dark":"../images/dln.png",
+                "dark": "../images/dln.png",
                 "online": "https://rudan177.github.io/OOOInterface/images/dll.png",
                 "onlineDark": "https://rudan177.github.io/OOOInterface/images/dln.png",
                 "width": "120px",
@@ -19,22 +19,22 @@ var DEFAULT_THEME = {
         "font": {
             "name": "Sans Flex",
             "location": "../fonts/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf",
-            "specialStyle":{
+            "specialStyle": {
                 "font-weight": "400",
                 "font-size": "1em"
             }
         },
         "wallpaper": {
-            "name": "default",
+            "name": "默认壁纸",
             "location": "../images/back.png",
-            "specialStyle":{
+            "specialStyle": {
                 "online": "https://rudan177.github.io/OOOInterface/images/back.png",
                 "wallpaperFill": true
             }
         },
         "color": {
-            "name": "green",
-            "specialStyle":{
+            "name": "林绿色",
+            "specialStyle": {
                 "colorGroup": "cjs",
                 "colorScheme": "green"
             }
