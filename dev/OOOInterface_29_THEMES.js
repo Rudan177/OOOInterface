@@ -1,15 +1,15 @@
 var DOC_DATA = {
     "meta": {
         "docNumber": "BRD-OOO-260723.THEME",
-        "version": "v1.0:01",
+        "version": "v1.1:02",
         "date": "2026-07-23",
         "status": "现行有效",
         "pageTitle": "主题文档编写规范",
         "pageBrand": "OOOInterface",
         "pageTitleMain": "主题文档编写规范",
         "pageSubtitle": "OOOInterface 29 主题系统开发指南",
-        "footerLeft": "OOOInterface · ByRUDAN",
-        "footerRight": ""
+        "footerLeft": "OOOInterface",
+        "footerRight": "ByRUDAN"
     },
     "sections": [
         {
@@ -68,9 +68,14 @@ var DOC_DATA = {
             "content": [
                 "<p>主题文件的基本结构如下：</p>",
                 "<pre data-lang='JSON'><code>{\n    \"info\": {                 // 主题元信息\n        \"name\": \"\",           // 主题名称\n        \"designer\": \"\",       // 设计师\n        \"version\": \"\"         // 版本号\n    },\n    \"details\": {              // 主题具体配置\n        \"logo\": { ... },      // Logo 配置\n        \"font\": { ... },      // 字体配置\n        \"wallpaper\": { ... }, // 壁纸配置\n        \"color\": { ... },     // 配色方案\n        \"more\": false         // 是否有额外自定义 CSS\n    }\n}</code></pre>",
-                "<p>接下来将详细介绍各字段的详细内容。</p>",
-
-                "<h3 class='version-subtitle'>1. 主题元信息</h3>",
+                "<p>接下来将详细介绍各字段的详细内容。</p>"
+            ]
+        },
+        {
+            "id": 3,
+            "label": "主题元信息",
+            "title": "主题元信息",
+            "content": [
                 "<p>主题原信息皆为字符串，因此可以畅所欲言。但如若您希望未来您的主题能够收录入 OOOInterface 主题库，您需要遵守以下规范：</p>",
                 "<ul>",
                 "<li><strong>name、designer</strong>：10字符以内，不限制语言，禁止使用非文本字符，尤其禁止使用emoji表情。</li>",
@@ -81,34 +86,54 @@ var DOC_DATA = {
                 "<li>例：<code>1.0:01</code>，<code>1.0.1:02</code>，<code>2.0:03</code>。</li>",
                 "</ul>",
                 "</li>",
-                "</ul>",
-
-                "<h3 class='version-subtitle'>2. Logo 配置</h3>",
+                "</ul>"
+            ]
+        },
+        {
+            "id": 4,
+            "label": "Logo 配置",
+            "title": "Logo 配置",
+            "content": [
                 "<pre data-lang='JSON'><code>\"logo\": {\n    \"name\": \"\",             // Logo 名称\n    \"location\": \"\",         // Logo 本地相对路径\n    \"specialStyle\": {       // 其他定义（选填）\n        \"dark\": \"\",         // 暗色 Logo 本地相对路径\n        \"online\": \"\",       // 在线 Logo 云端路径\n        \"onlineDark\": \"\",   // 在线 Logo 暗色 Logo 云端路径\n        \"width\": \"\",        // Logo 宽度（如不填则等同于高度，两者都不填默认120px）\n        \"height\": \"\"        // Logo 高度（如不填则等同于宽度）\n    }\n},</code></pre>",
                 "<p><strong>注：</strong></p>",
                 "<ol>",
                 "<li>LOGO 会先加载本地 LOGO，随后检测云端连通性，并在云端 LOGO 加载完毕后显示云端 LOGO。</li>",
                 "<li><code>location</code> 允许直接填写云端路径，无需本地相对路径。但如果同时存在本地和云端 LOGO，则<code>location</code>必须填写本地相对路径，云端链接填写在<code>specialStyle</code>中<code>online</code>。</li>",
                 "<li>若存在<code>dark</code>，但不存在<code>onlineDark</code>，则暗色模式使用<code>dark</code>。</li>",
-                "</ol>",
-
-                "<h3 class='version-subtitle'>3. 字体配置</h3>",
+                "</ol>"
+            ]
+        },
+        {
+            "id": 5,
+            "label": "字体配置",
+            "title": "字体配置",
+            "content": [
                 "<pre data-lang='JSON'><code>\"font\": {\n    \"name\": \"\",             // 字体名称\n    \"location\": \"\",         // 字体本地相对路径\n    \"specialStyle\": {       // 其他定义（选填）\n        \"font-weight\": \"\",    // 字体粗细\n        \"font-size\": \"\"        // 字体大小\n    }\n},</code></pre>",
                 "<p><strong>注：</strong></p>",
                 "<ol>",
                 "<li>字体粗细留空默认400。</li>",
                 "<li>字体大小单位为em，即倍数。留空默认1em。</li>",
                 "<li>字体暂不提供<code>online</code>。</li>",
-                "</ol>",
-
-                "<h3 class='version-subtitle'>4. 壁纸配置</h3>",
+                "</ol>"
+            ]
+        },
+        {
+            "id": 6,
+            "label": "壁纸配置",
+            "title": "壁纸配置",
+            "content": [
                 "<pre data-lang='JSON'><code>\"wallpaper\": {\n    \"name\": \"\",             // 壁纸名称\n    \"location\": \"\",         // 壁纸本地相对路径\n    \"specialStyle\": {       // 其他定义（选填）\n        \"online\": \"\",       // 在线壁纸云端路径\n        \"wallpaperFill\":    // 是否填充壁纸（true/false）\n    }\n},</code></pre>",
                 "<p><strong>注：</strong></p>",
                 "<ol>",
                 "<li><code>wallpaperFill</code> 对应设置页壁纸面板\"填满\"开关，请填写true（开）false（关）。留空则遵循用户设定。建议打开（不想被用户骂的话）。</li>",
-                "</ol>",
-
-                "<h3 class='version-subtitle'>5. 配色方案</h3>",
+                "</ol>"
+            ]
+        },
+        {
+            "id": 7,
+            "label": "配色方案",
+            "title": "配色方案",
+            "content": [
                 "<pre data-lang='JSON'><code>\"color\": {\n    \"name\": \"\",             // 配色方案名称\n    \"specialStyle\": {       // 其他定义（选填）\n        \"colorGroup\": \"\",     // 配色方案组（cjs、add）\n        \"colorScheme\": \"\"     // 配色方案\n    }\n},</code></pre>",
 
                 "<h4 style='margin: 14px 0 8px; font-size: 0.92rem; font-weight: 600; color: var(--text-heading);'><code>colorGroup</code>和<code>colorScheme</code></h4>",
@@ -176,9 +201,14 @@ var DOC_DATA = {
                 "<tr><td><code>particleSaturation</code></td><td>number</td><td>粒子饱和度（0-100）</td></tr>",
                 "<tr><td><code>glowOrbs</code></td><td>string[]</td><td>光晕球颜色数组（4 个，带透明度）</td></tr>",
                 "</tbody>",
-                "</table>",
-
-                "<h3 class='version-subtitle'>6. 额外CSS</h3>",
+                "</table>"
+            ]
+        },
+        {
+            "id": 8,
+            "label": "额外CSS",
+            "title": "额外CSS",
+            "content": [
                 "<pre data-lang='JSON'><code>\"more\": ,            // 额外CSS（true/false）\n\"moreStyle\"{}        // 额外CSS样式（当more为true时）</code></pre>",
                 "<p><strong>注：</strong></p>",
                 "<ol>",
@@ -198,11 +228,11 @@ var DOC_DATA = {
             ]
         },
         {
-            "id": 3,
+            "id": 9,
             "label": "测试方式",
             "title": "测试方式",
             "content": [
-                "<p>晚些时候会发布 OOOInterface 29 测试版，您可以在测试版中测试您的主题。</p>",
+                "<p> OOOInterface 29 测试版现已发布，您可以在测试版中测试您的主题。</p>",
                 "<p>为确保稳定，建议：</p>",
                 "<ol>",
                 "<li>测试时使用\"开发者方案\"导入，随后通过多次重置验证效果。</li>",
