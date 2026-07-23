@@ -23,7 +23,7 @@ var DEFAULT_THEME = {
         },
         "wallpaper": {
             "name": "经典壁纸",
-            "location": "https://rudan177.github.io/OOOInterface/images/back.png",
+            "location": "https://rudan177.github.io/OOOInterface/images/wallpaper/classic.png",
             "specialStyle": {
                 "wallpaperFill": true
             }

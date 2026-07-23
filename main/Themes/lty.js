@@ -23,7 +23,7 @@ var DEFAULT_THEME = {
         },
         "wallpaper": {
             "name": "无尽蓝",
-            "location": "https://rudan177.github.io/OOOInterface/images/wallpaper/tyb.png",
+            "location": "https://rudan177.github.io/OOOInterface/images/wallpaper/tyb.jpg",
             "specialStyle": {
                 "wallpaperFill": true
             }
