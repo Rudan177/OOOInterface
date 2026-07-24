@@ -39,6 +39,53 @@ var DOC_DATA = {
         },
         {
             "id": 1,
+            "label": "官方资源",
+            "title": "官方资源",
+            "content": [
+                "<p>OOOInterface 为主题主题设计师提供丰富的官方资源。</p>",
+                "<h3>Logo 资源</h3>",
+                "<ul>",
+                "<li><strong>林绿色（默认）</strong></li>",
+                "</ul>",
+                "<pre data-lang='url'><code>https://rudan177.github.io/OOOInterface/images/dll.png</code></pre>",
+                "<ul>",
+                "<li><strong>黑白色</strong></li>",
+                "</ul>",
+                "<pre data-lang='url'><code>https://rudan177.github.io/OOOInterface/images/logo/blk.png</code></pre>",
+                "<ul>",
+                "<li><strong>天依蓝</strong></li>",
+                "</ul>",
+                "<pre data-lang='url'><code>https://rudan177.github.io/OOOInterface/images/logo/tyb.png</code></pre>",
+                "<ul>",
+                "<li><strong>活力红</strong></li>",
+                "</ul>",
+                "<pre data-lang='url'><code>https://rudan177.github.io/OOOInterface/images/logo/red.png</code></pre>",
+                "<ul>",
+                "<li><strong>典藏金</strong></li>",
+                "</ul>",
+                "<pre data-lang='url'><code>https://rudan177.github.io/OOOInterface/images/logo/gld.png</code></pre>",
+                "<ul>",
+                "<li><strong>爱上雷神</strong></li>",
+                "</ul>",
+                "<pre data-lang='url'><code>https://rudan177.github.io/OOOInterface/images/logo/iso.png</code></pre>",
+                "<h3>壁纸资源</h3>",
+                "<ul>",
+                "<li><strong>原神丝柯克壁纸（默认）</strong></li>",
+                "</ul>",
+                "<pre data-lang='url'><code>https://rudan177.github.io/OOOInterface/images/back.png</code></pre>",
+                "<ul>",
+                "<li><strong>人民的CEO壁纸（经典）</strong></li>",
+                "</ul>",
+                "<pre data-lang='url'><code>https://rudan177.github.io/OOOInterface/images/wallpaper/classic.png</code></pre>",
+                "<ul>",
+                "<li><strong>无尽蓝专辑封面</strong></li>",
+                "</ul>",
+                "<pre data-lang='url'><code>https://rudan177.github.io/OOOInterface/images/wallpaper/tyb.jpg</code></pre>",
+                "<p>OOOInterface 将持续为主题设计师提供丰富多彩的官方设计资源。</p>"
+            ]
+        },
+        {
+            "id": 2,
             "label": "原理概述",
             "title": "原理概述",
             "content": [
@@ -62,7 +109,7 @@ var DOC_DATA = {
             ]
         },
         {
-            "id": 2,
+            "id": 3,
             "label": "文件结构",
             "title": "文件结构",
             "content": [
@@ -72,7 +119,7 @@ var DOC_DATA = {
             ]
         },
         {
-            "id": 3,
+            "id": 4,
             "label": "主题元信息",
             "title": "主题元信息",
             "content": [
@@ -90,7 +137,7 @@ var DOC_DATA = {
             ]
         },
         {
-            "id": 4,
+            "id": 5,
             "label": "Logo 配置",
             "title": "Logo 配置",
             "content": [
@@ -104,7 +151,7 @@ var DOC_DATA = {
             ]
         },
         {
-            "id": 5,
+            "id": 6,
             "label": "字体配置",
             "title": "字体配置",
             "content": [
@@ -117,8 +164,8 @@ var DOC_DATA = {
                 "</ol>"
             ]
         },
-        {
-            "id": 6,
+                {
+            "id": 7,
             "label": "壁纸配置",
             "title": "壁纸配置",
             "content": [
@@ -130,7 +177,7 @@ var DOC_DATA = {
             ]
         },
         {
-            "id": 7,
+            "id": 8,
             "label": "配色方案",
             "title": "配色方案",
             "content": [
@@ -205,7 +252,7 @@ var DOC_DATA = {
             ]
         },
         {
-            "id": 8,
+            "id": 9,
             "label": "额外CSS",
             "title": "额外CSS",
             "content": [
@@ -228,7 +275,7 @@ var DOC_DATA = {
             ]
         },
         {
-            "id": 9,
+            "id": 10,
             "label": "测试方式",
             "title": "测试方式",
             "content": [
