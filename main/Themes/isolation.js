@@ -10,7 +10,7 @@ var DEFAULT_THEME = {
             "location": "https://rudan177.github.io/OOOInterface/images/logo/iso.png",
             "specialStyle": {
                 "width": "120px",
-                "height": "120px"
+                "height": "89px"
             }
         },
         "font": {
@@ -35,6 +35,11 @@ var DEFAULT_THEME = {
                 "colorScheme": "isolation"
             }
         },
-        "more": false
+        "more": true,
+        "moreStyle": {
+            "specialStyle": {
+                "#logo": "margin-top: 14px;"
+            }
+        }
     }
 }

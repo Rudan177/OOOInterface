@@ -3782,7 +3782,8 @@ class OOOInterface {
             this.settings.wallpaper = 'default';
         } else if (wallpaper === 'bing') {
             this.settings.wallpaper = 'bing';
-            this.checkAndFetchBingWallpaper();
+            this.settings.wallpaperUrl = '';  // 清空旧URL，避免异步获取前显示主题壁纸残留
+            this.fetchBingWallpaper();
         } else if (wallpaper === 'url') {
             if (!this.settings.wallpaperUrl) {
                 this.settings.wallpaper = 'url';
@@ -6192,12 +6193,29 @@ class OOOInterface {
                 return;
         }
         if (expected === undefined) return;
+        // 当主题壁纸就是默认壁纸时，切换到"默认壁纸"选项不算不一致
+        if (settingName === 'wallpaper' && newValue === 'default' && expected === this.localBackgroundUrl) {
+            return;
+        }
         if (newValue !== expected) {
             this.settings.themeEnabled = false;
             this.themeOverrides = null;
             this.applyThemeMoreStyle(null);
             // 移除主题的壁纸显示（homepage-wallpaper 类由 applyTheme 步骤 8 添加）
             document.body.classList.remove('homepage-wallpaper');
+            // 重置仍为主题旧值的设置为默认值，但保留用户刚修改的值
+            if (d.logo && this.settings.logo === d.logo.name && settingName !== 'logo') {
+                this.settings.logo = 'default';
+                this.settings.logoType = 'image';
+            }
+            if (d.font && this.settings.font === d.font.name && settingName !== 'font') {
+                this.settings.font = 'Sans Flex';
+                this.settings.fontWeight = 400;
+                this.settings.fontSize = 1;
+                document.body.style.fontFamily = '';
+                document.body.style.fontWeight = '';
+                document.body.style.fontSize = '';
+            }
             // 清理主题专用的配色残留（'theme-add' 在非主题模式下无意义）
             if (this.settings.colorScheme === 'theme-add') {
                 this.settings.colorScheme = 'green';
