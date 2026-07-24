@@ -40,6 +40,8 @@ class OOOInterface {
             customGradientEnabled: false,
             customGradientStart: 0,
             customGradientEnd: 100,
+            customColors: [],
+            activeCustomColorIndex: -1,
             contextMenuStyle: 'default',
             hideInfoPopup: { enabled: false, type: null, timestamp: null },
             badgeOpenMethod: 'both',
@@ -784,6 +786,22 @@ class OOOInterface {
         if (savedSettings.customGradientEnabled !== undefined) result.customGradientEnabled = savedSettings.customGradientEnabled;
         if (savedSettings.customGradientStart !== undefined) result.customGradientStart = savedSettings.customGradientStart;
         if (savedSettings.customGradientEnd !== undefined) result.customGradientEnd = savedSettings.customGradientEnd;
+        if (savedSettings.customColors !== undefined) result.customColors = savedSettings.customColors;
+        if (savedSettings.activeCustomColorIndex !== undefined) result.activeCustomColorIndex = savedSettings.activeCustomColorIndex;
+        // 旧数据迁移：如果旧版有 customPrimaryColor 且 customColors 为空，迁移到 customColors[0]
+        if (savedSettings.customPrimaryColor && savedSettings.customPrimaryColor.trim() && (!result.customColors || result.customColors.length === 0)) {
+            result.customColors = [{
+                name: '我的配色',
+                primaryColor: savedSettings.customPrimaryColor || '',
+                secondaryColor: savedSettings.customSecondaryColor || '',
+                gradientEnabled: savedSettings.customGradientEnabled || false,
+                gradientStart: savedSettings.customGradientStart !== undefined ? savedSettings.customGradientStart : 0,
+                gradientEnd: savedSettings.customGradientEnd !== undefined ? savedSettings.customGradientEnd : 100
+            }];
+            if (savedSettings.colorScheme === 'custom') {
+                result.activeCustomColorIndex = 0;
+            }
+        }
         if (savedSettings.badgeOpenMethod !== undefined) result.badgeOpenMethod = savedSettings.badgeOpenMethod;
         if (savedSettings.bingRefreshEveryTime !== undefined) result.bingRefreshEveryTime = savedSettings.bingRefreshEveryTime;
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
@@ -1909,7 +1927,7 @@ class OOOInterface {
             const rpu = document.getElementById('right-panel-upper');
             if (rpu && rpu.dataset.subView === 'customize-items') {
                 this.backToContextMenuStyleView(rpu);
-            } else if (rpu && rpu.dataset.subView === 'quick-link-add') {
+            } else if (rpu && (rpu.dataset.subView === 'quick-link-add' || rpu.dataset.subView === 'quick-link-edit')) {
                 const container = rpu.querySelector('.settings-menu-container');
                 if (container && container._qlinput) {
                     this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
@@ -1931,7 +1949,7 @@ class OOOInterface {
                         const rpu = document.getElementById('right-panel-upper');
                         if (rpu && rpu.dataset.subView === 'customize-items') {
                             this.backToContextMenuStyleView(rpu);
-                        } else if (rpu && rpu.dataset.subView === 'quick-link-add') {
+                        } else if (rpu && (rpu.dataset.subView === 'quick-link-add' || rpu.dataset.subView === 'quick-link-edit')) {
                             const container = rpu.querySelector('.settings-menu-container');
                             if (container && container._qlinput) {
                                 this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
@@ -5873,7 +5891,16 @@ class OOOInterface {
             return this.settings.themeColorScheme || getColorConfig('green');
         }
         if (scheme === 'custom') {
-            const customColors = {
+            const customItem = this.settings.customColors && this.settings.customColors.length > 0 && this.settings.activeCustomColorIndex >= 0
+                ? this.settings.customColors[this.settings.activeCustomColorIndex]
+                : null;
+            const customColors = customItem ? {
+                primaryColor: customItem.primaryColor || '',
+                secondaryColor: customItem.secondaryColor || '',
+                gradientEnabled: customItem.gradientEnabled || false,
+                gradientStart: customItem.gradientStart !== undefined ? customItem.gradientStart : 0,
+                gradientEnd: customItem.gradientEnd !== undefined ? customItem.gradientEnd : 100
+            } : {
                 primaryColor: this.settings.customPrimaryColor || '',
                 secondaryColor: this.settings.customSecondaryColor || '',
                 gradientEnabled: this.settings.customGradientEnabled || false,
@@ -5930,18 +5957,19 @@ class OOOInterface {
 
     // 更新下拉列表中自定义配色的颜色圆点
     updateCustomSchemeDropdownDots() {
-        const primary = this.settings.customPrimaryColor || '';
-        const secondary = this.settings.customSecondaryColor || '';
-        const dot = document.querySelector('#color-scheme-select-items .color-scheme-item[data-value="custom"] .color-scheme-dot');
-        if (dot) {
+        // 兼容旧版：更新静态自定义选项的圆点（如果存在）
+        const staticDot = document.querySelector('#color-scheme-select-items .color-scheme-item[data-value="custom"] .color-scheme-dot');
+        if (staticDot) {
+            const primary = this.settings.customPrimaryColor || '';
+            const secondary = this.settings.customSecondaryColor || '';
             if (primary) {
                 if (secondary) {
-                    dot.style.background = 'linear-gradient(135deg, ' + primary + ', ' + secondary + ')';
+                    staticDot.style.background = 'linear-gradient(135deg, ' + primary + ', ' + secondary + ')';
                 } else {
-                    dot.style.background = primary;
+                    staticDot.style.background = primary;
                 }
             } else {
-                dot.style.background = 'linear-gradient(135deg, #cccccc, #dddddd)';
+                staticDot.style.background = 'linear-gradient(135deg, #cccccc, #dddddd)';
             }
         }
     }
@@ -6975,9 +7003,10 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             colorSchemeGroup2.scrollIntoView({ inline: 'center', behavior: 'smooth' });
         });
 
-        // 自定义组
+        // 自定义组（默认隐藏，有自定义配色时显示）
         colorSchemeGroup3 = document.createElement('div');
         colorSchemeGroup3.className = 'color-scheme-group';
+        colorSchemeGroup3.style.display = 'none';
 
         const groupLabel3 = document.createElement('div');
         groupLabel3.className = 'color-scheme-group-label';
@@ -8096,6 +8125,92 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         }
     });
 
+    // 渲染自定义配色方案选项
+    function renderCustomOptions() {
+        if (!colorSchemeGroupList3) return;
+        colorSchemeGroupList3.innerHTML = '';
+        const customColors = self.settings.customColors || [];
+        customColors.forEach((cc, idx) => {
+            const opt = document.createElement('div');
+            opt.className = 'settings-menu-option';
+            opt.setAttribute('data-value', 'custom');
+            opt.setAttribute('data-custom-index', idx);
+
+            const dot = document.createElement('span');
+            dot.className = 'color-scheme-dot';
+            const p = cc.primaryColor || '#cccccc';
+            const s = cc.secondaryColor && cc.secondaryColor.trim() ? cc.secondaryColor : p;
+            if (cc.gradientEnabled && cc.secondaryColor && cc.secondaryColor.trim()) {
+                dot.style.background = 'linear-gradient(135deg, ' + p + ', ' + s + ')';
+            } else {
+                dot.style.background = p;
+            }
+            opt.appendChild(dot);
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = cc.name || '未命名';
+            nameSpan.style.flex = '1';
+            opt.appendChild(nameSpan);
+
+            // 删除按钮
+            const delBtn = document.createElement('button');
+            delBtn.className = 'custom-color-delete-btn';
+            delBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+            delBtn.title = '删除此配色';
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const arr = self.settings.customColors || [];
+                const delIdx = parseInt(idx, 10);
+                if (isNaN(delIdx) || delIdx < 0 || delIdx >= arr.length) return;
+                arr.splice(delIdx, 1);
+                self.settings.customColors = arr;
+                // 如果删除的是当前激活的方案，重置为默认
+                if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex === delIdx) {
+                    self.settings.activeCustomColorIndex = -1;
+                    self.settings.colorScheme = 'green';
+                } else if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex > delIdx) {
+                    self.settings.activeCustomColorIndex -= 1;
+                }
+                self.saveSettings();
+                self.applyColorScheme();
+                renderCustomOptions();
+            });
+            opt.appendChild(delBtn);
+
+            if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex === idx) {
+                opt.classList.add('selected');
+            }
+
+            colorSchemeGroupList3.appendChild(opt);
+        });
+        if (customColors.length > 0) {
+            colorSchemeGroup3.style.display = '';
+        } else {
+            colorSchemeGroup3.style.display = 'none';
+        }
+    }
+
+    renderCustomOptions();
+
+    // 自定义配色选项点击事件（事件委托，只需绑定一次）
+    if (menuType === 'color-scheme' && colorSchemeGroupList3 && !colorSchemeGroupList3._clickBound) {
+        colorSchemeGroupList3._clickBound = true;
+        colorSchemeGroupList3.addEventListener('click', (e) => {
+            const opt = e.target.closest('.settings-menu-option');
+            if (!opt) return;
+            const idx = parseInt(opt.getAttribute('data-custom-index'), 10);
+            if (isNaN(idx) || idx < 0) return;
+            const cc = (self.settings.customColors || [])[idx];
+            if (!cc) return;
+
+            self.settings.colorScheme = 'custom';
+            self.settings.activeCustomColorIndex = idx;
+            self.saveSettings();
+            self.applyColorScheme();
+            self.closeSettingsMenuInRightPanel();
+        });
+    }
+
     if (colorSchemeGroup) {
         optionsList.appendChild(colorSchemeGroup);
     }
@@ -8247,9 +8362,28 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             });
             optionsList.appendChild(clearAllBtn);
         }
+    } else if (menuType === 'color-scheme') {
+        const plusBtn = document.createElement('button');
+        plusBtn.className = 'upload-btn settings-plus-btn';
+        plusBtn.textContent = '+';
+        plusBtn.title = '添加自定义配色';
+        plusBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, selected.textContent, optionsList);
+        });
+        buttonContainer.appendChild(plusBtn);
     }
 
     // 字体 / Logo / 壁纸菜单：拖放导入
+    // 先清理旧拖拽监听器，避免残留影响其他菜单
+    if (rightPanelUpper._dragCleanup) {
+        if (rightPanelUpper._dragenter) rightPanelUpper.removeEventListener('dragenter', rightPanelUpper._dragenter);
+        if (rightPanelUpper._dragover) rightPanelUpper.removeEventListener('dragover', rightPanelUpper._dragover);
+        if (rightPanelUpper._dragleave) rightPanelUpper.removeEventListener('dragleave', rightPanelUpper._dragleave);
+        if (rightPanelUpper._drop) rightPanelUpper.removeEventListener('drop', rightPanelUpper._drop);
+        rightPanelUpper._dragCleanup = false;
+    }
     if (menuType === 'font' || menuType === 'logo' || menuType === 'wallpaper') {
         let dragCounter = 0;
         const showOverlay = () => {
@@ -8266,10 +8400,10 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             const overlay = rightPanelUpper.querySelector('.theme-drop-overlay');
             if (overlay) overlay.style.display = 'none';
         };
-        rightPanelUpper.addEventListener('dragenter', (e) => { e.preventDefault(); e.stopPropagation(); dragCounter++; if (dragCounter === 1) showOverlay(); });
-        rightPanelUpper.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); });
-        rightPanelUpper.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; hideOverlay(); } });
-        rightPanelUpper.addEventListener('drop', (e) => {
+        rightPanelUpper._dragenter = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter++; if (dragCounter === 1) showOverlay(); };
+        rightPanelUpper._dragover = (e) => { e.preventDefault(); e.stopPropagation(); };
+        rightPanelUpper._dragleave = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; hideOverlay(); } };
+        rightPanelUpper._drop = (e) => {
             e.preventDefault(); e.stopPropagation();
             dragCounter = 0; hideOverlay();
             const file = e.dataTransfer.files[0];
@@ -8283,7 +8417,12 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             } else {
                 self.showNotification(`不支持的${menuType === 'font' ? '字体' : menuType === 'logo' ? 'Logo' : '壁纸'}文件格式`);
             }
-        });
+        };
+        rightPanelUpper.addEventListener('dragenter', rightPanelUpper._dragenter);
+        rightPanelUpper.addEventListener('dragover', rightPanelUpper._dragover);
+        rightPanelUpper.addEventListener('dragleave', rightPanelUpper._dragleave);
+        rightPanelUpper.addEventListener('drop', rightPanelUpper._drop);
+        rightPanelUpper._dragCleanup = true;
     }
 
     if (menuType === 'context-menu') {
@@ -8417,10 +8556,14 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     const container = document.createElement('div');
     container.className = 'settings-menu-container slide-in-right';
 
-    const title = document.createElement('div');
-    title.style.cssText = 'font-size:14px;font-weight:600;color:var(--text-color);margin-bottom:16px;';
-    title.textContent = '自定义配色';
-    container.appendChild(title);
+    // 名称输入框
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.placeholder = '自定义配色';
+    nameInput.maxLength = 20;
+    nameInput.value = '';
+    nameInput.style.cssText = 'width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;margin-bottom:16px;box-sizing:border-box;';
+    container.appendChild(nameInput);
 
     const updatePreview = (hexInput, previewEl) => {
         let val = hexInput.value.trim();
@@ -8430,6 +8573,15 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
         } else if (!val) {
             previewEl.style.background = 'transparent';
         }
+    };
+
+    // 临时保存编辑中的颜色值
+    const editData = {
+        primaryColor: '',
+        secondaryColor: '',
+        gradientEnabled: false,
+        gradientStart: 0,
+        gradientEnd: 100
     };
 
     // 主色
@@ -8442,12 +8594,11 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     const primaryWrapper = document.createElement('div');
     primaryWrapper.style.cssText = 'display:flex;align-items:center;gap:8px;';
     const primaryPreview = document.createElement('span');
-    const hasPrimary = self.settings.customPrimaryColor && self.settings.customPrimaryColor.trim();
-    primaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:' + (hasPrimary ? self.settings.customPrimaryColor : 'transparent') + ';';
+    primaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:transparent;';
     primaryWrapper.appendChild(primaryPreview);
     const primaryHex = document.createElement('input');
     primaryHex.type = 'text';
-    primaryHex.value = hasPrimary ? self.settings.customPrimaryColor : '';
+    primaryHex.value = '';
     primaryHex.placeholder = '#RRGGBB';
     primaryHex.maxLength = 7;
     primaryHex.spellcheck = false;
@@ -8466,12 +8617,11 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     const secondaryWrapper = document.createElement('div');
     secondaryWrapper.style.cssText = 'display:flex;align-items:center;gap:8px;';
     const secondaryPreview = document.createElement('span');
-    const secVal = self.settings.customSecondaryColor || '';
-    secondaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:' + (secVal || 'transparent') + ';';
+    secondaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:transparent;';
     secondaryWrapper.appendChild(secondaryPreview);
     const secondaryHex = document.createElement('input');
     secondaryHex.type = 'text';
-    secondaryHex.value = secVal;
+    secondaryHex.value = '';
     secondaryHex.placeholder = '#RRGGBB';
     secondaryHex.maxLength = 7;
     secondaryHex.spellcheck = false;
@@ -8491,7 +8641,7 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     gradientSwitch.className = 'switch';
     const gradientCheckbox = document.createElement('input');
     gradientCheckbox.type = 'checkbox';
-    gradientCheckbox.checked = self.settings.customGradientEnabled || false;
+    gradientCheckbox.checked = false;
     const gradientSlider = document.createElement('span');
     gradientSlider.className = 'slider';
     gradientSwitch.appendChild(gradientCheckbox);
@@ -8504,20 +8654,15 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     gPosRow.style.cssText = 'display:none;margin-bottom:0;';
     gPosRow.id = 'gradient-position-row';
 
-    const gStartVal = self.settings.customGradientStart !== undefined ? self.settings.customGradientStart : 0;
-    const gEndVal = self.settings.customGradientEnd !== undefined ? self.settings.customGradientEnd : 100;
-
     // 拖拽状态
     let dragging = null; // 'start' | 'end' | null
 
     const commitGradientPos = () => {
-        self.settings.customGradientStart = curS;
-        self.settings.customGradientEnd = curE;
-        self.saveSettings();
-        if (self.settings.colorScheme === 'custom') self.applyColorScheme();
+        editData.gradientStart = curS;
+        editData.gradientEnd = curE;
     };
 
-    let curS = gStartVal, curE = gEndVal;
+    let curS = 0, curE = 100;
 
     const updateGradientUI = () => {
         gMarkerS.style.left = curS + '%';
@@ -8561,11 +8706,15 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
         commitGradientPos();
     };
 
+    const updateGradientPreview = () => {
+        const p = primaryHex.value.trim() ? primaryHex.value : '#cccccc';
+        const s = secondaryHex.value.trim() ? secondaryHex.value : p;
+        gPreview.style.background = 'linear-gradient(90deg, ' + p + ' 0%, ' + s + ' 100%)';
+    };
+
     // 渐变条（可拖拽）
     const gPreview = document.createElement('div');
-    const gp = hasPrimary ? self.settings.customPrimaryColor : '#cccccc';
-    const gs = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : gp;
-    gPreview.style.cssText = 'height:20px;border-radius:8px;margin:8px 0 12px;background:linear-gradient(90deg, ' + gp + ' 0%, ' + gs + ' 100%);border:1px solid var(--border-color);position:relative;cursor:grab;touch-action:none;';
+    gPreview.style.cssText = 'height:20px;border-radius:8px;margin:8px 0 12px;background:linear-gradient(90deg, #cccccc 0%, #cccccc 100%);border:1px solid var(--border-color);position:relative;cursor:grab;touch-action:none;';
     gPreview.addEventListener('pointerdown', onPointerDown);
     gPreview.addEventListener('pointermove', onPointerMove);
     gPreview.addEventListener('pointerup', onPointerUp);
@@ -8645,102 +8794,147 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
         return null;
     };
 
-    // 事件 - 立即生效
-    primaryHex.addEventListener('input', () => updatePreview(primaryHex, primaryPreview));
-    primaryHex.addEventListener('change', () => {
-        const parsed = parseHex(primaryHex.value);
-        if (parsed) {
-            primaryHex.value = parsed;
-            self.settings.customPrimaryColor = parsed;
-            primaryPreview.style.background = parsed;
-            self.saveSettings();
-            if (self.settings.colorScheme === 'custom') {
-                self.applyColorScheme();
-                self.updateCustomSchemeDropdownDots();
-            }
-            if (gPreview) {
-                const p = parsed;
-                const s = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : p;
-                gPreview.style.background = 'linear-gradient(90deg, ' + p + ' 0%, ' + s + ' 100%)';
-            }
-        } else if (!primaryHex.value.trim()) {
-            self.settings.customPrimaryColor = '';
-            primaryPreview.style.background = 'transparent';
-            self.saveSettings();
-            if (gPreview) {
-                const s = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : '#cccccc';
-                gPreview.style.background = 'linear-gradient(90deg, #cccccc 0%, ' + s + ' 100%)';
-            }
-        }
+    // 事件 - 仅更新 UI，不保存
+    primaryHex.addEventListener('input', () => {
+        updatePreview(primaryHex, primaryPreview);
+        editData.primaryColor = parseHex(primaryHex.value) || primaryHex.value.trim();
+        updateGradientPreview();
     });
     primaryHex.addEventListener('blur', () => {
         const val = primaryHex.value.trim();
         if (!val) { primaryHex.value = ''; return; }
         const parsed = parseHex(primaryHex.value);
-        if (!parsed) primaryHex.value = self.settings.customPrimaryColor || '';
+        if (!parsed) primaryHex.value = '';
         else primaryHex.value = parsed;
     });
 
     secondaryHex.addEventListener('input', () => {
         updatePreview(secondaryHex, secondaryPreview);
+        editData.secondaryColor = parseHex(secondaryHex.value) || secondaryHex.value.trim();
         updateGradientRowVisibility();
-    });
-    secondaryHex.addEventListener('change', () => {
-        const parsed = parseHex(secondaryHex.value);
-        if (parsed) {
-            secondaryHex.value = parsed;
-            self.settings.customSecondaryColor = parsed;
-            secondaryPreview.style.background = parsed;
-        } else if (!secondaryHex.value.trim()) {
-            self.settings.customSecondaryColor = '';
-            secondaryPreview.style.background = 'transparent';
-        }
-        self.saveSettings();
-        updateGradientRowVisibility();
-        if (self.settings.colorScheme === 'custom') {
-            self.applyColorScheme();
-            self.updateCustomSchemeDropdownDots();
-        }
-        if (gPreview) {
-            const p = self.settings.customPrimaryColor && self.settings.customPrimaryColor.trim() ? self.settings.customPrimaryColor : '#cccccc';
-            const s = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : p;
-            gPreview.style.background = 'linear-gradient(90deg, ' + p + ' 0%, ' + s + ' 100%)';
-        }
+        updateGradientPreview();
     });
     secondaryHex.addEventListener('blur', () => {
         const val = secondaryHex.value.trim();
         if (!val) { secondaryHex.value = ''; return; }
         const parsed = parseHex(secondaryHex.value);
-        if (!parsed) secondaryHex.value = self.settings.customSecondaryColor || '';
+        if (!parsed) secondaryHex.value = '';
         else secondaryHex.value = parsed;
     });
 
     gradientCheckbox.addEventListener('change', () => {
-        self.settings.customGradientEnabled = gradientCheckbox.checked;
-        self.saveSettings();
+        editData.gradientEnabled = gradientCheckbox.checked;
         if (gradientCheckbox.checked && secondaryHex.value.trim()) {
             gPosRow.style.display = 'block';
         } else {
             gPosRow.style.display = 'none';
         }
-        if (self.settings.colorScheme === 'custom') {
-            self.applyColorScheme();
-        }
     });
 
+    // 底部按钮容器
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;margin-top:auto;padding-top:12px;border-top:1px solid var(--border-color);';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '取消';
+    cancelBtn.style.cssText = 'padding:8px 20px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;cursor:pointer;';
+    cancelBtn.addEventListener('click', () => {
+        delete rightPanelUpper.dataset.subView;
+        const items = document.getElementById('color-scheme-select-items');
+        if (items && selected && hiddenSelect) {
+            self.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
+        }
+    });
+    btnRow.appendChild(cancelBtn);
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = '确定';
+    confirmBtn.style.cssText = 'padding:8px 20px;border:none;border-radius:12px;font-size:13px;color:#fff;background:var(--primary-color);cursor:pointer;';
+    confirmBtn.addEventListener('click', () => {
+        // 验证名称
+        let name = nameInput.value.trim();
+        if (!name) name = '自定义配色';
+        // 验证主色
+        const primaryParsed = parseHex(primaryHex.value);
+        if (!primaryParsed) {
+            self.showNotification('请输入有效的主色值');
+            primaryHex.focus();
+            return;
+        }
+        const secondaryParsed = parseHex(secondaryHex.value);
+        const gradientEnabled = gradientCheckbox.checked;
+
+        // 检查名称重复，生成唯一名称
+        const existingNames = (self.settings.customColors || []).map(c => c.name);
+        let finalName = name;
+        if (existingNames.includes(finalName)) {
+            let suffix = 2;
+            while (existingNames.includes(finalName + '(' + suffix + ')')) {
+                suffix++;
+            }
+            finalName = name + '(' + suffix + ')';
+        }
+
+        // 保存到 customColors
+        const newScheme = {
+            name: finalName,
+            primaryColor: primaryParsed,
+            secondaryColor: secondaryParsed || '',
+            gradientEnabled: gradientEnabled,
+            gradientStart: curS,
+            gradientEnd: curE
+        };
+
+        if (!self.settings.customColors) {
+            self.settings.customColors = [];
+        }
+        self.settings.customColors.push(newScheme);
+        const newIndex = self.settings.customColors.length - 1;
+        self.settings.activeCustomColorIndex = newIndex;
+        self.settings.colorScheme = 'custom';
+        self.saveSettings();
+        self.applyColorScheme();
+
+        // 重新渲染颜色方案列表并选中新创建的方案
+        delete rightPanelUpper.dataset.subView;
+        const items = document.getElementById('color-scheme-select-items');
+        if (items && selected && hiddenSelect) {
+            self.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
+        }
+        self.showNotification('已保存配色方案"' + finalName + '"');
+    });
+    btnRow.appendChild(confirmBtn);
+
+    container.appendChild(btnRow);
     rightPanelUpper.appendChild(container);
+    // 强制限制容器高度，防止撑高弹窗
+    const constrainHeight = () => {
+        const parent = rightPanelUpper.parentElement;
+        if (parent) {
+            const px = parent.clientHeight - 60;
+            if (px > 100) container.style.maxHeight = px + 'px';
+        }
+    };
+    constrainHeight();
+    // 窗口尺寸变化时重新计算
+    const resizeHandler = () => constrainHeight();
+    window.addEventListener('resize', resizeHandler);
+    // 清理监听器
+    const origHide = self.hideSettingsQuickLinksAddInterface || self.hideCustomColorEditor;
+    const cleanup = () => window.removeEventListener('resize', resizeHandler);
+    // 观察面板隐藏时清理
+    const mo = new MutationObserver(() => {
+        if (!rightPanelUpper.isConnected || rightPanelUpper.innerHTML === '') {
+            cleanup();
+            mo.disconnect();
+        }
+    });
+    mo.observe(rightPanelUpper, { childList: true, subtree: false });
 };
 
 OOOInterface.prototype.backToCustomColorView = function (rightPanelUpper) {
-    const self = this;
-    if (this.settings.colorScheme !== 'custom' && this.settings.customPrimaryColor && this.settings.customPrimaryColor.trim()) {
-        this.settings.colorScheme = 'custom';
-        this.saveSettings();
-        this.applyColorScheme();
-        const colorSchemeSelect = document.getElementById('color-scheme-select');
-        const colorSchemeSelected = document.getElementById('color-scheme-select-selected');
-        if (colorSchemeSelect) colorSchemeSelect.value = 'custom';
-        if (colorSchemeSelected) colorSchemeSelected.textContent = '自定义';
+    if (rightPanelUpper) {
+        delete rightPanelUpper.dataset.subView;
     }
     this._doBackToCustomColorView(rightPanelUpper);
 };
@@ -8937,8 +9131,10 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     });
 };
 
-OOOInterface.prototype.showQuickLinksAddInterface = function (container, listContainer, buttonContainer) {
+OOOInterface.prototype.showQuickLinksAddInterface = function (container, listContainer, buttonContainer, editIndex) {
     const self = this;
+    const isEdit = typeof editIndex === 'number' && editIndex >= 0;
+    const existingLink = isEdit ? (this.settings.quickLinks[editIndex] || null) : null;
 
     listContainer.style.display = 'none';
     buttonContainer.style.display = 'none';
@@ -8951,21 +9147,23 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
     nameInput.className = 'setting-input';
     nameInput.id = 'quick-link-name';
     nameInput.placeholder = '网站名称';
+    if (isEdit && existingLink) {
+        nameInput.value = existingLink.name;
+    }
 
     const urlInput = document.createElement('input');
     urlInput.type = 'text';
     urlInput.className = 'setting-input';
     urlInput.id = 'quick-link-url';
     urlInput.placeholder = '网站地址';
+    if (isEdit && existingLink) {
+        urlInput.value = existingLink.url;
+    }
 
     const buttonsWrapper = document.createElement('div');
     buttonsWrapper.className = 'settings-menu-button-container quick-links-add-buttons';
 
-    const confirmAddBtn = document.createElement('button');
-    confirmAddBtn.className = 'settings-menu-confirm';
-    confirmAddBtn.textContent = '确定';
-
-    const handleAdd = () => {
+    const handleSave = () => {
         const name = nameInput.value.trim();
         const url = urlInput.value.trim();
 
@@ -8974,10 +9172,31 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
             return;
         }
 
-        self.addQuickLink();
+        if (isEdit) {
+            self.settings.quickLinks[editIndex] = { name, url };
+            self.saveSettings();
+            self.showNotification('快速访问链接已更新');
+        } else {
+            self.addQuickLink();
+        }
         self.updateQuickLinksListInMenu(listContainer);
         self.hideQuickLinksAddInterface(container, inputWrapper, listContainer, buttonContainer);
     };
+
+    const confirmAddBtn = document.createElement('button');
+    confirmAddBtn.className = 'settings-menu-confirm-primary';
+    confirmAddBtn.textContent = '确定';
+
+    // 编辑模式添加取消按钮
+    if (isEdit) {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '取消';
+        cancelBtn.style.cssText = 'padding:8px 20px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;cursor:pointer;';
+        cancelBtn.addEventListener('click', () => {
+            self.hideQuickLinksAddInterface(container, inputWrapper, listContainer, buttonContainer);
+        });
+        buttonsWrapper.appendChild(cancelBtn);
+    }
 
     nameInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -8987,11 +9206,11 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
 
     urlInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            handleAdd();
+            handleSave();
         }
     });
 
-    confirmAddBtn.addEventListener('click', handleAdd);
+    confirmAddBtn.addEventListener('click', handleSave);
 
     buttonsWrapper.appendChild(confirmAddBtn);
 
@@ -9000,7 +9219,10 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
     container.appendChild(inputWrapper);
     container.appendChild(buttonsWrapper);
 
-    document.getElementById('right-panel-upper').dataset.subView = 'quick-link-add';
+    const rpu = document.getElementById('right-panel-upper');
+    if (rpu) {
+        rpu.dataset.subView = isEdit ? 'quick-link-edit' : 'quick-link-add';
+    }
 
     container._qlinput = inputWrapper;
     container._qllist = listContainer;
@@ -9022,7 +9244,7 @@ OOOInterface.prototype.hideQuickLinksAddInterface = function (container, inputWr
     delete container._qlbtn;
 
     const rpu = document.getElementById('right-panel-upper');
-    if (rpu && rpu.dataset.subView === 'quick-link-add') {
+    if (rpu && (rpu.dataset.subView === 'quick-link-add' || rpu.dataset.subView === 'quick-link-edit')) {
         delete rpu.dataset.subView;
     }
 
@@ -9084,6 +9306,16 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         info.appendChild(name);
         info.appendChild(url);
 
+        // 点击编辑链接
+        info.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const container = listContainer.closest('.settings-menu-container');
+            const buttonContainer = container ? container.querySelector('.settings-menu-button-container') : null;
+            if (container) {
+                self.showQuickLinksAddInterface(container, listContainer, buttonContainer, index);
+            }
+        });
+
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-link-menu-btn';
         deleteBtn.textContent = '×';
@@ -9104,17 +9336,12 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
 
         item.addEventListener('dragstart', (e) => {
             item.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', index.toString());
+            e.dataTransfer.setData('text/plain', 'move');
             e.dataTransfer.effectAllowed = 'move';
-            // 设置拖拽时的半透明预览
-            if (e.dataTransfer.setDragImage) {
-                const ghost = item.cloneNode(true);
-                ghost.style.position = 'absolute';
-                ghost.style.top = '-999px';
-                document.body.appendChild(ghost);
-                e.dataTransfer.setDragImage(ghost, 0, 0);
-                setTimeout(() => document.body.removeChild(ghost), 0);
-            }
+            // 清除默认拖拽半透明预览
+            const blankImg = new Image();
+            blankImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            e.dataTransfer.setDragImage(blankImg, 0, 0);
         });
 
         item.addEventListener('dragend', () => {
@@ -9157,37 +9384,41 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
 
         item.addEventListener('drop', (e) => {
             e.preventDefault();
-            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-            if (isNaN(fromIndex)) return;
+            const dragged = listContainer.querySelector('.dragging');
+            if (!dragged) return;
 
             const indicator = listContainer.querySelector('.drag-indicator');
-            let toIndex = index;
+            if (!indicator) return;
 
-            if (indicator) {
-                // 根据指示线的位置决定插入点
-                const allItems = listContainer.querySelectorAll('.quick-link-menu-item:not(.dragging)');
-                const beforeEl = indicator.nextSibling;
-                if (beforeEl) {
-                    const beforeIndex = parseInt(beforeEl.dataset.index);
-                    if (!isNaN(beforeIndex)) {
-                        toIndex = beforeIndex;
-                    }
-                } else {
-                    toIndex = self.settings.quickLinks.length - 1;
+            // 根据指示线位置移动DOM元素
+            const referenceNode = indicator.nextSibling;
+            indicator.remove();
+
+            if (referenceNode) {
+                listContainer.insertBefore(dragged, referenceNode);
+            } else {
+                listContainer.appendChild(dragged);
+            }
+
+            // 更新所有项的 data-index
+            const allItems = listContainer.querySelectorAll('.quick-link-menu-item');
+            allItems.forEach((el, i) => {
+                el.setAttribute('data-index', i);
+            });
+
+            // 根据DOM顺序重建设置数组（不重新渲染，避免闪烁）
+            const newLinks = [];
+            allItems.forEach(el => {
+                const nameEl = el.querySelector('.quick-link-menu-name');
+                const urlEl = el.querySelector('.quick-link-menu-url');
+                if (nameEl && urlEl) {
+                    newLinks.push({ name: nameEl.textContent, url: urlEl.textContent });
                 }
-                indicator.remove();
-            }
+            });
 
-            if (fromIndex !== toIndex) {
-                const links = self.settings.quickLinks;
-                const [movedItem] = links.splice(fromIndex, 1);
-                // 调整目标索引（如果从前面移走了一项，目标索引要减1）
-                const adjustedTo = fromIndex < toIndex ? toIndex - 1 : toIndex;
-                links.splice(adjustedTo, 0, movedItem);
-                self.saveSettings();
-                self.updateQuickLinksListInMenu(listContainer);
-                self.showNotification('顺序已调整');
-            }
+            self.settings.quickLinks = newLinks;
+            self.saveSettings();
+            self.showNotification('顺序已调整');
         });
     });
 
