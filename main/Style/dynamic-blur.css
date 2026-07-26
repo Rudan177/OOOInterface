@@ -402,7 +402,9 @@ body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active {
 }
 
 body.dynamic-blur.color-scheme-custom .engine-btn.active,
-body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active {
+body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active,
+body.dynamic-blur.color-scheme-theme-add .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active {
     background: var(--scheme-gradient) !important;
     color: white !important;
     border: none !important;
@@ -453,7 +455,9 @@ body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active {
     }
 
     body.dynamic-blur.color-scheme-custom .engine-btn.active,
-    body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active {
+    body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active,
+    body.dynamic-blur.color-scheme-theme-add .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active {
         background: var(--scheme-gradient) !important;
         border: none !important;
         backdrop-filter: none !important;
@@ -471,7 +475,9 @@ body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .apply-btn,
 body.dynamic-blur.color-scheme-isolation .apply-btn,
 body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .apply-btn,
 body.dynamic-blur.color-scheme-custom .apply-btn,
-body.dynamic-blur.homepage-wallpaper.color-scheme-custom .apply-btn {
+body.dynamic-blur.homepage-wallpaper.color-scheme-custom .apply-btn,
+body.dynamic-blur.color-scheme-theme-add .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .apply-btn {
     background: var(--scheme-gradient) !important;
     backdrop-filter: blur(120px) saturate(1.6) !important;
     -webkit-backdrop-filter: blur(120px) saturate(1.6) !important;
@@ -482,7 +488,8 @@ body.dynamic-blur.color-scheme-tianyi-blue .settings-plus-btn,
 body.dynamic-blur.color-scheme-vibrant-red .settings-plus-btn,
 body.dynamic-blur.color-scheme-classic-gold .settings-plus-btn,
 body.dynamic-blur.color-scheme-isolation .settings-plus-btn,
-body.dynamic-blur.color-scheme-custom .settings-plus-btn {
+body.dynamic-blur.color-scheme-custom .settings-plus-btn,
+body.dynamic-blur.color-scheme-theme-add .settings-plus-btn {
     background: var(--scheme-gradient) !important;
     border: none !important;
     color: white !important;
@@ -492,7 +499,8 @@ body.dynamic-blur.color-scheme-tianyi-blue .settings-import-btn,
 body.dynamic-blur.color-scheme-vibrant-red .settings-import-btn,
 body.dynamic-blur.color-scheme-classic-gold .settings-import-btn,
 body.dynamic-blur.color-scheme-isolation .settings-import-btn,
-body.dynamic-blur.color-scheme-custom .settings-import-btn {
+body.dynamic-blur.color-scheme-custom .settings-import-btn,
+body.dynamic-blur.color-scheme-theme-add .settings-import-btn {
     background: var(--scheme-gradient) !important;
     border: none !important;
     color: white !important;
@@ -502,7 +510,8 @@ body.dynamic-blur.color-scheme-tianyi-blue .wallpaper-fill-toggle-wrapper,
 body.dynamic-blur.color-scheme-vibrant-red .wallpaper-fill-toggle-wrapper,
 body.dynamic-blur.color-scheme-classic-gold .wallpaper-fill-toggle-wrapper,
 body.dynamic-blur.color-scheme-isolation .wallpaper-fill-toggle-wrapper,
-body.dynamic-blur.color-scheme-custom .wallpaper-fill-toggle-wrapper {
+body.dynamic-blur.color-scheme-custom .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-theme-add .wallpaper-fill-toggle-wrapper {
     background: var(--scheme-gradient) !important;
     border: none !important;
     color: white !important;
@@ -512,7 +521,8 @@ body.dynamic-blur.color-scheme-tianyi-blue .context-menu.show .context-menu-item
 body.dynamic-blur.color-scheme-vibrant-red .context-menu.show .context-menu-item:hover,
 body.dynamic-blur.color-scheme-classic-gold .context-menu.show .context-menu-item:hover,
 body.dynamic-blur.color-scheme-isolation .context-menu.show .context-menu-item:hover,
-body.dynamic-blur.color-scheme-custom .context-menu.show .context-menu-item:hover {
+body.dynamic-blur.color-scheme-custom .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-theme-add .context-menu.show .context-menu-item:hover {
     background: var(--scheme-gradient) !important;
     color: white !important;
 }
@@ -539,7 +549,9 @@ body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active
 }
 
 body.dynamic-blur.color-scheme-custom .engine-btn.active:hover,
-body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active:hover {
+body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-theme-add .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active:hover {
     background: var(--scheme-gradient) !important;
     color: white !important;
     border: none !important;
@@ -588,7 +600,11 @@ body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active:h
     body.dynamic-blur.color-scheme-classic-gold .engine-btn.active:hover,
     body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active:hover,
     body.dynamic-blur.color-scheme-isolation .engine-btn.active:hover,
-    body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active:hover {
+    body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-custom .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-theme-add .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active:hover {
         background-image: var(--scheme-gradient) !important;
         border: none !important;
     }

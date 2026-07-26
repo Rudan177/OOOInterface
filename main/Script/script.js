@@ -90,8 +90,8 @@ class OOOInterface {
         this.init();
     }
 
-    init() {
-        this.loadSettings();
+    async init() {
+        await this.loadSettings();
 
         this.createWallpaperLayers();
 
@@ -109,7 +109,7 @@ class OOOInterface {
         this.bindEvents();
         this.setupMouseScroll();
 
-        this.loadCustomFonts();
+        await this.loadCustomFonts();
 
         this.updateCustomFontsList();
 
@@ -539,15 +539,21 @@ class OOOInterface {
 
     // 加载自定义字体
     loadCustomFonts() {
-        this.settings.customFonts.forEach(font => {
-            const fontFace = new FontFace(font.name, `url(${font.data})`);
-
-            fontFace.load().then((loadedFace) => {
-                document.fonts.add(loadedFace);
-            }).catch((error) => {
-                console.error('自定义字体加载失败:', error);
-            });
+        const promises = this.settings.customFonts.map(font => {
+            try {
+                const buffer = this.dataUrlToArrayBuffer(font.data);
+                const fontFace = new FontFace(font.name, buffer);
+                return fontFace.load().then((loadedFace) => {
+                    document.fonts.add(loadedFace);
+                }).catch((error) => {
+                    console.error('自定义字体加载失败:', error);
+                });
+            } catch (error) {
+                console.error('自定义字体解码失败:', error);
+                return Promise.resolve();
+            }
         });
+        return Promise.all(promises);
     }
 
     // ========== 主题系统 ==========
@@ -676,25 +682,42 @@ class OOOInterface {
     }
 
 
-    loadSettings() {
-        const savedSettings = localStorage.getItem('oooInterfaceSettings');
+    async loadSettings() {
         const isFirstRun = localStorage.getItem('oooInterfaceFirstRun');
 
         if (isFirstRun === null) {
             // 首次运行，使用出厂预设
             this.isFirstRun = true;
             localStorage.setItem('oooInterfaceFirstRun', 'false');
-            this.saveSettings(); // 保存出厂预设
             this.showWelcomeScreen();
         } else {
             this.isFirstRun = false;
         }
 
+        // 优先从 chrome.storage.local 加载，回退到 localStorage（兼容旧版）
+        let savedSettings = null;
+        try {
+            const result = await chrome.storage.local.get('oooInterfaceSettings');
+            savedSettings = result.oooInterfaceSettings || null;
+        } catch (e) {
+            console.warn('chrome.storage.local 读取失败，尝试 localStorage:', e);
+        }
+        if (!savedSettings) {
+            const lsRaw = localStorage.getItem('oooInterfaceSettings');
+            if (lsRaw) {
+                try {
+                    savedSettings = JSON.parse(lsRaw);
+                    // 迁移到 chrome.storage.local
+                    chrome.storage.local.set({ oooInterfaceSettings: savedSettings });
+                } catch (e) {
+                    console.error('localStorage 解析失败:', e);
+                }
+            }
+        }
+
         if (savedSettings) {
             try {
-                const parsedSettings = JSON.parse(savedSettings);
-                // 合并设置，确保新添加的字段有默认值
-                this.settings = this.mergeSettings(parsedSettings);
+                this.settings = this.mergeSettings(savedSettings);
             } catch (error) {
                 console.error('设置加载失败，使用默认设置:', error);
                 this.settings = JSON.parse(JSON.stringify(this.defaultSettings));
@@ -713,8 +736,6 @@ class OOOInterface {
         const badge = document.getElementById('ooo-badge');
         if (!badge) return;
 
-        console.log('设置打开方式:', this.settings.badgeOpenMethod || 'both');
-
         // 移除之前的事件监听器（通过克隆元素来移除所有事件监听器）
         const newBadge = badge.cloneNode(true);
         badge.parentNode.replaceChild(newBadge, badge);
@@ -728,7 +749,6 @@ class OOOInterface {
         if (method !== 'none') {
             if (method === 'both' || method === 'dblclick') {
                 newBadge.addEventListener('dblclick', () => {
-                    console.log('触发双击打开设置');
                     this.openSettings('badge');
                 });
             }
@@ -736,12 +756,9 @@ class OOOInterface {
             if (method === 'both' || method === 'contextmenu') {
                 newBadge.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
-                    console.log('触发右键打开设置');
                     this.openSettings('badge');
                 });
             }
-        } else {
-            console.log('设置打开方式已禁用');
         }
     }
 
@@ -1541,7 +1558,12 @@ class OOOInterface {
             userChangedLogo: this.userChangedLogo
         };
         try {
-            localStorage.setItem('oooInterfaceSettings', JSON.stringify(settingsToSave));
+            const result = chrome.storage.local.set({ oooInterfaceSettings: settingsToSave });
+            if (result && typeof result.catch === 'function') {
+                result.catch(error => {
+                    console.error('保存设置异步失败:', error);
+                });
+            }
         } catch (error) {
             console.error('保存设置失败:', error);
             this.showNotification('保存设置失败');
@@ -1973,6 +1995,7 @@ class OOOInterface {
         // 字体文件上传事件
         document.getElementById('font-upload').addEventListener('change', (e) => {
             this.handleFontUpload(e.target.files[0]);
+            e.target.value = '';
         });
 
         // 主题文件上传事件
@@ -2102,6 +2125,7 @@ class OOOInterface {
 
         // 应用按钮事件
         document.getElementById('apply-settings').addEventListener('click', () => {
+            try {
             this.settings.dynamicBlur = document.getElementById('dynamic-blur-toggle').checked;
             this.settings.enhancedDisplay = document.getElementById('enhanced-display-toggle').checked;
             const oldPersistentWallpaper = this.settings.persistentWallpaper;
@@ -2157,7 +2181,6 @@ class OOOInterface {
             const badgeMethodSelect = document.getElementById('badge-open-method-select');
             if (badgeMethodSelect) {
                 this.settings.badgeOpenMethod = badgeMethodSelect.value;
-                console.log('保存设置打开方式:', this.settings.badgeOpenMethod);
             }
 
             if (oldPersistentWallpaper !== this.settings.persistentWallpaper) {
@@ -2172,6 +2195,10 @@ class OOOInterface {
             this.closeSettings();
             this.showNotification('设置已应用');
             // 无需刷新页面，所有设置已通过组件级更新即时生效
+            } catch (err) {
+                console.error('[Apply] 点击处理异常:', err);
+                this.showNotification('应用设置时出错: ' + err.message);
+            }
         });
 
         // 右键应用按钮打开/关闭开发者模式
@@ -3004,6 +3031,17 @@ class OOOInterface {
         });
     }
 
+    // 将 data URL 解码为 ArrayBuffer（绕过 CSP font-src 对 data: 的限制）
+    dataUrlToArrayBuffer(dataUrl) {
+        const base64 = dataUrl.split(',')[1];
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
     // 处理字体上传
     handleFontUpload(file) {
         if (!file) return;
@@ -3013,39 +3051,56 @@ class OOOInterface {
             const fontData = e.target.result;
             const fontName = file.name.replace(/\.[^/.]+$/, ""); // 移除扩展名
 
-            // 创建字体Face
-            const fontFace = new FontFace(fontName, `url(${fontData})`);
+            // 检查是否已存在同名字体
+            if (this.settings.customFonts.some(font => font.name === fontName)) {
+                this.showNotification(`字体"${fontName}"已存在`);
+                return;
+            }
 
-            fontFace.load().then((loadedFace) => {
-                document.fonts.add(loadedFace);
+            try {
+                // 使用 ArrayBuffer 直接构造 FontFace，绕过 CSP url() 限制
+                const buffer = this.dataUrlToArrayBuffer(fontData);
+                const fontFace = new FontFace(fontName, buffer);
 
-                // 添加到自定义字体列表
-                this.settings.customFonts.push({
-                    name: fontName,
-                    data: fontData
+                fontFace.load().then((loadedFace) => {
+                    try {
+                        document.fonts.add(loadedFace);
+
+                        // 添加到自定义字体列表
+                        this.settings.customFonts.push({
+                            name: fontName,
+                            data: fontData
+                        });
+
+                        // 更新自定义字体列表
+                        this.updateCustomFontsList();
+
+                        // 自定义字体上传必然与主题字体不一致
+                        this.checkThemeConsistency('font', fontName);
+
+                        this.saveSettings();
+                        this.showNotification(`字体"${fontName}"上传成功`);
+
+                        // 刷新右侧面板菜单（如果打开）
+                        const rightPanelUpper = document.getElementById('right-panel-upper');
+                        if (rightPanelUpper && rightPanelUpper.querySelector('.settings-menu-container')) {
+                            const selected = document.getElementById('font-select-selected');
+                            const hiddenSelect = document.getElementById('font-select');
+                            const items = document.getElementById('font-select-items');
+                            this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
+                        }
+                    } catch (err) {
+                        console.error('字体上传后处理异常:', err);
+                        this.showNotification('字体上传处理出错: ' + err.message);
+                    }
+                }).catch((error) => {
+                    console.error('字体加载失败:', error);
+                    this.showNotification('字体加载失败');
                 });
-
-                // 更新自定义字体列表
-                this.updateCustomFontsList();
-
-                // 自定义字体上传必然与主题字体不一致
-                this.checkThemeConsistency('font', fontName);
-
-                this.saveSettings();
-                this.showNotification(`字体"${fontName}"上传成功`);
-
-                // 刷新右侧面板菜单（如果打开）
-                const rightPanelUpper = document.getElementById('right-panel-upper');
-                if (rightPanelUpper && rightPanelUpper.querySelector('.settings-menu-container')) {
-                    const selected = document.getElementById('font-select-selected');
-                    const hiddenSelect = document.getElementById('font-select');
-                    const items = document.getElementById('font-select-items');
-                    this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
-                }
-            }).catch((error) => {
-                console.error('字体加载失败:', error);
-                this.showNotification('字体加载失败');
-            });
+            } catch (error) {
+                console.error('字体解码失败:', error);
+                this.showNotification('字体文件格式不支持');
+            }
         };
 
         reader.onerror = () => {
@@ -3293,6 +3348,9 @@ class OOOInterface {
                 const items = document.getElementById('wallpaper-select-items');
                 this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
             }
+        };
+        reader.onerror = () => {
+            this.showNotification('文件读取失败');
         };
         reader.readAsDataURL(file);
     }
@@ -4101,6 +4159,14 @@ class OOOInterface {
 
         // 从设置中移除
         this.settings.customFonts.splice(index, 1);
+
+        // 从 document.fonts 中移除对应的 FontFace
+        for (const face of document.fonts) {
+            if (face.family === fontName) {
+                document.fonts.delete(face);
+                break;
+            }
+        }
 
         // 如果当前使用的是被删除的字体，则切换回默认字体
         if (this.settings.font === fontName) {
@@ -5509,7 +5575,6 @@ class OOOInterface {
 
         // 更新设置打开方式
         const badgeOpenMethodValue = this.settings.badgeOpenMethod || 'both';
-        console.log('更新设置打开方式UI:', badgeOpenMethodValue);
         const badgeMethodSelect = document.getElementById('badge-open-method-select');
         if (badgeMethodSelect) {
             badgeMethodSelect.value = badgeOpenMethodValue;
@@ -6144,7 +6209,7 @@ class OOOInterface {
     loadThemeFont(fontDef) {
         if (!fontDef || !fontDef.location) return;
         try {
-            const fontFace = new FontFace(fontDef.name, `url(${fontDef.location})`);
+            const fontFace = new FontFace(fontDef.name, `url("${fontDef.location}")`);
             fontFace.load().then((loadedFace) => {
                 document.fonts.add(loadedFace);
             }).catch((error) => {
@@ -6244,6 +6309,12 @@ class OOOInterface {
                 document.body.style.fontWeight = '';
                 document.body.style.fontSize = '';
             }
+            if (d.wallpaper && this.settings.wallpaperUrl === d.wallpaper.location && settingName !== 'wallpaper') {
+                this.settings.wallpaper = 'default';
+                this.settings.wallpaperUrl = this.localBackgroundUrl || '';
+                this.clearWallpaperLayers();
+                document.body.style.backgroundImage = '';
+            }
             // 清理主题专用的配色残留（'theme-add' 在非主题模式下无意义）
             if (this.settings.colorScheme === 'theme-add') {
                 this.settings.colorScheme = 'green';
@@ -6280,7 +6351,7 @@ class OOOInterface {
     // 预设字体名称到字体文件路径的映射
     static get PRESET_FONT_PATHS() {
         return {
-            'Sans Flex': '../fonts/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf',
+            'Sans Flex': '../fonts/GoogleSansFlex-VariableFont.ttf',
             'Ginto': '../fonts/ABCGintoVariable.ttf',
             'Josefin': '../fonts/JosefinSans.ttf',
             'Code': '../fonts/GoogleSansCode.ttf',
@@ -6537,13 +6608,14 @@ class OOOInterface {
 
         // 移除自定义字体类
         this.settings.customFonts.forEach(font => {
-            document.body.classList.remove(`font-${font.name.toLowerCase()}`);
+            const safeClassName = 'font-' + font.name.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+            document.body.classList.remove(safeClassName);
         });
 
         // 直接设置字体而不是使用CSS类
         if (this.settings.customFonts.some(font => font.name === this.settings.font)) {
-            // 对于自定义字体，直接设置font-family
-            document.body.style.fontFamily = this.settings.font;
+            // 对于自定义字体，直接设置font-family（加引号防止含空格的字体名被拆分）
+            document.body.style.fontFamily = `'${this.settings.font}'`;
         } else {
             // 对于预定义字体，使用CSS类
             document.body.style.fontFamily = ''; // 重置为默认
@@ -6559,6 +6631,11 @@ class OOOInterface {
                     break;
                 case 'HMSC':
                     document.body.classList.add('font-hmsc');
+                    break;
+                default:
+                    if (this.settings.font && this.settings.font !== 'Sans Flex') {
+                        document.body.style.fontFamily = `'${this.settings.font}'`;
+                    }
                     break;
             }
         }
@@ -6614,8 +6691,8 @@ class OOOInterface {
             textLogoElement.style.display = 'block';
             textLogoElement.textContent = this.settings.textLogo;
 
-            // 设置文字Logo字体
-            textLogoElement.style.fontFamily = this.getFontFamily();
+            // 设置文字Logo字体（加引号防止含空格的字体名被拆分）
+            textLogoElement.style.fontFamily = `'${this.getFontFamily()}'`;
 
             // 设置文字Logo颜色（日间黑色，夜间白色）
             textLogoElement.style.color = this.isDarkMode ? '#ffffff' : '#000000';
@@ -6693,7 +6770,9 @@ class OOOInterface {
                 case 'Ginto': return 'Ginto';
                 case 'Josefin': return 'Josefin';
                 case 'Code': return 'Code';
-                default: return 'Ginto';
+                case 'HMSC': return 'HMSC';
+                case 'Sans Flex': return 'Sans Flex';
+                default: return this.settings.font || 'Sans Flex';
             }
         }
     }
@@ -9025,11 +9104,13 @@ OOOInterface.prototype.showDefaultRightPanelContent = function (rightPanelUpper)
         if (this.settings.font === 'Ginto') {
             placeholder.style.fontFamily = `'Ginto', system-ui, -apple-system, sans-serif`;
         } else if (this.settings.font === 'Josefin') {
-            placeholder.style.fontFamily = `'Josefin Sans', 'Ginto', system-ui, -apple-system, sans-serif`;
+            placeholder.style.fontFamily = `'Josefin', 'Ginto', system-ui, -apple-system, sans-serif`;
         } else if (this.settings.font === 'Code') {
-            placeholder.style.fontFamily = `'Google Sans Code', 'Ginto', system-ui, -apple-system, sans-serif`;
+            placeholder.style.fontFamily = `'Code', 'Ginto', system-ui, -apple-system, sans-serif`;
+        } else if (this.settings.font === 'HMSC') {
+            placeholder.style.fontFamily = `'HMSC', system-ui, -apple-system, sans-serif`;
         } else if (this.settings.font === 'Sans Flex') {
-            placeholder.style.fontFamily = `'Google Sans Flex', 'Ginto', system-ui, -apple-system, sans-serif`;
+            placeholder.style.fontFamily = `'Sans Flex', 'Ginto', system-ui, -apple-system, sans-serif`;
         } else {
             placeholder.style.fontFamily = `'${this.settings.font}', system-ui, -apple-system, sans-serif`;
         }

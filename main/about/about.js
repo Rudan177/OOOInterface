@@ -29,7 +29,7 @@
             document.body.classList.add('enhanced-display');
         }
     } catch (e) {
-        console.log('Failed to read visual effects settings');
+        console.warn('Failed to read visual effects settings');
     }
 })();
 
