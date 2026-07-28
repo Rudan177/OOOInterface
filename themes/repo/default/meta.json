@@ -1,0 +1,13 @@
+{
+    "name": "默认主题",
+    "version": "1.0:01",
+    "designer": "RUDAN",
+    "time": "2026/07/26",
+    "source": "default.json",
+    "picture": [
+        "default01.png",
+        "default02.png",
+        "default03.png"
+    ],
+    "description": "OOOInterface 默认主题。提供简洁、高效、美观的视觉体验。"
+}

@@ -2,6 +2,7 @@
     "name": "Minecraft",
     "version": "0.8.0:01",
     "designer": "RUDAN",
+    "time": "2026/07/27",
     "source": "minecraft.json",
     "picture": ["minecraft01.png","minecraft02.png"],
     "description": "Minecraft 主题是 OOOInterface 官方设计的一款主题。它基于 OOOInterface Themes 开放的 CSS 自定义体制，为用户带来 Minecraft 般的视觉体验。"

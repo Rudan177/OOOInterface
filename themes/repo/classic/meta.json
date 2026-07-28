@@ -1,0 +1,13 @@
+{
+    "name": "经典主题",
+    "version": "1.0:01",
+    "designer": "RUDAN",
+    "time": "2026/07/26",
+    "source": "classic.json",
+    "picture": [
+        "classic01.png",
+        "classic02.png",
+        "classic03.png"
+    ],
+    "description": "OOOInterface 经典主题。熟悉的logo、字体、配色、壁纸，仿佛再次回到那个夏天"
+}
