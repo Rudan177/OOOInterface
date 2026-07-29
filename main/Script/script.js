@@ -26,6 +26,7 @@ class OOOInterface {
             persistentWallpaper: false,
             searchHistory: true,
             searchHistoryItems: [],
+            engineLocked: false,
             developerMode: false,
             proxyPort: null,
             fontSize: 1,
@@ -92,6 +93,13 @@ class OOOInterface {
 
     async init() {
         await this.loadSettings();
+
+        if (this.settings.engineLocked) {
+            const savedEngine = localStorage.getItem('oooEngineLocked');
+            if (savedEngine === 'google' || savedEngine === 'bing') {
+                this.currentEngine = savedEngine;
+            }
+        }
 
         this.createWallpaperLayers();
 
@@ -188,6 +196,7 @@ class OOOInterface {
             'search-history-toggle': () => this.settings.searchHistory ? 'check_box' : 'check_box_outline_blank',
             'wallpaper-toggle': () => this.settings.persistentWallpaper ? 'check_box' : 'check_box_outline_blank',
             'enhanced-display-toggle': () => this.settings.enhancedDisplay ? 'check_box' : 'check_box_outline_blank',
+            'engine-lock-toggle': () => this.settings.engineLocked ? 'check_box' : 'check_box_outline_blank',
             'hide-notifications-toggle': () => this.settings.hideNotifications ? 'check_box' : 'check_box_outline_blank',
             'hide-info-popup-toggle': () => this.settings.hideInfoPopup.enabled ? 'check_box' : 'check_box_outline_blank'
         };
@@ -210,6 +219,8 @@ class OOOInterface {
         if (wp) wp.checked = this.settings.persistentWallpaper;
         const sh = document.getElementById('search-history-toggle');
         if (sh) sh.checked = this.settings.searchHistory;
+        const el = document.getElementById('engine-lock-toggle');
+        if (el) el.checked = this.settings.engineLocked;
         const hn = document.getElementById('hide-notifications-toggle');
         if (hn) hn.checked = this.settings.hideNotifications;
         const hip = document.getElementById('hide-info-popup-toggle');
@@ -300,6 +311,7 @@ class OOOInterface {
             'search-history-toggle',
             'wallpaper-toggle',
             'enhanced-display-toggle',
+            'engine-lock-toggle',
             'hide-notifications-toggle',
             'hide-info-popup-toggle'
         ];
@@ -789,6 +801,8 @@ class OOOInterface {
             result.searchHistoryItems = savedSettings.searchHistoryItems.filter(item => typeof item === 'string' && item.trim());
         }
 
+        if (savedSettings.engineLocked !== undefined) result.engineLocked = savedSettings.engineLocked;
+
         if (savedSettings.developerMode !== undefined) result.developerMode = savedSettings.developerMode;
         if (savedSettings.proxyPort !== undefined) result.proxyPort = savedSettings.proxyPort;
         if (savedSettings.fontSize !== undefined) result.fontSize = savedSettings.fontSize;
@@ -830,7 +844,7 @@ class OOOInterface {
         if (savedSettings.shortcutsEnabled !== undefined) result.shortcutsEnabled = savedSettings.shortcutsEnabled;
         if (savedSettings.contextMenuCustomItems && Array.isArray(savedSettings.contextMenuCustomItems)) {
             result.contextMenuCustomItems = savedSettings.contextMenuCustomItems.filter(
-                item => ['enhanced-display-toggle', 'wallpaper-toggle', 'search-history-toggle', 'hide-notifications-toggle', 'hide-info-popup-toggle'].includes(item)
+                item => ['enhanced-display-toggle', 'wallpaper-toggle', 'search-history-toggle', 'engine-lock-toggle', 'hide-notifications-toggle', 'hide-info-popup-toggle'].includes(item)
             );
         }
 
@@ -2137,6 +2151,7 @@ class OOOInterface {
                 this.settings.wallpaperFill = panelFillToggle.checked;
             }
             this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
+            this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
             this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
             // 读取快速访问侧边栏开关
@@ -2814,6 +2829,9 @@ class OOOInterface {
             case 'enhanced-display-toggle':
                 this.toggleEnhancedDisplaySetting();
                 break;
+            case 'engine-lock-toggle':
+                this.toggleEngineLockSetting();
+                break;
             case 'hide-notifications-toggle':
                 this.toggleHideNotificationsSetting();
                 break;
@@ -2871,6 +2889,20 @@ class OOOInterface {
         this.updateContextMenuIcons();
         this.syncSettingsPageToggles();
         this.showNotification(this.settings.searchHistory ? '搜索历史：开启' : '搜索历史：关闭');
+    }
+
+    // 切换引擎锁定设置
+    toggleEngineLockSetting() {
+        this.settings.engineLocked = !this.settings.engineLocked;
+        if (this.settings.engineLocked) {
+            localStorage.setItem('oooEngineLocked', this.currentEngine);
+        } else {
+            localStorage.removeItem('oooEngineLocked');
+        }
+        this.saveSettings();
+        this.updateContextMenuIcons();
+        this.syncSettingsPageToggles();
+        this.showNotification(this.settings.engineLocked ? '引擎锁定：开启' : '引擎锁定：关闭');
     }
 
     // 切换壁纸常显示设置
@@ -5125,6 +5157,11 @@ class OOOInterface {
             this.applyLogo();
         }
 
+        // 如果引擎锁定，保存到localStorage
+        if (this.settings.engineLocked) {
+            localStorage.setItem('oooEngineLocked', engine);
+        }
+
         // 为按钮添加logo类名
         this.updateEngineButtonClasses();
 
@@ -5548,6 +5585,7 @@ class OOOInterface {
         document.getElementById('persistent-wallpaper-toggle').checked = this.settings.persistentWallpaper;
         document.getElementById('wallpaper-scale-toggle').checked = this.settings.wallpaperScale;
         document.getElementById('search-history-toggle').checked = this.settings.searchHistory;
+        document.getElementById('engine-lock-toggle').checked = this.settings.engineLocked;
         document.getElementById('hide-info-popup-toggle').checked = this.settings.hideInfoPopup.enabled;
         document.getElementById('quick-access-sidebar-toggle').checked = this.settings.quickAccessSidebar;
         document.getElementById('hide-notifications-toggle').checked = this.settings.hideNotifications;
@@ -8581,6 +8619,7 @@ OOOInterface.prototype.renderContextMenuCustomizeView = function (rightPanelUppe
         { key: 'search-history-toggle', label: '搜索历史' },
         { key: 'wallpaper-toggle', label: '壁纸常显示' },
         { key: 'enhanced-display-toggle', label: '高级视觉效果' },
+        { key: 'engine-lock-toggle', label: '引擎锁定' },
         { key: 'hide-notifications-toggle', label: '隐藏弹窗' },
         { key: 'hide-info-popup-toggle', label: '禁止提示' }
     ];
