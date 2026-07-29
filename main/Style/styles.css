@@ -4531,6 +4531,7 @@ body.color-scheme-black-white .context-menu-grid.compact .context-menu-item:hove
 .context-menu-grid.minimal .context-menu-item[data-action="search-history-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="wallpaper-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="enhanced-display-toggle"],
+.context-menu-grid.minimal .context-menu-item[data-action="engine-lock-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="hide-notifications-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="hide-info-popup-toggle"] {
     display: none;
