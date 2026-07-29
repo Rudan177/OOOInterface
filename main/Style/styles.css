@@ -1918,6 +1918,11 @@ body.scrolled.dynamic-blur .ooo-badge {
     display: block;
 }
 
+.settings-import-btn .material-icons {
+    font-size: 18px;
+    display: block;
+}
+
 @media (prefers-color-scheme: dark) {
     .settings-plus-btn {
         background: var(--surface-color) !important;

@@ -6971,9 +6971,23 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
         container.appendChild(optionsList);
 
-        // "+" 按钮
+        // 底部按钮容器
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'settings-menu-button-container';
+
+        // 主题商店按钮
+        const storeBtn = document.createElement('button');
+        storeBtn.className = 'settings-import-btn';
+        storeBtn.innerHTML = '<span class="material-icons">store</span>';
+        storeBtn.title = '打开主题商店';
+        storeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.open('https://rudan177.github.io/OOOInterface/themes/store.html', '_blank');
+        });
+        buttonContainer.appendChild(storeBtn);
+
+        // "+" 按钮
         const plusBtn = document.createElement('button');
         plusBtn.className = 'upload-btn settings-plus-btn';
         plusBtn.textContent = '+';
