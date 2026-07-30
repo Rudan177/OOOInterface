@@ -7552,3 +7552,66 @@ body.dynamic-blur .series-preview-item {
         background-color: #aaaaaa !important;
     }
 }
+
+.controller-focus {
+    outline: 2.5px solid var(--scheme-accent, #1a73e8) !important;
+    outline-offset: 3px !important;
+    border-radius: 12px;
+    position: relative;
+    z-index: 1;
+    transition: outline 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.dynamic-blur .controller-focus {
+    box-shadow: 0 0 16px rgba(var(--scheme-accent-rgb, 26, 115, 232), 0.35) !important;
+}
+
+.controller-settings .developer-control-item {
+    margin-bottom: 8px;
+}
+
+.controller-settings .setting-group {
+    margin-top: 0;
+}
+
+#controller-cursor {
+    will-change: transform, left, top;
+}
+
+#radial-menu {
+    z-index: 1001;
+}
+
+body.dynamic-blur .radial-wheel {
+    background: rgba(0,0,0,0.45);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+    will-change: transform;
+}
+
+body:not(.dynamic-blur) .radial-wheel {
+    background: rgba(0,0,0,0.6);
+    will-change: transform;
+}
+
+.radial-item {
+    will-change: transform, color, text-shadow;
+}
+
+.radial-item.material-icons {
+    font-size: 30px;
+}
+
+.search-container.controller-focus {
+    outline: 2.5px solid var(--scheme-accent, #1a73e8) !important;
+    outline-offset: 3px !important;
+    border-radius: var(--border-radius, 28px);
+    transition: outline 0.15s ease;
+}
+
+.switch.controller-focus {
+    outline: 2.5px solid var(--scheme-accent, #1a73e8) !important;
+    outline-offset: 3px !important;
+    border-radius: 28px;
+    transition: outline 0.15s ease;
+}
