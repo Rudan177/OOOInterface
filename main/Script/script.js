@@ -226,6 +226,25 @@ class OOOInterface {
         const hip = document.getElementById('hide-info-popup-toggle');
         if (hip) hip.checked = this.settings.hideInfoPopup.enabled;
         this.updateHideInfoPopupLabel();
+        this.syncStatusBarUI();
+    }
+
+    syncStatusBarUI() {
+        const statusBarToggle = document.getElementById('status-bar-toggle');
+        const showSecondsGroup = document.getElementById('show-seconds-group');
+        const showSecondsToggle = document.getElementById('show-seconds-toggle');
+        if (statusBarToggle) {
+            statusBarToggle.checked = this.settings.statusBarEnabled;
+        }
+        if (showSecondsGroup && showSecondsToggle) {
+            if (this.settings.statusBarEnabled) {
+                showSecondsGroup.style.display = 'block';
+                showSecondsToggle.checked = this.settings.showStatusBarSeconds;
+            } else {
+                showSecondsGroup.style.display = 'none';
+                showSecondsToggle.checked = false;
+            }
+        }
     }
 
     // 初始化右键菜单项自定义面板
@@ -1817,7 +1836,7 @@ class OOOInterface {
     startStatusBarTimer() {
         this.stopStatusBarTimer();
 
-        const shouldShow = this.settings.developerMode && this.settings.statusBarEnabled;
+        const shouldShow = this.settings.statusBarEnabled;
         if (!shouldShow) {
             return;
         }
@@ -1848,7 +1867,7 @@ class OOOInterface {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return;
 
-        const shouldShow = this.settings.developerMode && this.settings.statusBarEnabled;
+        const shouldShow = this.settings.statusBarEnabled;
 
         if (!shouldShow) {
             statusBar.classList.remove('visible');
@@ -1880,6 +1899,22 @@ class OOOInterface {
             e.preventDefault();
             this.performGoogleLucky();
         });
+
+        // 状态栏双击事件 - 切换显示秒钟
+        const statusBarEl = document.getElementById('status-bar');
+        if (statusBarEl) {
+            statusBarEl.addEventListener('dblclick', () => {
+                this.settings.showStatusBarSeconds = !this.settings.showStatusBarSeconds;
+                this.saveSettings();
+                const showSecondsToggle = document.getElementById('show-seconds-toggle');
+                if (showSecondsToggle) showSecondsToggle.checked = this.settings.showStatusBarSeconds;
+                if (this.settings.statusBarEnabled) {
+                    this.updateStatusBarText();
+                    this.startStatusBarTimer();
+                }
+                this.showNotification(this.settings.showStatusBarSeconds ? '显示秒钟：开启' : '显示秒钟：关闭');
+            });
+        }
 
         // 搜索功能
         const searchInput = document.getElementById('search-input');
@@ -5813,28 +5848,8 @@ class OOOInterface {
             document.getElementById('font-weight-value').value = this.settings.fontWeight;
             document.getElementById('search-box-height').value = this.settings.searchBoxHeight;
             document.getElementById('search-box-height-value').value = this.settings.searchBoxHeight;
-
-            const statusBarToggle = document.getElementById('status-bar-toggle');
-            const showSecondsGroup = document.getElementById('show-seconds-group');
-            const showSecondsToggle = document.getElementById('show-seconds-toggle');
-            if (statusBarToggle) {
-                statusBarToggle.checked = this.settings.statusBarEnabled;
-            }
-            if (showSecondsGroup && showSecondsToggle) {
-                if (this.settings.statusBarEnabled) {
-                    showSecondsGroup.style.display = 'block';
-                    showSecondsToggle.checked = this.settings.showStatusBarSeconds;
-                } else {
-                    showSecondsGroup.style.display = 'none';
-                    showSecondsToggle.checked = false;
-                }
-            }
-        } else {
-            const showSecondsGroup = document.getElementById('show-seconds-group');
-            if (showSecondsGroup) {
-                showSecondsGroup.style.display = 'none';
-            }
         }
+        this.syncStatusBarUI();
 
         // 快捷键开关独立于开发者模式
         const shortcutsToggle = document.getElementById('shortcuts-toggle');

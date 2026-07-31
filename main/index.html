@@ -401,7 +401,7 @@
                             </div>
                         </div>
 
-                        <div class="setting-group" style="margin-bottom: 0;">
+                        <div class="setting-group">
                             <div class="switch-label">
                                 <span class="setting-label">
                                     快捷键
@@ -415,29 +415,97 @@
                             </div>
                         </div>
 
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">手柄控制器</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="controller-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="controller-settings" id="controller-settings" style="display:none;padding-left:20px;">
+                            <div class="setting-group">
+                                <div class="switch-label">
+                                    <span class="setting-label">反转A/B键</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="controller-invert-ab">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="developer-control-item">
+                                <label for="controller-speed">光标速度:</label>
+                                <div class="control-with-reset">
+                                    <input type="range" id="controller-speed" class="slider-input" min="1" max="20" step="1" value="6">
+                                    <input type="number" id="controller-speed-value" class="slider-value-input" min="1" max="20" step="1" value="6">
+                                </div>
+                            </div>
+                            <div class="developer-control-item">
+                                <label for="controller-ls-select">左摇杆按下:</label>
+                                <div class="custom-select" style="min-width:120px;">
+                                    <div class="select-selected" id="controller-ls-selected">无</div>
+                                    <div class="select-items select-hide" id="controller-ls-items">
+                                        <div class="select-item" data-value="none">无</div>
+                                        <div class="select-item" data-value="settings">打开设置</div>
+                                        <div class="select-item" data-value="refresh">刷新页面</div>
+                                        <div class="select-item" data-value="history">切换搜索历史</div>
+                                        <div class="select-item" data-value="wallpaper">切换壁纸常显示</div>
+                                    </div>
+                                    <select id="controller-ls-select" style="display:none;">
+                                        <option value="none">无</option>
+                                        <option value="settings">打开设置</option>
+                                        <option value="refresh">刷新页面</option>
+                                        <option value="history">切换搜索历史</option>
+                                        <option value="wallpaper">切换壁纸常显示</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="developer-control-item">
+                                <label for="controller-rs-select">右摇杆按下:</label>
+                                <div class="custom-select" style="min-width:120px;">
+                                    <div class="select-selected" id="controller-rs-selected">无</div>
+                                    <div class="select-items select-hide" id="controller-rs-items">
+                                        <div class="select-item" data-value="none">无</div>
+                                        <div class="select-item" data-value="settings">打开设置</div>
+                                        <div class="select-item" data-value="refresh">刷新页面</div>
+                                        <div class="select-item" data-value="history">切换搜索历史</div>
+                                        <div class="select-item" data-value="wallpaper">切换壁纸常显示</div>
+                                    </div>
+                                    <select id="controller-rs-select" style="display:none;">
+                                        <option value="none">无</option>
+                                        <option value="settings">打开设置</option>
+                                        <option value="refresh">刷新页面</option>
+                                        <option value="history">切换搜索历史</option>
+                                        <option value="wallpaper">切换壁纸常显示</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">状态栏</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="status-bar-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-group" id="show-seconds-group" style="padding-left: 20px;">
+                            <div class="switch-label">
+                                <span class="setting-label">显示秒钟</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="show-seconds-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="setting-group" id="developer-mode-group" style="display: none;">
                             <label style="font-size:1.2em; margin-top: 28px;">开发者模式:</label>
                             <div class="developer-mode-controls">
 
-                                <div class="setting-group" style="margin-bottom: 0;">
-                                    <div class="switch-label">
-                                        <span class="setting-label">状态栏</span>
-                                        <label class="switch">
-                                            <input type="checkbox" id="status-bar-toggle">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="setting-group" id="show-seconds-group"
-                                    style="padding-left: 20px; margin-bottom: 0;">
-                                    <div class="switch-label">
-                                        <span class="setting-label">显示秒钟</span>
-                                        <label class="switch">
-                                            <input type="checkbox" id="show-seconds-toggle">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
                                 <div class="developer-control-item">
                                     <label for="font-size-slider">字体大小:</label>
                                     <div class="control-with-reset">
@@ -484,73 +552,6 @@
                                             <option value="8080">8080</option>
                                             <option value="10809">10809</option>
                                             <option value="custom">自定义端口</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="setting-group" style="margin-top:8px;">
-                                <div class="switch-label">
-                                    <span class="setting-label">手柄控制器</span>
-                                    <label class="switch">
-                                        <input type="checkbox" id="controller-toggle">
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="controller-settings" id="controller-settings" style="display:none;padding-left:20px;">
-                                <div class="developer-control-item">
-                                    <label for="controller-speed">光标速度:</label>
-                                    <div class="control-with-reset">
-                                        <input type="range" id="controller-speed" class="slider-input" min="1" max="20" step="1" value="6">
-                                        <input type="number" id="controller-speed-value" class="slider-value-input" min="1" max="20" step="1" value="6">
-                                    </div>
-                                </div>
-                                <div class="setting-group" style="margin-bottom:0;">
-                                    <div class="switch-label">
-                                        <span class="setting-label">反转A/B键</span>
-                                        <label class="switch">
-                                            <input type="checkbox" id="controller-invert-ab">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="developer-control-item">
-                                    <label for="controller-ls-select">左摇杆按下:</label>
-                                    <div class="custom-select" style="min-width:120px;">
-                                        <div class="select-selected" id="controller-ls-selected">无</div>
-                                        <div class="select-items select-hide" id="controller-ls-items">
-                                            <div class="select-item" data-value="none">无</div>
-                                            <div class="select-item" data-value="settings">打开设置</div>
-                                            <div class="select-item" data-value="refresh">刷新页面</div>
-                                            <div class="select-item" data-value="history">切换搜索历史</div>
-                                            <div class="select-item" data-value="wallpaper">切换壁纸常显示</div>
-                                        </div>
-                                        <select id="controller-ls-select" style="display:none;">
-                                            <option value="none">无</option>
-                                            <option value="settings">打开设置</option>
-                                            <option value="refresh">刷新页面</option>
-                                            <option value="history">切换搜索历史</option>
-                                            <option value="wallpaper">切换壁纸常显示</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="developer-control-item">
-                                    <label for="controller-rs-select">右摇杆按下:</label>
-                                    <div class="custom-select" style="min-width:120px;">
-                                        <div class="select-selected" id="controller-rs-selected">无</div>
-                                        <div class="select-items select-hide" id="controller-rs-items">
-                                            <div class="select-item" data-value="none">无</div>
-                                            <div class="select-item" data-value="settings">打开设置</div>
-                                            <div class="select-item" data-value="refresh">刷新页面</div>
-                                            <div class="select-item" data-value="history">切换搜索历史</div>
-                                            <div class="select-item" data-value="wallpaper">切换壁纸常显示</div>
-                                        </div>
-                                        <select id="controller-rs-select" style="display:none;">
-                                            <option value="none">无</option>
-                                            <option value="settings">打开设置</option>
-                                            <option value="refresh">刷新页面</option>
-                                            <option value="history">切换搜索历史</option>
-                                            <option value="wallpaper">切换壁纸常显示</option>
                                         </select>
                                     </div>
                                 </div>

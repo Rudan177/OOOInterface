@@ -1085,6 +1085,14 @@ class Controller {
             };
             speed.addEventListener('input', (e) => updateSpeed(e.target.value));
             speedVal.addEventListener('input', (e) => updateSpeed(e.target.value));
+            speedVal.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                let val = parseInt(e.target.value) || 6;
+                val += e.deltaY > 0 ? -1 : 1;
+                if (val < 1) val = 1;
+                if (val > 20) val = 20;
+                updateSpeed(val);
+            });
         }
 
         const inv = document.getElementById('controller-invert-ab');
