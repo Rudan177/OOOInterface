@@ -1,8 +1,8 @@
-const VERSION = "5.2:29-BS189";
-const PACKAGE_ID = "0x7F2d9C5E8a1B7Df2";
-const PACKAGE_FLAG = "Beta";
+const VERSION = "5.2:29-RS190";
+const PACKAGE_ID = "0x3A9f7B2c4E1d8F6a";
+const PACKAGE_FLAG = "Release";
 const PRODUCT_NAME = "OOOInterface 29";
-const RELEASE_DATE = "2026年7月31日";
+const RELEASE_DATE = "2026年8月1日";
 const LICENSE_ID = "ABCD-26W08A";
 const COPYRIGHT = "© 2026 ByRUDAN 保留所有权利";
 
