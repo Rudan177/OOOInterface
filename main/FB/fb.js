@@ -163,7 +163,6 @@ class ContextMenu {
         const selectedText = window.getSelection().toString();
         navigator.clipboard.writeText(selectedText)
             .then(() => {
-                console.log('文本已复制到剪贴板');
             })
             .catch(err => {
                 console.error('复制失败:', err);

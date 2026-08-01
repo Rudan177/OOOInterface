@@ -26,6 +26,7 @@ class OOOInterface {
             persistentWallpaper: false,
             searchHistory: true,
             searchHistoryItems: [],
+            engineLocked: false,
             developerMode: false,
             proxyPort: null,
             fontSize: 1,
@@ -40,18 +41,24 @@ class OOOInterface {
             customGradientEnabled: false,
             customGradientStart: 0,
             customGradientEnd: 100,
+            customColors: [],
+            activeCustomColorIndex: -1,
             contextMenuStyle: 'default',
             hideInfoPopup: { enabled: false, type: null, timestamp: null },
             badgeOpenMethod: 'both',
             bingRefreshEveryTime: true,
             bingRefreshInterval: 0,
-            quickAccessSidebar: false,
+            quickAccessSidebar: true,
             showQuickLinkIcons: true,
             statusBarEnabled: false,
             showStatusBarSeconds: false,
             hideNotifications: false,
             contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle'],
-            shortcutsEnabled: false
+            shortcutsEnabled: true,
+            theme: 'default',           // 当前主题 key（文件 basename 去扩展名）
+            themeEnabled: false,        // 主题功能是否开启
+            themeColorScheme: null,     // 当主题 color.colorGroup === 'add' 时存放完整配色配置
+            customThemes: []             // 用户导入的自定义主题 [{key, name, designer, version, data}]
         };
 
         this.currentEngine = 'google';
@@ -77,11 +84,22 @@ class OOOInterface {
         this.wallpaperBlur = null;
         this.wallpaperMain = null;
 
+        // 主题系统状态
+        this.themes = {};           // { key: themeObject }
+        this.themeOverrides = null; // { logo, font, wallpaper } 当前主题的覆盖配置
+
         this.init();
     }
 
-    init() {
-        this.loadSettings();
+    async init() {
+        await this.loadSettings();
+
+        if (this.settings.engineLocked) {
+            const savedEngine = localStorage.getItem('oooEngineLocked');
+            if (savedEngine === 'google' || savedEngine === 'bing') {
+                this.currentEngine = savedEngine;
+            }
+        }
 
         this.createWallpaperLayers();
 
@@ -99,7 +117,7 @@ class OOOInterface {
         this.bindEvents();
         this.setupMouseScroll();
 
-        this.loadCustomFonts();
+        await this.loadCustomFonts();
 
         this.updateCustomFontsList();
 
@@ -108,6 +126,9 @@ class OOOInterface {
         this.initQuickAccessSidebar();
 
         this.applySettings();
+
+        // 异步加载主题列表（不阻塞首屏）
+        this.loadThemes();
 
         this.updateCustomSchemeDropdownDots();
 
@@ -175,6 +196,7 @@ class OOOInterface {
             'search-history-toggle': () => this.settings.searchHistory ? 'check_box' : 'check_box_outline_blank',
             'wallpaper-toggle': () => this.settings.persistentWallpaper ? 'check_box' : 'check_box_outline_blank',
             'enhanced-display-toggle': () => this.settings.enhancedDisplay ? 'check_box' : 'check_box_outline_blank',
+            'engine-lock-toggle': () => this.settings.engineLocked ? 'check_box' : 'check_box_outline_blank',
             'hide-notifications-toggle': () => this.settings.hideNotifications ? 'check_box' : 'check_box_outline_blank',
             'hide-info-popup-toggle': () => this.settings.hideInfoPopup.enabled ? 'check_box' : 'check_box_outline_blank'
         };
@@ -197,11 +219,32 @@ class OOOInterface {
         if (wp) wp.checked = this.settings.persistentWallpaper;
         const sh = document.getElementById('search-history-toggle');
         if (sh) sh.checked = this.settings.searchHistory;
+        const el = document.getElementById('engine-lock-toggle');
+        if (el) el.checked = this.settings.engineLocked;
         const hn = document.getElementById('hide-notifications-toggle');
         if (hn) hn.checked = this.settings.hideNotifications;
         const hip = document.getElementById('hide-info-popup-toggle');
         if (hip) hip.checked = this.settings.hideInfoPopup.enabled;
         this.updateHideInfoPopupLabel();
+        this.syncStatusBarUI();
+    }
+
+    syncStatusBarUI() {
+        const statusBarToggle = document.getElementById('status-bar-toggle');
+        const showSecondsGroup = document.getElementById('show-seconds-group');
+        const showSecondsToggle = document.getElementById('show-seconds-toggle');
+        if (statusBarToggle) {
+            statusBarToggle.checked = this.settings.statusBarEnabled;
+        }
+        if (showSecondsGroup && showSecondsToggle) {
+            if (this.settings.statusBarEnabled) {
+                showSecondsGroup.style.display = 'block';
+                showSecondsToggle.checked = this.settings.showStatusBarSeconds;
+            } else {
+                showSecondsGroup.style.display = 'none';
+                showSecondsToggle.checked = false;
+            }
+        }
     }
 
     // 初始化右键菜单项自定义面板
@@ -287,6 +330,7 @@ class OOOInterface {
             'search-history-toggle',
             'wallpaper-toggle',
             'enhanced-display-toggle',
+            'engine-lock-toggle',
             'hide-notifications-toggle',
             'hide-info-popup-toggle'
         ];
@@ -526,36 +570,185 @@ class OOOInterface {
 
     // 加载自定义字体
     loadCustomFonts() {
-        this.settings.customFonts.forEach(font => {
-            const fontFace = new FontFace(font.name, `url(${font.data})`);
+        const promises = this.settings.customFonts.map(font => {
+            try {
+                const buffer = this.dataUrlToArrayBuffer(font.data);
+                const fontFace = new FontFace(font.name, buffer);
+                return fontFace.load().then((loadedFace) => {
+                    document.fonts.add(loadedFace);
+                }).catch((error) => {
+                    console.error('自定义字体加载失败:', error);
+                });
+            } catch (error) {
+                console.error('自定义字体解码失败:', error);
+                return Promise.resolve();
+            }
+        });
+        return Promise.all(promises);
+    }
 
-            fontFace.load().then((loadedFace) => {
-                document.fonts.add(loadedFace);
-            }).catch((error) => {
-                console.error('自定义字体加载失败:', error);
+    // ========== 主题系统 ==========
+
+    // 加载所有主题：读取 themes.json 清单逐个加载
+    // 用户新增主题时，将 .js 文件放入 Themes/ 目录，并在 themes.json 中登记文件名
+    async loadThemes() {
+        this.themes = {};
+        let fileNames = [];
+
+        try {
+            const response = await fetch('Themes/themes.json');
+            if (response.ok) {
+                const data = await response.json();
+                fileNames = Array.isArray(data.themes) ? data.themes : [];
+            }
+        } catch (e) {
+            console.warn('themes.json 加载失败:', e);
+        }
+
+        for (const fileName of fileNames) {
+            if (!fileName.endsWith('.js')) continue;
+            try {
+                const theme = await this.loadThemeFile(fileName);
+                if (theme && theme.info && theme.details) {
+                    const key = fileName.replace(/\.js$/, '');
+                    this.themes[key] = this.normalizeThemePaths(theme);
+                }
+            } catch (e) {
+                console.warn(`主题文件 ${fileName} 加载失败:`, e);
+            }
+        }
+
+        this.populateThemeSelect();
+
+        // 注册已导入的自定义主题
+        if (this.settings.customThemes) {
+            this.settings.customThemes.forEach(ct => {
+                if (ct.data && !this.themes[ct.key]) {
+                    this.themes[ct.key] = ct.data;
+                }
             });
+        }
+
+        // 页面刷新后恢复主题样式
+        if (this.settings.themeEnabled && this.settings.theme && this.themes[this.settings.theme]) {
+            this.applyTheme(this.settings.theme, { silent: true });
+        }
+    }
+
+    // 通过 <script> 标签加载单个主题文件，捕获 DEFAULT_THEME 全局变量
+    loadThemeFile(fileName) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = `Themes/${fileName}`;
+            script.async = false;
+            script.onload = () => {
+                const theme = window.DEFAULT_THEME;
+                try { delete window.DEFAULT_THEME; } catch (e) { window.DEFAULT_THEME = undefined; }
+                script.remove();
+                if (theme) {
+                    resolve(theme);
+                } else {
+                    reject(new Error(`${fileName} 未声明 DEFAULT_THEME`));
+                }
+            };
+            script.onerror = () => {
+                script.remove();
+                reject(new Error(`${fileName} 加载失败`));
+            };
+            document.head.appendChild(script);
         });
     }
 
-    loadSettings() {
-        const savedSettings = localStorage.getItem('oooInterfaceSettings');
+    // 路径规范化：主题文件位于 main/Themes/，其内部 location 写法 ../xxx 需转为相对 main/ 的路径
+    normalizeThemePaths(theme) {
+        const fix = (p) => (typeof p === 'string' && p.startsWith('../')) ? p.substring(3) : p;
+        const d = theme.details;
+        if (!d) return theme;
+        if (d.logo) {
+            d.logo.location = fix(d.logo.location);
+            if (d.logo.specialStyle) {
+                if (d.logo.specialStyle.dark) d.logo.specialStyle.dark = fix(d.logo.specialStyle.dark);
+                // online/onlineDark 是绝对 URL，不动
+            }
+        }
+        if (d.font) d.font.location = fix(d.font.location);
+        if (d.wallpaper) {
+            d.wallpaper.location = fix(d.wallpaper.location);
+            // online 是绝对 URL，不动
+        }
+        if (d.moreStyle) d.moreStyle.location = fix(d.moreStyle.location);
+        return theme;
+    }
+
+    // 填充左面板"选择主题"下拉项
+    populateThemeSelect() {
+        const itemsContainer = document.getElementById('theme-select-items');
+        const hiddenSelect = document.getElementById('theme-select');
+        const selectedDisplay = document.getElementById('theme-select-selected');
+        if (!itemsContainer || !hiddenSelect) return;
+
+        itemsContainer.innerHTML = '';
+        hiddenSelect.innerHTML = '';
+
+        const keys = Object.keys(this.themes);
+        keys.forEach(key => {
+            const theme = this.themes[key];
+            const item = document.createElement('div');
+            item.className = 'select-item';
+            item.setAttribute('data-value', key);
+            item.textContent = theme.info.name;
+            itemsContainer.appendChild(item);
+
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = theme.info.name;
+            hiddenSelect.appendChild(option);
+        });
+
+        // 更新顶部显示：无主题被选择时显示"自定义主题"
+        if (selectedDisplay) {
+            const selected = this.settings.themeEnabled && this.themes[this.settings.theme];
+            selectedDisplay.textContent = selected ? this.themes[this.settings.theme].info.name : '自定义主题';
+        }
+    }
+
+
+    async loadSettings() {
         const isFirstRun = localStorage.getItem('oooInterfaceFirstRun');
 
         if (isFirstRun === null) {
             // 首次运行，使用出厂预设
             this.isFirstRun = true;
             localStorage.setItem('oooInterfaceFirstRun', 'false');
-            this.saveSettings(); // 保存出厂预设
             this.showWelcomeScreen();
         } else {
             this.isFirstRun = false;
         }
 
+        // 优先从 chrome.storage.local 加载，回退到 localStorage（兼容旧版）
+        let savedSettings = null;
+        try {
+            const result = await chrome.storage.local.get('oooInterfaceSettings');
+            savedSettings = result.oooInterfaceSettings || null;
+        } catch (e) {
+            console.warn('chrome.storage.local 读取失败，尝试 localStorage:', e);
+        }
+        if (!savedSettings) {
+            const lsRaw = localStorage.getItem('oooInterfaceSettings');
+            if (lsRaw) {
+                try {
+                    savedSettings = JSON.parse(lsRaw);
+                    // 迁移到 chrome.storage.local
+                    chrome.storage.local.set({ oooInterfaceSettings: savedSettings });
+                } catch (e) {
+                    console.error('localStorage 解析失败:', e);
+                }
+            }
+        }
+
         if (savedSettings) {
             try {
-                const parsedSettings = JSON.parse(savedSettings);
-                // 合并设置，确保新添加的字段有默认值
-                this.settings = this.mergeSettings(parsedSettings);
+                this.settings = this.mergeSettings(savedSettings);
             } catch (error) {
                 console.error('设置加载失败，使用默认设置:', error);
                 this.settings = JSON.parse(JSON.stringify(this.defaultSettings));
@@ -574,8 +767,6 @@ class OOOInterface {
         const badge = document.getElementById('ooo-badge');
         if (!badge) return;
 
-        console.log('设置打开方式:', this.settings.badgeOpenMethod || 'both');
-
         // 移除之前的事件监听器（通过克隆元素来移除所有事件监听器）
         const newBadge = badge.cloneNode(true);
         badge.parentNode.replaceChild(newBadge, badge);
@@ -589,7 +780,6 @@ class OOOInterface {
         if (method !== 'none') {
             if (method === 'both' || method === 'dblclick') {
                 newBadge.addEventListener('dblclick', () => {
-                    console.log('触发双击打开设置');
                     this.openSettings('badge');
                 });
             }
@@ -597,12 +787,9 @@ class OOOInterface {
             if (method === 'both' || method === 'contextmenu') {
                 newBadge.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
-                    console.log('触发右键打开设置');
                     this.openSettings('badge');
                 });
             }
-        } else {
-            console.log('设置打开方式已禁用');
         }
     }
 
@@ -633,6 +820,8 @@ class OOOInterface {
             result.searchHistoryItems = savedSettings.searchHistoryItems.filter(item => typeof item === 'string' && item.trim());
         }
 
+        if (savedSettings.engineLocked !== undefined) result.engineLocked = savedSettings.engineLocked;
+
         if (savedSettings.developerMode !== undefined) result.developerMode = savedSettings.developerMode;
         if (savedSettings.proxyPort !== undefined) result.proxyPort = savedSettings.proxyPort;
         if (savedSettings.fontSize !== undefined) result.fontSize = savedSettings.fontSize;
@@ -647,6 +836,22 @@ class OOOInterface {
         if (savedSettings.customGradientEnabled !== undefined) result.customGradientEnabled = savedSettings.customGradientEnabled;
         if (savedSettings.customGradientStart !== undefined) result.customGradientStart = savedSettings.customGradientStart;
         if (savedSettings.customGradientEnd !== undefined) result.customGradientEnd = savedSettings.customGradientEnd;
+        if (savedSettings.customColors !== undefined) result.customColors = savedSettings.customColors;
+        if (savedSettings.activeCustomColorIndex !== undefined) result.activeCustomColorIndex = savedSettings.activeCustomColorIndex;
+        // 旧数据迁移：如果旧版有 customPrimaryColor 且 customColors 为空，迁移到 customColors[0]
+        if (savedSettings.customPrimaryColor && savedSettings.customPrimaryColor.trim() && (!result.customColors || result.customColors.length === 0)) {
+            result.customColors = [{
+                name: '我的配色',
+                primaryColor: savedSettings.customPrimaryColor || '',
+                secondaryColor: savedSettings.customSecondaryColor || '',
+                gradientEnabled: savedSettings.customGradientEnabled || false,
+                gradientStart: savedSettings.customGradientStart !== undefined ? savedSettings.customGradientStart : 0,
+                gradientEnd: savedSettings.customGradientEnd !== undefined ? savedSettings.customGradientEnd : 100
+            }];
+            if (savedSettings.colorScheme === 'custom') {
+                result.activeCustomColorIndex = 0;
+            }
+        }
         if (savedSettings.badgeOpenMethod !== undefined) result.badgeOpenMethod = savedSettings.badgeOpenMethod;
         if (savedSettings.bingRefreshEveryTime !== undefined) result.bingRefreshEveryTime = savedSettings.bingRefreshEveryTime;
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
@@ -658,9 +863,14 @@ class OOOInterface {
         if (savedSettings.shortcutsEnabled !== undefined) result.shortcutsEnabled = savedSettings.shortcutsEnabled;
         if (savedSettings.contextMenuCustomItems && Array.isArray(savedSettings.contextMenuCustomItems)) {
             result.contextMenuCustomItems = savedSettings.contextMenuCustomItems.filter(
-                item => ['enhanced-display-toggle', 'wallpaper-toggle', 'search-history-toggle', 'hide-notifications-toggle', 'hide-info-popup-toggle'].includes(item)
+                item => ['enhanced-display-toggle', 'wallpaper-toggle', 'search-history-toggle', 'engine-lock-toggle', 'hide-notifications-toggle', 'hide-info-popup-toggle'].includes(item)
             );
         }
+
+        // 合并主题相关字段
+        if (savedSettings.theme !== undefined) result.theme = savedSettings.theme;
+        if (savedSettings.themeEnabled !== undefined) result.themeEnabled = savedSettings.themeEnabled;
+        if (savedSettings.themeColorScheme !== undefined) result.themeColorScheme = savedSettings.themeColorScheme;
 
         // 合并自定义Logo列表
         if (savedSettings.customLogos && Array.isArray(savedSettings.customLogos)) {
@@ -680,6 +890,13 @@ class OOOInterface {
         if (savedSettings.customWallpapers && Array.isArray(savedSettings.customWallpapers)) {
             result.customWallpapers = savedSettings.customWallpapers.filter(wp =>
                 wp && wp.name && wp.data
+            );
+        }
+
+        // 合并自定义主题列表
+        if (savedSettings.customThemes && Array.isArray(savedSettings.customThemes)) {
+            result.customThemes = savedSettings.customThemes.filter(ct =>
+                ct && ct.key && ct.data && ct.data.info && ct.data.details
             );
         }
 
@@ -1374,7 +1591,12 @@ class OOOInterface {
             userChangedLogo: this.userChangedLogo
         };
         try {
-            localStorage.setItem('oooInterfaceSettings', JSON.stringify(settingsToSave));
+            const result = chrome.storage.local.set({ oooInterfaceSettings: settingsToSave });
+            if (result && typeof result.catch === 'function') {
+                result.catch(error => {
+                    console.error('保存设置异步失败:', error);
+                });
+            }
         } catch (error) {
             console.error('保存设置失败:', error);
             this.showNotification('保存设置失败');
@@ -1614,7 +1836,7 @@ class OOOInterface {
     startStatusBarTimer() {
         this.stopStatusBarTimer();
 
-        const shouldShow = this.settings.developerMode && this.settings.statusBarEnabled;
+        const shouldShow = this.settings.statusBarEnabled;
         if (!shouldShow) {
             return;
         }
@@ -1645,7 +1867,7 @@ class OOOInterface {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return;
 
-        const shouldShow = this.settings.developerMode && this.settings.statusBarEnabled;
+        const shouldShow = this.settings.statusBarEnabled;
 
         if (!shouldShow) {
             statusBar.classList.remove('visible');
@@ -1677,6 +1899,22 @@ class OOOInterface {
             e.preventDefault();
             this.performGoogleLucky();
         });
+
+        // 状态栏双击事件 - 切换显示秒钟
+        const statusBarEl = document.getElementById('status-bar');
+        if (statusBarEl) {
+            statusBarEl.addEventListener('dblclick', () => {
+                this.settings.showStatusBarSeconds = !this.settings.showStatusBarSeconds;
+                this.saveSettings();
+                const showSecondsToggle = document.getElementById('show-seconds-toggle');
+                if (showSecondsToggle) showSecondsToggle.checked = this.settings.showStatusBarSeconds;
+                if (this.settings.statusBarEnabled) {
+                    this.updateStatusBarText();
+                    this.startStatusBarTimer();
+                }
+                this.showNotification(this.settings.showStatusBarSeconds ? '显示秒钟：开启' : '显示秒钟：关闭');
+            });
+        }
 
         // 搜索功能
         const searchInput = document.getElementById('search-input');
@@ -1760,7 +1998,7 @@ class OOOInterface {
             const rpu = document.getElementById('right-panel-upper');
             if (rpu && rpu.dataset.subView === 'customize-items') {
                 this.backToContextMenuStyleView(rpu);
-            } else if (rpu && rpu.dataset.subView === 'quick-link-add') {
+            } else if (rpu && (rpu.dataset.subView === 'quick-link-add' || rpu.dataset.subView === 'quick-link-edit')) {
                 const container = rpu.querySelector('.settings-menu-container');
                 if (container && container._qlinput) {
                     this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
@@ -1782,7 +2020,7 @@ class OOOInterface {
                         const rpu = document.getElementById('right-panel-upper');
                         if (rpu && rpu.dataset.subView === 'customize-items') {
                             this.backToContextMenuStyleView(rpu);
-                        } else if (rpu && rpu.dataset.subView === 'quick-link-add') {
+                        } else if (rpu && (rpu.dataset.subView === 'quick-link-add' || rpu.dataset.subView === 'quick-link-edit')) {
                             const container = rpu.querySelector('.settings-menu-container');
                             if (container && container._qlinput) {
                                 this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
@@ -1806,6 +2044,13 @@ class OOOInterface {
         // 字体文件上传事件
         document.getElementById('font-upload').addEventListener('change', (e) => {
             this.handleFontUpload(e.target.files[0]);
+            e.target.value = '';
+        });
+
+        // 主题文件上传事件
+        document.getElementById('theme-upload').addEventListener('change', (e) => {
+            this.handleThemeUpload(e.target.files[0]);
+            e.target.value = '';
         });
 
         // Logo文件上传事件
@@ -1828,17 +2073,7 @@ class OOOInterface {
             this.handleWallpaperUpload(e.target.files[0]);
         });
 
-        // URL壁纸应用按钮事件
-        document.getElementById('apply-wallpaper-url').addEventListener('click', () => {
-            this.handleWallpaperUrl();
-        });
-
-        // URL壁纸输入框回车事件
-        document.getElementById('wallpaper-url-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.handleWallpaperUrl();
-            }
-        });
+        // URL壁纸由右侧面板处理，此处无需事件绑定
 
         // 必应壁纸信息提示图标点击事件
         const bingInfoIcon = document.getElementById('bing-wallpaper-info');
@@ -1852,6 +2087,7 @@ class OOOInterface {
         // 配色方案选择事件
         document.getElementById('color-scheme-select').addEventListener('change', (e) => {
             this.settings.colorScheme = e.target.value;
+            this.checkThemeConsistency('colorScheme', e.target.value);
             this.saveSettings();
             this.applyColorScheme();
             if (this.settings.hideNotifications) {
@@ -1938,6 +2174,7 @@ class OOOInterface {
 
         // 应用按钮事件
         document.getElementById('apply-settings').addEventListener('click', () => {
+            try {
             this.settings.dynamicBlur = document.getElementById('dynamic-blur-toggle').checked;
             this.settings.enhancedDisplay = document.getElementById('enhanced-display-toggle').checked;
             const oldPersistentWallpaper = this.settings.persistentWallpaper;
@@ -1949,6 +2186,7 @@ class OOOInterface {
                 this.settings.wallpaperFill = panelFillToggle.checked;
             }
             this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
+            this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
             this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
             // 读取快速访问侧边栏开关
@@ -1993,7 +2231,6 @@ class OOOInterface {
             const badgeMethodSelect = document.getElementById('badge-open-method-select');
             if (badgeMethodSelect) {
                 this.settings.badgeOpenMethod = badgeMethodSelect.value;
-                console.log('保存设置打开方式:', this.settings.badgeOpenMethod);
             }
 
             if (oldPersistentWallpaper !== this.settings.persistentWallpaper) {
@@ -2008,6 +2245,10 @@ class OOOInterface {
             this.closeSettings();
             this.showNotification('设置已应用');
             // 无需刷新页面，所有设置已通过组件级更新即时生效
+            } catch (err) {
+                console.error('[Apply] 点击处理异常:', err);
+                this.showNotification('应用设置时出错: ' + err.message);
+            }
         });
 
         // 右键应用按钮打开/关闭开发者模式
@@ -2623,6 +2864,9 @@ class OOOInterface {
             case 'enhanced-display-toggle':
                 this.toggleEnhancedDisplaySetting();
                 break;
+            case 'engine-lock-toggle':
+                this.toggleEngineLockSetting();
+                break;
             case 'hide-notifications-toggle':
                 this.toggleHideNotificationsSetting();
                 break;
@@ -2680,6 +2924,20 @@ class OOOInterface {
         this.updateContextMenuIcons();
         this.syncSettingsPageToggles();
         this.showNotification(this.settings.searchHistory ? '搜索历史：开启' : '搜索历史：关闭');
+    }
+
+    // 切换引擎锁定设置
+    toggleEngineLockSetting() {
+        this.settings.engineLocked = !this.settings.engineLocked;
+        if (this.settings.engineLocked) {
+            localStorage.setItem('oooEngineLocked', this.currentEngine);
+        } else {
+            localStorage.removeItem('oooEngineLocked');
+        }
+        this.saveSettings();
+        this.updateContextMenuIcons();
+        this.syncSettingsPageToggles();
+        this.showNotification(this.settings.engineLocked ? '引擎锁定：开启' : '引擎锁定：关闭');
     }
 
     // 切换壁纸常显示设置
@@ -2791,20 +3049,7 @@ class OOOInterface {
         modalBody.addEventListener('drop', (e) => {
             e.preventDefault();
             modalBody.style.backgroundColor = '';
-
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const file = files[0];
-
-                // 检查文件类型
-                if (file.type.startsWith('image/')) {
-                    this.handleLogoUpload(file);
-                } else if (file.name.endsWith('.ttf') || file.name.endsWith('.otf')) {
-                    this.handleFontUpload(file);
-                } else {
-                    this.showNotification('不支持的文件类型');
-                }
-            }
+            // 各右面板菜单自行处理拖放，详见 showSettingsMenuInRightPanel
         });
     }
 
@@ -2853,6 +3098,17 @@ class OOOInterface {
         });
     }
 
+    // 将 data URL 解码为 ArrayBuffer（绕过 CSP font-src 对 data: 的限制）
+    dataUrlToArrayBuffer(dataUrl) {
+        const base64 = dataUrl.split(',')[1];
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
     // 处理字体上传
     handleFontUpload(file) {
         if (!file) return;
@@ -2862,36 +3118,56 @@ class OOOInterface {
             const fontData = e.target.result;
             const fontName = file.name.replace(/\.[^/.]+$/, ""); // 移除扩展名
 
-            // 创建字体Face
-            const fontFace = new FontFace(fontName, `url(${fontData})`);
+            // 检查是否已存在同名字体
+            if (this.settings.customFonts.some(font => font.name === fontName)) {
+                this.showNotification(`字体"${fontName}"已存在`);
+                return;
+            }
 
-            fontFace.load().then((loadedFace) => {
-                document.fonts.add(loadedFace);
+            try {
+                // 使用 ArrayBuffer 直接构造 FontFace，绕过 CSP url() 限制
+                const buffer = this.dataUrlToArrayBuffer(fontData);
+                const fontFace = new FontFace(fontName, buffer);
 
-                // 添加到自定义字体列表
-                this.settings.customFonts.push({
-                    name: fontName,
-                    data: fontData
+                fontFace.load().then((loadedFace) => {
+                    try {
+                        document.fonts.add(loadedFace);
+
+                        // 添加到自定义字体列表
+                        this.settings.customFonts.push({
+                            name: fontName,
+                            data: fontData
+                        });
+
+                        // 更新自定义字体列表
+                        this.updateCustomFontsList();
+
+                        // 自定义字体上传必然与主题字体不一致
+                        this.checkThemeConsistency('font', fontName);
+
+                        this.saveSettings();
+                        this.showNotification(`字体"${fontName}"上传成功`);
+
+                        // 刷新右侧面板菜单（如果打开）
+                        const rightPanelUpper = document.getElementById('right-panel-upper');
+                        if (rightPanelUpper && rightPanelUpper.querySelector('.settings-menu-container')) {
+                            const selected = document.getElementById('font-select-selected');
+                            const hiddenSelect = document.getElementById('font-select');
+                            const items = document.getElementById('font-select-items');
+                            this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
+                        }
+                    } catch (err) {
+                        console.error('字体上传后处理异常:', err);
+                        this.showNotification('字体上传处理出错: ' + err.message);
+                    }
+                }).catch((error) => {
+                    console.error('字体加载失败:', error);
+                    this.showNotification('字体加载失败');
                 });
-
-                // 更新自定义字体列表
-                this.updateCustomFontsList();
-
-                this.saveSettings();
-                this.showNotification(`字体"${fontName}"上传成功`);
-
-                // 刷新右侧面板菜单（如果打开）
-                const rightPanelUpper = document.getElementById('right-panel-upper');
-                if (rightPanelUpper && rightPanelUpper.querySelector('.settings-menu-container')) {
-                    const selected = document.getElementById('font-select-selected');
-                    const hiddenSelect = document.getElementById('font-select');
-                    const items = document.getElementById('font-select-items');
-                    this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
-                }
-            }).catch((error) => {
-                console.error('字体加载失败:', error);
-                this.showNotification('字体加载失败');
-            });
+            } catch (error) {
+                console.error('字体解码失败:', error);
+                this.showNotification('字体文件格式不支持');
+            }
         };
 
         reader.onerror = () => {
@@ -2899,6 +3175,85 @@ class OOOInterface {
         };
 
         reader.readAsDataURL(file);
+    }
+
+    // 处理主题文件导入
+    handleThemeUpload(file) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                let themeData;
+                const content = e.target.result;
+
+                // 尝试解析 JSON
+                try {
+                    themeData = JSON.parse(content);
+                } catch (jsonErr) {
+                    // 不是 JSON，尝试提取 DEFAULT_THEME 变量的值
+                    const match = content.match(/var\s+DEFAULT_THEME\s*=\s*(\{[\s\S]*?\});/);
+                    if (match) {
+                        themeData = JSON.parse(match[1].replace(/'/g, '"').replace(/(\w+):/g, '"$1":'));
+                    } else {
+                        // 最后尝试直接 eval（受 CSP 限制）
+                        try {
+                            const evalResult = eval('(' + content.replace(/var\s+DEFAULT_THEME\s*=/, '') + ')');
+                            if (evalResult && evalResult.info) themeData = evalResult;
+                        } catch (e) {
+                            this.showNotification('无法解析主题文件');
+                            return;
+                        }
+                    }
+                }
+
+                if (!themeData || !themeData.info || !themeData.details) {
+                    this.showNotification('主题文件格式无效');
+                    return;
+                }
+
+                const key = file.name.replace(/\.[^/.]+$/, '');
+                const normalized = this.normalizeThemePaths(JSON.parse(JSON.stringify(themeData)));
+
+                // 检查是否已存在同名自定义主题
+                const existing = this.settings.customThemes.findIndex(ct => ct.key === key);
+                if (existing !== -1) {
+                    this.settings.customThemes[existing] = {
+                        key, name: themeData.info.name,
+                        designer: themeData.info.designer || '',
+                        version: themeData.info.version || '',
+                        data: normalized
+                    };
+                } else {
+                    this.settings.customThemes.push({
+                        key, name: themeData.info.name,
+                        designer: themeData.info.designer || '',
+                        version: themeData.info.version || '',
+                        data: normalized
+                    });
+                }
+
+                this.themes[key] = normalized;
+                this.saveSettings();
+                this.populateThemeSelect();
+                this.showNotification(`主题"${themeData.info.name}"导入成功`);
+
+                // 刷新右面板
+                const rpu = document.getElementById('right-panel-upper');
+                if (rpu && rpu.querySelector('.settings-menu-container')) {
+                    const selected = document.getElementById('theme-select-selected');
+                    const hiddenSelect = document.getElementById('theme-select');
+                    const items = document.getElementById('theme-select-items');
+                    this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
+                }
+            } catch (err) {
+                console.error('主题导入失败:', err);
+                this.showNotification('主题导入失败');
+            }
+        };
+
+        reader.onerror = () => this.showNotification('文件读取失败');
+        reader.readAsText(file);
     }
 
     // 处理Logo上传
@@ -2931,6 +3286,9 @@ class OOOInterface {
 
             // 更新自定义Logo列表显示
             this.updateCustomLogosList();
+
+            // 自定义 Logo 上传必然与主题 Logo 不一致
+            this.checkThemeConsistency('logo', logoName);
 
             this.saveSettings();
             this.showNotification(`Logo"${logoName}"上传成功`);
@@ -3042,6 +3400,9 @@ class OOOInterface {
             // 更新自定义壁纸列表
             this.updateCustomWallpapersList();
 
+            // 自定义壁纸上传必然与主题壁纸不一致
+            this.checkThemeConsistency('wallpaper', wallpaperData);
+
             this.applySettings();
             this.saveSettings();
             this.showNotification(`壁纸"${wallpaperName}"上传`);
@@ -3054,6 +3415,9 @@ class OOOInterface {
                 const items = document.getElementById('wallpaper-select-items');
                 this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
             }
+        };
+        reader.onerror = () => {
+            this.showNotification('文件读取失败');
         };
         reader.readAsDataURL(file);
     }
@@ -3557,20 +3921,16 @@ class OOOInterface {
     }
 
     changeWallpaper(wallpaper) {
-        const wallpaperUrlGroup = document.getElementById('wallpaper-url-group');
-
         if (wallpaper === 'default') {
             this.settings.wallpaper = 'default';
-            wallpaperUrlGroup.style.display = 'none';
         } else if (wallpaper === 'bing') {
             this.settings.wallpaper = 'bing';
-            wallpaperUrlGroup.style.display = 'none';
-            this.checkAndFetchBingWallpaper();
+            this.settings.wallpaperUrl = '';  // 清空旧URL，避免异步获取前显示主题壁纸残留
+            this.fetchBingWallpaper();
         } else if (wallpaper === 'url') {
             if (!this.settings.wallpaperUrl) {
                 this.settings.wallpaper = 'url';
             }
-            wallpaperUrlGroup.style.display = 'flex';
         } else {
             // 处理自定义上传的壁纸
             const customWallpaper = this.settings.customWallpapers.find(wp => wp.name === wallpaper);
@@ -3578,44 +3938,19 @@ class OOOInterface {
                 this.settings.wallpaper = customWallpaper.data;
                 this.settings.persistentWallpaper = true;
             }
-            wallpaperUrlGroup.style.display = 'none';
         }
+
+        // 一致性检测：主题壁纸用 location 标识，此处用实际生效的壁纸值对比
+        const theme = this.themes[this.settings.theme];
+        const expectedWp = theme?.details?.wallpaper?.location;
+        let actualWp = wallpaper;
+        if (wallpaper === 'url' && expectedWp && this.settings.wallpaperUrl === expectedWp) {
+            actualWp = expectedWp;
+        }
+        this.checkThemeConsistency('wallpaper', actualWp);
+
         this.saveSettings();
         this.applyWallpaper();
-    }
-
-    handleWallpaperUrl() {
-        const urlInput = document.getElementById('wallpaper-url-input');
-        const url = urlInput.value.trim();
-
-        if (!url) {
-            this.showNotification('请输入URL');
-            return;
-        }
-
-        try {
-            new URL(url);
-        } catch (e) {
-            this.showNotification('URL格式错误');
-            return;
-        }
-
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-
-        img.onload = () => {
-            this.settings.wallpaper = 'url';
-            this.settings.wallpaperUrl = url;
-            this.applySettings();
-            this.saveSettings();
-            this.showNotification('壁纸已应用');
-        };
-
-        img.onerror = () => {
-            this.showNotification('无法加载图片，请检查URL');
-        };
-
-        img.src = url;
     }
 
     // 检查并根据设置决定是否刷新必应壁纸
@@ -3800,9 +4135,15 @@ class OOOInterface {
 
         // 更新显示的文本
         if (logoSelectSelected) {
-            const selectedOption = logoSelect.querySelector(`option[value="${this.settings.logo}"]`);
-            if (selectedOption) {
-                logoSelectSelected.textContent = selectedOption.textContent;
+            // 主题模式下保持"主题名：Logo名"格式，不覆盖
+            const themeInfo = this.getThemeDisplayInfo();
+            if (themeInfo && themeInfo.logoName) {
+                // 保持不变
+            } else {
+                const selectedOption = logoSelect.querySelector(`option[value="${this.settings.logo}"]`);
+                if (selectedOption) {
+                    logoSelectSelected.textContent = selectedOption.textContent;
+                }
             }
         }
 
@@ -3886,6 +4227,14 @@ class OOOInterface {
         // 从设置中移除
         this.settings.customFonts.splice(index, 1);
 
+        // 从 document.fonts 中移除对应的 FontFace
+        for (const face of document.fonts) {
+            if (face.family === fontName) {
+                document.fonts.delete(face);
+                break;
+            }
+        }
+
         // 如果当前使用的是被删除的字体，则切换回默认字体
         if (this.settings.font === fontName) {
             this.settings.font = 'Sans Flex';
@@ -3932,9 +4281,12 @@ class OOOInterface {
 
         // 更新显示的文本
         if (fontSelectSelected) {
-            const selectedOption = fontSelect.querySelector(`option[value="${this.settings.font}"]`);
-            if (selectedOption) {
-                fontSelectSelected.textContent = selectedOption.textContent;
+            const themeInfo = this.getThemeDisplayInfo();
+            if (!themeInfo || !themeInfo.fontName) {
+                const selectedOption = fontSelect.querySelector(`option[value="${this.settings.font}"]`);
+                if (selectedOption) {
+                    fontSelectSelected.textContent = selectedOption.textContent;
+                }
             }
         }
     }
@@ -3993,9 +4345,12 @@ class OOOInterface {
 
         // 更新显示的文本
         if (wallpaperSelectSelected) {
-            const selectedOption = wallpaperSelect.querySelector(`option[value="${this.settings.wallpaper}"]`);
-            if (selectedOption) {
-                wallpaperSelectSelected.textContent = selectedOption.textContent;
+            const themeInfo = this.getThemeDisplayInfo();
+            if (!themeInfo || !themeInfo.wallpaperName) {
+                const selectedOption = wallpaperSelect.querySelector(`option[value="${this.settings.wallpaper}"]`);
+                if (selectedOption) {
+                    wallpaperSelectSelected.textContent = selectedOption.textContent;
+                }
             }
         }
     }
@@ -4837,6 +5192,11 @@ class OOOInterface {
             this.applyLogo();
         }
 
+        // 如果引擎锁定，保存到localStorage
+        if (this.settings.engineLocked) {
+            localStorage.setItem('oooEngineLocked', engine);
+        }
+
         // 为按钮添加logo类名
         this.updateEngineButtonClasses();
 
@@ -5163,20 +5523,41 @@ class OOOInterface {
         // 设置选中的值
         fontSelect.value = selectedFont;
 
+        // 更新字体选择框的显示文本
+        const fontSelectSelected = document.getElementById('font-select-selected');
+        if (fontSelectSelected) {
+            const themeInfo = this.getThemeDisplayInfo();
+            if (themeInfo && themeInfo.fontName) {
+                fontSelectSelected.textContent = themeInfo.themeName + '：' + themeInfo.fontName;
+            } else {
+                const fontOption = fontSelect.querySelector(`option[value="${selectedFont}"]`);
+                fontSelectSelected.textContent = fontOption ? fontOption.textContent : selectedFont;
+            }
+        }
+
         // 更新其他设置
         const logoSelect = document.getElementById('logo-select');
         logoSelect.value = this.settings.logo;
         document.getElementById('text-logo-input').value = this.settings.textLogo || '';
 
+        // 更新Logo选择框的显示文本
+        const logoSelectSelected = document.getElementById('logo-select-selected');
+        if (logoSelectSelected) {
+            const themeInfo = this.getThemeDisplayInfo();
+            if (themeInfo && themeInfo.logoName) {
+                logoSelectSelected.textContent = themeInfo.themeName + '：' + themeInfo.logoName;
+            } else {
+                const logoOption = logoSelect.querySelector(`option[value="${this.settings.logo}"]`);
+                if (logoOption) logoSelectSelected.textContent = logoOption.textContent;
+            }
+        }
+
         // 更新壁纸选择
         let wallpaperValue = 'default';
         if (this.settings.wallpaper === 'url') {
             wallpaperValue = 'url';
-            document.getElementById('wallpaper-url-input').value = this.settings.wallpaperUrl || '';
-            document.getElementById('wallpaper-url-group').style.display = 'flex';
         } else if (this.settings.wallpaper === 'bing') {
             wallpaperValue = 'bing';
-            document.getElementById('wallpaper-url-group').style.display = 'none';
         } else if (this.settings.wallpaper !== 'default') {
             // 检查是否是自定义上传的壁纸
             const customWallpaper = this.settings.customWallpapers.find(wp => wp.data === this.settings.wallpaper);
@@ -5185,9 +5566,6 @@ class OOOInterface {
             } else {
                 wallpaperValue = 'default';
             }
-            document.getElementById('wallpaper-url-group').style.display = 'none';
-        } else {
-            document.getElementById('wallpaper-url-group').style.display = 'none';
         }
 
         const wallpaperSelect = document.getElementById('wallpaper-select');
@@ -5196,7 +5574,10 @@ class OOOInterface {
         // 更新壁纸选择框的显示文本
         const wallpaperSelectSelected = document.getElementById('wallpaper-select-selected');
         if (wallpaperSelectSelected) {
-            if (wallpaperValue === 'default') {
+            const themeInfo = this.getThemeDisplayInfo();
+            if (themeInfo && themeInfo.wallpaperName) {
+                wallpaperSelectSelected.textContent = themeInfo.themeName + '：' + themeInfo.wallpaperName;
+            } else if (wallpaperValue === 'default') {
                 wallpaperSelectSelected.textContent = '默认壁纸';
             } else if (wallpaperValue === 'bing') {
                 wallpaperSelectSelected.textContent = '必应每日壁纸';
@@ -5218,10 +5599,18 @@ class OOOInterface {
         const colorSchemeValue = this.settings.colorScheme || 'green';
         const colorSchemeSelect = document.getElementById('color-scheme-select');
         if (colorSchemeSelect) {
-            colorSchemeSelect.value = colorSchemeValue;
+            // 'theme-add' 不是有效 <option>，跳过设值避免 select 回退到第一个选项
+            if (colorSchemeValue !== 'theme-add') {
+                colorSchemeSelect.value = colorSchemeValue;
+            }
             const colorSchemeSelected = document.getElementById('color-scheme-select-selected');
             if (colorSchemeSelected) {
-                colorSchemeSelected.textContent = COLOR_SCHEME_NAMES[colorSchemeValue] || '自定义';
+                const themeInfo = this.getThemeDisplayInfo();
+                if (themeInfo && themeInfo.colorName) {
+                    colorSchemeSelected.textContent = themeInfo.themeName + '：' + themeInfo.colorName;
+                } else {
+                    colorSchemeSelected.textContent = COLOR_SCHEME_NAMES[colorSchemeValue] || '自定义';
+                }
             }
         }
 
@@ -5231,6 +5620,7 @@ class OOOInterface {
         document.getElementById('persistent-wallpaper-toggle').checked = this.settings.persistentWallpaper;
         document.getElementById('wallpaper-scale-toggle').checked = this.settings.wallpaperScale;
         document.getElementById('search-history-toggle').checked = this.settings.searchHistory;
+        document.getElementById('engine-lock-toggle').checked = this.settings.engineLocked;
         document.getElementById('hide-info-popup-toggle').checked = this.settings.hideInfoPopup.enabled;
         document.getElementById('quick-access-sidebar-toggle').checked = this.settings.quickAccessSidebar;
         document.getElementById('hide-notifications-toggle').checked = this.settings.hideNotifications;
@@ -5258,7 +5648,6 @@ class OOOInterface {
 
         // 更新设置打开方式
         const badgeOpenMethodValue = this.settings.badgeOpenMethod || 'both';
-        console.log('更新设置打开方式UI:', badgeOpenMethodValue);
         const badgeMethodSelect = document.getElementById('badge-open-method-select');
         if (badgeMethodSelect) {
             badgeMethodSelect.value = badgeOpenMethodValue;
@@ -5459,32 +5848,13 @@ class OOOInterface {
             document.getElementById('font-weight-value').value = this.settings.fontWeight;
             document.getElementById('search-box-height').value = this.settings.searchBoxHeight;
             document.getElementById('search-box-height-value').value = this.settings.searchBoxHeight;
+        }
+        this.syncStatusBarUI();
 
-            const statusBarToggle = document.getElementById('status-bar-toggle');
-            const showSecondsGroup = document.getElementById('show-seconds-group');
-            const showSecondsToggle = document.getElementById('show-seconds-toggle');
-            if (statusBarToggle) {
-                statusBarToggle.checked = this.settings.statusBarEnabled;
-            }
-            if (showSecondsGroup && showSecondsToggle) {
-                if (this.settings.statusBarEnabled) {
-                    showSecondsGroup.style.display = 'block';
-                    showSecondsToggle.checked = this.settings.showStatusBarSeconds;
-                } else {
-                    showSecondsGroup.style.display = 'none';
-                    showSecondsToggle.checked = false;
-                }
-            }
-
-            const shortcutsToggle = document.getElementById('shortcuts-toggle');
-            if (shortcutsToggle) {
-                shortcutsToggle.checked = this.settings.shortcutsEnabled;
-            }
-        } else {
-            const showSecondsGroup = document.getElementById('show-seconds-group');
-            if (showSecondsGroup) {
-                showSecondsGroup.style.display = 'none';
-            }
+        // 快捷键开关独立于开发者模式
+        const shortcutsToggle = document.getElementById('shortcuts-toggle');
+        if (shortcutsToggle) {
+            shortcutsToggle.checked = this.settings.shortcutsEnabled;
         }
 
         const proxySelect = document.getElementById('proxy-select');
@@ -5503,8 +5873,23 @@ class OOOInterface {
 
     applyDeveloperSettings() {
         const root = document.documentElement;
-        root.style.setProperty('--base-font-size', this.settings.fontSize);
-        root.style.setProperty('--base-font-weight', this.settings.fontWeight);
+
+        // 主题字体粗细/大小覆盖优先
+        let fontSize = this.settings.fontSize;
+        let fontWeight = this.settings.fontWeight;
+        if (this.settings.themeEnabled && this.themeOverrides?.font) {
+            const o = this.themeOverrides.font;
+            if (o.weight) {
+                const w = parseInt(o.weight, 10);
+                if (!isNaN(w)) fontWeight = w;
+            }
+            if (o.size) {
+                const emMatch = String(o.size).match(/^([\d.]+)em$/);
+                if (emMatch) fontSize = parseFloat(emMatch[1]);
+            }
+        }
+        root.style.setProperty('--base-font-size', fontSize);
+        root.style.setProperty('--base-font-weight', fontWeight);
 
         if (this.settings.searchBoxHeight > 0) {
             root.style.setProperty('--search-box-height', this.settings.searchBoxHeight + 'px');
@@ -5523,7 +5908,6 @@ class OOOInterface {
         this.settings.statusBarEnabled = false;
         this.settings.showStatusBarSeconds = false;
         this.settings.hideNotifications = false;
-        this.settings.shortcutsEnabled = false;
 
         const fontSizeSlider = document.getElementById('font-size-slider');
         const fontWeightSlider = document.getElementById('font-weight-slider');
@@ -5598,6 +5982,7 @@ class OOOInterface {
 
     changeFont(font) {
         this.settings.font = font;
+        this.checkThemeConsistency('font', font);
         this.saveSettings();
         // 不立即应用，等待用户点击应用按钮
     }
@@ -5606,6 +5991,7 @@ class OOOInterface {
         this.settings.logo = logo;
         this.settings.logoType = 'image';
         this.userChangedLogo = true;
+        this.checkThemeConsistency('logo', logo);
         this.saveSettings();
         this.applyLogo();
 
@@ -5618,8 +6004,21 @@ class OOOInterface {
     // 获取配色方案配置
     getColorConfig() {
         const scheme = this.settings.colorScheme || 'green';
+        if (scheme === 'theme-add') {
+            // 主题 add 模式：使用主题内联的完整配色配置
+            return this.settings.themeColorScheme || getColorConfig('green');
+        }
         if (scheme === 'custom') {
-            const customColors = {
+            const customItem = this.settings.customColors && this.settings.customColors.length > 0 && this.settings.activeCustomColorIndex >= 0
+                ? this.settings.customColors[this.settings.activeCustomColorIndex]
+                : null;
+            const customColors = customItem ? {
+                primaryColor: customItem.primaryColor || '',
+                secondaryColor: customItem.secondaryColor || '',
+                gradientEnabled: customItem.gradientEnabled || false,
+                gradientStart: customItem.gradientStart !== undefined ? customItem.gradientStart : 0,
+                gradientEnd: customItem.gradientEnd !== undefined ? customItem.gradientEnd : 100
+            } : {
                 primaryColor: this.settings.customPrimaryColor || '',
                 secondaryColor: this.settings.customSecondaryColor || '',
                 gradientEnabled: this.settings.customGradientEnabled || false,
@@ -5638,7 +6037,7 @@ class OOOInterface {
         const colorConfig = this.getColorConfig();
 
         // 移除所有旧的配色方案类
-        const colorClasses = ['color-scheme-green', 'color-scheme-blue', 'color-scheme-black-white', 'color-scheme-tianyi-blue', 'color-scheme-vibrant-red', 'color-scheme-classic-gold', 'color-scheme-isolation', 'color-scheme-custom'];
+        const colorClasses = ['color-scheme-green', 'color-scheme-blue', 'color-scheme-black-white', 'color-scheme-tianyi-blue', 'color-scheme-vibrant-red', 'color-scheme-classic-gold', 'color-scheme-isolation', 'color-scheme-custom', 'color-scheme-theme-add'];
         body.classList.remove(...colorClasses);
         // 添加新的配色方案类
         body.classList.add('color-scheme-' + scheme);
@@ -5676,18 +6075,19 @@ class OOOInterface {
 
     // 更新下拉列表中自定义配色的颜色圆点
     updateCustomSchemeDropdownDots() {
-        const primary = this.settings.customPrimaryColor || '';
-        const secondary = this.settings.customSecondaryColor || '';
-        const dot = document.querySelector('#color-scheme-select-items .color-scheme-item[data-value="custom"] .color-scheme-dot');
-        if (dot) {
+        // 兼容旧版：更新静态自定义选项的圆点（如果存在）
+        const staticDot = document.querySelector('#color-scheme-select-items .color-scheme-item[data-value="custom"] .color-scheme-dot');
+        if (staticDot) {
+            const primary = this.settings.customPrimaryColor || '';
+            const secondary = this.settings.customSecondaryColor || '';
             if (primary) {
                 if (secondary) {
-                    dot.style.background = 'linear-gradient(135deg, ' + primary + ', ' + secondary + ')';
+                    staticDot.style.background = 'linear-gradient(135deg, ' + primary + ', ' + secondary + ')';
                 } else {
-                    dot.style.background = primary;
+                    staticDot.style.background = primary;
                 }
             } else {
-                dot.style.background = 'linear-gradient(135deg, #cccccc, #dddddd)';
+                staticDot.style.background = 'linear-gradient(135deg, #cccccc, #dddddd)';
             }
         }
     }
@@ -5725,6 +6125,291 @@ class OOOInterface {
         this.handlePersistentWallpaperToggle();
         this.applyStatusBarSettings();
         this.applyColorScheme();
+    }
+
+    // ========== 主题应用 ==========
+
+    // 应用指定主题：把主题的各项设定写入 settings 并触发外观刷新
+    applyTheme(themeKey, opts = {}) {
+        const theme = this.themes[themeKey];
+        if (!theme || !theme.details) return;
+        const d = theme.details;
+
+        // 清空上一主题的残留覆盖，避免不完整主题继承旧属性
+        this.themeOverrides = {};
+
+        // 1. Logo
+        if (d.logo) {
+            this.settings.logo = d.logo.name;
+            this.settings.logoType = 'image';
+            this.themeOverrides.logo = {
+                location: d.logo.location,
+                dark: d.logo.specialStyle?.dark || null,
+                online: d.logo.specialStyle?.online || null,
+                onlineDark: d.logo.specialStyle?.onlineDark || null,
+                width: d.logo.specialStyle?.width || null,
+                height: d.logo.specialStyle?.height || null
+            };
+        }
+
+        // 2. 字体
+        if (d.font) {
+            this.loadThemeFont(d.font);
+            this.settings.font = d.font.name;
+            this.themeOverrides.font = {
+                weight: d.font.specialStyle?.['font-weight'] || null,
+                size: d.font.specialStyle?.['font-size'] || null
+            };
+        }
+
+        // 3. 壁纸
+        if (d.wallpaper) {
+            this.settings.wallpaper = 'url';
+            this.settings.wallpaperUrl = d.wallpaper.location;
+            this.settings.wallpaperFill = d.wallpaper.specialStyle?.wallpaperFill === true;
+            // 不修改 persistentWallpaper，避免保存到用户设置中
+            this.themeOverrides.wallpaper = {
+                online: d.wallpaper.specialStyle?.online || null
+            };
+        }
+
+        // 4. 配色
+        if (d.color && d.color.specialStyle) {
+            if (d.color.specialStyle.colorGroup === 'cjs') {
+                this.settings.colorScheme = d.color.specialStyle.colorScheme;
+                this.settings.themeColorScheme = null;
+            } else if (d.color.specialStyle.colorGroup === 'add') {
+                this.settings.colorScheme = 'theme-add';
+                this.settings.themeColorScheme = d.color.specialStyle.colorScheme;
+            }
+        }
+
+        // 5. more / moreStyle
+        if (d.more === true && d.moreStyle) {
+            this.applyThemeMoreStyle(d.moreStyle);
+        } else {
+            this.applyThemeMoreStyle(null);
+        }
+
+        // 6. 记录主题状态
+        this.settings.theme = themeKey;
+        this.settings.themeEnabled = true;
+
+        // 7. 保存与应用
+        if (!opts.silent) {
+            this.saveSettings();
+            this.showNotification('已切换主题：' + theme.info.name);
+        }
+        this.applySettings();
+
+        // 8. 主题壁纸独立渲染：在 applySettings 之后确保壁纸在主页面显示
+        // 不修改 persistentWallpaper，复选框保持用户原有状态
+        // 只有 persistentWallpaper 为 true 时才在主页面添加壁纸并显示
+        if (d.wallpaper) {
+            const wpUrl = this.getWallpaperUrl();
+            if (wpUrl) {
+                if (this.settings.persistentWallpaper) {
+                    this.setWallpaperOnLayers(wpUrl);
+                    document.body.style.backgroundImage = 'none';
+                    if (!this.isScrolled) {
+                        document.body.classList.add('homepage-wallpaper');
+                    }
+                } else {
+                    this.clearWallpaperLayers();
+                }
+                // 主题壁纸在线优先回退（与 applyWallpaper 中逻辑一致）
+                const onlineUrl = this.themeOverrides?.wallpaper?.online;
+                if (onlineUrl && wpUrl !== onlineUrl) {
+                    const localUrl = wpUrl;
+                    const testImg = new Image();
+                    testImg.onload = () => {
+                        if (this.settings.themeEnabled
+                            && (this.settings.persistentWallpaper || document.body.classList.contains('scrolled'))
+                            && this.themeOverrides?.wallpaper?.online === onlineUrl
+                            && this.settings.wallpaperUrl === localUrl) {
+                            this.setWallpaperOnLayers(onlineUrl);
+                        }
+                    };
+                    testImg.src = onlineUrl;
+                }
+            }
+        }
+
+        // 9. 更新顶部下拉显示
+        const selectedDisplay = document.getElementById('theme-select-selected');
+        if (selectedDisplay) selectedDisplay.textContent = theme.info.name;
+
+        // 10. 更新所有设置选择框的显示文本（主题名：项目名）
+        const fontSelected = document.getElementById('font-select-selected');
+        if (fontSelected && d.font) {
+            fontSelected.textContent = theme.info.name + '：' + d.font.name;
+        }
+        const wallpaperSelected = document.getElementById('wallpaper-select-selected');
+        if (wallpaperSelected && d.wallpaper) {
+            wallpaperSelected.textContent = theme.info.name + '：' + d.wallpaper.name;
+        }
+        const logoSelected = document.getElementById('logo-select-selected');
+        if (logoSelected && d.logo) {
+            logoSelected.textContent = theme.info.name + '：' + d.logo.name;
+        }
+        const colorSelected = document.getElementById('color-scheme-select-selected');
+        if (colorSelected && d.color) {
+            colorSelected.textContent = theme.info.name + '：' + d.color.name;
+        }
+    }
+
+    // 加载主题字体文件（通过 FontFace API）
+    loadThemeFont(fontDef) {
+        if (!fontDef || !fontDef.location) return;
+        try {
+            const fontFace = new FontFace(fontDef.name, `url("${fontDef.location}")`);
+            fontFace.load().then((loadedFace) => {
+                document.fonts.add(loadedFace);
+            }).catch((error) => {
+                console.warn('主题字体加载失败:', fontDef.name, error);
+            });
+        } catch (e) {
+            console.warn('主题字体 FontFace 创建失败:', e);
+        }
+    }
+
+    // 注入/清除主题的 moreStyle CSS
+    applyThemeMoreStyle(moreStyle) {
+        const existing = document.getElementById('theme-more-style');
+        if (existing) existing.remove();
+        if (!moreStyle || !moreStyle.specialStyle) return;
+
+        const styleEl = document.createElement('style');
+        styleEl.id = 'theme-more-style';
+        let cssText = '';
+        Object.keys(moreStyle.specialStyle).forEach(selector => {
+            const rules = moreStyle.specialStyle[selector];
+            if (Array.isArray(rules)) {
+                cssText += `${selector} { ${rules.join(' ')} }\n`;
+            } else if (typeof rules === 'string') {
+                cssText += `${selector} { ${rules} }\n`;
+            }
+        });
+        styleEl.textContent = cssText;
+        document.head.appendChild(styleEl);
+    }
+
+    // 主题 Logo 加载：在线优先，失败回退本地
+    loadThemeLogoWithFallback(onlineUrl, localUrl, logoElement) {
+        if (!onlineUrl) {
+            logoElement.src = localUrl;
+            return;
+        }
+        const testImg = new Image();
+        testImg.onload = () => {
+            logoElement.src = onlineUrl;
+        };
+        testImg.onerror = () => {
+            logoElement.src = localUrl;
+        };
+        testImg.src = onlineUrl;
+        // 先用本地占位，避免等待
+        logoElement.src = localUrl;
+    }
+
+    // 一致性检测：用户改动与当前主题不一致时，关闭主题功能
+    checkThemeConsistency(settingName, newValue) {
+        if (!this.settings.themeEnabled || !this.settings.theme) return;
+        const theme = this.themes[this.settings.theme];
+        if (!theme || !theme.details) return;
+        const d = theme.details;
+        let expected;
+        switch (settingName) {
+            case 'font':
+                expected = d.font?.name;
+                break;
+            case 'logo':
+                expected = d.logo?.name;
+                break;
+            case 'wallpaper':
+                // 主题壁纸用 location 标识
+                expected = d.wallpaper?.location;
+                break;
+            case 'colorScheme':
+                expected = d.color?.specialStyle?.colorGroup === 'cjs'
+                    ? d.color.specialStyle.colorScheme
+                    : 'theme-add';
+                break;
+            default:
+                return;
+        }
+        if (expected === undefined) return;
+        // 当主题壁纸就是默认壁纸时，切换到"默认壁纸"选项不算不一致
+        if (settingName === 'wallpaper' && newValue === 'default' && expected === this.localBackgroundUrl) {
+            return;
+        }
+        if (newValue !== expected) {
+            this.settings.themeEnabled = false;
+            this.themeOverrides = null;
+            this.applyThemeMoreStyle(null);
+            // 移除主题的壁纸显示（homepage-wallpaper 类由 applyTheme 步骤 8 添加）
+            document.body.classList.remove('homepage-wallpaper');
+            // 重置仍为主题旧值的设置为默认值，但保留用户刚修改的值
+            if (d.logo && this.settings.logo === d.logo.name && settingName !== 'logo') {
+                this.settings.logo = 'default';
+                this.settings.logoType = 'image';
+            }
+            if (d.font && this.settings.font === d.font.name && settingName !== 'font') {
+                this.settings.font = 'Sans Flex';
+                this.settings.fontWeight = 400;
+                this.settings.fontSize = 1;
+                document.body.style.fontFamily = '';
+                document.body.style.fontWeight = '';
+                document.body.style.fontSize = '';
+            }
+            if (d.wallpaper && this.settings.wallpaperUrl === d.wallpaper.location && settingName !== 'wallpaper') {
+                this.settings.wallpaper = 'default';
+                this.settings.wallpaperUrl = this.localBackgroundUrl || '';
+                this.clearWallpaperLayers();
+                document.body.style.backgroundImage = '';
+            }
+            // 清理主题专用的配色残留（'theme-add' 在非主题模式下无意义）
+            if (this.settings.colorScheme === 'theme-add') {
+                this.settings.colorScheme = 'green';
+                this.settings.themeColorScheme = null;
+            }
+            this.saveSettings();
+            this.showNotification('主题功能已关闭');
+            // 左面板顶部下拉显示"自定义主题"
+            const selectedDisplay = document.getElementById('theme-select-selected');
+            if (selectedDisplay) selectedDisplay.textContent = '自定义主题';
+            // 若右面板正显示主题菜单，刷新高亮
+            const rpu = document.getElementById('right-panel-upper');
+            if (rpu && rpu.dataset.menuType === 'theme') {
+                rpu.querySelectorAll('.settings-menu-option').forEach(opt => opt.classList.remove('selected'));
+            }
+        }
+    }
+
+    // 获取当前活动主题的显示信息（仅限非自定义主题模式）
+    getThemeDisplayInfo() {
+        if (!this.settings.themeEnabled || !this.settings.theme) return null;
+        const theme = this.themes[this.settings.theme];
+        if (!theme || !theme.details) return null;
+        return {
+            themeName: theme.info.name,
+            fontName: theme.details.font?.name || null,
+            fontLocation: theme.details.font?.location || null,
+            wallpaperName: theme.details.wallpaper?.name || null,
+            logoName: theme.details.logo?.name || null,
+            colorName: theme.details.color?.name || null
+        };
+    }
+
+    // 预设字体名称到字体文件路径的映射
+    static get PRESET_FONT_PATHS() {
+        return {
+            'Sans Flex': '../fonts/GoogleSansFlex-VariableFont.ttf',
+            'Ginto': '../fonts/ABCGintoVariable.ttf',
+            'Josefin': '../fonts/JosefinSans.ttf',
+            'Code': '../fonts/GoogleSansCode.ttf',
+            'HMSC': '../fonts/HarmonyOS_SansSC.ttf'
+        };
     }
 
     // 应用右键菜单样式
@@ -5803,7 +6488,7 @@ class OOOInterface {
     // 获取当前壁纸URL
     getWallpaperUrl() {
         if (this.settings.wallpaper === 'default') {
-            return this.onlineBackgroundUrl;
+            return this.localBackgroundUrl;
         } else if (this.settings.wallpaper === 'bing' && this.settings.wallpaperUrl) {
             return this.settings.wallpaperUrl;
         } else if (this.settings.wallpaper === 'url' && this.settings.wallpaperUrl) {
@@ -5894,9 +6579,16 @@ class OOOInterface {
     }
 
     applyDefaultWallpaper() {
-        // 使用层系统，body上不设背景图
-        this.setWallpaperOnLayers(this.onlineBackgroundUrl);
+        // 使用层系统，body上不设背景图；本地优先，异步升级到在线
+        this.setWallpaperOnLayers(this.localBackgroundUrl);
         document.body.style.backgroundImage = 'none';
+        const testImg = new Image();
+        testImg.onload = () => {
+            if (this.settings.persistentWallpaper || document.body.classList.contains('scrolled')) {
+                this.setWallpaperOnLayers(this.onlineBackgroundUrl);
+            }
+        };
+        testImg.src = this.onlineBackgroundUrl;
     }
 
     applyWallpaper() {
@@ -5906,6 +6598,37 @@ class OOOInterface {
                 this.setWallpaperOnLayers(url);
                 // body上不设背景图，避免与CSS类冲突和黑边
                 document.body.style.backgroundImage = 'none';
+
+                // 主题壁纸：在线优先，失败回退本地
+                const themeOnline = this.settings.themeEnabled && this.themeOverrides?.wallpaper?.online;
+                if (themeOnline && url !== themeOnline) {
+                    const localUrl = url;
+                    const onlineUrl = themeOnline;
+                    const testImg = new Image();
+                    testImg.onload = () => {
+                        // 异步回执时再次确认主题仍开启且仍是同一张壁纸
+                        // 同时确认壁纸仍应显示（未在异步期间被关闭）
+                        if (this.settings.themeEnabled
+                            && (this.settings.persistentWallpaper || document.body.classList.contains('scrolled'))
+                            && this.themeOverrides?.wallpaper?.online === onlineUrl
+                            && this.settings.wallpaperUrl === localUrl) {
+                            this.setWallpaperOnLayers(onlineUrl);
+                        }
+                    };
+                    testImg.src = onlineUrl;
+                }
+
+                // 默认壁纸：本地优先，在线升级（同上的异步测试模式）
+                if (this.settings.wallpaper === 'default') {
+                    const testImg = new Image();
+                    testImg.onload = () => {
+                        if (this.settings.wallpaper === 'default'
+                            && (this.settings.persistentWallpaper || document.body.classList.contains('scrolled'))) {
+                            this.setWallpaperOnLayers(this.onlineBackgroundUrl);
+                        }
+                    };
+                    testImg.src = this.onlineBackgroundUrl;
+                }
             }
         } else {
             this.clearWallpaperLayers();
@@ -5938,13 +6661,14 @@ class OOOInterface {
 
         // 移除自定义字体类
         this.settings.customFonts.forEach(font => {
-            document.body.classList.remove(`font-${font.name.toLowerCase()}`);
+            const safeClassName = 'font-' + font.name.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+            document.body.classList.remove(safeClassName);
         });
 
         // 直接设置字体而不是使用CSS类
         if (this.settings.customFonts.some(font => font.name === this.settings.font)) {
-            // 对于自定义字体，直接设置font-family
-            document.body.style.fontFamily = this.settings.font;
+            // 对于自定义字体，直接设置font-family（加引号防止含空格的字体名被拆分）
+            document.body.style.fontFamily = `'${this.settings.font}'`;
         } else {
             // 对于预定义字体，使用CSS类
             document.body.style.fontFamily = ''; // 重置为默认
@@ -5960,6 +6684,11 @@ class OOOInterface {
                     break;
                 case 'HMSC':
                     document.body.classList.add('font-hmsc');
+                    break;
+                default:
+                    if (this.settings.font && this.settings.font !== 'Sans Flex') {
+                        document.body.style.fontFamily = `'${this.settings.font}'`;
+                    }
                     break;
             }
         }
@@ -6015,8 +6744,8 @@ class OOOInterface {
             textLogoElement.style.display = 'block';
             textLogoElement.textContent = this.settings.textLogo;
 
-            // 设置文字Logo字体
-            textLogoElement.style.fontFamily = this.getFontFamily();
+            // 设置文字Logo字体（加引号防止含空格的字体名被拆分）
+            textLogoElement.style.fontFamily = `'${this.getFontFamily()}'`;
 
             // 设置文字Logo颜色（日间黑色，夜间白色）
             textLogoElement.style.color = this.isDarkMode ? '#ffffff' : '#000000';
@@ -6025,38 +6754,57 @@ class OOOInterface {
             logoElement.style.display = 'block';
             textLogoElement.style.display = 'none';
 
-            // 根据当前主题选择对应的Logo文件
-            const logoMap = {
-                'default': this.isDarkMode ? 'dln.png' : 'dll.png',
-                'Google': this.isDarkMode ? 'gln.png' : 'gll.png',
-                'Microsoft': this.isDarkMode ? 'mln.png' : 'mll.png',
-                'Apple': this.isDarkMode ? 'aln.png' : 'all.png',
-                'HUAWEI': this.isDarkMode ? 'hln.png' : 'hll.png'
-            };
+            // 主题 Logo 覆盖：使用主题定义的 location / dark / online / 尺寸
+            if (this.settings.themeEnabled && this.themeOverrides?.logo) {
+                const o = this.themeOverrides.logo;
+                const isDark = this.isDarkMode;
+                if (o.width) logoElement.style.width = o.width;
+                else logoElement.style.width = '';
+                if (o.height) logoElement.style.height = o.height;
+                else logoElement.style.height = '';
 
-            // 自动模式逻辑
-            let currentLogo = this.settings.logo;
-            if (currentLogo === 'auto') {
-                currentLogo = this.currentEngine === 'google' ? 'Google' : 'Microsoft';
-            }
+                const onlineUrl = isDark ? (o.onlineDark || o.online) : o.online;
+                const localUrl = isDark && o.dark ? o.dark : o.location;
+                this.loadThemeLogoWithFallback(onlineUrl, localUrl, logoElement);
+                logoElement.alt = this.settings.logo;
+            } else {
+                // 清除主题遗留的尺寸样式
+                logoElement.style.width = '';
+                logoElement.style.height = '';
 
-            // 检查是否是自定义Logo
-            const customLogo = this.settings.customLogos.find(logo => logo.name === currentLogo);
-            if (customLogo) {
-                if (this.isDarkMode && customLogo.darkData) {
-                    logoElement.src = customLogo.darkData;
-                } else {
-                    logoElement.src = customLogo.data;
+                // 根据当前主题选择对应的Logo文件
+                const logoMap = {
+                    'default': this.isDarkMode ? 'dln.png' : 'dll.png',
+                    'Google': this.isDarkMode ? 'gln.png' : 'gll.png',
+                    'Microsoft': this.isDarkMode ? 'mln.png' : 'mll.png',
+                    'Apple': this.isDarkMode ? 'aln.png' : 'all.png',
+                    'HUAWEI': this.isDarkMode ? 'hln.png' : 'hll.png'
+                };
+
+                // 自动模式逻辑
+                let currentLogo = this.settings.logo;
+                if (currentLogo === 'auto') {
+                    currentLogo = this.currentEngine === 'google' ? 'Google' : 'Microsoft';
                 }
-            } else if (logoMap[currentLogo]) {
-                const iconName = logoMap[currentLogo];
-                if (currentLogo === 'default' && this.onlineIcons[iconName]) {
-                    this.loadIconWithFallback(iconName, logoElement);
-                } else {
-                    logoElement.src = `images/${iconName}`;
+
+                // 检查是否是自定义Logo
+                const customLogo = this.settings.customLogos.find(logo => logo.name === currentLogo);
+                if (customLogo) {
+                    if (this.isDarkMode && customLogo.darkData) {
+                        logoElement.src = customLogo.darkData;
+                    } else {
+                        logoElement.src = customLogo.data;
+                    }
+                } else if (logoMap[currentLogo]) {
+                    const iconName = logoMap[currentLogo];
+                    if (currentLogo === 'default' && this.onlineIcons[iconName]) {
+                        this.loadIconWithFallback(iconName, logoElement);
+                    } else {
+                        logoElement.src = `images/${iconName}`;
+                    }
                 }
+                logoElement.alt = this.settings.logo;
             }
-            logoElement.alt = this.settings.logo;
         }
 
         // 更新搜索引擎按钮类名
@@ -6075,7 +6823,9 @@ class OOOInterface {
                 case 'Ginto': return 'Ginto';
                 case 'Josefin': return 'Josefin';
                 case 'Code': return 'Code';
-                default: return 'Ginto';
+                case 'HMSC': return 'HMSC';
+                case 'Sans Flex': return 'Sans Flex';
+                default: return this.settings.font || 'Sans Flex';
             }
         }
     }
@@ -6165,6 +6915,8 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         menuType = 'context-menu';
     } else if (selected.id === 'color-scheme-select-selected' || selected.parentElement.querySelector('#color-scheme-select')) {
         menuType = 'color-scheme';
+    } else if (selected.id === 'theme-select-selected' || selected.parentElement.querySelector('#theme-select')) {
+        menuType = 'theme';
     }
 
     rightPanelUpper.innerHTML = '';
@@ -6176,6 +6928,185 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
     const optionsList = document.createElement('div');
     optionsList.className = 'settings-menu-options';
+
+    // 主题菜单：特殊渲染（名称 + 版本 + 设计师），不走通用 select-item 遍历
+    if (menuType === 'theme') {
+        const isCustomTheme = (key) => self.settings.customThemes && self.settings.customThemes.some(ct => ct.key === key);
+
+        Object.keys(self.themes).forEach(key => {
+            const theme = self.themes[key];
+            const option = document.createElement('div');
+            option.className = 'settings-menu-option theme-menu-option';
+            option.setAttribute('data-value', key);
+
+            const isCustom = isCustomTheme(key);
+
+            if (isCustom) {
+                const contentWrapper = document.createElement('div');
+                contentWrapper.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:100%';
+
+                const infoWrapper = document.createElement('div');
+                infoWrapper.style.cssText = 'flex:1;min-width:0';
+
+                const nameLine = document.createElement('div');
+                nameLine.className = 'theme-option-name';
+                nameLine.textContent = theme.info.name;
+
+                const versionSpan = document.createElement('span');
+                versionSpan.className = 'theme-option-version';
+                versionSpan.textContent = theme.info.version;
+                nameLine.appendChild(versionSpan);
+                infoWrapper.appendChild(nameLine);
+
+                const designerLine = document.createElement('div');
+                designerLine.className = 'theme-option-designer';
+                designerLine.textContent = theme.info.designer;
+                infoWrapper.appendChild(designerLine);
+
+                contentWrapper.appendChild(infoWrapper);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'custom-theme-delete-btn';
+                deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                deleteBtn.title = '删除此主题';
+                contentWrapper.appendChild(deleteBtn);
+
+                option.appendChild(contentWrapper);
+
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const idx = self.settings.customThemes.findIndex(ct => ct.key === key);
+                    if (idx !== -1) {
+                        self.settings.customThemes.splice(idx, 1);
+                        delete self.themes[key];
+                        self.saveSettings();
+                        const updatedItems = document.getElementById('theme-select-items');
+                        self.populateThemeSelect();
+                        self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect, true);
+                    }
+                });
+            } else {
+                const nameLine = document.createElement('div');
+                nameLine.className = 'theme-option-name';
+                nameLine.textContent = theme.info.name;
+
+                const versionSpan = document.createElement('span');
+                versionSpan.className = 'theme-option-version';
+                versionSpan.textContent = theme.info.version;
+                nameLine.appendChild(versionSpan);
+
+                const designerLine = document.createElement('div');
+                designerLine.className = 'theme-option-designer';
+                designerLine.textContent = theme.info.designer;
+
+                option.appendChild(nameLine);
+                option.appendChild(designerLine);
+            }
+
+            // 高亮判定
+            if (self.settings.themeEnabled && self.settings.theme === key) {
+                option.classList.add('selected');
+            }
+
+            option.addEventListener('click', (e) => {
+                if (isCustom && e.target.closest('.custom-theme-delete-btn')) return;
+                self.applyTheme(key);
+                selected.textContent = theme.info.name;
+                hiddenSelect.value = key;
+                optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                option.classList.add('selected');
+            });
+
+            optionsList.appendChild(option);
+        });
+
+        container.appendChild(optionsList);
+
+        // 底部按钮容器
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'settings-menu-button-container';
+
+        // 主题商店按钮
+        const storeBtn = document.createElement('button');
+        storeBtn.className = 'settings-import-btn';
+        storeBtn.innerHTML = '<span class="material-icons">store</span>';
+        storeBtn.title = '打开主题商店';
+        storeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.open('https://rudan177.github.io/OOOInterface/themes/store.html', '_blank');
+        });
+        buttonContainer.appendChild(storeBtn);
+
+        // "+" 按钮
+        const plusBtn = document.createElement('button');
+        plusBtn.className = 'upload-btn settings-plus-btn';
+        plusBtn.textContent = '+';
+        plusBtn.title = '导入自定义主题';
+        plusBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            document.getElementById('theme-upload').click();
+        });
+        buttonContainer.appendChild(plusBtn);
+        container.appendChild(buttonContainer);
+
+        // 拖放导入支持
+        let dragCounter = 0;
+        const showDropOverlay = () => {
+            let overlay = rightPanelUpper.querySelector('.theme-drop-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'theme-drop-overlay';
+                overlay.innerHTML = '<div class="theme-drop-overlay-text">释放 .js / .json 文件以导入主题</div>';
+                rightPanelUpper.appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+        };
+        const hideDropOverlay = () => {
+            const overlay = rightPanelUpper.querySelector('.theme-drop-overlay');
+            if (overlay) overlay.style.display = 'none';
+        };
+
+        rightPanelUpper.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter++;
+            if (dragCounter === 1) showDropOverlay();
+        });
+        rightPanelUpper.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        rightPanelUpper.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter--;
+            if (dragCounter <= 0) { dragCounter = 0; hideDropOverlay(); }
+        });
+        rightPanelUpper.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter = 0;
+            hideDropOverlay();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.name.endsWith('.js') || file.name.endsWith('.json')) {
+                    self.handleThemeUpload(file);
+                } else {
+                    self.showNotification('请拖放 .js 或 .json 主题文件');
+                }
+            }
+        });
+
+        rightPanelUpper.appendChild(container);
+        document.getElementById('settings-modal').classList.add('right-panel-open');
+        return;
+    }
+
 
     let colorSchemeGroup = null;
     let colorSchemeGroupList = null;
@@ -6218,9 +7149,10 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             colorSchemeGroup2.scrollIntoView({ inline: 'center', behavior: 'smooth' });
         });
 
-        // 自定义组
+        // 自定义组（默认隐藏，有自定义配色时显示）
         colorSchemeGroup3 = document.createElement('div');
         colorSchemeGroup3.className = 'color-scheme-group';
+        colorSchemeGroup3.style.display = 'none';
 
         const groupLabel3 = document.createElement('div');
         groupLabel3.className = 'color-scheme-group-label';
@@ -6540,7 +7472,11 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
                     // 检查是否是当前选中的值
                     if (self.settings.font === customFont.name) {
-                        option.classList.add('selected');
+                        // 主题模式下需确认字体名匹配后才高亮
+                        const themeInfo = self.getThemeDisplayInfo();
+                        if (!themeInfo || themeInfo.fontName === customFont.name) {
+                            option.classList.add('selected');
+                        }
                     }
 
                     // 点击选项时选中并应用
@@ -6585,7 +7521,11 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                 option.textContent = originalItem.textContent;
 
                 if (self.settings.font === fontValue) {
-                    option.classList.add('selected');
+                    // 主题模式下：字体名称匹配预设即高亮（路径由 normalizeThemePaths 处理过，不做字符串对比）
+                    const themeInfo = self.getThemeDisplayInfo();
+                    if (!themeInfo || themeInfo.fontName === fontValue) {
+                        option.classList.add('selected');
+                    }
                 }
 
                 option.addEventListener('click', () => {
@@ -6907,8 +7847,11 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
                     // 检查是否是当前选中的值
                     if (self.settings.wallpaper === 'bing') {
-                        option.classList.add('selected');
-                        configWrapper.style.display = 'block';
+                        // 主题模式下不自动高亮
+                        if (!self.getThemeDisplayInfo()) {
+                            option.classList.add('selected');
+                            configWrapper.style.display = 'block';
+                        }
                     }
 
                     // 点击选项时显示/隐藏配置
@@ -6936,18 +7879,31 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         hiddenSelect.dispatchEvent(event);
                     });
                 } else if (wallpaperValue === 'url') {
-                    // URL壁纸特殊处理：显示文本和配置
-                    option.textContent = 'URL链接';
+                    // URL壁纸特殊处理：参考必应壁纸样式优化布局
+                    option.style.flexDirection = 'column';
+                    option.style.alignItems = 'stretch';
+                    option.style.gap = '0';
+
+                    const contentWrapper = document.createElement('div');
+                    contentWrapper.style.display = 'flex';
+                    contentWrapper.style.alignItems = 'center';
+                    contentWrapper.style.justifyContent = 'space-between';
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = 'URL链接';
+                    contentWrapper.appendChild(textSpan);
+                    option.appendChild(contentWrapper);
 
                     // 创建配置区域
                     const configWrapper = document.createElement('div');
                     configWrapper.className = 'url-config-wrapper';
                     configWrapper.style.display = 'none';
                     configWrapper.style.marginTop = '8px';
+                    configWrapper.style.paddingTop = '8px';
                     configWrapper.style.width = '100%';
 
                     const inputRow = document.createElement('div');
                     inputRow.style.display = 'flex';
+                    inputRow.style.alignItems = 'center';
                     inputRow.style.gap = '8px';
                     inputRow.style.width = '100%';
 
@@ -6956,7 +7912,15 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                     urlInput.className = 'setting-input';
                     urlInput.placeholder = '输入壁纸图片URL链接';
                     urlInput.style.flex = '1';
-                    urlInput.style.padding = '8px 12px';
+                    urlInput.style.padding = '6px 10px';
+                    urlInput.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+                    urlInput.style.borderRadius = '6px';
+                    urlInput.style.background = 'transparent';
+                    urlInput.style.color = 'white';
+                    urlInput.style.fontFamily = 'inherit';
+                    urlInput.style.fontSize = '12px';
+                    urlInput.style.outline = 'none';
+                    urlInput.style.transition = 'border-color 0.2s ease';
                     if (self.settings.wallpaperUrl) {
                         urlInput.value = self.settings.wallpaperUrl;
                     }
@@ -6964,8 +7928,22 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
                     const applyBtn = document.createElement('button');
                     applyBtn.className = 'text-logo-btn';
-                    applyBtn.textContent = '应用';
-                    applyBtn.style.padding = '8px 16px';
+                    applyBtn.style.width = '28px';
+                    applyBtn.style.height = '28px';
+                    applyBtn.style.padding = '0';
+                    applyBtn.style.border = 'none';
+                    applyBtn.style.borderRadius = '6px';
+                    applyBtn.style.background = 'transparent';
+                    applyBtn.style.cursor = 'pointer';
+                    applyBtn.style.transition = 'background 0.2s ease';
+                    applyBtn.style.display = 'flex';
+                    applyBtn.style.alignItems = 'center';
+                    applyBtn.style.justifyContent = 'center';
+                    applyBtn.style.flexShrink = '0';
+                    applyBtn.style.backgroundImage = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'20 6 9 17 4 12\'%3E%3C/polyline%3E%3C/svg%3E")';
+                    applyBtn.style.backgroundRepeat = 'no-repeat';
+                    applyBtn.style.backgroundPosition = 'center';
+                    applyBtn.style.backgroundSize = '16px';
                     inputRow.appendChild(applyBtn);
 
                     configWrapper.appendChild(inputRow);
@@ -6994,6 +7972,22 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         self.closeSettingsMenuInRightPanel();
                     });
 
+                    // 输入框焦点样式
+                    urlInput.addEventListener('focus', () => {
+                        urlInput.style.borderColor = 'white';
+                    });
+                    urlInput.addEventListener('blur', () => {
+                        urlInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                    });
+
+                    // 确认按钮悬停样式
+                    applyBtn.addEventListener('mouseenter', () => {
+                        applyBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                    });
+                    applyBtn.addEventListener('mouseleave', () => {
+                        applyBtn.style.backgroundColor = 'transparent';
+                    });
+
                     // 输入框回车事件
                     urlInput.addEventListener('keypress', (e) => {
                         if (e.key === 'Enter') {
@@ -7003,8 +7997,11 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
                     // 检查是否是当前选中的值
                     if (self.settings.wallpaper === 'url') {
-                        option.classList.add('selected');
-                        configWrapper.style.display = 'block';
+                        // 主题模式下不自动高亮
+                        if (!self.getThemeDisplayInfo()) {
+                            option.classList.add('selected');
+                            configWrapper.style.display = 'block';
+                        }
                     }
 
                     // 点击选项时显示/隐藏配置
@@ -7032,7 +8029,10 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
                     // 检查是否是当前选中的值
                     if (self.settings.wallpaper === 'default' && wallpaperValue === 'default') {
-                        option.classList.add('selected');
+                        // 主题模式下不自动高亮
+                        if (!self.getThemeDisplayInfo()) {
+                            option.classList.add('selected');
+                        }
                     }
 
                     option.addEventListener('click', () => {
@@ -7189,7 +8189,12 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
             const currentValue = originalItem.getAttribute('data-value');
             if (hiddenSelect.value === currentValue) {
-                option.classList.add('selected');
+                // 主题模式下若配色为 add 组（自定义配色方案），不高亮任何选项
+                const themeInfo = self.getThemeDisplayInfo();
+                const isAddGroup = themeInfo && self.themes[self.settings.theme]?.details?.color?.specialStyle?.colorGroup === 'add';
+                if (!isAddGroup) {
+                    option.classList.add('selected');
+                }
             }
 
             option.addEventListener('click', () => {
@@ -7265,6 +8270,92 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             optionsList.appendChild(option);
         }
     });
+
+    // 渲染自定义配色方案选项
+    function renderCustomOptions() {
+        if (!colorSchemeGroupList3) return;
+        colorSchemeGroupList3.innerHTML = '';
+        const customColors = self.settings.customColors || [];
+        customColors.forEach((cc, idx) => {
+            const opt = document.createElement('div');
+            opt.className = 'settings-menu-option';
+            opt.setAttribute('data-value', 'custom');
+            opt.setAttribute('data-custom-index', idx);
+
+            const dot = document.createElement('span');
+            dot.className = 'color-scheme-dot';
+            const p = cc.primaryColor || '#cccccc';
+            const s = cc.secondaryColor && cc.secondaryColor.trim() ? cc.secondaryColor : p;
+            if (cc.gradientEnabled && cc.secondaryColor && cc.secondaryColor.trim()) {
+                dot.style.background = 'linear-gradient(135deg, ' + p + ', ' + s + ')';
+            } else {
+                dot.style.background = p;
+            }
+            opt.appendChild(dot);
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = cc.name || '未命名';
+            nameSpan.style.flex = '1';
+            opt.appendChild(nameSpan);
+
+            // 删除按钮
+            const delBtn = document.createElement('button');
+            delBtn.className = 'custom-color-delete-btn';
+            delBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+            delBtn.title = '删除此配色';
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const arr = self.settings.customColors || [];
+                const delIdx = parseInt(idx, 10);
+                if (isNaN(delIdx) || delIdx < 0 || delIdx >= arr.length) return;
+                arr.splice(delIdx, 1);
+                self.settings.customColors = arr;
+                // 如果删除的是当前激活的方案，重置为默认
+                if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex === delIdx) {
+                    self.settings.activeCustomColorIndex = -1;
+                    self.settings.colorScheme = 'green';
+                } else if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex > delIdx) {
+                    self.settings.activeCustomColorIndex -= 1;
+                }
+                self.saveSettings();
+                self.applyColorScheme();
+                renderCustomOptions();
+            });
+            opt.appendChild(delBtn);
+
+            if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex === idx) {
+                opt.classList.add('selected');
+            }
+
+            colorSchemeGroupList3.appendChild(opt);
+        });
+        if (customColors.length > 0) {
+            colorSchemeGroup3.style.display = '';
+        } else {
+            colorSchemeGroup3.style.display = 'none';
+        }
+    }
+
+    renderCustomOptions();
+
+    // 自定义配色选项点击事件（事件委托，只需绑定一次）
+    if (menuType === 'color-scheme' && colorSchemeGroupList3 && !colorSchemeGroupList3._clickBound) {
+        colorSchemeGroupList3._clickBound = true;
+        colorSchemeGroupList3.addEventListener('click', (e) => {
+            const opt = e.target.closest('.settings-menu-option');
+            if (!opt) return;
+            const idx = parseInt(opt.getAttribute('data-custom-index'), 10);
+            if (isNaN(idx) || idx < 0) return;
+            const cc = (self.settings.customColors || [])[idx];
+            if (!cc) return;
+
+            self.settings.colorScheme = 'custom';
+            self.settings.activeCustomColorIndex = idx;
+            self.saveSettings();
+            self.applyColorScheme();
+            self.closeSettingsMenuInRightPanel();
+        });
+    }
 
     if (colorSchemeGroup) {
         optionsList.appendChild(colorSchemeGroup);
@@ -7417,6 +8508,67 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             });
             optionsList.appendChild(clearAllBtn);
         }
+    } else if (menuType === 'color-scheme') {
+        const plusBtn = document.createElement('button');
+        plusBtn.className = 'upload-btn settings-plus-btn';
+        plusBtn.textContent = '+';
+        plusBtn.title = '添加自定义配色';
+        plusBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, selected.textContent, optionsList);
+        });
+        buttonContainer.appendChild(plusBtn);
+    }
+
+    // 字体 / Logo / 壁纸菜单：拖放导入
+    // 先清理旧拖拽监听器，避免残留影响其他菜单
+    if (rightPanelUpper._dragCleanup) {
+        if (rightPanelUpper._dragenter) rightPanelUpper.removeEventListener('dragenter', rightPanelUpper._dragenter);
+        if (rightPanelUpper._dragover) rightPanelUpper.removeEventListener('dragover', rightPanelUpper._dragover);
+        if (rightPanelUpper._dragleave) rightPanelUpper.removeEventListener('dragleave', rightPanelUpper._dragleave);
+        if (rightPanelUpper._drop) rightPanelUpper.removeEventListener('drop', rightPanelUpper._drop);
+        rightPanelUpper._dragCleanup = false;
+    }
+    if (menuType === 'font' || menuType === 'logo' || menuType === 'wallpaper') {
+        let dragCounter = 0;
+        const showOverlay = () => {
+            let overlay = rightPanelUpper.querySelector('.theme-drop-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'theme-drop-overlay';
+                overlay.innerHTML = '<div class="theme-drop-overlay-text">释放文件以导入</div>';
+                rightPanelUpper.appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+        };
+        const hideOverlay = () => {
+            const overlay = rightPanelUpper.querySelector('.theme-drop-overlay');
+            if (overlay) overlay.style.display = 'none';
+        };
+        rightPanelUpper._dragenter = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter++; if (dragCounter === 1) showOverlay(); };
+        rightPanelUpper._dragover = (e) => { e.preventDefault(); e.stopPropagation(); };
+        rightPanelUpper._dragleave = (e) => { e.preventDefault(); e.stopPropagation(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; hideOverlay(); } };
+        rightPanelUpper._drop = (e) => {
+            e.preventDefault(); e.stopPropagation();
+            dragCounter = 0; hideOverlay();
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            if (menuType === 'font' && (file.name.endsWith('.ttf') || file.name.endsWith('.otf'))) {
+                self.handleFontUpload(file);
+            } else if (menuType === 'logo' && file.type.startsWith('image/')) {
+                self.handleLogoUpload(file);
+            } else if (menuType === 'wallpaper' && file.type.startsWith('image/')) {
+                self.handleWallpaperUpload(file);
+            } else {
+                self.showNotification(`不支持的${menuType === 'font' ? '字体' : menuType === 'logo' ? 'Logo' : '壁纸'}文件格式`);
+            }
+        };
+        rightPanelUpper.addEventListener('dragenter', rightPanelUpper._dragenter);
+        rightPanelUpper.addEventListener('dragover', rightPanelUpper._dragover);
+        rightPanelUpper.addEventListener('dragleave', rightPanelUpper._dragleave);
+        rightPanelUpper.addEventListener('drop', rightPanelUpper._drop);
+        rightPanelUpper._dragCleanup = true;
     }
 
     if (menuType === 'context-menu') {
@@ -7482,6 +8634,7 @@ OOOInterface.prototype.renderContextMenuCustomizeView = function (rightPanelUppe
         { key: 'search-history-toggle', label: '搜索历史' },
         { key: 'wallpaper-toggle', label: '壁纸常显示' },
         { key: 'enhanced-display-toggle', label: '高级视觉效果' },
+        { key: 'engine-lock-toggle', label: '引擎锁定' },
         { key: 'hide-notifications-toggle', label: '隐藏弹窗' },
         { key: 'hide-info-popup-toggle', label: '禁止提示' }
     ];
@@ -7550,10 +8703,14 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     const container = document.createElement('div');
     container.className = 'settings-menu-container slide-in-right';
 
-    const title = document.createElement('div');
-    title.style.cssText = 'font-size:14px;font-weight:600;color:var(--text-color);margin-bottom:16px;';
-    title.textContent = '自定义配色';
-    container.appendChild(title);
+    // 名称输入框
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.placeholder = '自定义配色';
+    nameInput.maxLength = 20;
+    nameInput.value = '';
+    nameInput.style.cssText = 'width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;margin-bottom:16px;box-sizing:border-box;';
+    container.appendChild(nameInput);
 
     const updatePreview = (hexInput, previewEl) => {
         let val = hexInput.value.trim();
@@ -7563,6 +8720,15 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
         } else if (!val) {
             previewEl.style.background = 'transparent';
         }
+    };
+
+    // 临时保存编辑中的颜色值
+    const editData = {
+        primaryColor: '',
+        secondaryColor: '',
+        gradientEnabled: false,
+        gradientStart: 0,
+        gradientEnd: 100
     };
 
     // 主色
@@ -7575,12 +8741,11 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     const primaryWrapper = document.createElement('div');
     primaryWrapper.style.cssText = 'display:flex;align-items:center;gap:8px;';
     const primaryPreview = document.createElement('span');
-    const hasPrimary = self.settings.customPrimaryColor && self.settings.customPrimaryColor.trim();
-    primaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:' + (hasPrimary ? self.settings.customPrimaryColor : 'transparent') + ';';
+    primaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:transparent;';
     primaryWrapper.appendChild(primaryPreview);
     const primaryHex = document.createElement('input');
     primaryHex.type = 'text';
-    primaryHex.value = hasPrimary ? self.settings.customPrimaryColor : '';
+    primaryHex.value = '';
     primaryHex.placeholder = '#RRGGBB';
     primaryHex.maxLength = 7;
     primaryHex.spellcheck = false;
@@ -7599,12 +8764,11 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     const secondaryWrapper = document.createElement('div');
     secondaryWrapper.style.cssText = 'display:flex;align-items:center;gap:8px;';
     const secondaryPreview = document.createElement('span');
-    const secVal = self.settings.customSecondaryColor || '';
-    secondaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:' + (secVal || 'transparent') + ';';
+    secondaryPreview.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1px solid var(--border-color);flex-shrink:0;background:transparent;';
     secondaryWrapper.appendChild(secondaryPreview);
     const secondaryHex = document.createElement('input');
     secondaryHex.type = 'text';
-    secondaryHex.value = secVal;
+    secondaryHex.value = '';
     secondaryHex.placeholder = '#RRGGBB';
     secondaryHex.maxLength = 7;
     secondaryHex.spellcheck = false;
@@ -7624,7 +8788,7 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     gradientSwitch.className = 'switch';
     const gradientCheckbox = document.createElement('input');
     gradientCheckbox.type = 'checkbox';
-    gradientCheckbox.checked = self.settings.customGradientEnabled || false;
+    gradientCheckbox.checked = false;
     const gradientSlider = document.createElement('span');
     gradientSlider.className = 'slider';
     gradientSwitch.appendChild(gradientCheckbox);
@@ -7637,20 +8801,15 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     gPosRow.style.cssText = 'display:none;margin-bottom:0;';
     gPosRow.id = 'gradient-position-row';
 
-    const gStartVal = self.settings.customGradientStart !== undefined ? self.settings.customGradientStart : 0;
-    const gEndVal = self.settings.customGradientEnd !== undefined ? self.settings.customGradientEnd : 100;
-
     // 拖拽状态
     let dragging = null; // 'start' | 'end' | null
 
     const commitGradientPos = () => {
-        self.settings.customGradientStart = curS;
-        self.settings.customGradientEnd = curE;
-        self.saveSettings();
-        if (self.settings.colorScheme === 'custom') self.applyColorScheme();
+        editData.gradientStart = curS;
+        editData.gradientEnd = curE;
     };
 
-    let curS = gStartVal, curE = gEndVal;
+    let curS = 0, curE = 100;
 
     const updateGradientUI = () => {
         gMarkerS.style.left = curS + '%';
@@ -7694,11 +8853,15 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
         commitGradientPos();
     };
 
+    const updateGradientPreview = () => {
+        const p = primaryHex.value.trim() ? primaryHex.value : '#cccccc';
+        const s = secondaryHex.value.trim() ? secondaryHex.value : p;
+        gPreview.style.background = 'linear-gradient(90deg, ' + p + ' 0%, ' + s + ' 100%)';
+    };
+
     // 渐变条（可拖拽）
     const gPreview = document.createElement('div');
-    const gp = hasPrimary ? self.settings.customPrimaryColor : '#cccccc';
-    const gs = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : gp;
-    gPreview.style.cssText = 'height:20px;border-radius:8px;margin:8px 0 12px;background:linear-gradient(90deg, ' + gp + ' 0%, ' + gs + ' 100%);border:1px solid var(--border-color);position:relative;cursor:grab;touch-action:none;';
+    gPreview.style.cssText = 'height:20px;border-radius:8px;margin:8px 0 12px;background:linear-gradient(90deg, #cccccc 0%, #cccccc 100%);border:1px solid var(--border-color);position:relative;cursor:grab;touch-action:none;';
     gPreview.addEventListener('pointerdown', onPointerDown);
     gPreview.addEventListener('pointermove', onPointerMove);
     gPreview.addEventListener('pointerup', onPointerUp);
@@ -7778,102 +8941,147 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
         return null;
     };
 
-    // 事件 - 立即生效
-    primaryHex.addEventListener('input', () => updatePreview(primaryHex, primaryPreview));
-    primaryHex.addEventListener('change', () => {
-        const parsed = parseHex(primaryHex.value);
-        if (parsed) {
-            primaryHex.value = parsed;
-            self.settings.customPrimaryColor = parsed;
-            primaryPreview.style.background = parsed;
-            self.saveSettings();
-            if (self.settings.colorScheme === 'custom') {
-                self.applyColorScheme();
-                self.updateCustomSchemeDropdownDots();
-            }
-            if (gPreview) {
-                const p = parsed;
-                const s = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : p;
-                gPreview.style.background = 'linear-gradient(90deg, ' + p + ' 0%, ' + s + ' 100%)';
-            }
-        } else if (!primaryHex.value.trim()) {
-            self.settings.customPrimaryColor = '';
-            primaryPreview.style.background = 'transparent';
-            self.saveSettings();
-            if (gPreview) {
-                const s = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : '#cccccc';
-                gPreview.style.background = 'linear-gradient(90deg, #cccccc 0%, ' + s + ' 100%)';
-            }
-        }
+    // 事件 - 仅更新 UI，不保存
+    primaryHex.addEventListener('input', () => {
+        updatePreview(primaryHex, primaryPreview);
+        editData.primaryColor = parseHex(primaryHex.value) || primaryHex.value.trim();
+        updateGradientPreview();
     });
     primaryHex.addEventListener('blur', () => {
         const val = primaryHex.value.trim();
         if (!val) { primaryHex.value = ''; return; }
         const parsed = parseHex(primaryHex.value);
-        if (!parsed) primaryHex.value = self.settings.customPrimaryColor || '';
+        if (!parsed) primaryHex.value = '';
         else primaryHex.value = parsed;
     });
 
     secondaryHex.addEventListener('input', () => {
         updatePreview(secondaryHex, secondaryPreview);
+        editData.secondaryColor = parseHex(secondaryHex.value) || secondaryHex.value.trim();
         updateGradientRowVisibility();
-    });
-    secondaryHex.addEventListener('change', () => {
-        const parsed = parseHex(secondaryHex.value);
-        if (parsed) {
-            secondaryHex.value = parsed;
-            self.settings.customSecondaryColor = parsed;
-            secondaryPreview.style.background = parsed;
-        } else if (!secondaryHex.value.trim()) {
-            self.settings.customSecondaryColor = '';
-            secondaryPreview.style.background = 'transparent';
-        }
-        self.saveSettings();
-        updateGradientRowVisibility();
-        if (self.settings.colorScheme === 'custom') {
-            self.applyColorScheme();
-            self.updateCustomSchemeDropdownDots();
-        }
-        if (gPreview) {
-            const p = self.settings.customPrimaryColor && self.settings.customPrimaryColor.trim() ? self.settings.customPrimaryColor : '#cccccc';
-            const s = self.settings.customSecondaryColor && self.settings.customSecondaryColor.trim() ? self.settings.customSecondaryColor : p;
-            gPreview.style.background = 'linear-gradient(90deg, ' + p + ' 0%, ' + s + ' 100%)';
-        }
+        updateGradientPreview();
     });
     secondaryHex.addEventListener('blur', () => {
         const val = secondaryHex.value.trim();
         if (!val) { secondaryHex.value = ''; return; }
         const parsed = parseHex(secondaryHex.value);
-        if (!parsed) secondaryHex.value = self.settings.customSecondaryColor || '';
+        if (!parsed) secondaryHex.value = '';
         else secondaryHex.value = parsed;
     });
 
     gradientCheckbox.addEventListener('change', () => {
-        self.settings.customGradientEnabled = gradientCheckbox.checked;
-        self.saveSettings();
+        editData.gradientEnabled = gradientCheckbox.checked;
         if (gradientCheckbox.checked && secondaryHex.value.trim()) {
             gPosRow.style.display = 'block';
         } else {
             gPosRow.style.display = 'none';
         }
-        if (self.settings.colorScheme === 'custom') {
-            self.applyColorScheme();
-        }
     });
 
+    // 底部按钮容器
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;margin-top:auto;padding-top:12px;border-top:1px solid var(--border-color);';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '取消';
+    cancelBtn.style.cssText = 'padding:8px 20px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;cursor:pointer;';
+    cancelBtn.addEventListener('click', () => {
+        delete rightPanelUpper.dataset.subView;
+        const items = document.getElementById('color-scheme-select-items');
+        if (items && selected && hiddenSelect) {
+            self.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
+        }
+    });
+    btnRow.appendChild(cancelBtn);
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = '确定';
+    confirmBtn.style.cssText = 'padding:8px 20px;border:none;border-radius:12px;font-size:13px;color:#fff;background:var(--primary-color);cursor:pointer;';
+    confirmBtn.addEventListener('click', () => {
+        // 验证名称
+        let name = nameInput.value.trim();
+        if (!name) name = '自定义配色';
+        // 验证主色
+        const primaryParsed = parseHex(primaryHex.value);
+        if (!primaryParsed) {
+            self.showNotification('请输入有效的主色值');
+            primaryHex.focus();
+            return;
+        }
+        const secondaryParsed = parseHex(secondaryHex.value);
+        const gradientEnabled = gradientCheckbox.checked;
+
+        // 检查名称重复，生成唯一名称
+        const existingNames = (self.settings.customColors || []).map(c => c.name);
+        let finalName = name;
+        if (existingNames.includes(finalName)) {
+            let suffix = 2;
+            while (existingNames.includes(finalName + '(' + suffix + ')')) {
+                suffix++;
+            }
+            finalName = name + '(' + suffix + ')';
+        }
+
+        // 保存到 customColors
+        const newScheme = {
+            name: finalName,
+            primaryColor: primaryParsed,
+            secondaryColor: secondaryParsed || '',
+            gradientEnabled: gradientEnabled,
+            gradientStart: curS,
+            gradientEnd: curE
+        };
+
+        if (!self.settings.customColors) {
+            self.settings.customColors = [];
+        }
+        self.settings.customColors.push(newScheme);
+        const newIndex = self.settings.customColors.length - 1;
+        self.settings.activeCustomColorIndex = newIndex;
+        self.settings.colorScheme = 'custom';
+        self.saveSettings();
+        self.applyColorScheme();
+
+        // 重新渲染颜色方案列表并选中新创建的方案
+        delete rightPanelUpper.dataset.subView;
+        const items = document.getElementById('color-scheme-select-items');
+        if (items && selected && hiddenSelect) {
+            self.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
+        }
+        self.showNotification('已保存配色方案"' + finalName + '"');
+    });
+    btnRow.appendChild(confirmBtn);
+
+    container.appendChild(btnRow);
     rightPanelUpper.appendChild(container);
+    // 强制限制容器高度，防止撑高弹窗
+    const constrainHeight = () => {
+        const parent = rightPanelUpper.parentElement;
+        if (parent) {
+            const px = parent.clientHeight - 60;
+            if (px > 100) container.style.maxHeight = px + 'px';
+        }
+    };
+    constrainHeight();
+    // 窗口尺寸变化时重新计算
+    const resizeHandler = () => constrainHeight();
+    window.addEventListener('resize', resizeHandler);
+    // 清理监听器
+    const origHide = self.hideSettingsQuickLinksAddInterface || self.hideCustomColorEditor;
+    const cleanup = () => window.removeEventListener('resize', resizeHandler);
+    // 观察面板隐藏时清理
+    const mo = new MutationObserver(() => {
+        if (!rightPanelUpper.isConnected || rightPanelUpper.innerHTML === '') {
+            cleanup();
+            mo.disconnect();
+        }
+    });
+    mo.observe(rightPanelUpper, { childList: true, subtree: false });
 };
 
 OOOInterface.prototype.backToCustomColorView = function (rightPanelUpper) {
-    const self = this;
-    if (this.settings.colorScheme !== 'custom' && this.settings.customPrimaryColor && this.settings.customPrimaryColor.trim()) {
-        this.settings.colorScheme = 'custom';
-        this.saveSettings();
-        this.applyColorScheme();
-        const colorSchemeSelect = document.getElementById('color-scheme-select');
-        const colorSchemeSelected = document.getElementById('color-scheme-select-selected');
-        if (colorSchemeSelect) colorSchemeSelect.value = 'custom';
-        if (colorSchemeSelected) colorSchemeSelected.textContent = '自定义';
+    if (rightPanelUpper) {
+        delete rightPanelUpper.dataset.subView;
     }
     this._doBackToCustomColorView(rightPanelUpper);
 };
@@ -7964,11 +9172,13 @@ OOOInterface.prototype.showDefaultRightPanelContent = function (rightPanelUpper)
         if (this.settings.font === 'Ginto') {
             placeholder.style.fontFamily = `'Ginto', system-ui, -apple-system, sans-serif`;
         } else if (this.settings.font === 'Josefin') {
-            placeholder.style.fontFamily = `'Josefin Sans', 'Ginto', system-ui, -apple-system, sans-serif`;
+            placeholder.style.fontFamily = `'Josefin', 'Ginto', system-ui, -apple-system, sans-serif`;
         } else if (this.settings.font === 'Code') {
-            placeholder.style.fontFamily = `'Google Sans Code', 'Ginto', system-ui, -apple-system, sans-serif`;
+            placeholder.style.fontFamily = `'Code', 'Ginto', system-ui, -apple-system, sans-serif`;
+        } else if (this.settings.font === 'HMSC') {
+            placeholder.style.fontFamily = `'HMSC', system-ui, -apple-system, sans-serif`;
         } else if (this.settings.font === 'Sans Flex') {
-            placeholder.style.fontFamily = `'Google Sans Flex', 'Ginto', system-ui, -apple-system, sans-serif`;
+            placeholder.style.fontFamily = `'Sans Flex', 'Ginto', system-ui, -apple-system, sans-serif`;
         } else {
             placeholder.style.fontFamily = `'${this.settings.font}', system-ui, -apple-system, sans-serif`;
         }
@@ -8070,8 +9280,10 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     });
 };
 
-OOOInterface.prototype.showQuickLinksAddInterface = function (container, listContainer, buttonContainer) {
+OOOInterface.prototype.showQuickLinksAddInterface = function (container, listContainer, buttonContainer, editIndex) {
     const self = this;
+    const isEdit = typeof editIndex === 'number' && editIndex >= 0;
+    const existingLink = isEdit ? (this.settings.quickLinks[editIndex] || null) : null;
 
     listContainer.style.display = 'none';
     buttonContainer.style.display = 'none';
@@ -8084,21 +9296,23 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
     nameInput.className = 'setting-input';
     nameInput.id = 'quick-link-name';
     nameInput.placeholder = '网站名称';
+    if (isEdit && existingLink) {
+        nameInput.value = existingLink.name;
+    }
 
     const urlInput = document.createElement('input');
     urlInput.type = 'text';
     urlInput.className = 'setting-input';
     urlInput.id = 'quick-link-url';
     urlInput.placeholder = '网站地址';
+    if (isEdit && existingLink) {
+        urlInput.value = existingLink.url;
+    }
 
     const buttonsWrapper = document.createElement('div');
     buttonsWrapper.className = 'settings-menu-button-container quick-links-add-buttons';
 
-    const confirmAddBtn = document.createElement('button');
-    confirmAddBtn.className = 'settings-menu-confirm';
-    confirmAddBtn.textContent = '确定';
-
-    const handleAdd = () => {
+    const handleSave = () => {
         const name = nameInput.value.trim();
         const url = urlInput.value.trim();
 
@@ -8107,10 +9321,31 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
             return;
         }
 
-        self.addQuickLink();
+        if (isEdit) {
+            self.settings.quickLinks[editIndex] = { name, url };
+            self.saveSettings();
+            self.showNotification('快速访问链接已更新');
+        } else {
+            self.addQuickLink();
+        }
         self.updateQuickLinksListInMenu(listContainer);
         self.hideQuickLinksAddInterface(container, inputWrapper, listContainer, buttonContainer);
     };
+
+    const confirmAddBtn = document.createElement('button');
+    confirmAddBtn.className = 'settings-menu-confirm-primary';
+    confirmAddBtn.textContent = '确定';
+
+    // 编辑模式添加取消按钮
+    if (isEdit) {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '取消';
+        cancelBtn.style.cssText = 'padding:8px 20px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;cursor:pointer;';
+        cancelBtn.addEventListener('click', () => {
+            self.hideQuickLinksAddInterface(container, inputWrapper, listContainer, buttonContainer);
+        });
+        buttonsWrapper.appendChild(cancelBtn);
+    }
 
     nameInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -8120,11 +9355,11 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
 
     urlInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            handleAdd();
+            handleSave();
         }
     });
 
-    confirmAddBtn.addEventListener('click', handleAdd);
+    confirmAddBtn.addEventListener('click', handleSave);
 
     buttonsWrapper.appendChild(confirmAddBtn);
 
@@ -8133,7 +9368,10 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
     container.appendChild(inputWrapper);
     container.appendChild(buttonsWrapper);
 
-    document.getElementById('right-panel-upper').dataset.subView = 'quick-link-add';
+    const rpu = document.getElementById('right-panel-upper');
+    if (rpu) {
+        rpu.dataset.subView = isEdit ? 'quick-link-edit' : 'quick-link-add';
+    }
 
     container._qlinput = inputWrapper;
     container._qllist = listContainer;
@@ -8155,7 +9393,7 @@ OOOInterface.prototype.hideQuickLinksAddInterface = function (container, inputWr
     delete container._qlbtn;
 
     const rpu = document.getElementById('right-panel-upper');
-    if (rpu && rpu.dataset.subView === 'quick-link-add') {
+    if (rpu && (rpu.dataset.subView === 'quick-link-add' || rpu.dataset.subView === 'quick-link-edit')) {
         delete rpu.dataset.subView;
     }
 
@@ -8217,6 +9455,16 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         info.appendChild(name);
         info.appendChild(url);
 
+        // 点击编辑链接
+        info.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const container = listContainer.closest('.settings-menu-container');
+            const buttonContainer = container ? container.querySelector('.settings-menu-button-container') : null;
+            if (container) {
+                self.showQuickLinksAddInterface(container, listContainer, buttonContainer, index);
+            }
+        });
+
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-link-menu-btn';
         deleteBtn.textContent = '×';
@@ -8237,17 +9485,12 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
 
         item.addEventListener('dragstart', (e) => {
             item.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', index.toString());
+            e.dataTransfer.setData('text/plain', 'move');
             e.dataTransfer.effectAllowed = 'move';
-            // 设置拖拽时的半透明预览
-            if (e.dataTransfer.setDragImage) {
-                const ghost = item.cloneNode(true);
-                ghost.style.position = 'absolute';
-                ghost.style.top = '-999px';
-                document.body.appendChild(ghost);
-                e.dataTransfer.setDragImage(ghost, 0, 0);
-                setTimeout(() => document.body.removeChild(ghost), 0);
-            }
+            // 清除默认拖拽半透明预览
+            const blankImg = new Image();
+            blankImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            e.dataTransfer.setDragImage(blankImg, 0, 0);
         });
 
         item.addEventListener('dragend', () => {
@@ -8290,37 +9533,41 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
 
         item.addEventListener('drop', (e) => {
             e.preventDefault();
-            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-            if (isNaN(fromIndex)) return;
+            const dragged = listContainer.querySelector('.dragging');
+            if (!dragged) return;
 
             const indicator = listContainer.querySelector('.drag-indicator');
-            let toIndex = index;
+            if (!indicator) return;
 
-            if (indicator) {
-                // 根据指示线的位置决定插入点
-                const allItems = listContainer.querySelectorAll('.quick-link-menu-item:not(.dragging)');
-                const beforeEl = indicator.nextSibling;
-                if (beforeEl) {
-                    const beforeIndex = parseInt(beforeEl.dataset.index);
-                    if (!isNaN(beforeIndex)) {
-                        toIndex = beforeIndex;
-                    }
-                } else {
-                    toIndex = self.settings.quickLinks.length - 1;
+            // 根据指示线位置移动DOM元素
+            const referenceNode = indicator.nextSibling;
+            indicator.remove();
+
+            if (referenceNode) {
+                listContainer.insertBefore(dragged, referenceNode);
+            } else {
+                listContainer.appendChild(dragged);
+            }
+
+            // 更新所有项的 data-index
+            const allItems = listContainer.querySelectorAll('.quick-link-menu-item');
+            allItems.forEach((el, i) => {
+                el.setAttribute('data-index', i);
+            });
+
+            // 根据DOM顺序重建设置数组（不重新渲染，避免闪烁）
+            const newLinks = [];
+            allItems.forEach(el => {
+                const nameEl = el.querySelector('.quick-link-menu-name');
+                const urlEl = el.querySelector('.quick-link-menu-url');
+                if (nameEl && urlEl) {
+                    newLinks.push({ name: nameEl.textContent, url: urlEl.textContent });
                 }
-                indicator.remove();
-            }
+            });
 
-            if (fromIndex !== toIndex) {
-                const links = self.settings.quickLinks;
-                const [movedItem] = links.splice(fromIndex, 1);
-                // 调整目标索引（如果从前面移走了一项，目标索引要减1）
-                const adjustedTo = fromIndex < toIndex ? toIndex - 1 : toIndex;
-                links.splice(adjustedTo, 0, movedItem);
-                self.saveSettings();
-                self.updateQuickLinksListInMenu(listContainer);
-                self.showNotification('顺序已调整');
-            }
+            self.settings.quickLinks = newLinks;
+            self.saveSettings();
+            self.showNotification('顺序已调整');
         });
     });
 

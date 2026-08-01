@@ -110,6 +110,20 @@
                 <div class="settings-left-panel">
                     <div class="modal-body">
                         <div class="setting-group">
+                            <label for="theme-select">选择主题:</label>
+                            <div class="custom-select">
+                                <div class="select-selected" id="theme-select-selected">默认主题</div>
+                                <div class="select-items select-hide" id="theme-select-items">
+                                    <!-- JS 动态填充 -->
+                                </div>
+                                <select id="theme-select" style="display: none;">
+                                    <option value="default">默认主题</option>
+                                </select>
+                            </div>
+                            <input type="file" id="theme-upload" accept=".js,.json" style="display: none;">
+                        </div>
+
+                        <div class="setting-group">
                             <label for="font-select">选择字体:</label>
                             <div class="custom-select">
                                 <!-- 自定义下拉菜单 -->
@@ -192,11 +206,6 @@
                                 </div>
                             </div>
                             <input type="file" id="wallpaper-upload" accept="image/*" style="display: none;">
-                            <div id="wallpaper-url-group" class="wallpaper-url-group" style="display: none;">
-                                <input type="text" id="wallpaper-url-input" class="setting-input"
-                                    placeholder="输入壁纸图片URL链接">
-                                <button id="apply-wallpaper-url" class="text-logo-btn">应用</button>
-                            </div>
                         </div>
 
                         <div class="setting-group">
@@ -231,10 +240,6 @@
                                     <div class="select-item color-scheme-item" data-value="isolation" data-group="newstar">
                                         <span class="color-scheme-dot" style="background: linear-gradient(135deg, #FFD700, #6B238E);"></span>
                                         <span>隔离色</span>
-                                    </div>
-                                    <div class="select-item color-scheme-item" data-value="custom" data-group="custom">
-                                        <span class="color-scheme-dot" style="background: linear-gradient(135deg, #888888, #aaaaaa);"></span>
-                                        <span>自定义</span>
                                     </div>
                                 </div>
                                 <select id="color-scheme-select" style="display: none;">
@@ -369,6 +374,16 @@
 
                         <div class="setting-group">
                             <div class="switch-label">
+                                <span class="setting-label">引擎锁定</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="engine-lock-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <div class="switch-label">
                                 <span class="setting-label">隐藏弹窗</span>
                                 <label class="switch">
                                     <input type="checkbox" id="hide-notifications-toggle">
@@ -386,42 +401,111 @@
                             </div>
                         </div>
 
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">
+                                    快捷键
+                                    <span class="material-icons info-icon" id="shortcuts-hint"
+                                        title="查看快捷键说明">info</span>
+                                </span>
+                                <label class="switch">
+                                    <input type="checkbox" id="shortcuts-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">手柄控制器</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="controller-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="controller-settings" id="controller-settings" style="display:none;padding-left:20px;">
+                            <div class="setting-group">
+                                <div class="switch-label">
+                                    <span class="setting-label">反转A/B键</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="controller-invert-ab">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="developer-control-item">
+                                <label for="controller-speed">光标速度:</label>
+                                <div class="control-with-reset">
+                                    <input type="range" id="controller-speed" class="slider-input" min="1" max="20" step="1" value="6">
+                                    <input type="number" id="controller-speed-value" class="slider-value-input" min="1" max="20" step="1" value="6">
+                                </div>
+                            </div>
+                            <div class="developer-control-item">
+                                <label for="controller-ls-select">左摇杆按下:</label>
+                                <div class="custom-select" style="min-width:120px;">
+                                    <div class="select-selected" id="controller-ls-selected">无</div>
+                                    <div class="select-items select-hide" id="controller-ls-items">
+                                        <div class="select-item" data-value="none">无</div>
+                                        <div class="select-item" data-value="settings">打开设置</div>
+                                        <div class="select-item" data-value="refresh">刷新页面</div>
+                                        <div class="select-item" data-value="history">切换搜索历史</div>
+                                        <div class="select-item" data-value="wallpaper">切换壁纸常显示</div>
+                                    </div>
+                                    <select id="controller-ls-select" style="display:none;">
+                                        <option value="none">无</option>
+                                        <option value="settings">打开设置</option>
+                                        <option value="refresh">刷新页面</option>
+                                        <option value="history">切换搜索历史</option>
+                                        <option value="wallpaper">切换壁纸常显示</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="developer-control-item">
+                                <label for="controller-rs-select">右摇杆按下:</label>
+                                <div class="custom-select" style="min-width:120px;">
+                                    <div class="select-selected" id="controller-rs-selected">无</div>
+                                    <div class="select-items select-hide" id="controller-rs-items">
+                                        <div class="select-item" data-value="none">无</div>
+                                        <div class="select-item" data-value="settings">打开设置</div>
+                                        <div class="select-item" data-value="refresh">刷新页面</div>
+                                        <div class="select-item" data-value="history">切换搜索历史</div>
+                                        <div class="select-item" data-value="wallpaper">切换壁纸常显示</div>
+                                    </div>
+                                    <select id="controller-rs-select" style="display:none;">
+                                        <option value="none">无</option>
+                                        <option value="settings">打开设置</option>
+                                        <option value="refresh">刷新页面</option>
+                                        <option value="history">切换搜索历史</option>
+                                        <option value="wallpaper">切换壁纸常显示</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">状态栏</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="status-bar-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-group" id="show-seconds-group" style="padding-left: 20px;">
+                            <div class="switch-label">
+                                <span class="setting-label">显示秒钟</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="show-seconds-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="setting-group" id="developer-mode-group" style="display: none;">
                             <label style="font-size:1.2em; margin-top: 28px;">开发者模式:</label>
                             <div class="developer-mode-controls">
 
-                                <div class="setting-group" style="margin-bottom: 0;">
-                                    <div class="switch-label">
-                                        <span class="setting-label">状态栏</span>
-                                        <label class="switch">
-                                            <input type="checkbox" id="status-bar-toggle">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="setting-group" id="show-seconds-group"
-                                    style="padding-left: 20px; margin-bottom: 0;">
-                                    <div class="switch-label">
-                                        <span class="setting-label">显示秒钟</span>
-                                        <label class="switch">
-                                            <input type="checkbox" id="show-seconds-toggle">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="setting-group" style="margin-bottom: 0;">
-                                    <div class="switch-label">
-                                        <span class="setting-label">
-                                            快捷键
-                                            <span class="material-icons info-icon" id="shortcuts-hint"
-                                                title="查看快捷键说明">info</span>
-                                        </span>
-                                        <label class="switch">
-                                            <input type="checkbox" id="shortcuts-toggle">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
                                 <div class="developer-control-item">
                                     <label for="font-size-slider">字体大小:</label>
                                     <div class="control-with-reset">
@@ -542,6 +626,10 @@
                 <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
                 <span class="context-menu-text">高级视觉效果</span>
             </div>
+            <div class="context-menu-item" data-action="engine-lock-toggle">
+                <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
+                <span class="context-menu-text">引擎锁定</span>
+            </div>
             <div class="context-menu-item" data-action="hide-notifications-toggle">
                 <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
                 <span class="context-menu-text">隐藏弹窗</span>
@@ -566,6 +654,7 @@
     <script src="Script/proxy.js"></script>
     <script src="Script/color.js"></script>
     <script src="Script/script.js"></script>
+    <script src="Script/Controller.js"></script>
 </body>
 
 </html>

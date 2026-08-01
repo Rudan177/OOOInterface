@@ -4,9 +4,9 @@
 
 ## 项目信息
 
-- **产品名称**: OOOInterface 28
-- **当前版本**: 5.2:28-RS170
-- **发布日期**: 2026年7月17日
+- **产品名称**: OOOInterface 29
+- **当前版本**: 5.2:29-RS190
+- **发布日期**: 2026年8月1日
 - **许可证**: ABCD-26W08A
 - **Manifest 版本**: V3
 
@@ -68,8 +68,8 @@ OOOInterface/
 
 ## 联系方式
 
-- **电子邮件**: wyjcrtu@proton.me
-- **官方网站**: https://rudan177.github.io/OOOInterface/index.html
+- **电子邮件**: <wyjcrtu@proton.me>
+- **官方网站**: <https://rudan177.github.io/OOOInterface/index.html>
 
 ## 权限说明
 

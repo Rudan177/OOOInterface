@@ -2,7 +2,7 @@
 
 @font-face {
     font-family: 'Sans Flex';
-    src: url('../fonts/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf') format('truetype');
+    src: url('../fonts/GoogleSansFlex.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
 }
@@ -185,6 +185,7 @@ body {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    pointer-events: auto;
 }
 
 
@@ -1237,10 +1238,14 @@ body.scrolled.dynamic-blur .ooo-badge {
     padding: 0;
     width: 90%;
     max-width: 800px;
+    max-height: calc(100vh - 80px);
+    overflow: hidden;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
     transform: scale(0.92) translateY(20px);
     opacity: 0;
     transition: all 0.40s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
 }
 
 
@@ -1363,6 +1368,7 @@ body.scrolled.dynamic-blur .ooo-badge {
     justify-content: space-between;
     align-items: center;
     padding: 24px;
+    height: 72px;
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -1538,12 +1544,14 @@ body.scrolled.dynamic-blur .ooo-badge {
     display: flex;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
 }
 
 .settings-content-area {
     display: flex;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
 }
 
 #mobile-buttons-container {
@@ -1567,6 +1575,7 @@ body.scrolled.dynamic-blur .ooo-badge {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
 }
 
 
@@ -1574,7 +1583,8 @@ body.scrolled.dynamic-blur .ooo-badge {
 .right-panel-content {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     padding: 24px;
 }
 
@@ -1582,6 +1592,9 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 .right-panel-upper {
     flex: 1;
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
     margin-bottom: 16px;
     padding: 16px;
     border: 1px solid var(--border-color);
@@ -1641,6 +1654,8 @@ body.scrolled.dynamic-blur .ooo-badge {
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
     position: relative;
 }
 
@@ -1744,6 +1759,99 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 
 
+/* 自定义配色删除按钮 */
+.custom-color-delete-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    border-radius: 6px;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    opacity: 0;
+}
+
+.settings-menu-option:hover .custom-color-delete-btn {
+    opacity: 1;
+}
+
+.custom-color-delete-btn:hover {
+    background: rgba(220, 53, 69, 0.25);
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.custom-color-delete-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+.settings-menu-option.selected .custom-color-delete-btn {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.settings-menu-option.selected .custom-color-delete-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: white;
+}
+
+
+
+/* 主题菜单项：左上角主题名称+版本号，换行小字显示设计师 */
+.theme-menu-option {
+    height: 50px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 6px 16px;
+    gap: 2px;
+    box-sizing: border-box;
+}
+
+.theme-option-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.theme-option-version {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.theme-option-designer {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.2;
+}
+
+/* 选中态：名称/版本/设计师全部反白，版本与设计师略降不透明度 */
+.settings-menu-option.selected .theme-option-name,
+.settings-menu-option.selected .theme-option-version,
+.settings-menu-option.selected .theme-option-designer {
+    color: #ffffff;
+}
+
+.settings-menu-option.selected .theme-option-version,
+.settings-menu-option.selected .theme-option-designer {
+    opacity: 0.85;
+}
+
+
+
 /* 设置菜单底部区域 */
 
 .settings-plus-btn {
@@ -1755,20 +1863,21 @@ body.scrolled.dynamic-blur .ooo-badge {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background-color: var(--primary-color) !important;
-    background-image: var(--scheme-gradient) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 16px !important;
+    background: var(--surface-color) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-color) !important;
+    border-radius: 12px !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .settings-plus-btn:hover {
-    background-color: var(--scheme-accent-hover) !important;
+    background: rgba(var(--surface-color-rgb), 0.8) !important;
+    border-color: var(--text-secondary) !important;
+    transform: scale(1.1);
 }
 
 .settings-plus-btn:active {
-    background-color: var(--scheme-accent-active) !important;
+    background: rgba(var(--surface-color-rgb), 0.7) !important;
     transform: scale(0.95);
 }
 
@@ -1784,22 +1893,23 @@ body.scrolled.dynamic-blur .ooo-badge {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background-color: var(--primary-color) !important;
-    background-image: var(--scheme-gradient) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 16px !important;
+    background: var(--surface-color) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-color) !important;
+    border-radius: 12px !important;
     cursor: pointer !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     position: relative !important;
 }
 
 .settings-import-btn:hover {
-    background-color: var(--scheme-accent-hover) !important;
+    background: rgba(var(--surface-color-rgb), 0.8) !important;
+    border-color: var(--text-secondary) !important;
+    transform: scale(1.1);
 }
 
 .settings-import-btn:active {
-    background-color: var(--scheme-accent-active) !important;
+    background: rgba(var(--surface-color-rgb), 0.7) !important;
     transform: scale(0.95) !important;
 }
 
@@ -1809,29 +1919,61 @@ body.scrolled.dynamic-blur .ooo-badge {
     display: block;
 }
 
+.settings-import-btn .material-icons {
+    font-size: 18px;
+    display: block;
+}
+
 @media (prefers-color-scheme: dark) {
     .settings-plus-btn {
-        background-color: rgba(0, 0, 0, 0.3) !important;
+        background: var(--surface-color) !important;
+        border-color: var(--border-color) !important;
     }
 
     .settings-plus-btn:hover {
-        background-color: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(var(--surface-color-rgb), 0.8) !important;
     }
 
     .settings-import-btn {
-        background-color: rgba(0, 0, 0, 0.3) !important;
+        background: var(--surface-color) !important;
+        border-color: var(--border-color) !important;
     }
 
     .settings-import-btn:hover {
-        background-color: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(var(--surface-color-rgb), 0.8) !important;
     }
 
     .wallpaper-fill-toggle-wrapper {
-        background-color: rgba(0, 0, 0, 0.3) !important;
+        background: var(--surface-color);
+        border-color: var(--border-color);
     }
 
     .wallpaper-fill-toggle-wrapper:hover {
-        background-color: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(var(--surface-color-rgb), 0.8);
+    }
+
+    body.dynamic-blur .settings-plus-btn {
+        background: rgba(var(--surface-color-rgb), 0.85) !important;
+    }
+
+    body.dynamic-blur .settings-plus-btn:hover {
+        background: rgba(var(--surface-color-rgb), 0.92) !important;
+    }
+
+    body.dynamic-blur .settings-import-btn {
+        background: rgba(var(--surface-color-rgb), 0.85) !important;
+    }
+
+    body.dynamic-blur .settings-import-btn:hover {
+        background: rgba(var(--surface-color-rgb), 0.92) !important;
+    }
+
+    body.dynamic-blur .wallpaper-fill-toggle-wrapper {
+        background: rgba(var(--surface-color-rgb), 0.85) !important;
+    }
+
+    body.dynamic-blur .wallpaper-fill-toggle-wrapper:hover {
+        background: rgba(var(--surface-color-rgb), 0.92) !important;
     }
 }
 
@@ -2183,11 +2325,10 @@ body.dynamic-blur .bookmark-folder-submenu {
 .settings-menu-confirm {
     padding: 0 28px;
     height: 40px;
-    background-color: var(--primary-color);
-    background-image: var(--scheme-gradient);
-    color: white;
-    border: none;
-    border-radius: 16px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 12px;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -2199,17 +2340,58 @@ body.dynamic-blur .bookmark-folder-submenu {
     justify-content: center;
 }
 
-
-
 .settings-menu-confirm:hover {
-    background-color: var(--scheme-accent-hover);
+    background: rgba(var(--surface-color-rgb), 0.8);
+    border-color: var(--text-secondary);
 }
 
-
-
 .settings-menu-confirm:active {
-    background-color: var(--scheme-accent-active);
+    background: rgba(var(--surface-color-rgb), 0.7);
     transform: translateY(0);
+}
+
+/* 主题色确认按钮 */
+.settings-menu-confirm-primary {
+    padding: 8px 20px;
+    font-size: 13px;
+    background-color: var(--primary-color) !important;
+    background-image: var(--scheme-gradient) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: auto;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-menu-confirm-primary:hover {
+    background-color: var(--scheme-accent-hover) !important;
+    background-image: none !important;
+}
+
+.settings-menu-confirm-primary:active {
+    background-color: var(--scheme-accent-active) !important;
+    background-image: none !important;
+    transform: translateY(0);
+}
+
+body.dynamic-blur .settings-menu-confirm {
+    background: rgba(var(--surface-color-rgb), 0.85) !important;
+    border: none !important;
+    color: var(--text-color) !important;
+    border-radius: 12px !important;
+}
+
+body.dynamic-blur .settings-menu-confirm:hover {
+    background: rgba(var(--surface-color-rgb), 0.92) !important;
+}
+
+body.dynamic-blur .settings-menu-confirm:active {
+    background: rgba(var(--surface-color-rgb), 0.78) !important;
 }
 
 
@@ -2486,7 +2668,7 @@ body.dynamic-blur .bookmark-folder-submenu {
     background-image: var(--scheme-gradient);
     color: white;
     border: none;
-    border-radius: 16px;
+    border-radius: 12px;
     font-family: inherit;
     font-size: 18px;
     font-weight: 500;
@@ -2936,6 +3118,70 @@ body.dynamic-blur .bookmark-folder-submenu {
     border-color: white;
 }
 
+/* 自定义主题删除按钮 */
+.custom-theme-delete-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    border-radius: 6px;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+}
+
+.custom-theme-delete-btn:hover {
+    background: rgba(220, 53, 69, 0.25);
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.custom-theme-delete-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+.settings-menu-option.selected .custom-theme-delete-btn {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.settings-menu-option.selected .custom-theme-delete-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: white;
+}
+
+/* 自定义主题分隔线 */
+/* 主题拖放覆盖层 */
+.theme-drop-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.theme-drop-overlay-text {
+    font-size: 16px;
+    color: white;
+    padding: 24px 40px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
 
 .wallpaper-url-group {
     display: flex;
@@ -3091,7 +3337,7 @@ body.dynamic-blur .bookmark-folder-submenu {
 
 
 .quick-link-menu-item.dragging {
-    outline: 2px dashed var(--primary-color);
+    outline: 2px solid var(--primary-color);
     outline-offset: -2px;
     border-radius: 16px;
 }
@@ -3165,6 +3411,7 @@ body.dynamic-blur .bookmark-folder-submenu {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    cursor: pointer;
 }
 
 
@@ -4285,6 +4532,7 @@ body.color-scheme-black-white .context-menu-grid.compact .context-menu-item:hove
 .context-menu-grid.minimal .context-menu-item[data-action="search-history-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="wallpaper-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="enhanced-display-toggle"],
+.context-menu-grid.minimal .context-menu-item[data-action="engine-lock-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="hide-notifications-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="hide-info-popup-toggle"] {
     display: none;
@@ -4518,7 +4766,7 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     top: var(--status-bar-offset);
     right: 0;
     height: calc(100vh - var(--status-bar-offset));
-    z-index: 1001;
+    z-index: 5;
     pointer-events: none;
     display: none;
     align-items: flex-start;
@@ -4847,6 +5095,9 @@ body.scrolled .quick-access-sidebar-container.visible {
         border-radius: 16px;
         height: 100%;
         max-height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .modal-body {
@@ -5730,53 +5981,56 @@ body.dynamic-blur .setting-group {
 /* 高级视觉 - 设置菜单操作按钮 */
 
 body.dynamic-blur .settings-plus-btn {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(var(--surface-color-rgb), 0.85) !important;
+    border: none !important;
     color: var(--text-color) !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    border-radius: 12px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 body.dynamic-blur .settings-plus-btn:hover {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    background: rgba(var(--surface-color-rgb), 0.92) !important;
     transform: scale(1.1);
 }
 
 body.dynamic-blur .settings-plus-btn:active {
+    background: rgba(var(--surface-color-rgb), 0.78) !important;
     transform: scale(0.95);
 }
 
 body.dynamic-blur .settings-import-btn {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(var(--surface-color-rgb), 0.85) !important;
+    border: none !important;
     color: var(--text-color) !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    border-radius: 12px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 body.dynamic-blur .settings-import-btn:hover {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    background: rgba(var(--surface-color-rgb), 0.92) !important;
     transform: scale(1.1);
 }
 
 body.dynamic-blur .settings-import-btn:active {
+    background: rgba(var(--surface-color-rgb), 0.78) !important;
     transform: scale(0.95);
 }
 
 body.dynamic-blur .wallpaper-fill-toggle-wrapper {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(var(--surface-color-rgb), 0.85) !important;
+    border: none !important;
     color: var(--text-color) !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    border-radius: 12px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 body.dynamic-blur .wallpaper-fill-toggle-wrapper:hover {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    background: rgba(var(--surface-color-rgb), 0.92) !important;
     transform: scale(1.05);
 }
 
 body.dynamic-blur .wallpaper-fill-toggle-wrapper:active {
+    background: rgba(var(--surface-color-rgb), 0.78) !important;
     transform: scale(0.95);
 }
 
@@ -6248,10 +6502,10 @@ body.wallpaper-layers-ready {
     gap: 8px;
     height: 40px;
     padding: 0 12px 0 14px;
-    background-color: var(--primary-color);
-    background-image: var(--scheme-gradient);
-    border: none;
-    border-radius: 16px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 12px;
     cursor: pointer;
     user-select: none;
     flex-shrink: 0;
@@ -6259,11 +6513,13 @@ body.wallpaper-layers-ready {
 }
 
 .wallpaper-fill-toggle-wrapper:hover {
-    background-color: var(--scheme-accent-hover);
+    background: rgba(var(--surface-color-rgb), 0.8);
+    border-color: var(--text-secondary);
+    transform: scale(1.05);
 }
 
 .wallpaper-fill-toggle-wrapper:active {
-    background-color: var(--scheme-accent-active);
+    background: rgba(var(--surface-color-rgb), 0.7);
     transform: scale(0.95);
 }
 
@@ -6349,6 +6605,7 @@ body.wallpaper-layers-ready {
 
     .modal-header {
         padding: 12px 16px;
+        height: 48px;
     }
 
     .modal-header h2 {
@@ -6982,7 +7239,7 @@ body.dynamic-blur .series-preview-item {
     position: absolute;
     width: 44px;
     height: 44px;
-    border: 2px dashed rgba(255, 255, 255, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.8);
     border-radius: 6px;
     background: var(--background-color);
     z-index: 2;
@@ -7295,4 +7552,67 @@ body.dynamic-blur .series-preview-item {
     body.color-scheme-black-white .slider:before {
         background-color: #aaaaaa !important;
     }
+}
+
+.controller-focus {
+    outline: 2.5px solid var(--scheme-accent, #1a73e8) !important;
+    outline-offset: 3px !important;
+    border-radius: 12px;
+    position: relative;
+    z-index: 1;
+    transition: outline 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.dynamic-blur .controller-focus {
+    box-shadow: 0 0 16px rgba(var(--scheme-accent-rgb, 26, 115, 232), 0.35) !important;
+}
+
+.controller-settings .developer-control-item {
+    margin-bottom: 8px;
+}
+
+.controller-settings .setting-group {
+    margin-top: 0;
+}
+
+#controller-cursor {
+    will-change: transform, left, top;
+}
+
+#radial-menu {
+    z-index: 1001;
+}
+
+body.dynamic-blur .radial-wheel {
+    background: rgba(0,0,0,0.45);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+    will-change: transform;
+}
+
+body:not(.dynamic-blur) .radial-wheel {
+    background: rgba(0,0,0,0.6);
+    will-change: transform;
+}
+
+.radial-item {
+    will-change: transform, color, text-shadow;
+}
+
+.radial-item.material-icons {
+    font-size: 30px;
+}
+
+.search-container.controller-focus {
+    outline: 2.5px solid var(--scheme-accent, #1a73e8) !important;
+    outline-offset: 3px !important;
+    border-radius: var(--border-radius, 28px);
+    transition: outline 0.15s ease;
+}
+
+.switch.controller-focus {
+    outline: 2.5px solid var(--scheme-accent, #1a73e8) !important;
+    outline-offset: 3px !important;
+    border-radius: 28px;
+    transition: outline 0.15s ease;
 }
