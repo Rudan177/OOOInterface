@@ -1,17 +1,12 @@
 {
   "1": {
   "title": "通知",
-  "link": "https://ooointerface.byrudan.workers.dev/OUA/PB",
-  "text": "OOOInterface易升公测！"
-  },
-  "2": {
-  "title": "重要通知",
-  "link": "https://ooointerface.byrudan.workers.dev/Interface/bd",
-  "text": "在安装最新OOOInterface前，前往安装适用于旧版本更新的补丁包"
-  },
-  "3": {
-  "title": "通知",
   "link": "https://ooointerface.byrudan.workers.dev/dev/OOOInterface_29_主题文档编写规范.html",
   "text": "适用于开发者的主题开发文档已上线！"
+  },
+  "2": {
+  "title": "通知",
+  "link": "https://ooointerface.byrudan.workers.dev/OUA/PB",
+  "text": "OOOInterface易升进化测试！<br>OOOInterface 易升 0.8.2现已发布，点击“相关链接”前往发布页。"
   }
 }
