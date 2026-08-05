@@ -18,7 +18,7 @@ var DEFAULT_THEME = {
         },
         "font": {
             "name": "Sans Flex",
-            "location": "../fonts/GoogleSansFlex-VariableFont.ttf",
+            "location": "../fonts/GoogleSansFlex.ttf",
             "specialStyle": {
                 "font-weight": "400",
                 "font-size": "1em"
