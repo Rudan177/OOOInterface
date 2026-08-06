@@ -251,6 +251,15 @@
             background: rgba(0, 174, 144, 0.4);
         }
 
+        .download-btn a {
+            color: black;
+            text-decoration: none;
+        }
+
+        .download-btn a:hover {
+            text-decoration: underline;
+        }
+
         .ultra {
             display: block;
             text-align: center;
@@ -1090,6 +1099,10 @@
             color: #ffffff;
         }
 
+        body.dark-theme .download-btn a {
+            color: #ffffff;
+        }
+
         body.dark-theme .verson {
             background: rgba(30, 30, 30, 0.6);
             border-color: rgba(255, 255, 255, 0.15);
@@ -1154,7 +1167,7 @@
             <div class="ultra">历史版本</div>
             <div class="pro">OOOInterface所有版本的列表</div>
         </div>
-        <div class="erkuang" id="erkuang" style="display: none;">
+        <div class="erkuang" id="erkuang" >
             <button class="close-btn" id="closeErkuang"
                 onclick="document.getElementById('erkuang').classList.add('hidden')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -1162,9 +1175,11 @@
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
-            <h3></h3>
-            <p></p>
-            <a></a>
+            <h3>通知</h3>
+            <p>在安装 OOOInterface LTS 5.3 前，前往安装适用于旧版本更新的补丁包</p>
+            <div class="download-btn">
+                <a href="http://rudan177.github.io/OOOInterface/Interface/bd.html">点击此处前往</a>
+            </div>
         </div>
 
         <div class="search-box">
