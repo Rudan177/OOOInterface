@@ -46,12 +46,12 @@ var ProxyManager = (function () {
         var port = getProxyPort();
         if (port) {
             var proxyUrl = buildProxyUrl(url);
-            return fetch(proxyUrl, options || {}).then(function(response) {
+            return fetch(proxyUrl, options || {}).then(function (response) {
                 if (!response.ok) {
                     console.warn('[ProxyManager] 代理请求返回状态码:', response.status, 'URL:', url);
                 }
                 return response;
-            }).catch(function(err) {
+            }).catch(function (err) {
                 console.error('[ProxyManager] 代理请求失败:', err.message, '端口:', port, '目标:', url);
                 throw new Error('代理连接失败 (端口 ' + port + ')：' + err.message);
             });
@@ -61,24 +61,30 @@ var ProxyManager = (function () {
 
     function testProxyConnection(timeout) {
         timeout = timeout || 5000;
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             var port = getProxyPort();
             if (!port) {
                 reject(new Error('未配置代理端口'));
                 return;
             }
 
-            var testUrl = buildProxyUrl('https://www.bing.com');
-            var timer = setTimeout(function() {
+            // 使用 /health 端点做真实连通性检测：
+            // no-cors 模式得到的是 opaque 响应（无法读取状态码），会把失败误判为成功
+            var testUrl = 'http://127.0.0.1:' + port + '/health';
+            var timer = setTimeout(function () {
                 reject(new Error('代理连接超时 (' + timeout + 'ms)，请确认代理服务正在运行'));
             }, timeout);
 
-            fetch(testUrl, { method: 'HEAD', mode: 'no-cors' })
-                .then(function(res) {
+            fetch(testUrl, { method: 'GET', mode: 'cors', cache: 'no-store' })
+                .then(function (res) {
                     clearTimeout(timer);
+                    if (!res.ok) {
+                        reject(new Error('代理服务响应异常，状态码: ' + res.status + ' 端口: ' + port));
+                        return;
+                    }
                     resolve({ ok: true, port: port });
                 })
-                .catch(function(err) {
+                .catch(function (err) {
                     clearTimeout(timer);
                     reject(new Error('无法连接到代理服务 端口:' + port + ' - ' + err.message));
                 });

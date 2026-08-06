@@ -1982,6 +1982,13 @@ body.scrolled.dynamic-blur .ooo-badge {
     display: block;
 }
 
+/* 快速链接导出/导入按钮行：左边是导出，右边是导入 */
+.quick-links-io-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 @media (prefers-color-scheme: dark) {
     .settings-plus-btn {
         background: var(--surface-color) !important;
@@ -3357,6 +3364,13 @@ body.dynamic-blur .settings-menu-confirm:active {
 
 .quick-links-add-buttons.slide-out-right {
     animation: slideOutToRight 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 快速链接添加界面拖入 JSON 文件时的提示 */
+.settings-menu-container.json-drag-over {
+    outline: 2px dashed var(--border-color);
+    outline-offset: -6px;
+    border-radius: 12px;
 }
 
 

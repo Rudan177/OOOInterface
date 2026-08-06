@@ -316,7 +316,7 @@ class OOOInterface {
         // 更新计数
         const countEl = document.getElementById('customize-selected-count');
         if (countEl) {
-            countEl.textContent = `${selected.length}/5 已选择`;
+            countEl.textContent = `${selected.length}/3 已选择`;
         }
 
         // 极简模式下禁用
@@ -850,28 +850,39 @@ class OOOInterface {
         const badge = document.getElementById('ooo-badge');
         if (!badge) return;
 
-        // 移除之前的事件监听器（通过克隆元素来移除所有事件监听器）
-        const newBadge = badge.cloneNode(true);
-        badge.parentNode.replaceChild(newBadge, badge);
+        // 通过引用移除之前绑定的监听器，避免克隆替换元素导致
+        // 其他监听器（10次点击彩蛋、悬停弹窗等）丢失
+        if (this._badgeToggleHandler) {
+            badge.removeEventListener('click', this._badgeToggleHandler);
+        }
+        if (this._badgeDblClickHandler) {
+            badge.removeEventListener('dblclick', this._badgeDblClickHandler);
+        }
+        if (this._badgeContextMenuHandler) {
+            badge.removeEventListener('contextmenu', this._badgeContextMenuHandler);
+        }
 
         // 重新绑定点击事件（用于切换文本）
-        newBadge.addEventListener('click', () => this.toggleBadgeText());
+        this._badgeToggleHandler = () => this.toggleBadgeText();
+        badge.addEventListener('click', this._badgeToggleHandler);
 
         const method = this.settings.badgeOpenMethod || 'both';
 
         // 根据设置添加相应的事件监听器
         if (method !== 'none') {
             if (method === 'both' || method === 'dblclick') {
-                newBadge.addEventListener('dblclick', () => {
+                this._badgeDblClickHandler = () => {
                     this.openSettings('badge');
-                });
+                };
+                badge.addEventListener('dblclick', this._badgeDblClickHandler);
             }
 
             if (method === 'both' || method === 'contextmenu') {
-                newBadge.addEventListener('contextmenu', (e) => {
+                this._badgeContextMenuHandler = (e) => {
                     e.preventDefault();
                     this.openSettings('badge');
-                });
+                };
+                badge.addEventListener('contextmenu', this._badgeContextMenuHandler);
             }
         }
     }
@@ -1012,16 +1023,17 @@ class OOOInterface {
         localStorage.removeItem('hasVisited');
         localStorage.removeItem('oooInterfaceFirstRun');
         localStorage.removeItem('welcVersion');
-        // 重置后刷新页面以显示欢迎页面
-        location.reload();
 
-        // 更新设置界面中的值
+        // 更新设置界面中的值（需在 reload 前执行，否则不会生效）
         if (document.getElementById('settings-modal').classList.contains('show')) {
             this.updateSettingsUI();
         }
 
-        // 显示重置成功的提示
+        // 显示重置成功的提示（需在 reload 前执行，否则不会显示）
         this.showNotification('已重置');
+
+        // 重置后刷新页面以显示欢迎页面
+        location.reload();
     }
 
     // 重置确认弹窗（三步：红色警报 → 滑块验证 → 确认已知晓）
@@ -1483,15 +1495,25 @@ class OOOInterface {
         // 添加到页面
         document.body.appendChild(popup);
 
-        // ESC键关闭弹窗
+        // ESC键关闭弹窗（带 parentNode 检查避免重复移除报错，并及时注销监听器避免泄漏）
+        const closePopup = () => {
+            if (popup.parentNode) {
+                popup.parentNode.removeChild(popup);
+            }
+            document.removeEventListener('keydown', handleEsc);
+            popup.removeEventListener('click', closePopup);
+            this.infoPopupOpen = false;
+        };
+
         const handleEsc = (e) => {
             if (e.key === 'Escape') {
-                document.body.removeChild(popup);
-                document.removeEventListener('keydown', handleEsc);
-                this.infoPopupOpen = false;
+                closePopup();
             }
         };
         document.addEventListener('keydown', handleEsc);
+
+        // 点击弹窗也可关闭，避免弹窗长期驻留时监听器泄漏
+        popup.addEventListener('click', closePopup);
     }
 
     showShortcutsHint() {
@@ -2181,7 +2203,7 @@ class OOOInterface {
             this.checkThemeConsistency('colorScheme', e.target.value);
             this.saveSettings();
             this.applyColorScheme();
-            if (this.settings.hideNotifications) {
+            if (!this.settings.hideNotifications) {
                 this.showNotification('配色已更新');
             }
         });
@@ -2266,76 +2288,76 @@ class OOOInterface {
         // 应用按钮事件
         document.getElementById('apply-settings').addEventListener('click', () => {
             try {
-            this.settings.dynamicBlur = document.getElementById('dynamic-blur-toggle').checked;
-            this.settings.enhancedDisplay = document.getElementById('enhanced-display-toggle').checked;
-            const oldPersistentWallpaper = this.settings.persistentWallpaper;
-            this.settings.persistentWallpaper = document.getElementById('persistent-wallpaper-toggle').checked;
-            this.settings.wallpaperScale = document.getElementById('wallpaper-scale-toggle').checked;
-            // 读取右侧面板填满开关（如果面板打开时）
-            const panelFillToggle = document.getElementById('wallpaper-fill-toggle-panel');
-            if (panelFillToggle) {
-                this.settings.wallpaperFill = panelFillToggle.checked;
-            }
-            this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
-            this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
-            this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
+                this.settings.dynamicBlur = document.getElementById('dynamic-blur-toggle').checked;
+                this.settings.enhancedDisplay = document.getElementById('enhanced-display-toggle').checked;
+                const oldPersistentWallpaper = this.settings.persistentWallpaper;
+                this.settings.persistentWallpaper = document.getElementById('persistent-wallpaper-toggle').checked;
+                this.settings.wallpaperScale = document.getElementById('wallpaper-scale-toggle').checked;
+                // 读取右侧面板填满开关（如果面板打开时）
+                const panelFillToggle = document.getElementById('wallpaper-fill-toggle-panel');
+                if (panelFillToggle) {
+                    this.settings.wallpaperFill = panelFillToggle.checked;
+                }
+                this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
+                this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
+                this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
-            // 读取快速访问侧边栏开关
-            const newQuickLinkToggle = document.getElementById('quick-access-sidebar-toggle');
-            if (newQuickLinkToggle) {
-                this.settings.quickAccessSidebar = newQuickLinkToggle.checked;
-            }
+                // 读取快速访问侧边栏开关
+                const newQuickLinkToggle = document.getElementById('quick-access-sidebar-toggle');
+                if (newQuickLinkToggle) {
+                    this.settings.quickAccessSidebar = newQuickLinkToggle.checked;
+                }
 
-            // 读取显示图标开关
-            const showIconsToggle = document.getElementById('show-quick-icons');
-            if (showIconsToggle) {
-                this.settings.showQuickLinkIcons = showIconsToggle.checked;
-            }
+                // 读取显示图标开关
+                const showIconsToggle = document.getElementById('show-quick-icons');
+                if (showIconsToggle) {
+                    this.settings.showQuickLinkIcons = showIconsToggle.checked;
+                }
 
-            const statusBarToggle = document.getElementById('status-bar-toggle');
-            if (statusBarToggle) {
-                this.settings.statusBarEnabled = statusBarToggle.checked;
-            }
+                const statusBarToggle = document.getElementById('status-bar-toggle');
+                if (statusBarToggle) {
+                    this.settings.statusBarEnabled = statusBarToggle.checked;
+                }
 
-            const showSecondsToggle = document.getElementById('show-seconds-toggle');
-            if (showSecondsToggle && this.settings.statusBarEnabled) {
-                this.settings.showStatusBarSeconds = showSecondsToggle.checked;
-            }
+                const showSecondsToggle = document.getElementById('show-seconds-toggle');
+                if (showSecondsToggle && this.settings.statusBarEnabled) {
+                    this.settings.showStatusBarSeconds = showSecondsToggle.checked;
+                }
 
-            // 读取隐藏弹窗开关
-            const hideNotifToggle = document.getElementById('hide-notifications-toggle');
-            if (hideNotifToggle) {
-                this.settings.hideNotifications = hideNotifToggle.checked;
-            }
+                // 读取隐藏弹窗开关
+                const hideNotifToggle = document.getElementById('hide-notifications-toggle');
+                if (hideNotifToggle) {
+                    this.settings.hideNotifications = hideNotifToggle.checked;
+                }
 
-            // 读取禁止提示开关
-            const hideInfoToggle = document.getElementById('hide-info-popup-toggle');
-            if (hideInfoToggle) {
-                this.settings.hideInfoPopup = {
-                    enabled: hideInfoToggle.checked,
-                    type: hideInfoToggle.checked ? 'permanent' : null,
-                    timestamp: hideInfoToggle.checked ? Date.now() : null
-                };
-            }
+                // 读取禁止提示开关
+                const hideInfoToggle = document.getElementById('hide-info-popup-toggle');
+                if (hideInfoToggle) {
+                    this.settings.hideInfoPopup = {
+                        enabled: hideInfoToggle.checked,
+                        type: hideInfoToggle.checked ? 'permanent' : null,
+                        timestamp: hideInfoToggle.checked ? Date.now() : null
+                    };
+                }
 
-            // 保存设置打开方式
-            const badgeMethodSelect = document.getElementById('badge-open-method-select');
-            if (badgeMethodSelect) {
-                this.settings.badgeOpenMethod = badgeMethodSelect.value;
-            }
+                // 保存设置打开方式
+                const badgeMethodSelect = document.getElementById('badge-open-method-select');
+                if (badgeMethodSelect) {
+                    this.settings.badgeOpenMethod = badgeMethodSelect.value;
+                }
 
-            if (oldPersistentWallpaper !== this.settings.persistentWallpaper) {
-                this.handlePersistentWallpaperToggle();
-            }
+                if (oldPersistentWallpaper !== this.settings.persistentWallpaper) {
+                    this.handlePersistentWallpaperToggle();
+                }
 
-            this.applySettings();
-            // 重新绑定底部铭牌打开方式（该设置不在 applySettings 中处理）
-            this.setupBadgeOpenMethod();
-            this.saveSettings();
-            this.updateContextMenuIcons();
-            this.closeSettings();
-            this.showNotification('设置已应用');
-            // 无需刷新页面，所有设置已通过组件级更新即时生效
+                this.applySettings();
+                // 重新绑定底部铭牌打开方式（该设置不在 applySettings 中处理）
+                this.setupBadgeOpenMethod();
+                this.saveSettings();
+                this.updateContextMenuIcons();
+                this.closeSettings();
+                this.showNotification('设置已应用');
+                // 无需刷新页面，所有设置已通过组件级更新即时生效
             } catch (err) {
                 console.error('[Apply] 点击处理异常:', err);
                 this.showNotification('应用设置时出错: ' + err.message);
@@ -3512,11 +3534,14 @@ class OOOInterface {
             this.settings.wallpaper = wallpaperData;
             this.settings.persistentWallpaper = true;
 
-            const wallpaperSelect = document.getElementById('wallpaper-select');
-            wallpaperSelect.value = wallpaperName;
-
-            // 更新自定义壁纸列表
+            // 先更新自定义壁纸列表（创建 option），再设置选中值，
+            // 否则 option 尚不存在，赋值不会生效
             this.updateCustomWallpapersList();
+
+            const wallpaperSelect = document.getElementById('wallpaper-select');
+            if (wallpaperSelect) {
+                wallpaperSelect.value = wallpaperName;
+            }
 
             // 自定义壁纸上传必然与主题壁纸不一致
             this.checkThemeConsistency('wallpaper', wallpaperData);
@@ -4100,9 +4125,13 @@ class OOOInterface {
         const intervalMs = this.settings.bingRefreshInterval * 60 * 60 * 1000; // 小时转毫秒
 
         if (!lastRefreshTime || (now - parseInt(lastRefreshTime)) >= intervalMs) {
-            // 需要刷新
-            this.fetchBingWallpaper();
-            localStorage.setItem('bingLastRefreshTime', now.toString());
+            // 需要刷新：只有在获取成功后才记录刷新时间，
+            // 否则失败也会被记为已刷新，导致间隔内不再重试
+            this.fetchBingWallpaper().then(success => {
+                if (success) {
+                    localStorage.setItem('bingLastRefreshTime', Date.now().toString());
+                }
+            });
         } else {
             // 不需要刷新，使用现有壁纸
             if (this.settings.wallpaperUrl) {
@@ -4171,10 +4200,13 @@ class OOOInterface {
                 } else {
                     notify('获取必应壁纸失败：' + (lastError ? lastError.message : '未知错误'));
                 }
+                return false;
             }
+            return true;
         } catch (error) {
             console.error('获取必应壁纸失败:', error);
             notify('获取必应壁纸异常：' + error.message);
+            return false;
         }
     }
 
@@ -4468,7 +4500,10 @@ class OOOInterface {
         if (wallpaperSelectSelected) {
             const themeInfo = this.getThemeDisplayInfo();
             if (!themeInfo || !themeInfo.wallpaperName) {
-                const selectedOption = wallpaperSelect.querySelector(`option[value="${this.settings.wallpaper}"]`);
+                // settings.wallpaper 可能存的是 data URL，需先映射回壁纸名称再查找 option
+                const currentWp = this.settings.customWallpapers.find(wp => wp.data === this.settings.wallpaper);
+                const lookupValue = currentWp ? currentWp.name : this.settings.wallpaper;
+                const selectedOption = wallpaperSelect.querySelector(`option[value="${CSS.escape(lookupValue)}"]`);
                 if (selectedOption) {
                     wallpaperSelectSelected.textContent = selectedOption.textContent;
                 }
@@ -4483,13 +4518,26 @@ class OOOInterface {
         fileInput.accept = 'image/*';
         fileInput.style.display = 'none';
 
+        // 安全移除 fileInput（click 后立即移除会导致部分浏览器文件对话框失效）
+        const removeFileInput = () => {
+            setTimeout(() => {
+                if (fileInput.parentNode) {
+                    fileInput.parentNode.removeChild(fileInput);
+                }
+            }, 0);
+        };
+
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (!file) return;
+            if (!file) {
+                removeFileInput();
+                return;
+            }
 
             // 检查文件大小（限制为2MB）
             if (file.size > 2 * 1024 * 1024) {
                 this.showNotification('图片文件过大，请选择小于2MB的文件');
+                removeFileInput();
                 return;
             }
 
@@ -4507,11 +4555,14 @@ class OOOInterface {
             };
 
             reader.readAsDataURL(file);
+            removeFileInput();
         });
+
+        // 用户取消选择时也移除输入元素
+        fileInput.addEventListener('cancel', removeFileInput);
 
         document.body.appendChild(fileInput);
         fileInput.click();
-        document.body.removeChild(fileInput);
     }
 
     // 删除暗色Logo
@@ -5504,16 +5555,35 @@ class OOOInterface {
         const badge = document.getElementById('ooo-badge');
         const hasAnimation = this.settings.dynamicBlur || this.settings.enhancedDisplay;
 
+        // 复用现有的 info-indicator 节点，避免 innerHTML 重建导致
+        // InfoManager 持有的旧引用失效（颜色/显示状态无法更新）
+        const rebuildBadgeContent = () => {
+            let indicator = document.getElementById('info-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'info-indicator';
+                indicator.className = 'info-indicator';
+            }
+
+            if (this.isBadgeExpanded) {
+                badge.innerHTML = '<span>OOOInterface</span>';
+            } else {
+                badge.innerHTML = `OOOInterface(${this.currentVersion})`;
+            }
+            badge.appendChild(indicator);
+
+            // 同步指示器颜色与可见状态
+            if (this.infoManager && typeof this.infoManager.refreshInfoIndicator === 'function') {
+                this.infoManager.refreshInfoIndicator();
+            }
+        };
+
         if (hasAnimation) {
             badge.style.transform = 'scale(0.95)';
             badge.style.opacity = '0.8';
 
             setTimeout(() => {
-                if (this.isBadgeExpanded) {
-                    badge.innerHTML = '<span>OOOInterface</span><div id="info-indicator" class="info-indicator"></div>';
-                } else {
-                    badge.innerHTML = `OOOInterface(${this.currentVersion})<div id="info-indicator" class="info-indicator"></div>`;
-                }
+                rebuildBadgeContent();
 
                 badge.style.transform = 'scale(1)';
                 badge.style.opacity = '1';
@@ -5521,11 +5591,7 @@ class OOOInterface {
                 this.isBadgeExpanded = !this.isBadgeExpanded;
             }, 100);
         } else {
-            if (this.isBadgeExpanded) {
-                badge.innerHTML = '<span>OOOInterface</span><div id="info-indicator" class="info-indicator"></div>';
-            } else {
-                badge.innerHTML = `OOOInterface(${this.currentVersion})<div id="info-indicator" class="info-indicator"></div>`;
-            }
+            rebuildBadgeContent();
 
             this.isBadgeExpanded = !this.isBadgeExpanded;
         }
@@ -8057,17 +8123,11 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         self.settings.bingRefreshEveryTime = isChecked;
                         intervalInput.disabled = isChecked;
                         confirmBtn.disabled = isChecked;
-                        if (isChecked) {
-                            self.settings.bingRefreshInterval = 0;
-                            localStorage.removeItem('bingLastRefreshTime');
-                            intervalInput.value = '';
-                            intervalInput.style.opacity = '0.5';
-                        } else {
-                            self.settings.bingRefreshInterval = 0;
-                            localStorage.removeItem('bingLastRefreshTime');
-                            intervalInput.value = '';
-                            intervalInput.style.opacity = '1';
-                        }
+                        // 开关两个分支共用同一套重置逻辑，仅透明度不同
+                        self.settings.bingRefreshInterval = 0;
+                        localStorage.removeItem('bingLastRefreshTime');
+                        intervalInput.value = '';
+                        intervalInput.style.opacity = isChecked ? '0.5' : '1';
                         self.saveSettings();
                         updateSwitchState();
                     });
@@ -8081,11 +8141,11 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         intervalInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
                     });
 
-                    // 输入验证
+                    // 输入验证：不在输入过程中钳制下限（否则无法输入如 0.5 的中间态），
+                    // 下限由确认按钮统一校验；仅限制上限避免超大输入
                     intervalInput.addEventListener('input', (e) => {
-                        let value = parseFloat(e.target.value);
-                        if (value < 0.1) e.target.value = 0.1;
-                        if (value > 9999) e.target.value = 9999;
+                        const value = parseFloat(e.target.value);
+                        if (!isNaN(value) && value > 9999) e.target.value = 9999;
                     });
 
                     // 确认按钮事件
@@ -9414,7 +9474,6 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     const resizeHandler = () => constrainHeight();
     window.addEventListener('resize', resizeHandler);
     // 清理监听器
-    const origHide = self.hideSettingsQuickLinksAddInterface || self.hideCustomColorEditor;
     const cleanup = () => window.removeEventListener('resize', resizeHandler);
     // 观察面板隐藏时清理
     const mo = new MutationObserver(() => {
@@ -9583,8 +9642,14 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     // 书签导入按钮
     const importBtn = document.createElement('button');
     importBtn.className = 'settings-import-btn';
-    importBtn.title = '从Chrome书签导入';
+    importBtn.title = '从 Chrome 书签导入';
     importBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+    // 导出按钮（左边是导出，右边是导入）
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'settings-import-btn settings-export-btn';
+    exportBtn.title = '导出快速访问链接为 JSON';
+    exportBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
 
     // 导入下拉菜单（挂到 body 避免被父容器裁剪）
     const importDropdown = document.createElement('div');
@@ -9598,7 +9663,13 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     folderSubmenu.setAttribute('data-folder-submenu', '');
     document.body.appendChild(folderSubmenu);
 
-    buttonContainer.appendChild(importBtn);
+    // 导出/导入按钮行：左边是导出，右边是导入
+    const ioRow = document.createElement('div');
+    ioRow.className = 'quick-links-io-row';
+    ioRow.appendChild(exportBtn);
+    ioRow.appendChild(importBtn);
+
+    buttonContainer.appendChild(ioRow);
     buttonContainer.appendChild(plusBtn);
     container.appendChild(buttonContainer);
 
@@ -9619,13 +9690,32 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
         self.toggleBookmarkImportDropdown(importDropdown, folderSubmenu, importBtn);
     });
 
-    // 点击外部关闭下拉菜单
-    document.addEventListener('click', (e) => {
+    // 导出按钮点击事件：将快速访问链接导出为 JSON 文件
+    exportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (typeof QuickLinksExporter !== 'undefined') {
+            QuickLinksExporter.exportQuickLinks(self);
+        }
+    });
+
+    // 点击外部关闭下拉菜单（先注销上一次的监听器，避免反复打开菜单导致监听器泄漏）
+    if (this._quickLinksDocClickHandler) {
+        document.removeEventListener('click', this._quickLinksDocClickHandler);
+    }
+    this._quickLinksDocClickHandler = (e) => {
+        if (!importDropdown.isConnected) {
+            // 下拉元素已被移除（菜单关闭），自动注销监听器
+            document.removeEventListener('click', this._quickLinksDocClickHandler);
+            this._quickLinksDocClickHandler = null;
+            return;
+        }
         if (e.target !== importBtn && !importDropdown.contains(e.target) && !folderSubmenu.contains(e.target)) {
             importDropdown.classList.remove('active');
             folderSubmenu.classList.remove('active');
         }
-    });
+    };
+    document.addEventListener('click', this._quickLinksDocClickHandler);
 };
 
 OOOInterface.prototype.showQuickLinksAddInterface = function (container, listContainer, buttonContainer, editIndex) {
@@ -9709,12 +9799,81 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
 
     confirmAddBtn.addEventListener('click', handleSave);
 
+    // 从 JSON 导入按钮：与确定并排，配色与取消按钮同款
+    const importFileBtn = document.createElement('button');
+    importFileBtn.textContent = '从JSON导入';
+    importFileBtn.title = '从 JSON 文件导入快速访问链接，也可直接拖入 JSON 文件';
+    importFileBtn.style.cssText = 'padding:8px 20px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;cursor:pointer;';
+
+    const importFileInput = document.createElement('input');
+    importFileInput.type = 'file';
+    importFileInput.accept = '.json,application/json';
+    importFileInput.style.display = 'none';
+    importFileInput.className = 'quick-links-json-file-input';
+
+    // 读取文件并导入，成功后回到列表视图
+    const readFileAndImport = (file) => {
+        if (!file) return;
+        const isJson = /\.json$/i.test(file.name) || (file.type && file.type.indexOf('json') !== -1);
+        if (!isJson) {
+            self.showNotification('请导入 JSON 文件');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const ok = typeof QuickLinksImporter !== 'undefined' &&
+                QuickLinksImporter.importQuickLinks(self, ev.target.result);
+            if (ok) {
+                self.updateQuickLinksListInMenu(listContainer);
+                self.hideQuickLinksAddInterface(container, inputWrapper, listContainer, buttonContainer);
+            }
+        };
+        reader.onerror = () => self.showNotification('文件读取失败');
+        reader.readAsText(file);
+    };
+
+    importFileInput.addEventListener('change', (e) => {
+        readFileAndImport(e.target.files[0]);
+    });
+
+    importFileBtn.addEventListener('click', () => importFileInput.click());
+
+    // 支持直接拖入 JSON 文件导入（仅在添加/编辑视图内生效）
+    const isAddViewActive = () => {
+        const panel = document.getElementById('right-panel-upper');
+        return panel && (panel.dataset.subView === 'quick-link-add' || panel.dataset.subView === 'quick-link-edit');
+    };
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        container.addEventListener(eventName, (e) => {
+            if (!isAddViewActive()) return;
+            e.preventDefault();
+            e.stopPropagation();
+            container.classList.add('json-drag-over');
+        });
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        container.addEventListener(eventName, (e) => {
+            if (!isAddViewActive()) return;
+            e.preventDefault();
+            e.stopPropagation();
+            container.classList.remove('json-drag-over');
+        });
+    });
+    container.addEventListener('drop', (e) => {
+        if (!isAddViewActive()) return;
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        readFileAndImport(file);
+    });
+
+    buttonsWrapper.appendChild(importFileBtn);
     buttonsWrapper.appendChild(confirmAddBtn);
 
     inputWrapper.appendChild(nameInput);
     inputWrapper.appendChild(urlInput);
     container.appendChild(inputWrapper);
     container.appendChild(buttonsWrapper);
+    container.appendChild(importFileInput);
 
     const rpu = document.getElementById('right-panel-upper');
     if (rpu) {
@@ -9735,6 +9894,13 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
 
 OOOInterface.prototype.hideQuickLinksAddInterface = function (container, inputWrapper, listContainer, buttonContainer) {
     const buttonsWrapper = container.querySelector('.quick-links-add-buttons');
+
+    // 移除隐藏的 JSON 文件选择输入框，避免残留在列表视图
+    const jsonFileInput = container.querySelector('.quick-links-json-file-input');
+    if (jsonFileInput && jsonFileInput.parentNode) {
+        container.removeChild(jsonFileInput);
+    }
+    container.classList.remove('json-drag-over');
 
     delete container._qlinput;
     delete container._qllist;
@@ -9809,7 +9975,9 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
             const container = listContainer.closest('.settings-menu-container');
             const buttonContainer = container ? container.querySelector('.settings-menu-button-container') : null;
             if (container) {
-                self.showQuickLinksAddInterface(container, listContainer, buttonContainer, index);
+                // 拖拽排序后 DOM 顺序会变，必须实时读取 data-index，避免使用旧闭包索引
+                const currentIndex = parseInt(item.getAttribute('data-index'), 10);
+                self.showQuickLinksAddInterface(container, listContainer, buttonContainer, currentIndex);
             }
         });
 
@@ -9819,7 +9987,10 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         deleteBtn.title = '删除';
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.settings.quickLinks.splice(index, 1);
+            // 拖拽排序后 DOM 顺序会变，必须实时读取 data-index，避免删除错误项
+            const currentIndex = parseInt(item.getAttribute('data-index'), 10);
+            if (isNaN(currentIndex) || currentIndex < 0 || currentIndex >= this.settings.quickLinks.length) return;
+            this.settings.quickLinks.splice(currentIndex, 1);
             this.saveSettings();
             this.updateQuickLinksListInMenu(listContainer);
 

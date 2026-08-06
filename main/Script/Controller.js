@@ -793,8 +793,11 @@ class Controller {
         else if (action === 'switch-engine' && this.ooo) {
             const next = this.ooo.currentEngine === 'google' ? 'bing' : 'google';
             this.ooo.currentEngine = next;
-            document.getElementById('google-engine').classList.toggle('active', next === 'google');
-            document.getElementById('bing-engine').classList.toggle('active', next === 'bing');
+            // 引擎按钮可能不存在，需空值保护避免报错
+            const googleEngine = document.getElementById('google-engine');
+            const bingEngine = document.getElementById('bing-engine');
+            if (googleEngine) googleEngine.classList.toggle('active', next === 'google');
+            if (bingEngine) bingEngine.classList.toggle('active', next === 'bing');
             if (this.ooo.settings.engineLocked) {
                 localStorage.setItem('oooEngineLocked', next);
             }
@@ -803,11 +806,11 @@ class Controller {
         else if (action === 'wallpaper' && this.ooo) {
             if (this.ooo.settings.quickAccessSidebar) {
                 const container = document.getElementById('quick-access-sidebar-container');
-                if (document.body.classList.contains('sidebar-visible')) {
+                if (container && document.body.classList.contains('sidebar-visible')) {
                     container.classList.remove('visible');
                     container.classList.add('hiding');
                     document.body.classList.remove('sidebar-visible');
-                } else {
+                } else if (container) {
                     container.classList.remove('hiding');
                     container.classList.add('visible');
                     document.body.classList.add('sidebar-visible');
@@ -844,8 +847,8 @@ class Controller {
         wheel.style.cssText =
             'position:relative;width:' + S + 'px;height:' + S + 'px;border-radius:50%;' +
             'transform:scale(0.82);transition:transform .2s cubic-bezier(0.34,1.56,0.64,1);' +
-            '-webkit-mask:radial-gradient(circle at ' + (S/2) + 'px ' + (S/2) + 'px,transparent 45px,black 47px);' +
-            'mask:radial-gradient(circle at ' + (S/2) + 'px ' + (S/2) + 'px,transparent 45px,black 47px);';
+            '-webkit-mask:radial-gradient(circle at ' + (S / 2) + 'px ' + (S / 2) + 'px,transparent 45px,black 47px);' +
+            'mask:radial-gradient(circle at ' + (S / 2) + 'px ' + (S / 2) + 'px,transparent 45px,black 47px);';
 
         for (let i = 0; i < N; i++) {
             const dividerAngle = ((i + 0.5) / N) * 2 * Math.PI - Math.PI / 2;
@@ -911,62 +914,6 @@ class Controller {
         this.radialEl = null;
         this._radialWheel = null;
         this._skipStick = true;
-    }
-
-    poll() {
-        if (!this.settings.enabled) {
-            if (this.cursor.style.display !== 'none') {
-                this.cursor.style.display = 'none';
-                this.clearHighlight();
-            }
-            this.ltHeld = false;
-            this.rtHeld = false;
-            return;
-        }
-
-        const gamepad = navigator.getGamepads ? navigator.getGamepads()[this.gamepadIndex] : null;
-        if (!gamepad || !this.connected) {
-            if (this.cursor.style.display !== 'none') {
-                this.cursor.style.display = 'none';
-                this.clearHighlight();
-            }
-            return;
-        }
-
-        this.prevBtnState = Object.assign({}, this.btnState);
-        this.btnState = {};
-        for (let i = 0; i < gamepad.buttons.length; i++) {
-            this.btnState[i] = gamepad.buttons[i].pressed;
-        }
-
-        this.handleTriggers(gamepad);
-
-        if (this._skipStick) {
-            this._skipStick = false;
-            this.handleButtons();
-            this.handleDpad();
-            return;
-        }
-
-        if (!this.radialActive) {
-            if (this.btnState[4]) {
-                this.showRadialMenu('hold');
-                return;
-            }
-            if (this.btnPressed(2)) {
-                this.showRadialMenu('toggle');
-                return;
-            }
-        }
-
-        if (this.radialActive) {
-            this.handleRadialStick(gamepad);
-            this.handleRadialButtons();
-        } else {
-            this.handleSticks(gamepad);
-            this.handleButtons();
-            this.handleDpad();
-        }
     }
 
     handleRadialStick(gamepad) {

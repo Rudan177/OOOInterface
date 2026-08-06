@@ -13,7 +13,7 @@ class InfoManager {
     init() {
         this.infoContainer = document.getElementById('infoContainer');
         this.infoIndicator = document.getElementById('info-indicator');
-        
+
         if (this.infoContainer) {
             this.setupInfoContainer();
         }
@@ -33,7 +33,7 @@ class InfoManager {
 
         const scrollableContent = this.infoContainer.querySelector('.scrollable-content');
         if (scrollableContent) {
-            scrollableContent.addEventListener('wheel', function(e) {
+            scrollableContent.addEventListener('wheel', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 scrollableContent.scrollLeft += e.deltaY || e.deltaX;
@@ -61,7 +61,7 @@ class InfoManager {
 
         this.infoContainer.style.opacity = '';
         this.infoContainer.style.pointerEvents = '';
-        
+
         await this.loadInfoContent();
 
         if (this.infoIndicator) {
@@ -84,38 +84,52 @@ class InfoManager {
 
     async loadInfoContent() {
         const remoteUrl = 'https://rudan177.github.io/OOOInterface/info/info-interface-5.2.json';
-        
+
         try {
             const response = await fetch(remoteUrl + '?t=' + Date.now());
             if (!response.ok) {
                 this.hideInfoContainer();
                 return;
             }
-            
+
             const config = await response.json();
             const titleEmpty = !config.title || config.title.trim() === '';
             const linkEmpty = !config.link || config.link.trim() === '';
             const textEmpty = !config.text || config.text.trim() === '';
-            
+
             if (titleEmpty && linkEmpty && textEmpty) {
                 this.hideInfoContainer();
                 return;
             }
-            
+
             const h1Element = this.infoContainer.querySelector('h1');
             const spanElement = this.infoContainer.querySelector('p span');
             const dividers = this.infoContainer.querySelectorAll('.info-divider');
-            
+
             if (h1Element && config.title) {
                 h1Element.textContent = config.title;
                 h1Element.style.display = '';
             } else if (h1Element) {
                 h1Element.style.display = 'none';
             }
-            
+
             if (spanElement && config.text) {
                 if (config.link) {
-                    spanElement.innerHTML = `<a href="${config.link}" target="_blank">${config.text}</a>`;
+                    // 远程 JSON 内容不可信：用 DOM API 构建链接避免 XSS，
+                    // 且仅允许 http/https 协议，防止 javascript: 等危险链接
+                    spanElement.textContent = '';
+                    const trimmedLink = config.link.trim();
+                    const isSafeLink = /^https?:\/\//i.test(trimmedLink);
+                    if (isSafeLink) {
+                        const linkEl = document.createElement('a');
+                        linkEl.href = trimmedLink;
+                        linkEl.target = '_blank';
+                        linkEl.rel = 'noopener noreferrer';
+                        linkEl.textContent = config.text;
+                        spanElement.appendChild(linkEl);
+                    } else {
+                        spanElement.textContent = config.text;
+                    }
                 } else {
                     spanElement.textContent = config.text;
                 }
@@ -124,14 +138,14 @@ class InfoManager {
                 spanElement.textContent = '';
                 this.infoContainer.querySelector('.scrollable-content').style.display = 'none';
             }
-            
+
             if (dividers[0]) {
                 dividers[0].style.display = (!titleEmpty && !textEmpty) ? '' : 'none';
             }
             if (dividers[1]) {
                 dividers[1].style.display = !textEmpty ? '' : 'none';
             }
-            
+
         } catch (e) {
             this.hideInfoContainer();
         }
