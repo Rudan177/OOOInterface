@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "OOOInterface",
-  "version": "5.2.1",
-  "description": "RUDAN开发的浏览器首页插件。Release版本 5.2.1:25.1-RS120.1",
+  "version": "5.2.02",
+  "description": "RUDAN开发的浏览器首页插件。长期支持版 5.2.02:25.2-RS120.2",
   "chrome_url_overrides": {
     "newtab": "main/index.html"
   },
