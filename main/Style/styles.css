@@ -3383,6 +3383,8 @@ body.dynamic-blur .settings-menu-confirm:active {
     flex-direction: column;
     gap: 2px;
     padding: 2px 0;
+    /* 底部留出空间，避免最后一条被悬浮的操作按钮遮挡 */
+    padding-bottom: 52px;
 }
 
 
@@ -3398,6 +3400,7 @@ body.dynamic-blur .settings-menu-confirm:active {
     margin-bottom: 6px;
     user-select: none;
     color: var(--text-color);
+    /* 禁止被 flex 容器压缩：大量链接时保持条目高度不变，改为容器滚动 */
     flex-shrink: 0;
     min-height: 52px;
 }

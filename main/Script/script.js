@@ -9799,81 +9799,87 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
 
     confirmAddBtn.addEventListener('click', handleSave);
 
-    // 从 JSON 导入按钮：与确定并排，配色与取消按钮同款
-    const importFileBtn = document.createElement('button');
-    importFileBtn.textContent = '从JSON导入';
-    importFileBtn.title = '从 JSON 文件导入快速访问链接，也可直接拖入 JSON 文件';
-    importFileBtn.style.cssText = 'padding:8px 20px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;cursor:pointer;';
+    // 从 JSON 导入：仅在"新增"模式下提供，编辑模式只保留取消和确定
+    if (!isEdit) {
+        // 从 JSON 导入按钮：与确定并排，配色与取消按钮同款
+        const importFileBtn = document.createElement('button');
+        importFileBtn.textContent = '从JSON导入';
+        importFileBtn.title = '从 JSON 文件导入快速访问链接，也可直接拖入 JSON 文件';
+        importFileBtn.style.cssText = 'padding:8px 20px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;cursor:pointer;';
 
-    const importFileInput = document.createElement('input');
-    importFileInput.type = 'file';
-    importFileInput.accept = '.json,application/json';
-    importFileInput.style.display = 'none';
-    importFileInput.className = 'quick-links-json-file-input';
+        const importFileInput = document.createElement('input');
+        importFileInput.type = 'file';
+        importFileInput.accept = '.json,application/json';
+        importFileInput.style.display = 'none';
+        importFileInput.className = 'quick-links-json-file-input';
 
-    // 读取文件并导入，成功后回到列表视图
-    const readFileAndImport = (file) => {
-        if (!file) return;
-        const isJson = /\.json$/i.test(file.name) || (file.type && file.type.indexOf('json') !== -1);
-        if (!isJson) {
-            self.showNotification('请导入 JSON 文件');
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const ok = typeof QuickLinksImporter !== 'undefined' &&
-                QuickLinksImporter.importQuickLinks(self, ev.target.result);
-            if (ok) {
-                self.updateQuickLinksListInMenu(listContainer);
-                self.hideQuickLinksAddInterface(container, inputWrapper, listContainer, buttonContainer);
+        // 读取文件并导入，成功后回到列表视图
+        const readFileAndImport = (file) => {
+            if (!file) return;
+            const isJson = /\.json$/i.test(file.name) || (file.type && file.type.indexOf('json') !== -1);
+            if (!isJson) {
+                self.showNotification('请导入 JSON 文件');
+                return;
             }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const ok = typeof QuickLinksImporter !== 'undefined' &&
+                    QuickLinksImporter.importQuickLinks(self, ev.target.result);
+                if (ok) {
+                    self.updateQuickLinksListInMenu(listContainer);
+                    self.hideQuickLinksAddInterface(container, inputWrapper, listContainer, buttonContainer);
+                }
+            };
+            reader.onerror = () => self.showNotification('文件读取失败');
+            reader.readAsText(file);
         };
-        reader.onerror = () => self.showNotification('文件读取失败');
-        reader.readAsText(file);
-    };
 
-    importFileInput.addEventListener('change', (e) => {
-        readFileAndImport(e.target.files[0]);
-    });
-
-    importFileBtn.addEventListener('click', () => importFileInput.click());
-
-    // 支持直接拖入 JSON 文件导入（仅在添加/编辑视图内生效）
-    const isAddViewActive = () => {
-        const panel = document.getElementById('right-panel-upper');
-        return panel && (panel.dataset.subView === 'quick-link-add' || panel.dataset.subView === 'quick-link-edit');
-    };
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        container.addEventListener(eventName, (e) => {
-            if (!isAddViewActive()) return;
-            e.preventDefault();
-            e.stopPropagation();
-            container.classList.add('json-drag-over');
+        importFileInput.addEventListener('change', (e) => {
+            readFileAndImport(e.target.files[0]);
         });
-    });
-    ['dragleave', 'drop'].forEach(eventName => {
-        container.addEventListener(eventName, (e) => {
-            if (!isAddViewActive()) return;
-            e.preventDefault();
-            e.stopPropagation();
-            container.classList.remove('json-drag-over');
-        });
-    });
-    container.addEventListener('drop', (e) => {
-        if (!isAddViewActive()) return;
-        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-        readFileAndImport(file);
-    });
 
-    buttonsWrapper.appendChild(importFileBtn);
+        importFileBtn.addEventListener('click', () => importFileInput.click());
+
+        // 支持直接拖入 JSON 文件导入（仅在添加视图内生效）
+        const isAddViewActive = () => {
+            const panel = document.getElementById('right-panel-upper');
+            return panel && panel.dataset.subView === 'quick-link-add';
+        };
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            container.addEventListener(eventName, (e) => {
+                if (!isAddViewActive()) return;
+                e.preventDefault();
+                e.stopPropagation();
+                container.classList.add('json-drag-over');
+            });
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            container.addEventListener(eventName, (e) => {
+                if (!isAddViewActive()) return;
+                e.preventDefault();
+                e.stopPropagation();
+                container.classList.remove('json-drag-over');
+            });
+        });
+        container.addEventListener('drop', (e) => {
+            if (!isAddViewActive()) return;
+            // 文件拖放过程中可能误触发排序逻辑，先清理可能残留的排序指示线
+            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
+            const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            readFileAndImport(file);
+        });
+
+        buttonsWrapper.appendChild(importFileBtn);
+        container.appendChild(importFileInput);
+    }
+
     buttonsWrapper.appendChild(confirmAddBtn);
 
     inputWrapper.appendChild(nameInput);
     inputWrapper.appendChild(urlInput);
     container.appendChild(inputWrapper);
     container.appendChild(buttonsWrapper);
-    container.appendChild(importFileInput);
 
     const rpu = document.getElementById('right-panel-upper');
     if (rpu) {
@@ -9918,16 +9924,21 @@ OOOInterface.prototype.hideQuickLinksAddInterface = function (container, inputWr
         buttonsWrapper.classList.add('slide-out-right');
     }
 
+    // 立即恢复列表与按钮区显示，不依赖延迟回调，避免输入框与列表视图重叠残留
+    listContainer.style.display = 'flex';
+    buttonContainer.style.display = 'flex';
+
     setTimeout(() => {
-        if (buttonsWrapper && buttonsWrapper.parentNode) {
-            container.removeChild(buttonsWrapper);
+        // 用实时查询兜底移除添加视图节点，确保无论闭包引用状态如何都不残留
+        const leftoverButtons = container.querySelector('.quick-links-add-buttons');
+        if (leftoverButtons && leftoverButtons.parentNode) {
+            leftoverButtons.parentNode.removeChild(leftoverButtons);
         }
-        if (inputWrapper.parentNode) {
-            container.removeChild(inputWrapper);
+        const leftoverInput = container.querySelector('.quick-links-input-wrapper');
+        if (leftoverInput && leftoverInput.parentNode) {
+            leftoverInput.parentNode.removeChild(leftoverInput);
         }
-        listContainer.style.display = 'flex';
-        buttonContainer.style.display = 'flex';
-    }, 180);
+    }, 200);
 };
 
 OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
@@ -9944,11 +9955,20 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         return;
     }
 
+    // 使用 DocumentFragment 批量构建条目，大量链接时一次性挂载，避免逐个插入引发多次重排
+    const fragment = document.createDocumentFragment();
+
     this.settings.quickLinks.forEach((link, index) => {
         const item = document.createElement('div');
         item.className = 'quick-link-menu-item';
         item.setAttribute('data-index', index);
         item.draggable = true;
+
+        // 拖入外部文件（如 JSON 导入）时不参与排序逻辑的判断
+        const isFileDrag = (e) => {
+            return !!(e.dataTransfer && e.dataTransfer.types &&
+                Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1);
+        };
 
         const dragHandle = document.createElement('div');
         dragHandle.className = 'quick-link-drag-handle';
@@ -10000,7 +10020,7 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         item.appendChild(dragHandle);
         item.appendChild(info);
         item.appendChild(deleteBtn);
-        listContainer.appendChild(item);
+        fragment.appendChild(item);
 
         item.addEventListener('dragstart', (e) => {
             item.classList.add('dragging');
@@ -10020,6 +10040,8 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         });
 
         item.addEventListener('dragover', (e) => {
+            // 外部文件拖入（JSON 导入）时跳过排序逻辑，交由容器导入处理器处理
+            if (isFileDrag(e)) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             const dragged = listContainer.querySelector('.dragging');
@@ -10051,6 +10073,8 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         });
 
         item.addEventListener('drop', (e) => {
+            // 外部文件拖入（JSON 导入）时不拦截，让事件冒泡到容器完成导入
+            if (isFileDrag(e)) return;
             e.preventDefault();
             const dragged = listContainer.querySelector('.dragging');
             if (!dragged) return;
@@ -10089,6 +10113,9 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
             self.showNotification('顺序已调整');
         });
     });
+
+    // 全部条目构建完成后一次性挂载到列表容器
+    listContainer.appendChild(fragment);
 
     // 一键清除按钮（超过5个链接时显示）
     if (this.settings.quickLinks.length > 5) {
