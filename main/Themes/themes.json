@@ -1,6 +1,7 @@
 {
     "themes": [
         "default.js",
+        "LTS5.3.js",
         "classic.js",
         "lty.js",
         "isolation.js"

@@ -2,7 +2,7 @@ var DEFAULT_THEME = {
     "info": {
         "name": "经典主题",
         "designer": "RUDAN",
-        "version": "0.1"
+        "version": "1.0:01"
     },
     "details": {
         "logo": {
