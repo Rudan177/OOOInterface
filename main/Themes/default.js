@@ -2,7 +2,7 @@ var DEFAULT_THEME = {
     "info": {
         "name": "默认主题",
         "designer": "RUDAN",
-        "version": "0.1"
+        "version": "1.0:01"
     },
     "details": {
         "logo": {
@@ -18,7 +18,7 @@ var DEFAULT_THEME = {
         },
         "font": {
             "name": "Sans Flex",
-            "location": "../fonts/GoogleSansFlex-VariableFont.ttf",
+            "location": "../fonts/GoogleSansFlex.ttf",
             "specialStyle": {
                 "font-weight": "400",
                 "font-size": "1em"

@@ -58,6 +58,7 @@ class OOOInterface {
             theme: 'default',           // 当前主题 key（文件 basename 去扩展名）
             themeEnabled: false,        // 主题功能是否开启
             themeColorScheme: null,     // 当主题 color.colorGroup === 'add' 时存放完整配色配置
+            themeAspects: null,         // 各方面是否仍由主题接管 {logo,font,wallpaper,color}（null 视为全部接管）
             customThemes: []             // 用户导入的自定义主题 [{key, name, designer, version, data}]
         };
 
@@ -87,6 +88,7 @@ class OOOInterface {
         // 主题系统状态
         this.themes = {};           // { key: themeObject }
         this.themeOverrides = null; // { logo, font, wallpaper } 当前主题的覆盖配置
+        this.builtinThemeKeys = new Set(); // themes.json 中登记的内置主题 key
 
         this.init();
     }
@@ -125,10 +127,11 @@ class OOOInterface {
 
         this.initQuickAccessSidebar();
 
-        this.applySettings();
+        // 先加载主题列表（含用户导入的自定义主题），再应用外观设置，
+        // 确保页面刷新后主题在首屏渲染前即恢复，避免出现默认外观闪动
+        await this.loadThemes();
 
-        // 异步加载主题列表（不阻塞首屏）
-        this.loadThemes();
+        this.applySettings();
 
         this.updateCustomSchemeDropdownDots();
 
@@ -313,7 +316,7 @@ class OOOInterface {
         // 更新计数
         const countEl = document.getElementById('customize-selected-count');
         if (countEl) {
-            countEl.textContent = `${selected.length}/5 已选择`;
+            countEl.textContent = `${selected.length}/3 已选择`;
         }
 
         // 极简模式下禁用
@@ -605,6 +608,9 @@ class OOOInterface {
             console.warn('themes.json 加载失败:', e);
         }
 
+        // 记录内置主题 key，供导入时避免冲突
+        this.builtinThemeKeys = new Set(fileNames.map(f => f.replace(/\.js$/, '')));
+
         for (const fileName of fileNames) {
             if (!fileName.endsWith('.js')) continue;
             try {
@@ -618,8 +624,6 @@ class OOOInterface {
             }
         }
 
-        this.populateThemeSelect();
-
         // 注册已导入的自定义主题
         if (this.settings.customThemes) {
             this.settings.customThemes.forEach(ct => {
@@ -629,9 +633,57 @@ class OOOInterface {
             });
         }
 
+        // 待内置 + 自定义主题全部注册后再填充下拉列表
+        this.populateThemeSelect();
+
         // 页面刷新后恢复主题样式
-        if (this.settings.themeEnabled && this.settings.theme && this.themes[this.settings.theme]) {
-            this.applyTheme(this.settings.theme, { silent: true });
+        if (this.settings.themeEnabled) {
+            if (this.settings.theme && this.themes[this.settings.theme]) {
+                const theme = this.themes[this.settings.theme];
+                const aspects = this.settings.themeAspects || { logo: true, font: true, wallpaper: true, color: true };
+                // 快照用户手动覆盖的方面，应用主题后再恢复，避免刷新时主题覆盖用户的改动
+                const overridden = {};
+                if (aspects.wallpaper === false) {
+                    overridden.wallpaper = {
+                        wallpaper: this.settings.wallpaper,
+                        wallpaperUrl: this.settings.wallpaperUrl,
+                        wallpaperFill: this.settings.wallpaperFill
+                    };
+                }
+                if (aspects.logo === false) {
+                    overridden.logo = { logo: this.settings.logo, logoType: this.settings.logoType };
+                }
+                if (aspects.font === false) {
+                    overridden.font = { font: this.settings.font, fontWeight: this.settings.fontWeight, fontSize: this.settings.fontSize };
+                }
+                if (aspects.color === false) {
+                    overridden.color = { colorScheme: this.settings.colorScheme, themeColorScheme: this.settings.themeColorScheme };
+                }
+                this.applyTheme(this.settings.theme, { silent: true });
+                // 恢复用户手动覆盖的方面：还原设置值并清空对应主题覆盖，走常规渲染路径
+                if (overridden.wallpaper) {
+                    Object.assign(this.settings, overridden.wallpaper);
+                    this.themeOverrides.wallpaper = null;
+                }
+                if (overridden.logo) {
+                    Object.assign(this.settings, overridden.logo);
+                    this.themeOverrides.logo = null;
+                }
+                if (overridden.font) {
+                    Object.assign(this.settings, overridden.font);
+                    this.themeOverrides.font = null;
+                }
+                if (overridden.color) {
+                    Object.assign(this.settings, overridden.color);
+                }
+                this.settings.themeAspects = aspects;
+                this.applySettings();
+                // 恢复手动覆盖后重绘主题下拉，正确显示"自定义主题"状态
+                this.populateThemeSelect();
+            } else {
+                // 存档指向的主题已不存在或加载失败，关闭主题避免残留旧外观
+                this.deactivateTheme();
+            }
         }
     }
 
@@ -690,14 +742,38 @@ class OOOInterface {
         itemsContainer.innerHTML = '';
         hiddenSelect.innerHTML = '';
 
+        const addItem = (value, label, onClick) => {
+            const item = document.createElement('div');
+            item.className = 'select-item';
+            item.setAttribute('data-value', value);
+            item.textContent = label;
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onClick();
+                itemsContainer.querySelectorAll('.select-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                itemsContainer.classList.add('select-hide');
+            });
+            itemsContainer.appendChild(item);
+            return item;
+        };
+
+        // "不使用主题"选项：允许用户主动关闭主题功能
+        addItem('', '自定义主题（不使用主题）', () => {
+            this.deactivateTheme();
+            if (selectedDisplay) selectedDisplay.textContent = '自定义主题';
+            hiddenSelect.value = '';
+            this.applySettings();
+        });
+
         const keys = Object.keys(this.themes);
         keys.forEach(key => {
             const theme = this.themes[key];
-            const item = document.createElement('div');
-            item.className = 'select-item';
-            item.setAttribute('data-value', key);
-            item.textContent = theme.info.name;
-            itemsContainer.appendChild(item);
+            addItem(key, theme.info.name, () => {
+                this.applyTheme(key);
+                if (selectedDisplay) selectedDisplay.textContent = theme.info.name;
+                hiddenSelect.value = key;
+            });
 
             const option = document.createElement('option');
             option.value = key;
@@ -705,10 +781,17 @@ class OOOInterface {
             hiddenSelect.appendChild(option);
         });
 
-        // 更新顶部显示：无主题被选择时显示"自定义主题"
+        // 高亮当前状态项：主题被激活且未被手动定制时高亮主题，否则高亮"不使用主题"
+        const themeActive = this.settings.themeEnabled && this.settings.theme && this.themes[this.settings.theme];
+        if (themeActive && !this.isThemeCustomized()) {
+            itemsContainer.querySelector(`.select-item[data-value="${this.settings.theme}"]`)?.classList.add('selected');
+        } else {
+            itemsContainer.querySelector('.select-item[data-value=""]')?.classList.add('selected');
+        }
+
+        // 更新顶部显示：无主题或被手动定制时显示"自定义主题"
         if (selectedDisplay) {
-            const selected = this.settings.themeEnabled && this.themes[this.settings.theme];
-            selectedDisplay.textContent = selected ? this.themes[this.settings.theme].info.name : '自定义主题';
+            selectedDisplay.textContent = (themeActive && !this.isThemeCustomized()) ? this.themes[this.settings.theme].info.name : '自定义主题';
         }
     }
 
@@ -767,28 +850,39 @@ class OOOInterface {
         const badge = document.getElementById('ooo-badge');
         if (!badge) return;
 
-        // 移除之前的事件监听器（通过克隆元素来移除所有事件监听器）
-        const newBadge = badge.cloneNode(true);
-        badge.parentNode.replaceChild(newBadge, badge);
+        // 通过引用移除之前绑定的监听器，避免克隆替换元素导致
+        // 其他监听器（10次点击彩蛋、悬停弹窗等）丢失
+        if (this._badgeToggleHandler) {
+            badge.removeEventListener('click', this._badgeToggleHandler);
+        }
+        if (this._badgeDblClickHandler) {
+            badge.removeEventListener('dblclick', this._badgeDblClickHandler);
+        }
+        if (this._badgeContextMenuHandler) {
+            badge.removeEventListener('contextmenu', this._badgeContextMenuHandler);
+        }
 
         // 重新绑定点击事件（用于切换文本）
-        newBadge.addEventListener('click', () => this.toggleBadgeText());
+        this._badgeToggleHandler = () => this.toggleBadgeText();
+        badge.addEventListener('click', this._badgeToggleHandler);
 
         const method = this.settings.badgeOpenMethod || 'both';
 
         // 根据设置添加相应的事件监听器
         if (method !== 'none') {
             if (method === 'both' || method === 'dblclick') {
-                newBadge.addEventListener('dblclick', () => {
+                this._badgeDblClickHandler = () => {
                     this.openSettings('badge');
-                });
+                };
+                badge.addEventListener('dblclick', this._badgeDblClickHandler);
             }
 
             if (method === 'both' || method === 'contextmenu') {
-                newBadge.addEventListener('contextmenu', (e) => {
+                this._badgeContextMenuHandler = (e) => {
                     e.preventDefault();
                     this.openSettings('badge');
-                });
+                };
+                badge.addEventListener('contextmenu', this._badgeContextMenuHandler);
             }
         }
     }
@@ -871,6 +965,7 @@ class OOOInterface {
         if (savedSettings.theme !== undefined) result.theme = savedSettings.theme;
         if (savedSettings.themeEnabled !== undefined) result.themeEnabled = savedSettings.themeEnabled;
         if (savedSettings.themeColorScheme !== undefined) result.themeColorScheme = savedSettings.themeColorScheme;
+        if (savedSettings.themeAspects !== undefined) result.themeAspects = savedSettings.themeAspects;
 
         // 合并自定义Logo列表
         if (savedSettings.customLogos && Array.isArray(savedSettings.customLogos)) {
@@ -928,16 +1023,17 @@ class OOOInterface {
         localStorage.removeItem('hasVisited');
         localStorage.removeItem('oooInterfaceFirstRun');
         localStorage.removeItem('welcVersion');
-        // 重置后刷新页面以显示欢迎页面
-        location.reload();
 
-        // 更新设置界面中的值
+        // 更新设置界面中的值（需在 reload 前执行，否则不会生效）
         if (document.getElementById('settings-modal').classList.contains('show')) {
             this.updateSettingsUI();
         }
 
-        // 显示重置成功的提示
+        // 显示重置成功的提示（需在 reload 前执行，否则不会显示）
         this.showNotification('已重置');
+
+        // 重置后刷新页面以显示欢迎页面
+        location.reload();
     }
 
     // 重置确认弹窗（三步：红色警报 → 滑块验证 → 确认已知晓）
@@ -1399,15 +1495,25 @@ class OOOInterface {
         // 添加到页面
         document.body.appendChild(popup);
 
-        // ESC键关闭弹窗
+        // ESC键关闭弹窗（带 parentNode 检查避免重复移除报错，并及时注销监听器避免泄漏）
+        const closePopup = () => {
+            if (popup.parentNode) {
+                popup.parentNode.removeChild(popup);
+            }
+            document.removeEventListener('keydown', handleEsc);
+            popup.removeEventListener('click', closePopup);
+            this.infoPopupOpen = false;
+        };
+
         const handleEsc = (e) => {
             if (e.key === 'Escape') {
-                document.body.removeChild(popup);
-                document.removeEventListener('keydown', handleEsc);
-                this.infoPopupOpen = false;
+                closePopup();
             }
         };
         document.addEventListener('keydown', handleEsc);
+
+        // 点击弹窗也可关闭，避免弹窗长期驻留时监听器泄漏
+        popup.addEventListener('click', closePopup);
     }
 
     showShortcutsHint() {
@@ -2053,6 +2159,13 @@ class OOOInterface {
             e.target.value = '';
         });
 
+        // 主题选择 change 事件：兜底应用主题（正常流程由下拉项直接调用 applyTheme）
+        document.getElementById('theme-select').addEventListener('change', (e) => {
+            if (e.target.value && this.themes[e.target.value]) {
+                this.applyTheme(e.target.value);
+            }
+        });
+
         // Logo文件上传事件
         document.getElementById('logo-upload').addEventListener('change', (e) => {
             this.handleLogoUpload(e.target.files[0]);
@@ -2090,7 +2203,7 @@ class OOOInterface {
             this.checkThemeConsistency('colorScheme', e.target.value);
             this.saveSettings();
             this.applyColorScheme();
-            if (this.settings.hideNotifications) {
+            if (!this.settings.hideNotifications) {
                 this.showNotification('配色已更新');
             }
         });
@@ -2175,76 +2288,76 @@ class OOOInterface {
         // 应用按钮事件
         document.getElementById('apply-settings').addEventListener('click', () => {
             try {
-            this.settings.dynamicBlur = document.getElementById('dynamic-blur-toggle').checked;
-            this.settings.enhancedDisplay = document.getElementById('enhanced-display-toggle').checked;
-            const oldPersistentWallpaper = this.settings.persistentWallpaper;
-            this.settings.persistentWallpaper = document.getElementById('persistent-wallpaper-toggle').checked;
-            this.settings.wallpaperScale = document.getElementById('wallpaper-scale-toggle').checked;
-            // 读取右侧面板填满开关（如果面板打开时）
-            const panelFillToggle = document.getElementById('wallpaper-fill-toggle-panel');
-            if (panelFillToggle) {
-                this.settings.wallpaperFill = panelFillToggle.checked;
-            }
-            this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
-            this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
-            this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
+                this.settings.dynamicBlur = document.getElementById('dynamic-blur-toggle').checked;
+                this.settings.enhancedDisplay = document.getElementById('enhanced-display-toggle').checked;
+                const oldPersistentWallpaper = this.settings.persistentWallpaper;
+                this.settings.persistentWallpaper = document.getElementById('persistent-wallpaper-toggle').checked;
+                this.settings.wallpaperScale = document.getElementById('wallpaper-scale-toggle').checked;
+                // 读取右侧面板填满开关（如果面板打开时）
+                const panelFillToggle = document.getElementById('wallpaper-fill-toggle-panel');
+                if (panelFillToggle) {
+                    this.settings.wallpaperFill = panelFillToggle.checked;
+                }
+                this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
+                this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
+                this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
-            // 读取快速访问侧边栏开关
-            const newQuickLinkToggle = document.getElementById('quick-access-sidebar-toggle');
-            if (newQuickLinkToggle) {
-                this.settings.quickAccessSidebar = newQuickLinkToggle.checked;
-            }
+                // 读取快速访问侧边栏开关
+                const newQuickLinkToggle = document.getElementById('quick-access-sidebar-toggle');
+                if (newQuickLinkToggle) {
+                    this.settings.quickAccessSidebar = newQuickLinkToggle.checked;
+                }
 
-            // 读取显示图标开关
-            const showIconsToggle = document.getElementById('show-quick-icons');
-            if (showIconsToggle) {
-                this.settings.showQuickLinkIcons = showIconsToggle.checked;
-            }
+                // 读取显示图标开关
+                const showIconsToggle = document.getElementById('show-quick-icons');
+                if (showIconsToggle) {
+                    this.settings.showQuickLinkIcons = showIconsToggle.checked;
+                }
 
-            const statusBarToggle = document.getElementById('status-bar-toggle');
-            if (statusBarToggle) {
-                this.settings.statusBarEnabled = statusBarToggle.checked;
-            }
+                const statusBarToggle = document.getElementById('status-bar-toggle');
+                if (statusBarToggle) {
+                    this.settings.statusBarEnabled = statusBarToggle.checked;
+                }
 
-            const showSecondsToggle = document.getElementById('show-seconds-toggle');
-            if (showSecondsToggle && this.settings.statusBarEnabled) {
-                this.settings.showStatusBarSeconds = showSecondsToggle.checked;
-            }
+                const showSecondsToggle = document.getElementById('show-seconds-toggle');
+                if (showSecondsToggle && this.settings.statusBarEnabled) {
+                    this.settings.showStatusBarSeconds = showSecondsToggle.checked;
+                }
 
-            // 读取隐藏弹窗开关
-            const hideNotifToggle = document.getElementById('hide-notifications-toggle');
-            if (hideNotifToggle) {
-                this.settings.hideNotifications = hideNotifToggle.checked;
-            }
+                // 读取隐藏弹窗开关
+                const hideNotifToggle = document.getElementById('hide-notifications-toggle');
+                if (hideNotifToggle) {
+                    this.settings.hideNotifications = hideNotifToggle.checked;
+                }
 
-            // 读取禁止提示开关
-            const hideInfoToggle = document.getElementById('hide-info-popup-toggle');
-            if (hideInfoToggle) {
-                this.settings.hideInfoPopup = {
-                    enabled: hideInfoToggle.checked,
-                    type: hideInfoToggle.checked ? 'permanent' : null,
-                    timestamp: hideInfoToggle.checked ? Date.now() : null
-                };
-            }
+                // 读取禁止提示开关
+                const hideInfoToggle = document.getElementById('hide-info-popup-toggle');
+                if (hideInfoToggle) {
+                    this.settings.hideInfoPopup = {
+                        enabled: hideInfoToggle.checked,
+                        type: hideInfoToggle.checked ? 'permanent' : null,
+                        timestamp: hideInfoToggle.checked ? Date.now() : null
+                    };
+                }
 
-            // 保存设置打开方式
-            const badgeMethodSelect = document.getElementById('badge-open-method-select');
-            if (badgeMethodSelect) {
-                this.settings.badgeOpenMethod = badgeMethodSelect.value;
-            }
+                // 保存设置打开方式
+                const badgeMethodSelect = document.getElementById('badge-open-method-select');
+                if (badgeMethodSelect) {
+                    this.settings.badgeOpenMethod = badgeMethodSelect.value;
+                }
 
-            if (oldPersistentWallpaper !== this.settings.persistentWallpaper) {
-                this.handlePersistentWallpaperToggle();
-            }
+                if (oldPersistentWallpaper !== this.settings.persistentWallpaper) {
+                    this.handlePersistentWallpaperToggle();
+                }
 
-            this.applySettings();
-            // 重新绑定底部铭牌打开方式（该设置不在 applySettings 中处理）
-            this.setupBadgeOpenMethod();
-            this.saveSettings();
-            this.updateContextMenuIcons();
-            this.closeSettings();
-            this.showNotification('设置已应用');
-            // 无需刷新页面，所有设置已通过组件级更新即时生效
+                this.applySettings();
+                // 重新绑定底部铭牌打开方式（该设置不在 applySettings 中处理）
+                this.setupBadgeOpenMethod();
+                this.saveSettings();
+                this.updateContextMenuIcons();
+                this.closeSettings();
+                this.showNotification('设置已应用');
+                // 无需刷新页面，所有设置已通过组件级更新即时生效
             } catch (err) {
                 console.error('[Apply] 点击处理异常:', err);
                 this.showNotification('应用设置时出错: ' + err.message);
@@ -3184,30 +3297,14 @@ class OOOInterface {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                let themeData;
                 const content = e.target.result;
+                const themeData = this.parseThemeContent(content);
 
-                // 尝试解析 JSON
-                try {
-                    themeData = JSON.parse(content);
-                } catch (jsonErr) {
-                    // 不是 JSON，尝试提取 DEFAULT_THEME 变量的值
-                    const match = content.match(/var\s+DEFAULT_THEME\s*=\s*(\{[\s\S]*?\});/);
-                    if (match) {
-                        themeData = JSON.parse(match[1].replace(/'/g, '"').replace(/(\w+):/g, '"$1":'));
-                    } else {
-                        // 最后尝试直接 eval（受 CSP 限制）
-                        try {
-                            const evalResult = eval('(' + content.replace(/var\s+DEFAULT_THEME\s*=/, '') + ')');
-                            if (evalResult && evalResult.info) themeData = evalResult;
-                        } catch (e) {
-                            this.showNotification('无法解析主题文件');
-                            return;
-                        }
-                    }
+                if (!themeData) {
+                    this.showNotification('无法解析主题文件');
+                    return;
                 }
-
-                if (!themeData || !themeData.info || !themeData.details) {
+                if (!themeData.info || !themeData.details) {
                     this.showNotification('主题文件格式无效');
                     return;
                 }
@@ -3215,25 +3312,41 @@ class OOOInterface {
                 const key = file.name.replace(/\.[^/.]+$/, '');
                 const normalized = this.normalizeThemePaths(JSON.parse(JSON.stringify(themeData)));
 
-                // 检查是否已存在同名自定义主题
-                const existing = this.settings.customThemes.findIndex(ct => ct.key === key);
+                // 避免自定义主题 key 与内置主题冲突（如上传 default.js），冲突时自动加后缀
+                let finalKey = key;
+                if (this.builtinThemeKeys.has(key)) {
+                    // 同名内置冲突：优先复用已导入的副本（如 default-2），避免重复导入产生 default-2、default-3...
+                    const imported = this.settings.customThemes.find(ct =>
+                        ct.key === key || (ct.key.startsWith(key + '-') && /^-\d+$/.test(ct.key.slice(key.length)))
+                    );
+                    if (imported) {
+                        finalKey = imported.key;
+                    } else {
+                        let suffix = 2;
+                        while (this.themes[key + '-' + suffix]) suffix++;
+                        finalKey = key + '-' + suffix;
+                    }
+                }
+
+                // 检查是否已存在同名自定义主题（按实际 key 匹配）
+                const existing = this.settings.customThemes.findIndex(ct => ct.key === finalKey);
                 if (existing !== -1) {
                     this.settings.customThemes[existing] = {
-                        key, name: themeData.info.name,
+                        key: finalKey, name: themeData.info.name,
                         designer: themeData.info.designer || '',
                         version: themeData.info.version || '',
                         data: normalized
                     };
                 } else {
                     this.settings.customThemes.push({
-                        key, name: themeData.info.name,
+                        key: finalKey, name: themeData.info.name,
                         designer: themeData.info.designer || '',
                         version: themeData.info.version || '',
                         data: normalized
                     });
                 }
 
-                this.themes[key] = normalized;
+                this.themes[finalKey] = normalized;
                 this.saveSettings();
                 this.populateThemeSelect();
                 this.showNotification(`主题"${themeData.info.name}"导入成功`);
@@ -3254,6 +3367,33 @@ class OOOInterface {
 
         reader.onerror = () => this.showNotification('文件读取失败');
         reader.readAsText(file);
+    }
+
+    // 解析主题文件内容：支持纯 JSON 与 `var DEFAULT_THEME = {...}` 两种写法
+    parseThemeContent(content) {
+        if (!content) return null;
+        const text = String(content).trim();
+
+        // 1. 纯 JSON
+        try { return JSON.parse(text); } catch (e) { /* 继续尝试 JS 写法 */ }
+
+        // 2. 去除 `var/let/const [window.]DEFAULT_THEME =` 前缀与末尾分号后再按 JSON 解析
+        const objText = text
+            .replace(/^(?:var|let|const)\s+(?:window\.)?[A-Za-z_$][\w$]*\s*=\s*/i, '')
+            .replace(/;+\s*$/, '')
+            .trim();
+        try { return JSON.parse(objText); } catch (e) { /* 继续尝试 JS 风格修正 */ }
+
+        // 3. JS 风格对象字面量修正：仅补齐未加引号的键、把单引号转双引号
+        //    注意：补齐键的正则只匹配 `{`/`,` 后紧跟的单词，避免误改字符串内的 URL 等
+        try {
+            const fixed = objText
+                .replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":')
+                .replace(/'/g, '"');
+            return JSON.parse(fixed);
+        } catch (e) {
+            return null;
+        }
     }
 
     // 处理Logo上传
@@ -3394,11 +3534,14 @@ class OOOInterface {
             this.settings.wallpaper = wallpaperData;
             this.settings.persistentWallpaper = true;
 
-            const wallpaperSelect = document.getElementById('wallpaper-select');
-            wallpaperSelect.value = wallpaperName;
-
-            // 更新自定义壁纸列表
+            // 先更新自定义壁纸列表（创建 option），再设置选中值，
+            // 否则 option 尚不存在，赋值不会生效
             this.updateCustomWallpapersList();
+
+            const wallpaperSelect = document.getElementById('wallpaper-select');
+            if (wallpaperSelect) {
+                wallpaperSelect.value = wallpaperName;
+            }
 
             // 自定义壁纸上传必然与主题壁纸不一致
             this.checkThemeConsistency('wallpaper', wallpaperData);
@@ -3888,6 +4031,9 @@ class OOOInterface {
             this.settings.wallpaper = seriesWallpapers[0].data;
             this.settings.persistentWallpaper = true;
 
+            // 系列壁纸导入即应用，解除主题对壁纸方面的接管
+            this.checkThemeConsistency('wallpaper', this.settings.wallpaper);
+
             try {
                 this.saveSettings();
             } catch (e) {
@@ -3979,9 +4125,13 @@ class OOOInterface {
         const intervalMs = this.settings.bingRefreshInterval * 60 * 60 * 1000; // 小时转毫秒
 
         if (!lastRefreshTime || (now - parseInt(lastRefreshTime)) >= intervalMs) {
-            // 需要刷新
-            this.fetchBingWallpaper();
-            localStorage.setItem('bingLastRefreshTime', now.toString());
+            // 需要刷新：只有在获取成功后才记录刷新时间，
+            // 否则失败也会被记为已刷新，导致间隔内不再重试
+            this.fetchBingWallpaper().then(success => {
+                if (success) {
+                    localStorage.setItem('bingLastRefreshTime', Date.now().toString());
+                }
+            });
         } else {
             // 不需要刷新，使用现有壁纸
             if (this.settings.wallpaperUrl) {
@@ -4050,10 +4200,13 @@ class OOOInterface {
                 } else {
                     notify('获取必应壁纸失败：' + (lastError ? lastError.message : '未知错误'));
                 }
+                return false;
             }
+            return true;
         } catch (error) {
             console.error('获取必应壁纸失败:', error);
             notify('获取必应壁纸异常：' + error.message);
+            return false;
         }
     }
 
@@ -4347,7 +4500,10 @@ class OOOInterface {
         if (wallpaperSelectSelected) {
             const themeInfo = this.getThemeDisplayInfo();
             if (!themeInfo || !themeInfo.wallpaperName) {
-                const selectedOption = wallpaperSelect.querySelector(`option[value="${this.settings.wallpaper}"]`);
+                // settings.wallpaper 可能存的是 data URL，需先映射回壁纸名称再查找 option
+                const currentWp = this.settings.customWallpapers.find(wp => wp.data === this.settings.wallpaper);
+                const lookupValue = currentWp ? currentWp.name : this.settings.wallpaper;
+                const selectedOption = wallpaperSelect.querySelector(`option[value="${CSS.escape(lookupValue)}"]`);
                 if (selectedOption) {
                     wallpaperSelectSelected.textContent = selectedOption.textContent;
                 }
@@ -4362,13 +4518,26 @@ class OOOInterface {
         fileInput.accept = 'image/*';
         fileInput.style.display = 'none';
 
+        // 安全移除 fileInput（click 后立即移除会导致部分浏览器文件对话框失效）
+        const removeFileInput = () => {
+            setTimeout(() => {
+                if (fileInput.parentNode) {
+                    fileInput.parentNode.removeChild(fileInput);
+                }
+            }, 0);
+        };
+
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (!file) return;
+            if (!file) {
+                removeFileInput();
+                return;
+            }
 
             // 检查文件大小（限制为2MB）
             if (file.size > 2 * 1024 * 1024) {
                 this.showNotification('图片文件过大，请选择小于2MB的文件');
+                removeFileInput();
                 return;
             }
 
@@ -4386,11 +4555,14 @@ class OOOInterface {
             };
 
             reader.readAsDataURL(file);
+            removeFileInput();
         });
+
+        // 用户取消选择时也移除输入元素
+        fileInput.addEventListener('cancel', removeFileInput);
 
         document.body.appendChild(fileInput);
         fileInput.click();
-        document.body.removeChild(fileInput);
     }
 
     // 删除暗色Logo
@@ -4869,6 +5041,7 @@ class OOOInterface {
             this.settings.logo = 'text-logo';
             this.settings.textLogo = text;
             this.userChangedLogo = true;
+            this.checkThemeConsistency('logo', 'text-logo');
             this.applyLogo();
             this.saveSettings();
             this.showNotification('文字Logo设置');
@@ -5176,8 +5349,11 @@ class OOOInterface {
         document.getElementById('google-engine').classList.toggle('active', engine === 'google');
         document.getElementById('bing-engine').classList.toggle('active', engine === 'bing');
 
-        // 自动切换Logo（仅当用户没有手动更改过Logo时）
-        if (!this.userChangedLogo && this.settings.logo !== 'default') {
+        // 自动切换Logo（仅当用户没有手动更改过Logo，且Logo未被主题接管时）
+        const themeLogoManaged = this.settings.themeEnabled
+            && this.settings.themeAspects?.logo !== false
+            && this.themeOverrides?.logo;
+        if (!this.userChangedLogo && !themeLogoManaged && this.settings.logo !== 'default') {
             if (engine === 'google') {
                 this.settings.logo = 'Google';
                 this.settings.logoType = 'image';
@@ -5379,16 +5555,35 @@ class OOOInterface {
         const badge = document.getElementById('ooo-badge');
         const hasAnimation = this.settings.dynamicBlur || this.settings.enhancedDisplay;
 
+        // 复用现有的 info-indicator 节点，避免 innerHTML 重建导致
+        // InfoManager 持有的旧引用失效（颜色/显示状态无法更新）
+        const rebuildBadgeContent = () => {
+            let indicator = document.getElementById('info-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'info-indicator';
+                indicator.className = 'info-indicator';
+            }
+
+            if (this.isBadgeExpanded) {
+                badge.innerHTML = '<span>OOOInterface</span>';
+            } else {
+                badge.innerHTML = `OOOInterface(${this.currentVersion})`;
+            }
+            badge.appendChild(indicator);
+
+            // 同步指示器颜色与可见状态
+            if (this.infoManager && typeof this.infoManager.refreshInfoIndicator === 'function') {
+                this.infoManager.refreshInfoIndicator();
+            }
+        };
+
         if (hasAnimation) {
             badge.style.transform = 'scale(0.95)';
             badge.style.opacity = '0.8';
 
             setTimeout(() => {
-                if (this.isBadgeExpanded) {
-                    badge.innerHTML = '<span>OOOInterface</span><div id="info-indicator" class="info-indicator"></div>';
-                } else {
-                    badge.innerHTML = `OOOInterface(${this.currentVersion})<div id="info-indicator" class="info-indicator"></div>`;
-                }
+                rebuildBadgeContent();
 
                 badge.style.transform = 'scale(1)';
                 badge.style.opacity = '1';
@@ -5396,11 +5591,7 @@ class OOOInterface {
                 this.isBadgeExpanded = !this.isBadgeExpanded;
             }, 100);
         } else {
-            if (this.isBadgeExpanded) {
-                badge.innerHTML = '<span>OOOInterface</span><div id="info-indicator" class="info-indicator"></div>';
-            } else {
-                badge.innerHTML = `OOOInterface(${this.currentVersion})<div id="info-indicator" class="info-indicator"></div>`;
-            }
+            rebuildBadgeContent();
 
             this.isBadgeExpanded = !this.isBadgeExpanded;
         }
@@ -5596,23 +5787,7 @@ class OOOInterface {
         document.getElementById('context-menu-style').value = this.settings.contextMenuStyle;
 
         // 更新配色方案选择
-        const colorSchemeValue = this.settings.colorScheme || 'green';
-        const colorSchemeSelect = document.getElementById('color-scheme-select');
-        if (colorSchemeSelect) {
-            // 'theme-add' 不是有效 <option>，跳过设值避免 select 回退到第一个选项
-            if (colorSchemeValue !== 'theme-add') {
-                colorSchemeSelect.value = colorSchemeValue;
-            }
-            const colorSchemeSelected = document.getElementById('color-scheme-select-selected');
-            if (colorSchemeSelected) {
-                const themeInfo = this.getThemeDisplayInfo();
-                if (themeInfo && themeInfo.colorName) {
-                    colorSchemeSelected.textContent = themeInfo.themeName + '：' + themeInfo.colorName;
-                } else {
-                    colorSchemeSelected.textContent = COLOR_SCHEME_NAMES[colorSchemeValue] || '自定义';
-                }
-            }
-        }
+        this.updateColorSchemeSelectDisplay();
 
         // 更新新增的设置选项
         document.getElementById('dynamic-blur-toggle').checked = this.settings.dynamicBlur;
@@ -6092,6 +6267,31 @@ class OOOInterface {
         }
     }
 
+    // 更新配色方案选择框的显示文本与选中值（左面板）
+    updateColorSchemeSelectDisplay() {
+        const colorSchemeValue = this.settings.colorScheme || 'green';
+        const colorSchemeSelect = document.getElementById('color-scheme-select');
+        if (colorSchemeSelect) {
+            // 'theme-add' 不是有效 <option>，跳过设值避免 select 回退到第一个选项
+            if (colorSchemeValue !== 'theme-add') {
+                colorSchemeSelect.value = colorSchemeValue;
+            }
+        }
+        const colorSchemeSelected = document.getElementById('color-scheme-select-selected');
+        if (!colorSchemeSelected) return;
+        const themeInfo = this.getThemeDisplayInfo();
+        if (themeInfo && themeInfo.colorName) {
+            colorSchemeSelected.textContent = themeInfo.themeName + '：' + themeInfo.colorName;
+        } else if (colorSchemeValue === 'custom') {
+            const cc = this.settings.activeCustomColorIndex >= 0 && Array.isArray(this.settings.customColors)
+                ? this.settings.customColors[this.settings.activeCustomColorIndex]
+                : null;
+            colorSchemeSelected.textContent = (cc && cc.name) || '自定义';
+        } else {
+            colorSchemeSelected.textContent = COLOR_SCHEME_NAMES[colorSchemeValue] || '自定义';
+        }
+    }
+
     applySettings() {
         this.applyFont();
         this.applyLogo();
@@ -6150,6 +6350,11 @@ class OOOInterface {
                 width: d.logo.specialStyle?.width || null,
                 height: d.logo.specialStyle?.height || null
             };
+        } else {
+            // 主题未定义 Logo：回退到默认 Logo，避免残留上一主题设置
+            this.settings.logo = 'default';
+            this.settings.logoType = 'image';
+            this.themeOverrides.logo = null;
         }
 
         // 2. 字体
@@ -6160,6 +6365,10 @@ class OOOInterface {
                 weight: d.font.specialStyle?.['font-weight'] || null,
                 size: d.font.specialStyle?.['font-size'] || null
             };
+        } else {
+            // 主题未定义字体：回退到默认字体（不覆盖用户设置的粗细/大小）
+            this.settings.font = 'Sans Flex';
+            this.themeOverrides.font = null;
         }
 
         // 3. 壁纸
@@ -6171,6 +6380,12 @@ class OOOInterface {
             this.themeOverrides.wallpaper = {
                 online: d.wallpaper.specialStyle?.online || null
             };
+        } else {
+            // 主题未定义壁纸：回退到默认壁纸，避免残留上一主题壁纸
+            this.settings.wallpaper = 'default';
+            this.settings.wallpaperUrl = this.localBackgroundUrl || '';
+            this.settings.wallpaperFill = true;
+            this.themeOverrides.wallpaper = null;
         }
 
         // 4. 配色
@@ -6181,7 +6396,15 @@ class OOOInterface {
             } else if (d.color.specialStyle.colorGroup === 'add') {
                 this.settings.colorScheme = 'theme-add';
                 this.settings.themeColorScheme = d.color.specialStyle.colorScheme;
+            } else {
+                // 未知 colorGroup：按内置默认配色处理
+                this.settings.colorScheme = 'green';
+                this.settings.themeColorScheme = null;
             }
+        } else {
+            // 主题未定义配色：回退到默认配色
+            this.settings.colorScheme = 'green';
+            this.settings.themeColorScheme = null;
         }
 
         // 5. more / moreStyle
@@ -6194,6 +6417,8 @@ class OOOInterface {
         // 6. 记录主题状态
         this.settings.theme = themeKey;
         this.settings.themeEnabled = true;
+        // 主题接管全部四个方面；用户手动改动的方面会在 checkThemeConsistency 中标记为 false
+        this.settings.themeAspects = { logo: true, font: true, wallpaper: true, color: true };
 
         // 7. 保存与应用
         if (!opts.silent) {
@@ -6235,9 +6460,8 @@ class OOOInterface {
             }
         }
 
-        // 9. 更新顶部下拉显示
-        const selectedDisplay = document.getElementById('theme-select-selected');
-        if (selectedDisplay) selectedDisplay.textContent = theme.info.name;
+        // 9. 更新顶部下拉显示（含高亮与"自定义主题"状态）
+        this.populateThemeSelect();
 
         // 10. 更新所有设置选择框的显示文本（主题名：项目名）
         const fontSelected = document.getElementById('font-select-selected');
@@ -6312,28 +6536,40 @@ class OOOInterface {
         logoElement.src = localUrl;
     }
 
-    // 一致性检测：用户改动与当前主题不一致时，关闭主题功能
+    // 一致性检测：用户手动改动与当前主题某一项不一致时，仅解除该方面的主题控制，
+    // 保留主题其余方面（不再整体关闭主题，避免手动换壁纸时 logo/字体/配色一并重置）
     checkThemeConsistency(settingName, newValue) {
         if (!this.settings.themeEnabled || !this.settings.theme) return;
         const theme = this.themes[this.settings.theme];
         if (!theme || !theme.details) return;
         const d = theme.details;
-        let expected;
+        let expected, aspect;
         switch (settingName) {
             case 'font':
                 expected = d.font?.name;
+                aspect = 'font';
                 break;
             case 'logo':
                 expected = d.logo?.name;
+                aspect = 'logo';
                 break;
             case 'wallpaper':
                 // 主题壁纸用 location 标识
                 expected = d.wallpaper?.location;
+                aspect = 'wallpaper';
                 break;
             case 'colorScheme':
-                expected = d.color?.specialStyle?.colorGroup === 'cjs'
-                    ? d.color.specialStyle.colorScheme
-                    : 'theme-add';
+                // 与 applyTheme 步骤 4 的判定保持一致
+                const colorGroup = d.color?.specialStyle?.colorGroup;
+                if (colorGroup === 'cjs') {
+                    expected = d.color.specialStyle.colorScheme;
+                } else if (colorGroup === 'add') {
+                    expected = 'theme-add';
+                } else {
+                    // 主题未定义配色或 colorGroup 未知：applyTheme 会回退到默认配色
+                    expected = 'green';
+                }
+                aspect = 'color';
                 break;
             default:
                 return;
@@ -6344,17 +6580,72 @@ class OOOInterface {
             return;
         }
         if (newValue !== expected) {
-            this.settings.themeEnabled = false;
-            this.themeOverrides = null;
-            this.applyThemeMoreStyle(null);
-            // 移除主题的壁纸显示（homepage-wallpaper 类由 applyTheme 步骤 8 添加）
-            document.body.classList.remove('homepage-wallpaper');
-            // 重置仍为主题旧值的设置为默认值，但保留用户刚修改的值
-            if (d.logo && this.settings.logo === d.logo.name && settingName !== 'logo') {
+            // 用户手动覆盖该方面：仅解除该方面的主题控制，主题其余方面保持不变
+            if (!this.settings.themeAspects) {
+                this.settings.themeAspects = { logo: true, font: true, wallpaper: true, color: true };
+            }
+            this.settings.themeAspects[aspect] = false;
+            // 清空该方面的主题渲染覆盖，使常规渲染逻辑生效
+            if (this.themeOverrides && aspect !== 'color') {
+                this.themeOverrides[aspect] = null;
+            }
+            // 若该方面当前值仍是主题设定的值（如仅上传未选择），回退到该方面的默认值
+            switch (aspect) {
+                case 'logo':
+                    if (d.logo && this.settings.logo === d.logo.name) {
+                        this.settings.logo = 'default';
+                        this.settings.logoType = 'image';
+                    }
+                    break;
+                case 'font':
+                    if (d.font && this.settings.font === d.font.name) {
+                        this.settings.font = 'Sans Flex';
+                        this.settings.fontWeight = 400;
+                        this.settings.fontSize = 1;
+                    }
+                    break;
+                case 'wallpaper':
+                    if (d.wallpaper && this.settings.wallpaper === 'url' && this.settings.wallpaperUrl === d.wallpaper.location) {
+                        this.settings.wallpaper = 'default';
+                        this.settings.wallpaperUrl = this.localBackgroundUrl || '';
+                        this.clearWallpaperLayers();
+                    }
+                    break;
+                case 'color':
+                    if (this.settings.colorScheme === expected || this.settings.colorScheme === 'theme-add') {
+                        this.settings.colorScheme = 'green';
+                        this.settings.themeColorScheme = null;
+                    }
+                    break;
+            }
+            this.saveSettings();
+            // 主题已被手动定制：刷新左面板主题下拉（显示"自定义主题"并高亮"不使用主题"）
+            this.populateThemeSelect();
+        }
+    }
+
+    // 关闭主题：重置主题相关设置并清理主题残留
+    // theme 可传入主题对象；未传时按当前激活主题处理
+    deactivateTheme(theme, opts = {}) {
+        const activeTheme = theme || (this.settings.theme && this.themes[this.settings.theme]);
+        const d = activeTheme && activeTheme.details;
+
+        this.settings.themeEnabled = false;
+        this.settings.theme = 'default';
+        this.settings.themeColorScheme = null;
+        this.settings.themeAspects = { logo: false, font: false, wallpaper: false, color: false };
+        this.themeOverrides = null;
+        this.applyThemeMoreStyle(null);
+        // 移除主题的壁纸显示（homepage-wallpaper 类由 applyTheme 步骤 8 添加）
+        document.body.classList.remove('homepage-wallpaper');
+
+        // 重置仍为主题旧值的设置为默认值
+        if (d) {
+            if (d.logo && this.settings.logo === d.logo.name) {
                 this.settings.logo = 'default';
                 this.settings.logoType = 'image';
             }
-            if (d.font && this.settings.font === d.font.name && settingName !== 'font') {
+            if (d.font && this.settings.font === d.font.name) {
                 this.settings.font = 'Sans Flex';
                 this.settings.fontWeight = 400;
                 this.settings.fontSize = 1;
@@ -6362,49 +6653,65 @@ class OOOInterface {
                 document.body.style.fontWeight = '';
                 document.body.style.fontSize = '';
             }
-            if (d.wallpaper && this.settings.wallpaperUrl === d.wallpaper.location && settingName !== 'wallpaper') {
+            if (d.wallpaper && this.settings.wallpaperUrl === d.wallpaper.location) {
                 this.settings.wallpaper = 'default';
                 this.settings.wallpaperUrl = this.localBackgroundUrl || '';
                 this.clearWallpaperLayers();
                 document.body.style.backgroundImage = '';
             }
-            // 清理主题专用的配色残留（'theme-add' 在非主题模式下无意义）
-            if (this.settings.colorScheme === 'theme-add') {
-                this.settings.colorScheme = 'green';
-                this.settings.themeColorScheme = null;
-            }
-            this.saveSettings();
+        }
+        // 清理主题专用的配色残留（'theme-add' 在非主题模式下无意义）
+        if (this.settings.colorScheme === 'theme-add') {
+            this.settings.colorScheme = 'green';
+            this.settings.themeColorScheme = null;
+        }
+        this.saveSettings();
+
+        // 重绘左面板主题下拉，同步显示文本与高亮（无主题时显示"自定义主题"）
+        this.populateThemeSelect();
+        // 若右面板正显示主题菜单，刷新高亮
+        const rpu = document.getElementById('right-panel-upper');
+        if (rpu && rpu.dataset.menuType === 'theme') {
+            rpu.querySelectorAll('.settings-menu-option').forEach(opt => opt.classList.remove('selected'));
+        }
+        if (opts.notify) {
             this.showNotification('主题功能已关闭');
-            // 左面板顶部下拉显示"自定义主题"
-            const selectedDisplay = document.getElementById('theme-select-selected');
-            if (selectedDisplay) selectedDisplay.textContent = '自定义主题';
-            // 若右面板正显示主题菜单，刷新高亮
-            const rpu = document.getElementById('right-panel-upper');
-            if (rpu && rpu.dataset.menuType === 'theme') {
-                rpu.querySelectorAll('.settings-menu-option').forEach(opt => opt.classList.remove('selected'));
-            }
         }
     }
 
-    // 获取当前活动主题的显示信息（仅限非自定义主题模式）
+    // 获取当前活动主题的显示信息（仅限仍由主题接管的方面）
     getThemeDisplayInfo() {
         if (!this.settings.themeEnabled || !this.settings.theme) return null;
         const theme = this.themes[this.settings.theme];
         if (!theme || !theme.details) return null;
+        const aspects = this.settings.themeAspects || {};
+        const still = (aspect) => aspects[aspect] !== false;
         return {
             themeName: theme.info.name,
-            fontName: theme.details.font?.name || null,
-            fontLocation: theme.details.font?.location || null,
-            wallpaperName: theme.details.wallpaper?.name || null,
-            logoName: theme.details.logo?.name || null,
-            colorName: theme.details.color?.name || null
+            fontName: still('font') ? (theme.details.font?.name || null) : null,
+            fontLocation: still('font') ? (theme.details.font?.location || null) : null,
+            wallpaperName: still('wallpaper') ? (theme.details.wallpaper?.name || null) : null,
+            logoName: still('logo') ? (theme.details.logo?.name || null) : null,
+            colorName: still('color') ? (theme.details.color?.name || null) : null
         };
+    }
+
+    // 主题是否已被用户手动定制（至少一个方面解除主题接管）
+    isThemeCustomized() {
+        if (!this.settings.themeEnabled || !this.settings.theme) return false;
+        const a = this.settings.themeAspects;
+        return !!(a && (a.logo === false || a.font === false || a.wallpaper === false || a.color === false));
+    }
+
+    // 壁纸是否仍由主题接管（用于右面板壁纸菜单的高亮抑制）
+    isThemeWallpaperActive() {
+        return !!this.getThemeDisplayInfo()?.wallpaperName;
     }
 
     // 预设字体名称到字体文件路径的映射
     static get PRESET_FONT_PATHS() {
         return {
-            'Sans Flex': '../fonts/GoogleSansFlex-VariableFont.ttf',
+            'Sans Flex': '../fonts/GoogleSansFlex.ttf',
             'Ginto': '../fonts/ABCGintoVariable.ttf',
             'Josefin': '../fonts/JosefinSans.ttf',
             'Code': '../fonts/GoogleSansCode.ttf',
@@ -6933,6 +7240,33 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
     if (menuType === 'theme') {
         const isCustomTheme = (key) => self.settings.customThemes && self.settings.customThemes.some(ct => ct.key === key);
 
+        // "不使用主题"选项：允许用户主动关闭主题功能
+        const offOption = document.createElement('div');
+        offOption.className = 'settings-menu-option theme-menu-option';
+        const offName = document.createElement('div');
+        offName.className = 'theme-option-name';
+        offName.textContent = '不使用主题';
+        const offDesigner = document.createElement('div');
+        offDesigner.className = 'theme-option-designer';
+        offDesigner.textContent = '自定义设置';
+        offOption.appendChild(offName);
+        offOption.appendChild(offDesigner);
+        if (!self.settings.themeEnabled || self.isThemeCustomized()) {
+            offOption.classList.add('selected');
+        }
+        offOption.addEventListener('click', (e) => {
+            e.stopPropagation();
+            self.deactivateTheme();
+            selected.textContent = '自定义主题';
+            hiddenSelect.value = '';
+            optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            offOption.classList.add('selected');
+            self.applySettings();
+        });
+        optionsList.appendChild(offOption);
+
         Object.keys(self.themes).forEach(key => {
             const theme = self.themes[key];
             const option = document.createElement('div');
@@ -6976,14 +7310,22 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const idx = self.settings.customThemes.findIndex(ct => ct.key === key);
-                    if (idx !== -1) {
-                        self.settings.customThemes.splice(idx, 1);
-                        delete self.themes[key];
+                    if (idx === -1) return;
+                    // 记录是否正在使用该主题
+                    const wasActive = self.settings.themeEnabled && self.settings.theme === key;
+                    const deletingTheme = self.themes[key];
+                    self.settings.customThemes.splice(idx, 1);
+                    delete self.themes[key];
+                    if (wasActive) {
+                        // 删除的是当前正在使用的主题：彻底关闭主题并回退到默认外观
+                        self.deactivateTheme(deletingTheme, { notify: true });
+                        self.applySettings();
+                    } else {
                         self.saveSettings();
-                        const updatedItems = document.getElementById('theme-select-items');
-                        self.populateThemeSelect();
-                        self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect, true);
                     }
+                    const updatedItems = document.getElementById('theme-select-items');
+                    self.populateThemeSelect();
+                    self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect, true);
                 });
             } else {
                 const nameLine = document.createElement('div');
@@ -7004,7 +7346,7 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             }
 
             // 高亮判定
-            if (self.settings.themeEnabled && self.settings.theme === key) {
+            if (self.settings.themeEnabled && self.settings.theme === key && !self.isThemeCustomized()) {
                 option.classList.add('selected');
             }
 
@@ -7472,9 +7814,9 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
                     // 检查是否是当前选中的值
                     if (self.settings.font === customFont.name) {
-                        // 主题模式下需确认字体名匹配后才高亮
+                        // 字体仍由主题接管时仅字体名匹配才高亮
                         const themeInfo = self.getThemeDisplayInfo();
-                        if (!themeInfo || themeInfo.fontName === customFont.name) {
+                        if (!themeInfo || !themeInfo.fontName || themeInfo.fontName === customFont.name) {
                             option.classList.add('selected');
                         }
                     }
@@ -7521,9 +7863,9 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                 option.textContent = originalItem.textContent;
 
                 if (self.settings.font === fontValue) {
-                    // 主题模式下：字体名称匹配预设即高亮（路径由 normalizeThemePaths 处理过，不做字符串对比）
+                    // 字体仍由主题接管时仅字体名匹配预设才高亮（路径由 normalizeThemePaths 处理过，不做字符串对比）
                     const themeInfo = self.getThemeDisplayInfo();
-                    if (!themeInfo || themeInfo.fontName === fontValue) {
+                    if (!themeInfo || !themeInfo.fontName || themeInfo.fontName === fontValue) {
                         option.classList.add('selected');
                     }
                 }
@@ -7781,17 +8123,11 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         self.settings.bingRefreshEveryTime = isChecked;
                         intervalInput.disabled = isChecked;
                         confirmBtn.disabled = isChecked;
-                        if (isChecked) {
-                            self.settings.bingRefreshInterval = 0;
-                            localStorage.removeItem('bingLastRefreshTime');
-                            intervalInput.value = '';
-                            intervalInput.style.opacity = '0.5';
-                        } else {
-                            self.settings.bingRefreshInterval = 0;
-                            localStorage.removeItem('bingLastRefreshTime');
-                            intervalInput.value = '';
-                            intervalInput.style.opacity = '1';
-                        }
+                        // 开关两个分支共用同一套重置逻辑，仅透明度不同
+                        self.settings.bingRefreshInterval = 0;
+                        localStorage.removeItem('bingLastRefreshTime');
+                        intervalInput.value = '';
+                        intervalInput.style.opacity = isChecked ? '0.5' : '1';
                         self.saveSettings();
                         updateSwitchState();
                     });
@@ -7805,11 +8141,11 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         intervalInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
                     });
 
-                    // 输入验证
+                    // 输入验证：不在输入过程中钳制下限（否则无法输入如 0.5 的中间态），
+                    // 下限由确认按钮统一校验；仅限制上限避免超大输入
                     intervalInput.addEventListener('input', (e) => {
-                        let value = parseFloat(e.target.value);
-                        if (value < 0.1) e.target.value = 0.1;
-                        if (value > 9999) e.target.value = 9999;
+                        const value = parseFloat(e.target.value);
+                        if (!isNaN(value) && value > 9999) e.target.value = 9999;
                     });
 
                     // 确认按钮事件
@@ -7847,8 +8183,8 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
                     // 检查是否是当前选中的值
                     if (self.settings.wallpaper === 'bing') {
-                        // 主题模式下不自动高亮
-                        if (!self.getThemeDisplayInfo()) {
+                        // 壁纸仍由主题接管时不自动高亮
+                        if (!self.isThemeWallpaperActive()) {
                             option.classList.add('selected');
                             configWrapper.style.display = 'block';
                         }
@@ -7997,8 +8333,8 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
                     // 检查是否是当前选中的值
                     if (self.settings.wallpaper === 'url') {
-                        // 主题模式下不自动高亮
-                        if (!self.getThemeDisplayInfo()) {
+                        // 壁纸仍由主题接管时不自动高亮
+                        if (!self.isThemeWallpaperActive()) {
                             option.classList.add('selected');
                             configWrapper.style.display = 'block';
                         }
@@ -8029,8 +8365,8 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
                     // 检查是否是当前选中的值
                     if (self.settings.wallpaper === 'default' && wallpaperValue === 'default') {
-                        // 主题模式下不自动高亮
-                        if (!self.getThemeDisplayInfo()) {
+                        // 壁纸仍由主题接管时不自动高亮
+                        if (!self.isThemeWallpaperActive()) {
                             option.classList.add('selected');
                         }
                     }
@@ -8189,9 +8525,9 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
             const currentValue = originalItem.getAttribute('data-value');
             if (hiddenSelect.value === currentValue) {
-                // 主题模式下若配色为 add 组（自定义配色方案），不高亮任何选项
+                // 主题模式下若配色为 add 组（自定义配色方案），不高亮任何选项（配色被手动定制后不再抑制）
                 const themeInfo = self.getThemeDisplayInfo();
-                const isAddGroup = themeInfo && self.themes[self.settings.theme]?.details?.color?.specialStyle?.colorGroup === 'add';
+                const isAddGroup = themeInfo && themeInfo.colorName && self.themes[self.settings.theme]?.details?.color?.specialStyle?.colorGroup === 'add';
                 if (!isAddGroup) {
                     option.classList.add('selected');
                 }
@@ -8216,6 +8552,8 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
                         hiddenSelect.value = value;
                         const event = new Event('change', { bubbles: true });
                         hiddenSelect.dispatchEvent(event);
+                        // 立即更新左面板配色显示
+                        self.updateColorSchemeSelectDisplay();
                     }
                     self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, text, optionsList);
                     return;
@@ -8296,32 +8634,23 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
             const nameSpan = document.createElement('span');
             nameSpan.textContent = cc.name || '未命名';
             nameSpan.style.flex = '1';
+            nameSpan.style.minWidth = '0';
+            nameSpan.style.whiteSpace = 'nowrap';
+            nameSpan.style.overflow = 'hidden';
+            nameSpan.style.textOverflow = 'ellipsis';
             opt.appendChild(nameSpan);
 
-            // 删除按钮
-            const delBtn = document.createElement('button');
-            delBtn.className = 'custom-color-delete-btn';
-            delBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
-            delBtn.title = '删除此配色';
-            delBtn.addEventListener('click', (e) => {
+            // 编辑按钮（删除移入编辑界面内）
+            const editBtn = document.createElement('button');
+            editBtn.className = 'custom-color-edit-btn';
+            editBtn.innerHTML = '<span class="material-icons">edit</span>';
+            editBtn.title = '编辑此配色';
+            editBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const arr = self.settings.customColors || [];
-                const delIdx = parseInt(idx, 10);
-                if (isNaN(delIdx) || delIdx < 0 || delIdx >= arr.length) return;
-                arr.splice(delIdx, 1);
-                self.settings.customColors = arr;
-                // 如果删除的是当前激活的方案，重置为默认
-                if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex === delIdx) {
-                    self.settings.activeCustomColorIndex = -1;
-                    self.settings.colorScheme = 'green';
-                } else if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex > delIdx) {
-                    self.settings.activeCustomColorIndex -= 1;
-                }
-                self.saveSettings();
-                self.applyColorScheme();
-                renderCustomOptions();
+                const name = cc.name || '自定义';
+                self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, name, optionsList, idx);
             });
-            opt.appendChild(delBtn);
+            opt.appendChild(editBtn);
 
             if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex === idx) {
                 opt.classList.add('selected');
@@ -8351,8 +8680,12 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
 
             self.settings.colorScheme = 'custom';
             self.settings.activeCustomColorIndex = idx;
+            // 手动改配色：解除主题对配色方面的接管
+            self.checkThemeConsistency('colorScheme', 'custom');
             self.saveSettings();
             self.applyColorScheme();
+            // 立即更新左面板配色显示
+            self.updateColorSchemeSelectDisplay();
             self.closeSettingsMenuInRightPanel();
         });
     }
@@ -8694,8 +9027,13 @@ OOOInterface.prototype.renderContextMenuCustomizeView = function (rightPanelUppe
     rightPanelUpper.appendChild(container);
 };
 
-OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper, selected, hiddenSelect, text, optionsList) {
+OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper, selected, hiddenSelect, text, optionsList, editIndex) {
     const self = this;
+
+    // 编辑已有配色方案（editIndex 为 customColors 下标）时为编辑模式
+    const editing = (typeof editIndex === 'number' && editIndex >= 0
+        && Array.isArray(self.settings.customColors) && !!self.settings.customColors[editIndex]);
+    const existing = editing ? self.settings.customColors[editIndex] : null;
 
     rightPanelUpper.innerHTML = '';
     rightPanelUpper.dataset.subView = 'custom-color-editor';
@@ -8933,6 +9271,21 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     };
     updateGradientRowVisibility();
 
+    // 编辑模式：预填已有配色方案的数值
+    if (editing && existing) {
+        nameInput.value = existing.name || '';
+        primaryHex.value = existing.primaryColor || '';
+        secondaryHex.value = existing.secondaryColor || '';
+        gradientCheckbox.checked = !!existing.gradientEnabled;
+        curS = (existing.gradientStart !== undefined && existing.gradientStart !== null) ? existing.gradientStart : 0;
+        curE = (existing.gradientEnd !== undefined && existing.gradientEnd !== null) ? existing.gradientEnd : 100;
+        updatePreview(primaryHex, primaryPreview);
+        updatePreview(secondaryHex, secondaryPreview);
+        updateGradientPreview();
+        updateGradientRowVisibility();
+        updateGradientUI();
+    }
+
     const parseHex = (raw) => {
         let val = raw.trim();
         if (!val) return '';
@@ -8983,9 +9336,34 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     btnRow.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;margin-top:auto;padding-top:12px;border-top:1px solid var(--border-color);';
 
     const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = '取消';
+    cancelBtn.textContent = editing ? '删除' : '取消';
     cancelBtn.style.cssText = 'padding:8px 20px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;cursor:pointer;';
+    if (editing) {
+        cancelBtn.style.border = '1px solid rgba(220, 53, 69, 0.5)';
+        cancelBtn.style.color = '#dc3545';
+        cancelBtn.style.background = 'rgba(220, 53, 69, 0.1)';
+    }
     cancelBtn.addEventListener('click', () => {
+        if (editing) {
+            // 编辑模式：左侧按钮为"删除"，删除该配色方案
+            const arr = self.settings.customColors || [];
+            const delIdx = editIndex;
+            if (delIdx >= 0 && delIdx < arr.length) {
+                arr.splice(delIdx, 1);
+                self.settings.customColors = arr;
+                if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex === delIdx) {
+                    self.settings.activeCustomColorIndex = -1;
+                    self.settings.colorScheme = 'green';
+                } else if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex > delIdx) {
+                    self.settings.activeCustomColorIndex -= 1;
+                }
+                // 手动改配色：解除主题对配色方面的接管
+                self.checkThemeConsistency('colorScheme', self.settings.colorScheme);
+                self.saveSettings();
+                self.applyColorScheme();
+                self.updateColorSchemeSelectDisplay();
+            }
+        }
         delete rightPanelUpper.dataset.subView;
         const items = document.getElementById('color-scheme-select-items');
         if (items && selected && hiddenSelect) {
@@ -9000,7 +9378,7 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     confirmBtn.addEventListener('click', () => {
         // 验证名称
         let name = nameInput.value.trim();
-        if (!name) name = '自定义配色';
+        if (!name) name = editing ? (existing.name || '自定义配色') : '自定义配色';
         // 验证主色
         const primaryParsed = parseHex(primaryHex.value);
         if (!primaryParsed) {
@@ -9011,8 +9389,8 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
         const secondaryParsed = parseHex(secondaryHex.value);
         const gradientEnabled = gradientCheckbox.checked;
 
-        // 检查名称重复，生成唯一名称
-        const existingNames = (self.settings.customColors || []).map(c => c.name);
+        // 检查名称重复，生成唯一名称（编辑模式下保留自身原名不算重复）
+        const existingNames = (self.settings.customColors || []).map((c, i) => (editing && i === editIndex) ? null : c.name).filter(Boolean);
         let finalName = name;
         if (existingNames.includes(finalName)) {
             let suffix = 2;
@@ -9022,25 +9400,54 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
             finalName = name + '(' + suffix + ')';
         }
 
-        // 保存到 customColors
-        const newScheme = {
-            name: finalName,
-            primaryColor: primaryParsed,
-            secondaryColor: secondaryParsed || '',
-            gradientEnabled: gradientEnabled,
-            gradientStart: curS,
-            gradientEnd: curE
-        };
+        if (editing) {
+            // 编辑模式：更新已有配色方案并激活
+            const arr = self.settings.customColors || [];
+            if (editIndex >= 0 && editIndex < arr.length) {
+                arr[editIndex] = {
+                    ...arr[editIndex],
+                    name: finalName,
+                    primaryColor: primaryParsed,
+                    secondaryColor: secondaryParsed || '',
+                    gradientEnabled: gradientEnabled,
+                    gradientStart: curS,
+                    gradientEnd: curE
+                };
+                self.settings.customColors = arr;
+                self.settings.activeCustomColorIndex = editIndex;
+                self.settings.colorScheme = 'custom';
+                // 手动改配色：解除主题对配色方面的接管
+                self.checkThemeConsistency('colorScheme', 'custom');
+                self.saveSettings();
+                self.applyColorScheme();
+                // 立即更新左面板配色显示
+                self.updateColorSchemeSelectDisplay();
+            }
+        } else {
+            // 新建模式：保存到 customColors
+            const newScheme = {
+                name: finalName,
+                primaryColor: primaryParsed,
+                secondaryColor: secondaryParsed || '',
+                gradientEnabled: gradientEnabled,
+                gradientStart: curS,
+                gradientEnd: curE
+            };
 
-        if (!self.settings.customColors) {
-            self.settings.customColors = [];
+            if (!self.settings.customColors) {
+                self.settings.customColors = [];
+            }
+            self.settings.customColors.push(newScheme);
+            const newIndex = self.settings.customColors.length - 1;
+            self.settings.activeCustomColorIndex = newIndex;
+            self.settings.colorScheme = 'custom';
+            // 手动改配色：解除主题对配色方面的接管
+            self.checkThemeConsistency('colorScheme', 'custom');
+            self.saveSettings();
+            self.applyColorScheme();
+            // 立即更新左面板配色显示
+            self.updateColorSchemeSelectDisplay();
         }
-        self.settings.customColors.push(newScheme);
-        const newIndex = self.settings.customColors.length - 1;
-        self.settings.activeCustomColorIndex = newIndex;
-        self.settings.colorScheme = 'custom';
-        self.saveSettings();
-        self.applyColorScheme();
 
         // 重新渲染颜色方案列表并选中新创建的方案
         delete rightPanelUpper.dataset.subView;
@@ -9067,7 +9474,6 @@ OOOInterface.prototype.showCustomColorEditorInPanel = function (rightPanelUpper,
     const resizeHandler = () => constrainHeight();
     window.addEventListener('resize', resizeHandler);
     // 清理监听器
-    const origHide = self.hideSettingsQuickLinksAddInterface || self.hideCustomColorEditor;
     const cleanup = () => window.removeEventListener('resize', resizeHandler);
     // 观察面板隐藏时清理
     const mo = new MutationObserver(() => {
@@ -9142,6 +9548,7 @@ OOOInterface.prototype.confirmRightPanelChanges = function () {
                 this.settings.logo = 'text-logo';
                 this.settings.textLogo = text;
                 this.userChangedLogo = true;
+                this.checkThemeConsistency('logo', 'text-logo');
                 this.applyLogo();
                 this.saveSettings();
                 this.showNotification('文字Logo设置');
@@ -9235,8 +9642,14 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     // 书签导入按钮
     const importBtn = document.createElement('button');
     importBtn.className = 'settings-import-btn';
-    importBtn.title = '从Chrome书签导入';
+    importBtn.title = '从 Chrome 书签导入';
     importBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+    // 导出按钮（左边是导出，右边是导入）
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'settings-import-btn settings-export-btn';
+    exportBtn.title = '导出快速访问链接为 JSON';
+    exportBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
 
     // 导入下拉菜单（挂到 body 避免被父容器裁剪）
     const importDropdown = document.createElement('div');
@@ -9250,7 +9663,13 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     folderSubmenu.setAttribute('data-folder-submenu', '');
     document.body.appendChild(folderSubmenu);
 
-    buttonContainer.appendChild(importBtn);
+    // 导出/导入按钮行：左边是导出，右边是导入
+    const ioRow = document.createElement('div');
+    ioRow.className = 'quick-links-io-row';
+    ioRow.appendChild(exportBtn);
+    ioRow.appendChild(importBtn);
+
+    buttonContainer.appendChild(ioRow);
     buttonContainer.appendChild(plusBtn);
     container.appendChild(buttonContainer);
 
@@ -9271,13 +9690,32 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
         self.toggleBookmarkImportDropdown(importDropdown, folderSubmenu, importBtn);
     });
 
-    // 点击外部关闭下拉菜单
-    document.addEventListener('click', (e) => {
+    // 导出按钮点击事件：将快速访问链接导出为 JSON 文件
+    exportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (typeof QuickLinksExporter !== 'undefined') {
+            QuickLinksExporter.exportQuickLinks(self);
+        }
+    });
+
+    // 点击外部关闭下拉菜单（先注销上一次的监听器，避免反复打开菜单导致监听器泄漏）
+    if (this._quickLinksDocClickHandler) {
+        document.removeEventListener('click', this._quickLinksDocClickHandler);
+    }
+    this._quickLinksDocClickHandler = (e) => {
+        if (!importDropdown.isConnected) {
+            // 下拉元素已被移除（菜单关闭），自动注销监听器
+            document.removeEventListener('click', this._quickLinksDocClickHandler);
+            this._quickLinksDocClickHandler = null;
+            return;
+        }
         if (e.target !== importBtn && !importDropdown.contains(e.target) && !folderSubmenu.contains(e.target)) {
             importDropdown.classList.remove('active');
             folderSubmenu.classList.remove('active');
         }
-    });
+    };
+    document.addEventListener('click', this._quickLinksDocClickHandler);
 };
 
 OOOInterface.prototype.showQuickLinksAddInterface = function (container, listContainer, buttonContainer, editIndex) {
@@ -9361,6 +9799,81 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
 
     confirmAddBtn.addEventListener('click', handleSave);
 
+    // 从 JSON 导入：仅在"新增"模式下提供，编辑模式只保留取消和确定
+    if (!isEdit) {
+        // 从 JSON 导入按钮：与确定并排，配色与取消按钮同款
+        const importFileBtn = document.createElement('button');
+        importFileBtn.textContent = '从JSON导入';
+        importFileBtn.title = '从 JSON 文件导入快速访问链接，也可直接拖入 JSON 文件';
+        importFileBtn.style.cssText = 'padding:8px 20px;border:1px solid var(--border-color);border-radius:12px;font-size:13px;color:var(--text-color);background:transparent;cursor:pointer;';
+
+        const importFileInput = document.createElement('input');
+        importFileInput.type = 'file';
+        importFileInput.accept = '.json,application/json';
+        importFileInput.style.display = 'none';
+        importFileInput.className = 'quick-links-json-file-input';
+
+        // 读取文件并导入，成功后回到列表视图
+        const readFileAndImport = (file) => {
+            if (!file) return;
+            const isJson = /\.json$/i.test(file.name) || (file.type && file.type.indexOf('json') !== -1);
+            if (!isJson) {
+                self.showNotification('请导入 JSON 文件');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const ok = typeof QuickLinksImporter !== 'undefined' &&
+                    QuickLinksImporter.importQuickLinks(self, ev.target.result);
+                if (ok) {
+                    self.updateQuickLinksListInMenu(listContainer);
+                    self.hideQuickLinksAddInterface(container, inputWrapper, listContainer, buttonContainer);
+                }
+            };
+            reader.onerror = () => self.showNotification('文件读取失败');
+            reader.readAsText(file);
+        };
+
+        importFileInput.addEventListener('change', (e) => {
+            readFileAndImport(e.target.files[0]);
+        });
+
+        importFileBtn.addEventListener('click', () => importFileInput.click());
+
+        // 支持直接拖入 JSON 文件导入（仅在添加视图内生效）
+        const isAddViewActive = () => {
+            const panel = document.getElementById('right-panel-upper');
+            return panel && panel.dataset.subView === 'quick-link-add';
+        };
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            container.addEventListener(eventName, (e) => {
+                if (!isAddViewActive()) return;
+                e.preventDefault();
+                e.stopPropagation();
+                container.classList.add('json-drag-over');
+            });
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            container.addEventListener(eventName, (e) => {
+                if (!isAddViewActive()) return;
+                e.preventDefault();
+                e.stopPropagation();
+                container.classList.remove('json-drag-over');
+            });
+        });
+        container.addEventListener('drop', (e) => {
+            if (!isAddViewActive()) return;
+            // 文件拖放过程中可能误触发排序逻辑，先清理可能残留的排序指示线
+            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
+            const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            readFileAndImport(file);
+        });
+
+        buttonsWrapper.appendChild(importFileBtn);
+        container.appendChild(importFileInput);
+    }
+
     buttonsWrapper.appendChild(confirmAddBtn);
 
     inputWrapper.appendChild(nameInput);
@@ -9388,6 +9901,13 @@ OOOInterface.prototype.showQuickLinksAddInterface = function (container, listCon
 OOOInterface.prototype.hideQuickLinksAddInterface = function (container, inputWrapper, listContainer, buttonContainer) {
     const buttonsWrapper = container.querySelector('.quick-links-add-buttons');
 
+    // 移除隐藏的 JSON 文件选择输入框，避免残留在列表视图
+    const jsonFileInput = container.querySelector('.quick-links-json-file-input');
+    if (jsonFileInput && jsonFileInput.parentNode) {
+        container.removeChild(jsonFileInput);
+    }
+    container.classList.remove('json-drag-over');
+
     delete container._qlinput;
     delete container._qllist;
     delete container._qlbtn;
@@ -9404,16 +9924,21 @@ OOOInterface.prototype.hideQuickLinksAddInterface = function (container, inputWr
         buttonsWrapper.classList.add('slide-out-right');
     }
 
+    // 立即恢复列表与按钮区显示，不依赖延迟回调，避免输入框与列表视图重叠残留
+    listContainer.style.display = 'flex';
+    buttonContainer.style.display = 'flex';
+
     setTimeout(() => {
-        if (buttonsWrapper && buttonsWrapper.parentNode) {
-            container.removeChild(buttonsWrapper);
+        // 用实时查询兜底移除添加视图节点，确保无论闭包引用状态如何都不残留
+        const leftoverButtons = container.querySelector('.quick-links-add-buttons');
+        if (leftoverButtons && leftoverButtons.parentNode) {
+            leftoverButtons.parentNode.removeChild(leftoverButtons);
         }
-        if (inputWrapper.parentNode) {
-            container.removeChild(inputWrapper);
+        const leftoverInput = container.querySelector('.quick-links-input-wrapper');
+        if (leftoverInput && leftoverInput.parentNode) {
+            leftoverInput.parentNode.removeChild(leftoverInput);
         }
-        listContainer.style.display = 'flex';
-        buttonContainer.style.display = 'flex';
-    }, 180);
+    }, 200);
 };
 
 OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
@@ -9430,11 +9955,20 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         return;
     }
 
+    // 使用 DocumentFragment 批量构建条目，大量链接时一次性挂载，避免逐个插入引发多次重排
+    const fragment = document.createDocumentFragment();
+
     this.settings.quickLinks.forEach((link, index) => {
         const item = document.createElement('div');
         item.className = 'quick-link-menu-item';
         item.setAttribute('data-index', index);
         item.draggable = true;
+
+        // 拖入外部文件（如 JSON 导入）时不参与排序逻辑的判断
+        const isFileDrag = (e) => {
+            return !!(e.dataTransfer && e.dataTransfer.types &&
+                Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1);
+        };
 
         const dragHandle = document.createElement('div');
         dragHandle.className = 'quick-link-drag-handle';
@@ -9461,7 +9995,9 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
             const container = listContainer.closest('.settings-menu-container');
             const buttonContainer = container ? container.querySelector('.settings-menu-button-container') : null;
             if (container) {
-                self.showQuickLinksAddInterface(container, listContainer, buttonContainer, index);
+                // 拖拽排序后 DOM 顺序会变，必须实时读取 data-index，避免使用旧闭包索引
+                const currentIndex = parseInt(item.getAttribute('data-index'), 10);
+                self.showQuickLinksAddInterface(container, listContainer, buttonContainer, currentIndex);
             }
         });
 
@@ -9471,7 +10007,10 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         deleteBtn.title = '删除';
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.settings.quickLinks.splice(index, 1);
+            // 拖拽排序后 DOM 顺序会变，必须实时读取 data-index，避免删除错误项
+            const currentIndex = parseInt(item.getAttribute('data-index'), 10);
+            if (isNaN(currentIndex) || currentIndex < 0 || currentIndex >= this.settings.quickLinks.length) return;
+            this.settings.quickLinks.splice(currentIndex, 1);
             this.saveSettings();
             this.updateQuickLinksListInMenu(listContainer);
 
@@ -9481,7 +10020,7 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         item.appendChild(dragHandle);
         item.appendChild(info);
         item.appendChild(deleteBtn);
-        listContainer.appendChild(item);
+        fragment.appendChild(item);
 
         item.addEventListener('dragstart', (e) => {
             item.classList.add('dragging');
@@ -9501,6 +10040,8 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         });
 
         item.addEventListener('dragover', (e) => {
+            // 外部文件拖入（JSON 导入）时跳过排序逻辑，交由容器导入处理器处理
+            if (isFileDrag(e)) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             const dragged = listContainer.querySelector('.dragging');
@@ -9532,6 +10073,8 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
         });
 
         item.addEventListener('drop', (e) => {
+            // 外部文件拖入（JSON 导入）时不拦截，让事件冒泡到容器完成导入
+            if (isFileDrag(e)) return;
             e.preventDefault();
             const dragged = listContainer.querySelector('.dragging');
             if (!dragged) return;
@@ -9570,6 +10113,9 @@ OOOInterface.prototype.updateQuickLinksListInMenu = function (listContainer) {
             self.showNotification('顺序已调整');
         });
     });
+
+    // 全部条目构建完成后一次性挂载到列表容器
+    listContainer.appendChild(fragment);
 
     // 一键清除按钮（超过5个链接时显示）
     if (this.settings.quickLinks.length > 5) {

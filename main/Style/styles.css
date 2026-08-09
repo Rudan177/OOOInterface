@@ -318,7 +318,6 @@ body.scrolled.sidebar-visible .search-section {
         opacity 0.3s ease;
     display: flex;
     flex-direction: column;
-    align-items: center;
 }
 
 
@@ -455,8 +454,7 @@ body:not(.enhanced-display) .search-container:focus-within {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.15s;
+    opacity: 0;
 }
 
 .search-clear-btn:hover {
@@ -1238,7 +1236,7 @@ body.scrolled.dynamic-blur .ooo-badge {
     padding: 0;
     width: 90%;
     max-width: 800px;
-    max-height: calc(100vh - 80px);
+    max-height: min(640px, calc(100vh - 80px));
     overflow: hidden;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
     transform: scale(0.92) translateY(20px);
@@ -1503,15 +1501,12 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 .modal-body {
     padding: 24px;
-    max-height: 70vh;
-    /* 模态框最大高度，使用vh */
-    overflow-y: auto;
-    /* 启用垂直滚动 */
-    scrollbar-width: thin;
-    /* Firefox */
-    scrollbar-color: var(--border-color) transparent;
-    /* Firefox */
-    -webkit-overflow-scrolling: touch;
+    max-height: 60vh;
+    /* 通用弹窗内容高度上限 60vh；设置面板的高度由 #settings-modal 窗口约束 */
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     overscroll-behavior: contain;
 }
 
@@ -1542,16 +1537,17 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 .settings-layout {
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
 }
 
 .settings-content-area {
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
+    position: relative;
 }
 
 #mobile-buttons-container {
@@ -1566,16 +1562,34 @@ body.scrolled.dynamic-blur .ooo-badge {
     flex-direction: column;
     border-right: 1px solid var(--border-color);
     min-height: 0;
+    margin-right: 320px;
+    min-width: 0;
+}
+
+/* 左侧面板内部滚动区：占满左栏并独立上下滚动 */
+.settings-left-panel .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 
 
 .settings-right-panel {
-    flex: 0 0 320px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 320px;
     display: flex;
     flex-direction: column;
     min-width: 0;
     min-height: 0;
+    overflow: hidden;
 }
 
 
@@ -1708,7 +1722,7 @@ body.scrolled.dynamic-blur .ooo-badge {
     gap: 16px;
     align-items: flex-start;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -1800,6 +1814,50 @@ body.scrolled.dynamic-blur .ooo-badge {
 }
 
 .settings-menu-option.selected .custom-color-delete-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: white;
+}
+
+/* 自定义配色编辑按钮 */
+.custom-color-edit-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-color, #ffffff);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    opacity: 0;
+}
+
+.custom-color-edit-btn .material-icons {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.settings-menu-option:hover .custom-color-edit-btn {
+    opacity: 1;
+}
+
+.custom-color-edit-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--text-color, #ffffff);
+}
+
+.settings-menu-option.selected .custom-color-edit-btn {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.settings-menu-option.selected .custom-color-edit-btn:hover {
     background: rgba(255, 255, 255, 0.3);
     border-color: white;
 }
@@ -1922,6 +1980,13 @@ body.scrolled.dynamic-blur .ooo-badge {
 .settings-import-btn .material-icons {
     font-size: 18px;
     display: block;
+}
+
+/* 快速链接导出/导入按钮行：左边是导出，右边是导入 */
+.quick-links-io-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -2406,6 +2471,8 @@ body.dynamic-blur .settings-menu-confirm:active {
 
 .setting-group.action-buttons {
     margin-bottom: 0;
+    margin-top: auto;
+    /* 固定贴底，内容区独立滚动 */
 }
 
 
@@ -3299,6 +3366,13 @@ body.dynamic-blur .settings-menu-confirm:active {
     animation: slideOutToRight 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* 快速链接添加界面拖入 JSON 文件时的提示 */
+.settings-menu-container.json-drag-over {
+    outline: 2px dashed var(--border-color);
+    outline-offset: -6px;
+    border-radius: 12px;
+}
+
 
 
 .quick-links-list-container {
@@ -3309,6 +3383,8 @@ body.dynamic-blur .settings-menu-confirm:active {
     flex-direction: column;
     gap: 2px;
     padding: 2px 0;
+    /* 底部留出空间，避免最后一条被悬浮的操作按钮遮挡 */
+    padding-bottom: 52px;
 }
 
 
@@ -3324,6 +3400,7 @@ body.dynamic-blur .settings-menu-confirm:active {
     margin-bottom: 6px;
     user-select: none;
     color: var(--text-color);
+    /* 禁止被 flex 容器压缩：大量链接时保持条目高度不变，改为容器滚动 */
     flex-shrink: 0;
     min-height: 52px;
 }
@@ -6569,7 +6646,11 @@ body.wallpaper-layers-ready {
 
 @media (max-height: 499px) {
     .settings-right-panel {
-        flex: 0 0 280px;
+        width: 280px;
+    }
+
+    .settings-left-panel {
+        margin-right: 280px;
     }
 
     .right-panel-content {
@@ -6647,6 +6728,7 @@ body.wallpaper-layers-ready {
         display: flex;
         flex-direction: column;
         min-width: 0;
+        margin-right: 0;
         transform: translateX(0);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
