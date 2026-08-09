@@ -1,1 +1,0 @@
-const VERSION = "5.2:25-BS88";

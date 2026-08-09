@@ -4,9 +4,9 @@
 
 ## 项目信息
 
-- **产品名称**: OOOInterface LTS 5.2
-- **当前版本**: 5.2.02:25.2-RS120.2
-- **发布日期**: 2026年8月6日
+- **产品名称**: OOOInterface LTS 5.3
+- **当前版本**: 5.3:30-RS200
+- **发布日期**: 2026年8月9日
 - **许可证**: ABCD-26W08A
 - **Manifest 版本**: V3
 
@@ -68,8 +68,8 @@ OOOInterface/
 
 ## 联系方式
 
-- **电子邮件**: wyjcrtu@proton.me
-- **官方网站**: https://rudan177.github.io/OOOInterface/index.html
+- **电子邮件**: <wyjcrtu@proton.me>
+- **官方网站**: <https://rudan177.github.io/OOOInterface/index.html>
 
 ## 权限说明
 

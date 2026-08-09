@@ -157,13 +157,14 @@ body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:focus-with
 
 body.dynamic-blur:not(.scrolled).enhanced-display .search-container:hover,
 body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within {
-    box-shadow: 
+    box-shadow:
         0 0 40px rgba(255, 255, 255, 0.2),
         0 0 80px rgba(255, 255, 255, 0.1),
         0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur:not(.scrolled) .search-container,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .search-container,
@@ -171,7 +172,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within
         background: rgba(0, 0, 0, 0.2) !important;
         border: 1px solid transparent;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .search-container:hover,
     body.dynamic-blur:not(.scrolled) .search-container:focus-within,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:hover,
@@ -181,13 +182,14 @@ body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within
 }
 
 @media (prefers-color-scheme: light) {
+
     body.dynamic-blur:not(.scrolled) .search-container,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .search-container,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .search-container {
         background: rgba(240, 240, 240, 0.5) !important;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .search-container:hover,
     body.dynamic-blur:not(.scrolled) .search-container:focus-within,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:hover,
@@ -202,47 +204,53 @@ body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
     background: rgba(255, 255, 255, 0.2) !important;
     backdrop-filter: blur(80px) saturate(1.5) !important;
     -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid transparent;
     transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body.scrolled.dynamic-blur .search-container:hover,
-body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover {
-    background: rgba(255, 255, 255, 0.3) !important;
+body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover,
+body.scrolled.dynamic-blur .search-container:focus-within,
+body.scrolled.dynamic-blur.homepage-wallpaper .search-container:focus-within {
+    background: rgba(255, 255, 255, 0.28) !important;
 }
 
 body.scrolled.dynamic-blur.enhanced-display .search-container:hover,
 body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
-    box-shadow: 
+    box-shadow:
         0 0 40px rgba(255, 255, 255, 0.2),
         0 0 80px rgba(255, 255, 255, 0.1),
         0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.scrolled.dynamic-blur .search-container,
     body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
         background: rgba(0, 0, 0, 0.25) !important;
-        backdrop-filter: blur(80px) saturate(1.5) !important;
-        -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid transparent;
     }
-    
+
     body.scrolled.dynamic-blur .search-container:hover,
-    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover {
-        background: rgba(0, 0, 0, 0.38) !important;
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover,
+    body.scrolled.dynamic-blur .search-container:focus-within,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:focus-within {
+        background: rgba(0, 0, 0, 0.35) !important;
     }
 }
 
 @media (prefers-color-scheme: light) {
+
     body.scrolled.dynamic-blur .search-container,
     body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
-        background: rgba(240, 240, 240, 0.6) !important;
+        background: rgba(240, 240, 240, 0.55) !important;
     }
-    
+
     body.scrolled.dynamic-blur .search-container:hover,
-    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover {
-        background: rgba(240, 240, 240, 0.7) !important;
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover,
+    body.scrolled.dynamic-blur .search-container:focus-within,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:focus-within {
+        background: rgba(240, 240, 240, 0.65) !important;
     }
 }
 
@@ -275,11 +283,11 @@ body.scrolled.dynamic-blur .engine-btn.active {
         -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
         border: 1px solid rgba(255, 255, 255, 0.06);
     }
-    
+
     body.scrolled.dynamic-blur .engine-btn:hover {
         background: rgba(0, 0, 0, 0.38) !important;
     }
-    
+
     body.scrolled.dynamic-blur .engine-btn.active {
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
@@ -290,7 +298,7 @@ body.scrolled.dynamic-blur .engine-btn.active {
     body.scrolled.dynamic-blur .engine-btn {
         background: rgba(240, 240, 240, 0.6) !important;
     }
-    
+
     body.scrolled.dynamic-blur .engine-btn:hover {
         background: rgba(240, 240, 240, 0.7) !important;
     }
@@ -319,6 +327,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .engine-btn
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur:not(.scrolled) .engine-btn,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .engine-btn,
@@ -326,7 +335,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .engine-btn
         background: rgba(0, 0, 0, 0.2) !important;
         border: 1px solid transparent;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .engine-btn:hover,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn:hover {
         background: rgba(0, 0, 0, 0.3) !important;
@@ -334,44 +343,23 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .engine-btn
 }
 
 @media (prefers-color-scheme: light) {
+
     body.dynamic-blur:not(.scrolled) .engine-btn,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .engine-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn {
         background: rgba(240, 240, 240, 0.5) !important;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .engine-btn:hover,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn:hover {
         background: rgba(240, 240, 240, 0.6) !important;
     }
 }
 
-/* 选中的搜索引擎按钮 */
-body.dynamic-blur .engine-btn.active.logo-google,
-body.dynamic-blur .engine-btn.active.logo-microsoft,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-google,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-microsoft {
-    background: var(--primary-color) !important;
-    color: white !important;
-    border: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-body.dynamic-blur .engine-btn.active.logo-apple,
-body.dynamic-blur .engine-btn.active.logo-huawei,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-apple,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-huawei {
-    background: #000000 !important;
-    color: white !important;
-    border: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-body.dynamic-blur .engine-btn.active.logo-default,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-default {
+/* 选中的搜索引擎按钮 - 配色方案 */
+body.dynamic-blur.color-scheme-green .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active {
     background: #00AE90 !important;
     color: white !important;
     border: none !important;
@@ -379,11 +367,45 @@ body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-default {
     -webkit-backdrop-filter: none !important;
 }
 
-body.dynamic-blur .engine-btn.active.logo-custom,
-body.dynamic-blur .engine-btn.active.logo-text,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-custom,
-body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-text {
-    background: #303134 !important;
+body.dynamic-blur.color-scheme-blue .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.dynamic-blur.color-scheme-black-white .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active {
+    background: #000000 !important;
+    color: white !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* 新星调配色方案 - 选中搜索引擎按钮 */
+body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active,
+body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active,
+body.dynamic-blur.color-scheme-classic-gold .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active,
+body.dynamic-blur.color-scheme-isolation .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active {
+    background-image: var(--scheme-gradient) !important;
+    color: white !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.dynamic-blur.color-scheme-custom .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active,
+body.dynamic-blur.color-scheme-theme-add .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active {
+    background: var(--scheme-gradient) !important;
     color: white !important;
     border: none !important;
     backdrop-filter: none !important;
@@ -391,84 +413,199 @@ body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-text {
 }
 
 @media (prefers-color-scheme: dark) {
-    body.dynamic-blur .engine-btn.active.logo-google,
-    body.dynamic-blur .engine-btn.active.logo-microsoft,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-google,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-microsoft {
-        background: #0d47a1 !important;
+
+    body.dynamic-blur.color-scheme-green .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active {
+        background: #00AE90 !important;
         border: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
-    
-    body.dynamic-blur .engine-btn.active.logo-apple,
-    body.dynamic-blur .engine-btn.active.logo-huawei,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-apple,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-huawei {
+
+    body.dynamic-blur.color-scheme-blue .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active {
+        background: var(--scheme-accent) !important;
+        border: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    body.dynamic-blur.color-scheme-black-white .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active {
         background: #ffffff !important;
         color: #303134 !important;
         border: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
-    
-    body.dynamic-blur .engine-btn.active.logo-custom,
-    body.dynamic-blur .engine-btn.active.logo-text,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-custom,
-    body.dynamic-blur.homepage-wallpaper .engine-btn.active.logo-text {
-        background: #ffffff !important;
-        color: #303134 !important;
+
+    /* 新星调配色方案 - 暗色模式 */
+    body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active,
+    body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active,
+    body.dynamic-blur.color-scheme-classic-gold .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active,
+    body.dynamic-blur.color-scheme-isolation .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active {
+        background-image: var(--scheme-gradient) !important;
+        border: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    body.dynamic-blur.color-scheme-custom .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active,
+    body.dynamic-blur.color-scheme-theme-add .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active {
+        background: var(--scheme-gradient) !important;
         border: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
 }
 
-body.dynamic-blur .engine-btn.active.logo-google:hover,
-body.dynamic-blur .engine-btn.active.logo-microsoft:hover {
-    background: var(--primary-color) !important;
-    color: white !important;
+/* 新星调配色方案 - dynamic-blur 模式下保留渐变 */
+body.dynamic-blur.color-scheme-tianyi-blue .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .apply-btn,
+body.dynamic-blur.color-scheme-vibrant-red .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .apply-btn,
+body.dynamic-blur.color-scheme-classic-gold .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .apply-btn,
+body.dynamic-blur.color-scheme-isolation .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .apply-btn,
+body.dynamic-blur.color-scheme-custom .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-custom .apply-btn,
+body.dynamic-blur.color-scheme-theme-add .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .apply-btn {
+    background: var(--scheme-gradient) !important;
+    backdrop-filter: blur(120px) saturate(1.6) !important;
+    -webkit-backdrop-filter: blur(120px) saturate(1.6) !important;
     border: none !important;
 }
 
-body.dynamic-blur .engine-btn.active.logo-apple:hover,
-body.dynamic-blur .engine-btn.active.logo-huawei:hover {
-    background: #000000 !important;
-    color: white !important;
+body.dynamic-blur.color-scheme-tianyi-blue .settings-plus-btn,
+body.dynamic-blur.color-scheme-vibrant-red .settings-plus-btn,
+body.dynamic-blur.color-scheme-classic-gold .settings-plus-btn,
+body.dynamic-blur.color-scheme-isolation .settings-plus-btn,
+body.dynamic-blur.color-scheme-custom .settings-plus-btn,
+body.dynamic-blur.color-scheme-theme-add .settings-plus-btn {
+    background: var(--scheme-gradient) !important;
     border: none !important;
+    color: white !important;
 }
 
-body.dynamic-blur .engine-btn.active.logo-default:hover {
+body.dynamic-blur.color-scheme-tianyi-blue .settings-import-btn,
+body.dynamic-blur.color-scheme-vibrant-red .settings-import-btn,
+body.dynamic-blur.color-scheme-classic-gold .settings-import-btn,
+body.dynamic-blur.color-scheme-isolation .settings-import-btn,
+body.dynamic-blur.color-scheme-custom .settings-import-btn,
+body.dynamic-blur.color-scheme-theme-add .settings-import-btn {
+    background: var(--scheme-gradient) !important;
+    border: none !important;
+    color: white !important;
+}
+
+body.dynamic-blur.color-scheme-tianyi-blue .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-vibrant-red .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-classic-gold .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-isolation .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-custom .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-theme-add .wallpaper-fill-toggle-wrapper {
+    background: var(--scheme-gradient) !important;
+    border: none !important;
+    color: white !important;
+}
+
+body.dynamic-blur.color-scheme-tianyi-blue .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-vibrant-red .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-classic-gold .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-isolation .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-custom .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-theme-add .context-menu.show .context-menu-item:hover {
+    background: var(--scheme-gradient) !important;
+    color: white !important;
+}
+
+body.dynamic-blur.color-scheme-green .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active:hover {
     background: #00AE90 !important;
     color: white !important;
     border: none !important;
 }
 
-body.dynamic-blur .engine-btn.active.logo-custom:hover,
-body.dynamic-blur .engine-btn.active.logo-text:hover {
-    background: #303134 !important;
+body.dynamic-blur.color-scheme-blue .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active:hover {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
+}
+
+body.dynamic-blur.color-scheme-black-white .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active:hover {
+    background: #000000 !important;
+    color: white !important;
+    border: none !important;
+}
+
+body.dynamic-blur.color-scheme-custom .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-theme-add .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active:hover {
+    background: var(--scheme-gradient) !important;
+    color: white !important;
+    border: none !important;
+}
+
+/* 新星调配色方案 - 选中搜索引擎按钮悬停 */
+body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-classic-gold .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-isolation .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active:hover {
+    background-image: var(--scheme-gradient) !important;
     color: white !important;
     border: none !important;
 }
 
 @media (prefers-color-scheme: dark) {
-    body.dynamic-blur .engine-btn.active.logo-google:hover,
-    body.dynamic-blur .engine-btn.active.logo-microsoft:hover {
-        background: #0d47a1 !important;
+
+    body.dynamic-blur.color-scheme-green .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active:hover {
+        background: #00AE90 !important;
         border: none !important;
     }
-    
-    body.dynamic-blur .engine-btn.active.logo-apple:hover,
-    body.dynamic-blur .engine-btn.active.logo-huawei:hover {
+
+    body.dynamic-blur.color-scheme-blue .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active:hover {
+        background: var(--scheme-accent) !important;
+        border: none !important;
+    }
+
+    body.dynamic-blur.color-scheme-black-white .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active:hover {
         background: #ffffff !important;
         color: #303134 !important;
         border: none !important;
     }
-    
-    body.dynamic-blur .engine-btn.active.logo-custom:hover,
-    body.dynamic-blur .engine-btn.active.logo-text:hover {
-        background: #ffffff !important;
-        color: #303134 !important;
+
+    /* 新星调配色方案 - 暗色模式悬停 */
+    body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-classic-gold .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-isolation .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-custom .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-theme-add .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active:hover {
+        background-image: var(--scheme-gradient) !important;
         border: none !important;
     }
 }
@@ -498,6 +635,7 @@ body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.scrolled.dynamic-blur .quick-access-btn,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
         background: rgba(0, 0, 0, 0.25) !important;
@@ -505,7 +643,7 @@ body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn
         -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
         border: 1px solid rgba(255, 255, 255, 0.06);
     }
-    
+
     body.scrolled.dynamic-blur .quick-access-btn:hover,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
         background: rgba(0, 0, 0, 0.38) !important;
@@ -513,11 +651,12 @@ body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn
 }
 
 @media (prefers-color-scheme: light) {
+
     body.scrolled.dynamic-blur .quick-access-btn,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
         background: rgba(240, 240, 240, 0.6) !important;
     }
-    
+
     body.scrolled.dynamic-blur .quick-access-btn:hover,
     body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
         background: rgba(240, 240, 240, 0.7) !important;
@@ -552,6 +691,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-acce
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur:not(.scrolled) .quick-access-btn,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .quick-access-btn,
@@ -559,7 +699,7 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-acce
         background: rgba(0, 0, 0, 0.2) !important;
         border: 1px solid transparent;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
         background: rgba(0, 0, 0, 0.3) !important;
@@ -567,13 +707,14 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-acce
 }
 
 @media (prefers-color-scheme: light) {
+
     body.dynamic-blur:not(.scrolled) .quick-access-btn,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .quick-access-btn,
     body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn {
         background: rgba(240, 240, 240, 0.5) !important;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
     body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
         background: rgba(240, 240, 240, 0.6) !important;
@@ -597,27 +738,15 @@ body.scrolled.dynamic-blur .search-history-container {
     box-shadow: none;
 }
 
-body.dynamic-blur .search-history-item:hover,
-body.scrolled.dynamic-blur .search-history-item:hover {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-}
-
 @media (prefers-color-scheme: dark) {
     body.dynamic-blur:not(.scrolled) .search-history-container {
         background: rgba(0, 0, 0, 0.2) !important;
         border: none;
     }
-    
+
     body.scrolled.dynamic-blur .search-history-container {
         background: rgba(0, 0, 0, 0.1) !important;
         border: none;
-    }
-    
-    body.dynamic-blur .search-history-item:hover,
-    body.scrolled.dynamic-blur .search-history-item:hover {
-        background: rgba(255, 255, 255, 0.1);
     }
 }
 
@@ -625,14 +754,9 @@ body.scrolled.dynamic-blur .search-history-item:hover {
     body.dynamic-blur:not(.scrolled) .search-history-container {
         background: rgba(240, 240, 240, 0.5) !important;
     }
-    
+
     body.scrolled.dynamic-blur .search-history-container {
         background: rgba(240, 240, 240, 0.55) !important;
-    }
-    
-    body.dynamic-blur .search-history-item:hover,
-    body.scrolled.dynamic-blur .search-history-item:hover {
-        background: rgba(240, 240, 240, 0.6);
     }
 }
 
@@ -650,13 +774,27 @@ body.dynamic-blur .right-panel-upper {
 }
 
 body.dynamic-blur .apply-btn {
-    background: rgba(26, 115, 232, 0.8);
+    background: rgba(var(--scheme-accent-rgb), 0.8);
     backdrop-filter: blur(120px) saturate(1.6);
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 body.dynamic-blur .reset-btn {
+    background: rgba(var(--surface-color-rgb), 0.5);
+    backdrop-filter: blur(120px) saturate(1.6);
+    -webkit-backdrop-filter: blur(120px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .about-feedback-btn {
+    background: rgba(var(--surface-color-rgb), 0.5);
+    backdrop-filter: blur(120px) saturate(1.6);
+    -webkit-backdrop-filter: blur(120px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .reset-developer-btn {
     background: rgba(var(--surface-color-rgb), 0.5);
     backdrop-filter: blur(120px) saturate(1.6);
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
@@ -686,11 +824,27 @@ body.dynamic-blur .select-items {
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+body.dynamic-blur .select-item:hover {
+    background: rgba(0, 0, 0, 0.01);
+}
+
 body.dynamic-blur .slider-value-input {
     background: rgba(var(--surface-color-rgb), 0.5);
     backdrop-filter: blur(120px) saturate(1.6);
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .switch input:not(:checked) + .slider {
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.dynamic-blur .switch .slider:before {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 @media (prefers-color-scheme: light) {
@@ -700,7 +854,7 @@ body.dynamic-blur .slider-value-input {
     }
 
     body.dynamic-blur .apply-btn {
-        background: rgba(26, 115, 232, 0.85) !important;
+        background: rgba(var(--scheme-accent-rgb), 0.85) !important;
         border: 1px solid rgba(0, 0, 0, 0.08) !important;
     }
 
@@ -723,6 +877,71 @@ body.dynamic-blur .slider-value-input {
         background: rgba(225, 228, 232, 0.7) !important;
         border: 1px solid rgba(0, 0, 0, 0.1) !important;
     }
+
+    body.dynamic-blur .switch input:not(:checked) + .slider {
+        background: rgba(0, 0, 0, 0.07) !important;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.dynamic-blur .switch .slider:before {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+    }
+}
+
+/* 高级视觉 - 设置菜单操作按钮 */
+body.dynamic-blur .settings-plus-btn {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .settings-plus-btn:hover {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    transform: scale(1.1);
+}
+
+body.dynamic-blur .settings-plus-btn:active {
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .settings-import-btn {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .settings-import-btn:hover {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    transform: scale(1.1);
+}
+
+body.dynamic-blur .settings-import-btn:active {
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper:hover {
+    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    transform: scale(1.05);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper:active {
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-text {
+    color: var(--text-color) !important;
 }
 
 /* 右键菜单 */
@@ -788,6 +1007,65 @@ body.dynamic-blur .context-menu.show .context-menu-item:hover .context-menu-icon
     }
 }
 
+/* 侧边栏容器 - 高级进/退动画 */
+body.dynamic-blur .quick-access-sidebar-container {
+    transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1),
+        opacity 0.3s ease,
+        filter 0.3s ease;
+    transform-origin: right center;
+}
+
+body.dynamic-blur .quick-access-sidebar-container.visible {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+}
+
+body.dynamic-blur .quick-access-sidebar-container.hiding {
+    transform: translateX(calc(100% + 20px)) scale(0.9);
+    opacity: 0;
+    filter: blur(4px);
+}
+
+/* 侧边栏文字颜色（与右键菜单一致） */
+body.dynamic-blur .quick-access-sidebar-link {
+    color: #1a1a1a;
+}
+
+body.dynamic-blur .quick-access-sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.45);
+    color: #1a1a1a;
+}
+
+body.dynamic-blur .quick-access-sidebar-add-btn {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+body.dynamic-blur .quick-access-sidebar-add-btn:hover {
+    background: rgba(255, 255, 255, 0.45);
+    color: #1a1a1a;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur .quick-access-sidebar-link {
+        color: #c8c8c8;
+    }
+
+    body.dynamic-blur .quick-access-sidebar-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #dcdcdc;
+    }
+
+    body.dynamic-blur .quick-access-sidebar-add-btn {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    body.dynamic-blur .quick-access-sidebar-add-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #dcdcdc;
+    }
+}
+
 /* 文字颜色 */
 body.dynamic-blur:not(.scrolled) .search-input,
 body.dynamic-blur:not(.scrolled) .engine-btn,
@@ -801,13 +1079,14 @@ body.dynamic-blur:not(.scrolled) .search-input::placeholder {
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.dynamic-blur:not(.scrolled) .search-input,
     body.dynamic-blur:not(.scrolled) .engine-btn,
     body.dynamic-blur:not(.scrolled) .quick-access-btn,
     body.dynamic-blur:not(.scrolled) .ooo-badge {
         color: #ffffff;
     }
-    
+
     body.dynamic-blur:not(.scrolled) .search-input::placeholder {
         color: rgba(255, 255, 255, 0.5);
     }
@@ -825,14 +1104,27 @@ body.scrolled.dynamic-blur .search-input::placeholder {
 }
 
 @media (prefers-color-scheme: dark) {
+
     body.scrolled.dynamic-blur .search-input,
     body.scrolled.dynamic-blur .engine-btn,
     body.scrolled.dynamic-blur .quick-access-btn,
     body.scrolled.dynamic-blur .ooo-badge {
         color: #ffffff;
     }
-    
+
     body.scrolled.dynamic-blur .search-input::placeholder {
         color: rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* 黑白配色 - 暀色模式 + 高级视觉：引擎按钮黑色文字 */
+@media (prefers-color-scheme: dark) {
+    body.color-scheme-black-white.dynamic-blur .engine-btn.active,
+    body.color-scheme-black-white.dynamic-blur .apply-btn,
+    body.color-scheme-black-white.dynamic-blur .settings-plus-btn,
+    body.color-scheme-black-white.dynamic-blur .upload-btn,
+    body.color-scheme-black-white.dynamic-blur .settings-import-btn,
+    body.color-scheme-black-white.dynamic-blur .wallpaper-fill-toggle-wrapper {
+        color: #000000 !important;
     }
 }

@@ -21,7 +21,7 @@
         const settings = JSON.parse(localStorage.getItem('oooInterfaceSettings') || '{}');
         const isDynamicBlur = settings.dynamicBlur === true;
         const isEnhancedDisplay = settings.dynamicBlur === true && settings.enhancedDisplay === true;
-        
+
         if (isDynamicBlur) {
             document.body.classList.add('dynamic-blur');
         }
@@ -29,7 +29,7 @@
             document.body.classList.add('enhanced-display');
         }
     } catch (e) {
-        console.log('Failed to read visual effects settings');
+        console.warn('Failed to read visual effects settings');
     }
 })();
 
@@ -153,9 +153,35 @@ window.addEventListener('scroll', function () {
     updateButtonState();
 });
 
+// 与主页面铭牌彩蛋完全同款（样式 + 文本信息）
+let infoPopupOpen = false;
+
+function getOperatingSystem() {
+    const userAgent = navigator.userAgent;
+    if (userAgent.includes('Windows')) return 'Windows';
+    if (userAgent.includes('Mac OS')) return 'Mac OS';
+    if (userAgent.includes('Linux')) return 'Linux';
+    if (userAgent.includes('Android')) return 'Android';
+    if (userAgent.includes('iOS')) return 'iOS';
+    return 'Unknown';
+}
+
+function getMemoryUsage(type) {
+    // 浏览器环境下无法直接获取内存信息，这里模拟返回
+    if (type === 'pss') {
+        return '~50MB';
+    } else if (type === 'rss') {
+        return '~100MB';
+    }
+    return 'N/A';
+}
+
 function showInfoPopup() {
+    if (infoPopupOpen) return;
+    infoPopupOpen = true;
+
     const popup = document.createElement('div');
-    popup.id = 'infoPopup';
+    popup.className = 'ooo-info-popup';
     popup.style.cssText = `
         position: fixed;
         top: 50%;
@@ -166,16 +192,9 @@ function showInfoPopup() {
         z-index: 10000;
         max-width: 400px;
         font-family: 'Courier New', monospace;
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     `;
 
-    const isDarkMode = document.body.classList.contains('dark-theme');
-    if (isDarkMode) {
-        popup.style.backgroundColor = '#2a2a2a';
-        popup.style.color = '#e8eaed';
-    }
-
+    // 创建弹窗内容
     const content = document.createElement('div');
     content.style.cssText = `
         display: flex;
@@ -183,8 +202,9 @@ function showInfoPopup() {
         gap: 15px;
     `;
 
+    // 版本信息
     const version = document.createElement('p');
-    version.textContent = `[component.over]${this.currentVersion}`;
+    version.textContent = `[component.over]${VERSION}`;
     version.style.cssText = `
         font-size: 14px;
         color: #000000;
@@ -192,34 +212,90 @@ function showInfoPopup() {
         word-wrap: break-word;
     `;
 
-    infoItems.forEach(text => {
-        const p = document.createElement('p');
-        p.textContent = text;
-        p.style.cssText = `
-            font-size: 14px;
-            margin: 0;
-            word-wrap: break-word;
-            color: ${isDarkMode ? '#e8eaed' : '#000000'};
-        `;
-        content.appendChild(p);
-    });
+    // 操作系统
+    const os = document.createElement('p');
+    const osName = getOperatingSystem();
+    os.textContent = `[devtype]${osName}`;
+    os.style.cssText = `
+        font-size: 14px;
+        color: #000000;
+        margin: 0;
+        word-wrap: break-word;
+    `;
 
+    // 版本标志
+    const beta = document.createElement('p');
+    beta.textContent = `[package.flag]${PACKAGE_FLAG}`;
+    beta.style.cssText = `
+        font-size: 14px;
+        color: #000000;
+        margin: 0;
+        word-wrap: break-word;
+    `;
+
+    // 包ID
+    const packageId = document.createElement('p');
+    packageId.textContent = `[package.id]${PACKAGE_ID}`;
+    packageId.style.cssText = `
+        font-size: 14px;
+        color: #000000;
+        margin: 0;
+        word-wrap: break-word;
+    `;
+
+    // 实际使用内存
+    const pss = document.createElement('p');
+    const pssValue = getMemoryUsage('pss');
+    pss.textContent = `[pss]${pssValue}`;
+    pss.style.cssText = `
+        font-size: 14px;
+        color: #000000;
+        margin: 0;
+        word-wrap: break-word;
+    `;
+
+    // 常驻内存大小
+    const rss = document.createElement('p');
+    const rssValue = getMemoryUsage('rss');
+    rss.textContent = `[rss]${rssValue}`;
+    rss.style.cssText = `
+        font-size: 14px;
+        color: #000000;
+        margin: 0;
+        word-wrap: break-word;
+    `;
+
+    // 组装弹窗
+    content.appendChild(version);
+    content.appendChild(os);
+    content.appendChild(beta);
+    content.appendChild(packageId);
+    content.appendChild(pss);
+    content.appendChild(rss);
     popup.appendChild(content);
+
+    // 添加到页面
     document.body.appendChild(popup);
 
-    popup.addEventListener('click', () => {
-        document.body.removeChild(popup);
-    });
+    // ESC键关闭弹窗（带 parentNode 检查避免重复移除报错，并及时注销监听器避免泄漏）
+    const closePopup = () => {
+        if (popup.parentNode) {
+            popup.parentNode.removeChild(popup);
+        }
+        document.removeEventListener('keydown', handleEsc);
+        popup.removeEventListener('click', closePopup);
+        infoPopupOpen = false;
+    };
 
     const handleEsc = (e) => {
         if (e.key === 'Escape') {
-            if (document.getElementById('infoPopup')) {
-                document.body.removeChild(popup);
-            }
-            document.removeEventListener('keydown', handleEsc);
+            closePopup();
         }
     };
     document.addEventListener('keydown', handleEsc);
+
+    // 点击弹窗也可关闭，避免弹窗长期驻留时监听器泄漏
+    popup.addEventListener('click', closePopup);
 }
 
 const VERSIONS_JSON_URL = 'https://rudan177.github.io/OOOInterface/info/versions.json';
@@ -240,48 +316,59 @@ function loadVersionsData() {
 function renderVersions(versions) {
     const container = document.getElementById('versionsList');
     if (!container) return;
-    
+
     if (versions.length === 0) {
         container.innerHTML = '<div class="changelog-loading">暂无版本数据</div>';
         return;
     }
-    
+
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.gap = '12px';
     container.innerHTML = '';
-    
+
+    // 远程 JSON 内容一律用 textContent 写入，避免 innerHTML 拼接导致 XSS
     versions.forEach((version, index) => {
         const card = document.createElement('div');
         card.className = 'version-card';
         card.style.setProperty('--i', index);
-        
-        let contentHTML = `
-            <div class="version-card-title">
-                <span class="version-card-badge">${version.version}</span>
-                ${version.title}
-            </div>
-            <div class="version-card-content">
-        `;
-        
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'version-card-title';
+
+        const badge = document.createElement('span');
+        badge.className = 'version-card-badge';
+        badge.textContent = version.version || '';
+        titleDiv.appendChild(badge);
+        titleDiv.appendChild(document.createTextNode(version.title || ''));
+        card.appendChild(titleDiv);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'version-card-content';
+
         if (version.content && Array.isArray(version.content)) {
             version.content.forEach(item => {
                 if (item.type === 'paragraph') {
-                    contentHTML += `<p>${item.text}</p>`;
+                    const p = document.createElement('p');
+                    p.textContent = item.text || '';
+                    contentDiv.appendChild(p);
                 } else if (item.type === 'heading') {
-                    contentHTML += `<h3>${item.text}</h3>`;
+                    const h3 = document.createElement('h3');
+                    h3.textContent = item.text || '';
+                    contentDiv.appendChild(h3);
                 } else if (item.type === 'list' && item.items) {
-                    contentHTML += '<ol>';
+                    const ol = document.createElement('ol');
                     item.items.forEach(li => {
-                        contentHTML += `<li>${li}</li>`;
+                        const liEl = document.createElement('li');
+                        liEl.textContent = li || '';
+                        ol.appendChild(liEl);
                     });
-                    contentHTML += '</ol>';
+                    contentDiv.appendChild(ol);
                 }
             });
         }
-        
-        contentHTML += '</div>';
-        card.innerHTML = contentHTML;
+
+        card.appendChild(contentDiv);
         container.appendChild(card);
     });
 }
@@ -330,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 });
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('version-text').textContent = VERSION;
     document.getElementById('version-info').textContent = VERSION;
     document.getElementById('product-name').textContent = PRODUCT_NAME;
