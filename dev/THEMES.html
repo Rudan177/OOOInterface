@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-bind="pageTitle"></title>
+    <link rel="stylesheet" href="../doc/doc.css">
+</head>
+
+<body>
+    <div class="doc-page">
+        <nav class="doc-nav">
+            <a href="../index.html"><svg viewBox="0 0 24 24">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>返回</a>
+            <span class="doc-brand" data-bind="pageBrand"></span>
+        </nav>
+
+        <header class="doc-head">
+            <h1 data-bind="pageTitleMain"></h1>
+            <p class="doc-subtitle" data-bind="pageSubtitle"></p>
+        </header>
+
+        <div class="doc-meta" id="docMeta">
+            <div class="doc-meta-item">
+                <div class="doc-meta-label">文档编号</div>
+                <div class="doc-meta-value" data-bind="docNumber"></div>
+            </div>
+            <div class="doc-meta-item">
+                <div class="doc-meta-label">版本</div>
+                <div class="doc-meta-value" data-bind="version"></div>
+            </div>
+            <div class="doc-meta-item">
+                <div class="doc-meta-label">发布日期</div>
+                <div class="doc-meta-value" data-bind="date"></div>
+            </div>
+            <div class="doc-meta-item">
+                <div class="doc-meta-label">状态</div>
+                <div class="doc-meta-value status-active" data-bind="status"></div>
+            </div>
+        </div>
+
+        <div class="doc-body">
+            <nav class="tab-sidebar" id="tabNav">
+                <div class="tab-sidebar-header">
+                    <div class="tab-sidebar-title">目录</div>
+                    <button class="merge-toggle" id="mergeToggle" aria-label="切换滚动模式">
+                        <svg viewBox="0 0 20 20">
+                            <line x1="4" y1="6" x2="16" y2="6"/>
+                            <line x1="4" y1="14" x2="16" y2="14"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="tab-sidebar-scroll" id="tabSidebarScroll"></div>
+            </nav>
+
+            <div class="tab-content" id="tabContent"></div>
+        </div>
+
+        <footer class="doc-footer">
+            <span data-bind="footerLeft"></span>
+            <span data-bind="footerRight"></span>
+        </footer>
+    </div>
+
+    <script src="OOOInterface_29_THEMES.js"></script>
+    <script src="../doc/doc.js"></script>
+</body>
+
+</html>

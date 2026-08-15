@@ -1,13 +1,13 @@
 var DOC_DATA = {
     "meta": {
         "docNumber": "BRD-OOO-260723.THEME",
-        "version": "v1.1:02",
-        "date": "2026-07-23",
+        "version": "v2.1:03",
+        "date": "2026-08-15",
         "status": "现行有效",
         "pageTitle": "主题文档编写规范",
         "pageBrand": "OOOInterface",
         "pageTitleMain": "主题文档编写规范",
-        "pageSubtitle": "OOOInterface 29 主题系统开发指南",
+        "pageSubtitle": "OOOInterface 主题系统开发指南",
         "footerLeft": "OOOInterface",
         "footerRight": "ByRUDAN"
     },
