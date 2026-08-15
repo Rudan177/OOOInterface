@@ -2,11 +2,11 @@
   "1": {
   "title": "通知",
   "link": "https://ooointerface.byrudan.workers.dev/OUA/PB",
-  "text": "OOOInterface易升进化测试！<br>OOOInterface 易升 0.9.3现已发布，点击“相关链接”前往发布页。"
+  "text": "OOOInterface易升进化测试！OOOInterface 易升 0.9.3现已发布，点击“相关链接”前往发布页。"
   },
   "2":{
     "title":"通知",
-    "link":"rudan177.github.io/OOOInterface/",
+    "link":"https://rudan177.github.io/OOOInterface/",
     "text":"OOOInterface 开发文档现已正式发布。OOOInterface 用户使用指南现已正式发布。"
   }
 }
