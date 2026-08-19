@@ -73,6 +73,7 @@ class OOOInterface {
         this.isFirstRun = true;
         this.userChangedLogo = false; // 标记用户是否手动更改过Logo
         this.modalScrollHandler = null;
+        this.backendConnected = false; // OUA 后端连接状态，通过 localStorage 与 about.js 同步
         this.currentVersion = VERSION; // 使用 version.js 中的版本号
         this._sidebarPushing = false; // 侧边栏壁纸推入状态
         this.statusBarTimer = null;
@@ -1395,6 +1396,8 @@ class OOOInterface {
 
     // 显示信息弹窗
     showInfoPopup() {
+        // 同步 UAC 连接状态
+        try { this.backendConnected = localStorage.getItem('oooBackendConnected') === 'true'; } catch (_) {}
         if (this.infoPopupOpen) return;
         this.infoPopupOpen = true;
 
@@ -1461,22 +1464,10 @@ class OOOInterface {
             word-wrap: break-word;
         `;
 
-        // 实际使用内存
-        const pss = document.createElement('p');
-        const pssValue = this.getMemoryUsage('pss');
-        pss.textContent = `[pss]${pssValue}`;
-        pss.style.cssText = `
-            font-size: 14px;
-            color: #000000;
-            margin: 0;
-            word-wrap: break-word;
-        `;
-
-        // 常驻内存大小
-        const rss = document.createElement('p');
-        const rssValue = this.getMemoryUsage('rss');
-        rss.textContent = `[rss]${rssValue}`;
-        rss.style.cssText = `
+        // 后端连接状态
+        const uac = document.createElement('p');
+        uac.textContent = `[UAC]${this.getMemoryUsage('uac')}`;
+        uac.style.cssText = `
             font-size: 14px;
             color: #000000;
             margin: 0;
@@ -1488,8 +1479,7 @@ class OOOInterface {
         content.appendChild(os);
         content.appendChild(beta);
         content.appendChild(packageId);
-        content.appendChild(pss);
-        content.appendChild(rss);
+        content.appendChild(uac);
         popup.appendChild(content);
 
         // 添加到页面
@@ -1666,11 +1656,8 @@ class OOOInterface {
 
     // 获取内存使用信息
     getMemoryUsage(type) {
-        // 浏览器环境下无法直接获取内存信息，这里模拟返回
-        if (type === 'pss') {
-            return '~50MB';
-        } else if (type === 'rss') {
-            return '~100MB';
+        if (type === 'uac') {
+            return String(this.backendConnected);
         }
         return 'N/A';
     }
