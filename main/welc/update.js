@@ -19,6 +19,7 @@ var WELC_CONTENT = {
         {
             header: '体验优化',
             items: [
+                '修改主页面基本图标（从Google更改为OOOInterface图标）',
                 '修复了一些已知问题'
             ]
         }
