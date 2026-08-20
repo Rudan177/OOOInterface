@@ -69,7 +69,7 @@ class WeatherWidget extends WidgetBase {
         this.leftPanel.appendChild(this.iconEl);
         this.leftPanel.appendChild(this.tempEl);
 
-        // 右侧：城市 + 描述 + 详情
+        // 右侧：城市 + 描述 + 湿度 + 风速
         this.rightPanel = document.createElement('div');
         this.rightPanel.className = 'widget-weather-right';
 
@@ -81,6 +81,14 @@ class WeatherWidget extends WidgetBase {
 
         this.extraEl = document.createElement('div');
         this.extraEl.className = 'widget-weather-extra';
+
+        this.humidityEl = document.createElement('span');
+        this.humidityEl.className = 'widget-weather-extra-item';
+        this.windEl = document.createElement('span');
+        this.windEl.className = 'widget-weather-extra-item';
+
+        this.extraEl.appendChild(this.humidityEl);
+        this.extraEl.appendChild(this.windEl);
 
         this.rightPanel.appendChild(this.cityEl);
         this.rightPanel.appendChild(this.descEl);
@@ -96,7 +104,8 @@ class WeatherWidget extends WidgetBase {
             this.tempEl.textContent = '--°';
             this.cityEl.textContent = this.city;
             this.descEl.textContent = '加载中…';
-            this.extraEl.textContent = '';
+            this.humidityEl.textContent = '';
+            this.windEl.textContent = '';
         } else {
             this.iconEl.textContent = 'wb_sunny';
             this.tempEl.textContent = '--°';
@@ -167,8 +176,9 @@ class WeatherWidget extends WidgetBase {
         this.descEl.classList.remove('widget-weather-error');
         this.cityEl.textContent = w.city || this.city;
 
-        if (this.isRect && this.extraEl) {
-            this.extraEl.textContent = '湿度 ' + w.humidity + '% · 风速 ' + w.wind + 'km/h';
+        if (this.isRect && this.humidityEl) {
+            this.humidityEl.textContent = w.humidity + '%';
+            this.windEl.textContent = w.wind + 'km/h';
         }
     }
 

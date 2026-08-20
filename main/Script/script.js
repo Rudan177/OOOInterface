@@ -10531,7 +10531,6 @@ OOOInterface.prototype.WIDGET_TYPES = {
     'tasks':    { name: '任务',   icon: 'checklist',       defaultSize: 'rectangle' },
     'ai-agent': { name: 'AI Agent', icon: 'smart_toy',     defaultSize: 'square' },
     'email':    { name: '邮箱',   icon: 'mail',            defaultSize: 'square' },
-    'audio':    { name: '音频播控', icon: 'music_note',    defaultSize: 'rectangle' }
 };
 
 // 小组件实例化
@@ -10549,7 +10548,6 @@ OOOInterface.prototype.createWidgetInstance = function (config) {
         case 'tasks': return new TasksWidget(baseConfig);
         case 'ai-agent': return new AiAgentWidget(baseConfig);
         case 'email': return new EmailWidget(baseConfig);
-        case 'audio': return new AudioWidget(baseConfig);
         default: return null;
     }
 };
@@ -11076,9 +11074,9 @@ OOOInterface.prototype.getWidgetSubtitle = function (widget) {
         case 'email': return data.apiUrl ? 'API：' + data.apiUrl : (data.provider || 'gmail');
         case 'tasks': {
             const n = Array.isArray(data.items) ? data.items.length : 0;
-            return n + ' 个任务';
+            const prefix = data.googleConnected ? 'Google Tasks' : '任务';
+            return prefix + (n ? ' · ' + n + ' 个' : '');
         }
-        case 'audio': return '媒体控制';
         case 'clock': return '本地时间';
         default: return '';
     }
@@ -11290,7 +11288,7 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
 
     // 尺寸分段滑块（iOS 26 分段切换器风格：左正方形、右长方形）
     const forceSquare = (type === 'clock' || type === 'weather') && !meta.allowBoth;
-    const forceRect = (type === 'tasks' || type === 'audio');
+    const forceRect = (type === 'tasks');
     const canChoose = !forceSquare && !forceRect;
 
     const sizeRow = document.createElement('div');
@@ -11351,12 +11349,29 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
         cityRow.className = 'widget-add-form-row';
         const cityLabel = document.createElement('label');
         cityLabel.textContent = '城市（默认南昌，留空自动定位）';
+        cityRow.appendChild(cityLabel);
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'widget-input-row';
         const cityInput = document.createElement('input');
         cityInput.type = 'text';
         cityInput.placeholder = '如：南昌';
         cityInput.value = data.city && data.city !== '当前位置' ? data.city : '';
-        cityRow.appendChild(cityLabel);
-        cityRow.appendChild(cityInput);
+        inputWrap.appendChild(cityInput);
+        const geoBtn = document.createElement('button');
+        geoBtn.className = 'widget-input-btn';
+        geoBtn.innerHTML = '<span class="material-icons" style="font-size:15px">my_location</span>定位';
+        geoBtn.addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    pos => { cityInput.value = '当前位置'; },
+                    () => { cityInput.value = '定位失败，请手动输入'; }
+                );
+            } else {
+                cityInput.value = '浏览器不支持定位';
+            }
+        });
+        inputWrap.appendChild(geoBtn);
+        cityRow.appendChild(inputWrap);
         form.appendChild(cityRow);
         extraFields.city = cityInput;
     }
@@ -11366,14 +11381,26 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
         portRow.className = 'widget-add-form-row';
         const portLabel = document.createElement('label');
         portLabel.textContent = '端口号';
+        portRow.appendChild(portLabel);
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'widget-input-row';
         const portInput = document.createElement('input');
         portInput.type = 'number';
         portInput.min = '1';
         portInput.max = '65535';
         portInput.placeholder = '如：8899';
         portInput.value = data.port || '';
-        portRow.appendChild(portLabel);
-        portRow.appendChild(portInput);
+        inputWrap.appendChild(portInput);
+        const testBtn = document.createElement('button');
+        testBtn.className = 'widget-input-btn';
+        testBtn.innerHTML = '<span class="material-icons" style="font-size:15px">speed</span>测试';
+        testBtn.addEventListener('click', () => {
+            const port = portInput.value.trim();
+            if (!port) { portInput.value = '端口号'; return; }
+            self.showNotification('正在测试 127.0.0.1:' + port + '…');
+        });
+        inputWrap.appendChild(testBtn);
+        portRow.appendChild(inputWrap);
         const hint = document.createElement('div');
         hint.className = 'widget-add-form-hint';
         hint.textContent = 'AI Agent 服务地址为 127.0.0.1:' + (data.port || '端口号') + '，需本地已运行对应服务';
@@ -11383,6 +11410,7 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     }
 
     if (type === 'email') {
+        // 服务商选择
         const providerRow = document.createElement('div');
         providerRow.className = 'widget-add-form-row';
         const providerLabel = document.createElement('label');
@@ -11405,23 +11433,230 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
         providerRow.appendChild(providerSelect);
         form.appendChild(providerRow);
 
+        extraFields.provider = providerSelect;
+
+        // Gmail Google 连接面板
+        const gmailPanel = document.createElement('div');
+        gmailPanel.className = 'widget-add-form-row widget-google-tasks-panel';
+        gmailPanel.style.display = (providerSelect.value === 'gmail') ? '' : 'none';
+
+        const gmailIsConnected = !!(data && data.googleConnected);
+
+        const topRow = document.createElement('div');
+        topRow.className = 'gtasks-top';
+        const statusDot = document.createElement('span');
+        statusDot.className = 'gtasks-dot' + (gmailIsConnected ? ' on' : '');
+        const statusLabel = document.createElement('span');
+        statusLabel.className = 'gtasks-top-label';
+        statusLabel.textContent = gmailIsConnected ? 'Gmail 已连接' : 'Gmail 未连接';
+        const infoBtn = document.createElement('button');
+        infoBtn.className = 'gtasks-info-btn';
+        infoBtn.innerHTML = '<span class="material-icons">info_outline</span>';
+        infoBtn.title = '查看连接教程';
+        infoBtn.addEventListener('click', () => this.showGmailTutorial());
+        topRow.appendChild(statusDot);
+        topRow.appendChild(statusLabel);
+        topRow.appendChild(infoBtn);
+        gmailPanel.appendChild(topRow);
+
+        if (gmailIsConnected) {
+            const emailEl = document.createElement('div');
+            emailEl.className = 'gtasks-email';
+            emailEl.textContent = data.googleEmail || '';
+            gmailPanel.appendChild(emailEl);
+
+            const disconnectBtn = document.createElement('button');
+            disconnectBtn.className = 'gtasks-btn gtasks-btn-disconnect';
+            disconnectBtn.textContent = '断开连接';
+            disconnectBtn.addEventListener('click', () => {
+                data.googleConnected = false;
+                data.googleEmail = '';
+                data.googleToken = '';
+                self.saveWidgetSettings();
+                self.showNotification('已断开 Gmail');
+                self.showWidgetConfigForm(listContainer, widget, presetType);
+            });
+            gmailPanel.appendChild(disconnectBtn);
+        } else {
+            const inputRow = document.createElement('div');
+            inputRow.className = 'gtasks-input-row';
+
+            const clientIdInput = document.createElement('input');
+            clientIdInput.type = 'text';
+            clientIdInput.className = 'gtasks-clientid-input';
+            clientIdInput.placeholder = 'Client ID';
+            clientIdInput.value = data.googleClientId || '';
+            clientIdInput.maxLength = 200;
+
+            const connectBtn = document.createElement('button');
+            connectBtn.className = 'gtasks-btn gtasks-btn-connect';
+            connectBtn.innerHTML = '<span class="material-icons">link</span>连接';
+            connectBtn.addEventListener('click', async () => {
+                const clientId = clientIdInput.value.trim();
+                if (!clientId || !clientId.endsWith('.apps.googleusercontent.com')) {
+                    self.showNotification('请输入有效的 Client ID');
+                    clientIdInput.focus();
+                    return;
+                }
+                connectBtn.disabled = true;
+                connectBtn.innerHTML = '<span class="material-icons">hourglass_top</span>';
+                try {
+                    const wi = (self.widgetInstances || []).find(w => w.id === widget.id);
+                    if (wi && typeof wi.connectGoogle === 'function') {
+                        await wi.connectGoogle(clientId);
+                    } else {
+                        throw new Error('小组件实例未就绪');
+                    }
+                    self.showNotification('Gmail 已连接');
+                    self.showWidgetConfigForm(listContainer, widget, presetType);
+                } catch (e) {
+                    self.showNotification('连接失败：' + (e.message || '请检查 Client ID'));
+                    connectBtn.disabled = false;
+                    connectBtn.innerHTML = '<span class="material-icons">link</span>连接';
+                }
+            });
+
+            inputRow.appendChild(clientIdInput);
+            inputRow.appendChild(connectBtn);
+            gmailPanel.appendChild(inputRow);
+        }
+
+        form.appendChild(gmailPanel);
+
+        // 切换服务商时显示/隐藏 Gmail 面板
+        providerSelect.addEventListener('change', () => {
+            gmailPanel.style.display = providerSelect.value === 'gmail' ? '' : 'none';
+        });
+
+        // 其他服务商：API 地址（非 Gmail 时显示）
         const apiRow = document.createElement('div');
         apiRow.className = 'widget-add-form-row';
+        apiRow.style.display = (providerSelect.value === 'gmail') ? 'none' : '';
         const apiLabel = document.createElement('label');
         apiLabel.textContent = '邮件 API 地址（可选）';
+        apiRow.appendChild(apiLabel);
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'widget-input-row';
         const apiInput = document.createElement('input');
         apiInput.type = 'text';
         apiInput.placeholder = '如：http://127.0.0.1:8899/api/emails';
         apiInput.value = data.apiUrl || '';
-        apiRow.appendChild(apiLabel);
-        apiRow.appendChild(apiInput);
+        inputWrap.appendChild(apiInput);
+        const testBtn = document.createElement('button');
+        testBtn.className = 'widget-input-btn';
+        testBtn.innerHTML = '<span class="material-icons" style="font-size:15px">test_activity</span>测试';
+        testBtn.addEventListener('click', () => {
+            const url = apiInput.value.trim();
+            if (!url) { apiInput.value = '请输入 API 地址'; return; }
+            self.showNotification('正在测试 ' + url + '…');
+        });
+        inputWrap.appendChild(testBtn);
+        apiRow.appendChild(inputWrap);
         const apiHint = document.createElement('div');
         apiHint.className = 'widget-add-form-hint';
         apiHint.textContent = '留空则仅提供网页版入口；配置后返回 { emails: [{from, subject, time}] }';
         apiRow.appendChild(apiHint);
         form.appendChild(apiRow);
-        extraFields.provider = providerSelect;
         extraFields.apiUrl = apiInput;
+
+        // 切换时同步显示/隐藏 API 行
+        providerSelect.addEventListener('change', () => {
+            apiRow.style.display = providerSelect.value === 'gmail' ? 'none' : '';
+        });
+    }
+
+    if (type === 'tasks') {
+        const tasksRow = document.createElement('div');
+        tasksRow.className = 'widget-add-form-row widget-google-tasks-panel';
+        const isConnected = !!(data && data.googleConnected);
+
+        // 顶栏：状态 + info 按钮
+        const topRow = document.createElement('div');
+        topRow.className = 'gtasks-top';
+
+        const statusDot = document.createElement('span');
+        statusDot.className = 'gtasks-dot' + (isConnected ? ' on' : '');
+
+        const statusLabel = document.createElement('span');
+        statusLabel.className = 'gtasks-top-label';
+        statusLabel.textContent = isConnected ? 'Google Tasks 已连接' : 'Google Tasks 未连接';
+
+        const infoBtn = document.createElement('button');
+        infoBtn.className = 'gtasks-info-btn';
+        infoBtn.innerHTML = '<span class="material-icons">info_outline</span>';
+        infoBtn.title = '查看连接教程';
+        infoBtn.addEventListener('click', () => this.showGoogleTasksTutorial());
+
+        topRow.appendChild(statusDot);
+        topRow.appendChild(statusLabel);
+        topRow.appendChild(infoBtn);
+        tasksRow.appendChild(topRow);
+
+        if (isConnected) {
+            // 已连接：显示邮箱 + 断开按钮
+            const emailEl = document.createElement('div');
+            emailEl.className = 'gtasks-email';
+            emailEl.textContent = data.googleEmail || '';
+            tasksRow.appendChild(emailEl);
+
+            const disconnectBtn = document.createElement('button');
+            disconnectBtn.className = 'gtasks-btn gtasks-btn-disconnect';
+            disconnectBtn.textContent = '断开连接';
+            disconnectBtn.addEventListener('click', () => {
+                data.googleConnected = false;
+                data.googleEmail = '';
+                data.googleToken = '';
+                self.saveWidgetSettings();
+                self.showNotification('已断开 Google Tasks');
+                self.showWidgetConfigForm(listContainer, widget, presetType);
+            });
+            tasksRow.appendChild(disconnectBtn);
+        } else {
+            // 未连接：Client ID 输入 + 连接按钮（同行）
+            const inputRow = document.createElement('div');
+            inputRow.className = 'gtasks-input-row';
+
+            const clientIdInput = document.createElement('input');
+            clientIdInput.type = 'text';
+            clientIdInput.className = 'gtasks-clientid-input';
+            clientIdInput.placeholder = 'Client ID';
+            clientIdInput.value = data.googleClientId || '';
+            clientIdInput.maxLength = 200;
+
+            const connectBtn = document.createElement('button');
+            connectBtn.className = 'gtasks-btn gtasks-btn-connect';
+            connectBtn.innerHTML = '<span class="material-icons">link</span>连接';
+            connectBtn.addEventListener('click', async () => {
+                const clientId = clientIdInput.value.trim();
+                if (!clientId || !clientId.endsWith('.apps.googleusercontent.com')) {
+                    self.showNotification('请输入有效的 Client ID');
+                    clientIdInput.focus();
+                    return;
+                }
+                connectBtn.disabled = true;
+                connectBtn.innerHTML = '<span class="material-icons">hourglass_top</span>';
+                try {
+                    const wi = (self.widgetInstances || []).find(w => w.id === widget.id);
+                    if (wi && typeof wi.connectGoogle === 'function') {
+                        await wi.connectGoogle(clientId);
+                    } else {
+                        throw new Error('小组件实例未就绪');
+                    }
+                    self.showNotification('Google Tasks 已连接');
+                    self.showWidgetConfigForm(listContainer, widget, presetType);
+                } catch (e) {
+                    self.showNotification('连接失败：' + (e.message || '请检查 Client ID'));
+                    connectBtn.disabled = false;
+                    connectBtn.innerHTML = '<span class="material-icons">link</span>连接';
+                }
+            });
+
+            inputRow.appendChild(clientIdInput);
+            inputRow.appendChild(connectBtn);
+            tasksRow.appendChild(inputRow);
+        }
+
+        form.appendChild(tasksRow);
     }
 
     formView.appendChild(form);
@@ -11533,6 +11768,75 @@ OOOInterface.prototype.getEmailProviderUrl = function (provider) {
         custom: ''
     };
     return urls[provider] || '';
+};
+
+// Google Tasks 连接教程弹窗
+OOOInterface.prototype.showGoogleTasksTutorial = function () {
+    const overlay = document.createElement('div');
+    overlay.className = 'gtasks-tutorial-overlay';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const card = document.createElement('div');
+    card.className = 'gtasks-tutorial-card';
+
+    card.innerHTML = [
+        '<div class="gtasks-tutorial-header">',
+        '  <span class="material-icons">school</span>',
+        '  <span>连接 Google Tasks 教程</span>',
+        '</div>',
+        '<div class="gtasks-tutorial-steps">',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">1</span><div><b>打开</b> <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a>，登录你的 Google 账号</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">2</span><div><b>创建项目</b>（或选择已有项目），点击顶部项目选择器 → 新建项目</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">3</span><div><b>启用 API</b>：左侧菜单 → API 和服务 → 库 → 搜索 "Google Tasks API" → 点击启用</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">4</span><div><b>配置 OAuth 同意屏幕</b>：API 和服务 → OAuth 同意屏幕 → 选"外部" → 填写应用名称 → 保存</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">5</span><div><b>创建凭据</b>：API 和服务 → 凭据 → 创建 OAuth 客户端 ID → 应用类型选 <b>Chrome 扩展</b></div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">6</span><div><b>填写扩展 ID</b>：打开 <code>chrome://extensions</code> → 复制本扩展的 ID → 粘贴到"已授权的重定向 URI"中，格式为 <code>https://&lt;扩展ID&gt;.chromiumapp.org/</code></div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">7</span><div><b>复制 Client ID</b>：创建完成后复制 Client ID（以 <code>.apps.googleusercontent.com</code> 结尾），粘贴到上方输入框</div></div>',
+        '</div>',
+        '<div class="gtasks-tutorial-footer">',
+        '  <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="gtasks-btn gtasks-btn-connect" style="text-decoration:none">',
+        '    <span class="material-icons">open_in_new</span>打开 Google Cloud Console',
+        '  </a>',
+        '</div>'
+    ].join('');
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+};
+
+// Gmail 连接教程弹窗
+OOOInterface.prototype.showGmailTutorial = function () {
+    const overlay = document.createElement('div');
+    overlay.className = 'gtasks-tutorial-overlay';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const card = document.createElement('div');
+    card.className = 'gtasks-tutorial-card';
+
+    card.innerHTML = [
+        '<div class="gtasks-tutorial-header">',
+        '  <span class="material-icons">school</span>',
+        '  <span>连接 Gmail 教程</span>',
+        '</div>',
+        '<div class="gtasks-tutorial-steps">',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">1</span><div><b>打开</b> <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a>，登录你的 Google 账号</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">2</span><div><b>创建项目</b>（或选择已有项目），点击顶部项目选择器 → 新建项目</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">3</span><div><b>启用 API</b>：左侧菜单 → API 和服务 → 库 → 搜索 "Gmail API" → 点击启用</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">4</span><div><b>配置 OAuth 同意屏幕</b>：API 和服务 → OAuth 同意屏幕 → 选"外部" → 填写应用名称 → 保存</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">5</span><div><b>添加测试用户</b>：OAuth 同意屏幕 → 测试用户 → 添加你的 Gmail 地址（测试阶段必须添加）</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">6</span><div><b>创建凭据</b>：API 和服务 → 凭据 → 创建 OAuth 客户端 ID → 应用类型选 <b>Chrome 扩展</b></div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">7</span><div><b>填写扩展 ID</b>：打开 <code>chrome://extensions</code> → 复制本扩展的 ID → 粘贴到"已授权的重定向 URI"中，格式为 <code>https://&lt;扩展ID&gt;.chromiumapp.org/</code></div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">8</span><div><b>复制 Client ID</b>：创建完成后复制 Client ID（以 <code>.apps.googleusercontent.com</code> 结尾），粘贴到上方输入框</div></div>',
+        '</div>',
+        '<div class="gtasks-tutorial-footer">',
+        '  <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="gtasks-btn gtasks-btn-connect" style="text-decoration:none">',
+        '    <span class="material-icons">open_in_new</span>打开 Google Cloud Console',
+        '  </a>',
+        '</div>'
+    ].join('');
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
 };
 
 // 生成小组件 ID

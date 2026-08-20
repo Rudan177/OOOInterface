@@ -1,18 +1,14 @@
-/**
- * 邮箱小组件
- * - 若配置了本地 API 地址（如 http://127.0.0.1:端口/api/emails），则拉取最近邮件列表展示
- * - 未配置 API 时，显示邮箱服务商入口（Gmail/Outlook/QQ），点击打开
- * - 拉取结果缓存到设置中，离线时展示缓存并提示
- */
 class EmailWidget extends WidgetBase {
     constructor(config) {
         super(config);
         this.type = 'email';
-        this.apiUrl = (this.data && this.data.apiUrl) || '';
         this.provider = (this.data && this.data.provider) || 'gmail';
         this.providerUrl = (this.data && this.data.url) || this.getDefaultProviderUrl(this.provider);
         this.cachedEmails = (this.data && Array.isArray(this.data.cachedEmails)) ? this.data.cachedEmails : [];
         this.providerMeta = this.getProviderMeta(this.provider);
+        this.googleToken = (this.data && this.data.googleToken) || '';
+        this.googleEmail = (this.data && this.data.googleEmail) || '';
+        this.googleConnected = !!(this.data && this.data.googleConnected);
     }
 
     getProviderMeta(provider) {
@@ -32,7 +28,7 @@ class EmailWidget extends WidgetBase {
     buildContent() {
         this.element.classList.add('widget-email');
 
-        // 头部：Logo + 名称 + 打开按钮
+        // 头部
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'widget-email-header';
 
@@ -50,7 +46,11 @@ class EmailWidget extends WidgetBase {
 
         this.addrEl = document.createElement('div');
         this.addrEl.className = 'widget-email-addr';
-        this.addrEl.textContent = this.apiUrl ? 'API: ' + this.apiUrl.replace(/^https?:\/\//, '') : '最近邮件';
+        if (this.provider === 'gmail' && this.googleConnected) {
+            this.addrEl.textContent = this.googleEmail || '已连接';
+        } else {
+            this.addrEl.textContent = '最近邮件';
+        }
 
         nameBox.appendChild(this.nameEl);
         nameBox.appendChild(this.addrEl);
@@ -65,17 +65,16 @@ class EmailWidget extends WidgetBase {
         this.headerEl.appendChild(this.logoEl);
         this.headerEl.appendChild(nameBox);
         this.headerEl.appendChild(this.openBtn);
-
         this.element.appendChild(this.headerEl);
 
-        // 邮件列表（可滚动）
+        // 邮件列表
         this.bodyEl = document.createElement('div');
         this.bodyEl.className = 'widget-email-body';
         this.element.appendChild(this.bodyEl);
 
-        if (this.apiUrl) {
+        if (this.provider === 'gmail' && this.googleConnected) {
             this.renderList();
-            this.refresh();
+            this.fetchGmail();
         } else {
             this.renderNoApi();
         }
@@ -85,24 +84,48 @@ class EmailWidget extends WidgetBase {
         this.bodyEl.innerHTML = '';
         const hint = document.createElement('div');
         hint.className = 'widget-email-empty';
-        hint.textContent = '未配置邮件 API，可打开网页版查看';
+        hint.textContent = '连接 Google 账号后可直接查看收件箱';
         this.bodyEl.appendChild(hint);
     }
 
-    async refresh() {
+    async fetchGmail() {
+        if (!this.googleToken) return;
         try {
-            const data = await this.fetchJSON(this.apiUrl);
-            const emails = (data && Array.isArray(data.emails)) ? data.emails : (Array.isArray(data) ? data : []);
-            this.cachedEmails = emails.map(e => ({
-                from: e.from || e.sender || '未知发件人',
-                subject: e.subject || '(无主题)',
-                time: e.time || e.date || ''
-            }));
-            this.data.cachedEmails = this.cachedEmails;
+            // 获取最近 20 封邮件的元数据
+            const listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20', {
+                headers: { Authorization: 'Bearer ' + this.googleToken }
+            });
+            if (!listRes.ok) throw new Error(listRes.status === 401 ? 'token无效或已过期' : '请求失败 ' + listRes.status);
+            const listData = await listRes.json();
+            const messages = listData.messages || [];
+
+            // 批量获取邮件头
+            const emails = [];
+            for (const msg of messages) {
+                try {
+                    const msgRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/' + msg.id + '?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date', {
+                        headers: { Authorization: 'Bearer ' + this.googleToken }
+                    });
+                    if (!msgRes.ok) continue;
+                    const msgData = await msgRes.json();
+                    const headers = {};
+                    (msgData.payload && msgData.payload.headers || []).forEach(h => {
+                        headers[h.name.toLowerCase()] = h.value;
+                    });
+                    emails.push({
+                        from: (headers.from || '').replace(/<.*>/, '').trim() || '未知',
+                        subject: headers.subject || '(无主题)',
+                        time: headers.date || ''
+                    });
+                } catch (_) {}
+            }
+
+            this.cachedEmails = emails;
+            this.data.cachedEmails = emails;
             this.persist();
             this.renderList();
         } catch (err) {
-            console.warn('[EmailWidget] 邮件获取失败:', err.message);
+            console.warn('[EmailWidget] Gmail 拉取失败:', err.message);
             if (this.cachedEmails.length) {
                 this.renderList(true);
                 this.notify('邮件拉取失败，显示缓存');
@@ -174,7 +197,6 @@ class EmailWidget extends WidgetBase {
 
     formatTime(t) {
         if (!t) return '';
-        // 支持 ISO 字符串或时间戳
         const d = new Date(t);
         if (isNaN(d.getTime())) return String(t).slice(0, 10);
         const now = new Date();
@@ -183,5 +205,70 @@ class EmailWidget extends WidgetBase {
             return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         }
         return (d.getMonth() + 1) + '/' + d.getDate();
+    }
+
+    // Google OAuth 连接
+    async connectGoogle(clientId) {
+        const scope = 'https://www.googleapis.com/auth/gmail.readonly';
+        const redirectUri = 'https://' + chrome.runtime.id + '.chromiumapp.org/';
+        const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth'
+            + '?client_id=' + encodeURIComponent(clientId)
+            + '&redirect_uri=' + encodeURIComponent(redirectUri)
+            + '&response_type=token'
+            + '&scope=' + encodeURIComponent(scope)
+            + '&prompt=consent';
+
+        return new Promise((resolve, reject) => {
+            chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (redirectUrl) => {
+                if (chrome.runtime.lastError || !redirectUrl) {
+                    reject(new Error(chrome.runtime.lastError ? chrome.runtime.lastError.message : '授权取消'));
+                    return;
+                }
+                try {
+                    const hash = new URL(redirectUrl).hash.substring(1);
+                    const params = new URLSearchParams(hash);
+                    const token = params.get('access_token');
+                    if (!token) throw new Error('未获取到 access_token');
+
+                    // 获取用户邮箱
+                    const meRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    const meData = await meRes.json();
+                    const email = meData.emailAddress || '';
+
+                    this.googleToken = token;
+                    this.googleEmail = email;
+                    this.googleConnected = true;
+                    this.data.googleToken = token;
+                    this.data.googleEmail = email;
+                    this.data.googleConnected = true;
+                    this.data.googleClientId = clientId;
+                    this.persist();
+
+                    this.addrEl.textContent = email || '已连接';
+                    this.bodyEl.innerHTML = '';
+                    this.renderList();
+                    this.fetchGmail();
+
+                    resolve();
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        });
+    }
+
+    disconnectGoogle() {
+        this.googleToken = '';
+        this.googleEmail = '';
+        this.googleConnected = false;
+        this.data.googleToken = '';
+        this.data.googleEmail = '';
+        this.data.googleConnected = false;
+        this.persist();
+        this.addrEl.textContent = '最近邮件';
+        this.bodyEl.innerHTML = '';
+        this.renderNoApi();
     }
 }

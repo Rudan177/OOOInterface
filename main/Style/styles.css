@@ -1640,6 +1640,11 @@ body.scrolled.dynamic-blur .ooo-badge {
     -ms-overflow-style: none;
 }
 
+body.dynamic-blur .right-panel-upper .widget-panel-list-container {
+    background: rgba(var(--surface-color-rgb), 0.35) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
 
 
 .right-panel-placeholder-container {
@@ -3338,7 +3343,8 @@ body.dynamic-blur .settings-menu-confirm:active {
     padding: 24px 16px;
     text-align: center;
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 1.6;
 }
 
 
