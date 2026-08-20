@@ -38,7 +38,7 @@ class WeatherWidget extends WidgetBase {
 
     buildSquareLayout() {
         this.iconEl = document.createElement('span');
-        this.iconEl.className = 'material-icons widget-weather-icon';
+        this.iconEl.className = 'material-symbols-outlined widget-weather-icon';
 
         this.tempEl = document.createElement('div');
         this.tempEl.className = 'widget-weather-temp';
@@ -61,7 +61,7 @@ class WeatherWidget extends WidgetBase {
         this.leftPanel.className = 'widget-weather-left';
 
         this.iconEl = document.createElement('span');
-        this.iconEl.className = 'material-icons widget-weather-icon-rect';
+        this.iconEl.className = 'material-symbols-outlined widget-weather-icon-rect';
 
         this.tempEl = document.createElement('div');
         this.tempEl.className = 'widget-weather-temp-rect';
@@ -100,14 +100,14 @@ class WeatherWidget extends WidgetBase {
 
     renderLoading() {
         if (this.isRect) {
-            this.iconEl.textContent = 'wb_sunny';
+            this.iconEl.textContent = 'sunny';
             this.tempEl.textContent = '--°';
             this.cityEl.textContent = this.city;
             this.descEl.textContent = '加载中…';
             this.humidityEl.textContent = '';
             this.windEl.textContent = '';
         } else {
-            this.iconEl.textContent = 'wb_sunny';
+            this.iconEl.textContent = 'sunny';
             this.tempEl.textContent = '--°';
             this.descEl.textContent = '加载中…';
             this.cityEl.textContent = this.city;
@@ -170,6 +170,9 @@ class WeatherWidget extends WidgetBase {
     }
 
     applyWeather(w) {
+        // 兼容旧缓存：Material Icons 图标名 → Material Symbols 图标名
+        const iconFix = { 'wb_sunny': 'sunny' };
+        if (iconFix[w.icon]) w.icon = iconFix[w.icon];
         this.iconEl.textContent = w.icon;
         this.tempEl.textContent = w.temp + '°';
         this.descEl.textContent = w.desc;
@@ -195,7 +198,7 @@ class WeatherWidget extends WidgetBase {
 
     mapWmoCode(code) {
         const map = {
-            0:  { icon: 'wb_sunny',      desc: '晴朗' },
+            0:  { icon: 'sunny',           desc: '晴朗' },
             1:  { icon: 'partly_cloudy_day', desc: '基本晴朗' },
             2:  { icon: 'cloud',          desc: '局部多云' },
             3:  { icon: 'cloud',          desc: '阴天' },
@@ -224,6 +227,6 @@ class WeatherWidget extends WidgetBase {
             96: { icon: 'thunderstorm',   desc: '雷暴伴冰雹' },
             99: { icon: 'thunderstorm',   desc: '强雷暴' }
         };
-        return map[code] || { icon: 'wb_sunny', desc: '未知天气' };
+        return map[code] || { icon: 'sunny', desc: '未知天气' };
     }
 }

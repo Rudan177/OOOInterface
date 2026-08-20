@@ -10528,9 +10528,9 @@ OOOInterface.prototype.importBookmarksFromChrome = function (mode, folderId, dro
 OOOInterface.prototype.WIDGET_TYPES = {
     'clock':    { name: '大时钟', icon: 'schedule',        defaultSize: 'square', allowBoth: true },
     'weather':  { name: '天气',   icon: 'wb_sunny',        defaultSize: 'square', allowBoth: true },
-    'tasks':    { name: '任务',   icon: 'checklist',       defaultSize: 'rectangle' },
-    'ai-agent': { name: 'AI Agent', icon: 'smart_toy',     defaultSize: 'square' },
-    'email':    { name: '邮箱',   icon: 'mail',            defaultSize: 'square' },
+    'tasks':    { name: '任务',   icon: 'checklist',       defaultSize: 'super',   allowBoth: true,   allowSuper: true  },
+    'ai-agent': { name: 'AI Agent', icon: 'smart_toy',     defaultSize: 'super',   allowBoth: true,   allowSuper: true  },
+    'email':    { name: '邮箱',   icon: 'mail',            defaultSize: 'super',   allowBoth: true,   allowSuper: true  },
 };
 
 // 小组件实例化
@@ -10749,10 +10749,9 @@ OOOInterface.prototype.initWidgetPanel = function () {
 
     // 面板滚轮：内容溢出时拦截（只滚动面板内容，不触发壁纸模式进退）；
     // 内容不溢出时放行（交给页面滚动处理）
-    const grid = document.getElementById('widget-panel-grid');
     const panelWheelHandler = (e) => {
-        if (!grid) return;
-        const maxScroll = grid.scrollHeight - grid.clientHeight;
+        if (!container) return;
+        const maxScroll = container.scrollHeight - container.clientHeight;
         if (maxScroll <= 0) return; // 内容不溢出，放行
         e.stopPropagation();        // 内容溢出：拦截，只滚动面板内容
     };
@@ -10934,7 +10933,7 @@ OOOInterface.prototype.updateWidgetPanelListInMenu = function (listContainer) {
 
         const typeLabel = document.createElement('span');
         typeLabel.className = 'widget-type-label';
-        typeLabel.textContent = widget.size === 'rectangle' ? '长方形' : '正方形';
+        typeLabel.textContent = widget.size === 'rectangle' ? '大' : widget.size === 'super' ? '超大' : '小';
         nameRow.appendChild(typeLabel);
 
         const sub = document.createElement('div');
@@ -11286,10 +11285,10 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     typeRow.appendChild(typeVal);
     form.appendChild(typeRow);
 
-    // 尺寸分段滑块（iOS 26 分段切换器风格：左正方形、右长方形）
+    // 尺寸分段滑块（iOS 26 分段切换器风格：小 / 大 / 超大）
     const forceSquare = (type === 'clock' || type === 'weather') && !meta.allowBoth;
-    const forceRect = (type === 'tasks');
-    const canChoose = !forceSquare && !forceRect;
+    const canChoose = !forceSquare;
+    const hasSuper = meta.allowSuper === true;  // 仅 tasks/ai-agent/email 有三段
 
     const sizeRow = document.createElement('div');
     sizeRow.className = 'widget-size-row';
@@ -11297,28 +11296,35 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     sizeLabel.textContent = '尺寸';
 
     const seg = document.createElement('div');
-    seg.className = 'widget-size-segmented';
+    seg.className = 'widget-size-segmented ' + (hasSuper ? 'seg-3' : 'seg-2');
 
     const segThumb = document.createElement('div');
     segThumb.className = 'widget-size-seg-thumb';
 
     const squareLbl = document.createElement('span');
-    squareLbl.className = 'widget-size-seg-label';
-    squareLbl.textContent = '正方形';
+    squareLbl.className = 'widget-size-seg-label widget-size-seg-label-square';
+    squareLbl.textContent = '小';
 
     const rectLbl = document.createElement('span');
-    rectLbl.className = 'widget-size-seg-label';
-    rectLbl.textContent = '长方形';
+    rectLbl.className = 'widget-size-seg-label widget-size-seg-label-rect';
+    rectLbl.textContent = '大';
+
+    let superLbl = null;
+    if (hasSuper) {
+        superLbl = document.createElement('span');
+        superLbl.className = 'widget-size-seg-label widget-size-seg-label-super';
+        superLbl.textContent = '超大';
+    }
 
     // 透明 range 覆盖层：负责拖动与点击切换（视觉由下方分段控件呈现）
     const sizeSlider = document.createElement('input');
     sizeSlider.type = 'range';
     sizeSlider.min = '0';
-    sizeSlider.max = '1';
+    sizeSlider.max = hasSuper ? '2' : '1';
     sizeSlider.step = '1';
     sizeSlider.className = 'widget-size-seg-input';
     sizeSlider.disabled = !canChoose;
-    sizeSlider.value = currentSize === 'rectangle' ? '1' : '0';
+    sizeSlider.value = currentSize === 'super' ? '2' : currentSize === 'rectangle' ? '1' : '0';
 
     if (!canChoose) {
         seg.classList.add('disabled');
@@ -11327,12 +11333,16 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     seg.appendChild(segThumb);
     seg.appendChild(squareLbl);
     seg.appendChild(rectLbl);
+    if (superLbl) seg.appendChild(superLbl);
     seg.appendChild(sizeSlider);
 
     const updateSeg = () => {
-        seg.classList.toggle('rect', sizeSlider.value === '1');
-        squareLbl.classList.toggle('active', sizeSlider.value === '0');
-        rectLbl.classList.toggle('active', sizeSlider.value === '1');
+        const v = sizeSlider.value;
+        seg.classList.toggle('rect', v === '1');
+        seg.classList.toggle('super', v === '2');
+        squareLbl.classList.toggle('active', v === '0');
+        rectLbl.classList.toggle('active', v === '1');
+        if (superLbl) superLbl.classList.toggle('active', v === '2');
     };
     sizeSlider.addEventListener('input', updateSeg);
     updateSeg();
@@ -11704,7 +11714,8 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     });
 
     confirmBtn.addEventListener('click', () => {
-        const size = sizeSlider.value === '1' ? 'rectangle' : 'square';
+        const sizeMap = { '0': 'square', '1': 'rectangle', '2': 'super' };
+        const size = sizeMap[sizeSlider.value] || 'square';
         const newData = {};
 
         if (extraFields.city) {
@@ -11913,7 +11924,7 @@ OOOInterface.prototype.importWidgets = function (text, listContainer) {
         let added = 0;
         incoming.forEach(w => {
             if (!w || !w.type || !this.WIDGET_TYPES[w.type]) return;
-            const size = (w.size === 'rectangle') ? 'rectangle' : 'square';
+            const size = (w.size === 'rectangle' || w.size === 'super') ? w.size : 'square';
             const newWidget = {
                 id: this.genWidgetId(),
                 type: w.type,
