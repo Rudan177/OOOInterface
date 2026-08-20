@@ -1336,6 +1336,14 @@ body.scrolled .widget-panel-container.visible {
 .widget-size-seg-label-super { left: 66.66%; }
 .widget-size-segmented.seg-2 .widget-size-seg-label-rect { left: 50%; }
 
+/* 无小尺寸（no-square：仅 大/超大）：标签改从左侧起排 */
+.widget-size-segmented.no-square .widget-size-seg-label-rect { left: 0; }
+.widget-size-segmented.no-square .widget-size-seg-label-super { left: 50%; }
+
+/* 无小尺寸时：大=第1段（thumb 不移动），超大=第2段 */
+.widget-size-segmented.no-square.rect .widget-size-seg-thumb { transform: none; }
+.widget-size-segmented.no-square.super .widget-size-seg-thumb { transform: translateX(calc(100% + 3px)); }
+
 .widget-size-segmented .widget-size-seg-label.active {
     color: var(--scheme-accent) !important;
     font-weight: 600;
@@ -1776,6 +1784,14 @@ body.scrolled .widget-panel-container.visible {
 .widget-size-seg-label-rect { left: 33.33%; }
 .widget-size-seg-label-super { left: 66.66%; }
 .widget-size-segmented.seg-2 .widget-size-seg-label-rect { left: 50%; }
+
+/* 无小尺寸（no-square：仅 大/超大）：标签改从左侧起排 */
+.widget-size-segmented.no-square .widget-size-seg-label-rect { left: 0; }
+.widget-size-segmented.no-square .widget-size-seg-label-super { left: 50%; }
+
+/* 无小尺寸时：大=第1段（thumb 不移动），超大=第2段 */
+.widget-size-segmented.no-square.rect .widget-size-seg-thumb { transform: none; }
+.widget-size-segmented.no-square.super .widget-size-seg-thumb { transform: translateX(calc(100% + 2px)); }
 
 .widget-size-segmented .widget-size-seg-label.active {
     color: var(--scheme-accent) !important;

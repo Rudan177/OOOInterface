@@ -962,9 +962,10 @@ class OOOInterface {
         if (savedSettings.showQuickLinkIcons !== undefined) result.showQuickLinkIcons = savedSettings.showQuickLinkIcons;
 
         // 合并小组件面板配置
+        // enabled 字段已废弃（开关已移除，面板显示完全由列表是否为空决定），固定为 true
         if (savedSettings.widgetPanel && typeof savedSettings.widgetPanel === 'object') {
             result.widgetPanel = {
-                enabled: savedSettings.widgetPanel.enabled !== false,
+                enabled: true,
                 widgets: Array.isArray(savedSettings.widgetPanel.widgets)
                     ? savedSettings.widgetPanel.widgets.filter(w =>
                         w && typeof w === 'object' && w.type && w.id
@@ -2261,18 +2262,6 @@ class OOOInterface {
                 }
             }
         });
-
-        // 小组件面板开关
-        const widgetPanelToggle = document.getElementById('widget-panel-toggle');
-        if (widgetPanelToggle) {
-            widgetPanelToggle.addEventListener('change', (e) => {
-                this.settings.widgetPanel.enabled = e.target.checked;
-                this.saveSettings();
-                this.syncWidgetPanelUI();
-                this.updateWidgetPanelVisibility();
-                this.showNotification(e.target.checked ? '小组件面板：开启' : '小组件面板：关闭');
-            });
-        }
 
         // 小组件列表下拉点击 → 右面板管理界面
         const widgetPanelSelectSelected = document.getElementById('widget-panel-select-selected');
@@ -5879,11 +5868,6 @@ class OOOInterface {
             showIconsToggle.checked = this.settings.quickAccessSidebar ? this.settings.showQuickLinkIcons : false;
         }
 
-        // 小组件面板开关
-        const widgetPanelToggle = document.getElementById('widget-panel-toggle');
-        if (widgetPanelToggle) {
-            widgetPanelToggle.checked = this.settings.widgetPanel.enabled;
-        }
         this.syncWidgetPanelUI();
 
         // 更新设置打开方式
@@ -10527,12 +10511,40 @@ OOOInterface.prototype.importBookmarksFromChrome = function (mode, folderId, dro
 // ============================================
 
 // 小组件类型元信息
+// allowSquare: 是否允许小尺寸（square）；allowSuper: 是否允许超大尺寸（super）
+// 内容密集型小组件（任务/AI Agent/邮箱）不允许小尺寸，否则显示错乱
 OOOInterface.prototype.WIDGET_TYPES = {
-    'clock':    { name: '大时钟', icon: 'schedule',        defaultSize: 'square', allowBoth: true },
-    'weather':  { name: '天气',   icon: 'wb_sunny',        defaultSize: 'square', allowBoth: true },
-    'tasks':    { name: '任务',   icon: 'checklist',       defaultSize: 'super',   allowBoth: true,   allowSuper: true  },
-    'ai-agent': { name: 'AI Agent', icon: 'smart_toy',     defaultSize: 'super',   allowBoth: true,   allowSuper: true  },
-    'email':    { name: '邮箱',   icon: 'mail',            defaultSize: 'super',   allowBoth: true,   allowSuper: true  },
+    'clock':    { name: '大时钟', icon: 'schedule',        defaultSize: 'square', allowSquare: true,  allowSuper: false },
+    'weather':  { name: '天气',   icon: 'wb_sunny',        defaultSize: 'square', allowSquare: true,  allowSuper: false },
+    'tasks':    { name: '任务',   icon: 'checklist',       defaultSize: 'super',   allowSquare: false, allowSuper: true  },
+    'ai-agent': { name: 'AI Agent', icon: 'smart_toy',     defaultSize: 'super',   allowSquare: false, allowSuper: true  },
+    'email':    { name: '邮箱',   icon: 'mail',            defaultSize: 'super',   allowSquare: false, allowSuper: true  },
+};
+
+// 获取某类型允许的尺寸列表（按 小→大→超大 顺序）
+OOOInterface.prototype.getWidgetAllowedSizes = function (type) {
+    const meta = this.WIDGET_TYPES[type];
+    if (!meta) return ['square', 'rectangle', 'super'];
+    const sizes = [];
+    if (meta.allowSquare !== false) sizes.push('square');
+    sizes.push('rectangle');
+    if (meta.allowSuper === true) sizes.push('super');
+    return sizes;
+};
+
+// 纠正非法尺寸：不在允许列表内时回退到 defaultSize（再兜底到允许的最大尺寸）
+OOOInterface.prototype.normalizeWidgetSize = function (type, size) {
+    const allowed = this.getWidgetAllowedSizes(type);
+    if (allowed.indexOf(size) >= 0) return size;
+    const meta = this.WIDGET_TYPES[type];
+    if (meta && allowed.indexOf(meta.defaultSize) >= 0) return meta.defaultSize;
+    return allowed[allowed.length - 1] || 'rectangle';
+};
+
+// 尺寸显示文字
+OOOInterface.prototype.getWidgetSizeLabel = function (type, size) {
+    const s = this.normalizeWidgetSize(type, size);
+    return s === 'rectangle' ? '大' : s === 'super' ? '超大' : '小';
 };
 
 // 小组件实例化
@@ -10540,7 +10552,7 @@ OOOInterface.prototype.createWidgetInstance = function (config) {
     const baseConfig = {
         id: config.id,
         type: config.type,
-        size: config.size,
+        size: this.normalizeWidgetSize(config.type, config.size),
         data: config.data || {},
         ooo: this
     };
@@ -10614,12 +10626,19 @@ OOOInterface.prototype.syncWidgetCardHeights = function () {
     });
 };
 
+// 面板是否可用：无开关（开关已移除），完全由列表是否为空决定
+OOOInterface.prototype.isWidgetPanelActive = function () {
+    return !!(this.settings.widgetPanel
+        && Array.isArray(this.settings.widgetPanel.widgets)
+        && this.settings.widgetPanel.widgets.length > 0);
+};
+
 // 根据设置更新面板可见性
 OOOInterface.prototype.updateWidgetPanelVisibility = function () {
     const panel = document.getElementById('widget-panel');
     const container = document.getElementById('widget-panel-container');
     if (!panel) return;
-    const enabled = this.settings.widgetPanel && this.settings.widgetPanel.enabled;
+    const enabled = this.isWidgetPanelActive();
     if (enabled) {
         panel.classList.add('active');
     } else {
@@ -10674,7 +10693,7 @@ OOOInterface.prototype.initWidgetPanel = function () {
     const HIDE_DELAY = 0;            // 鼠标离开立即关闭
 
     const showPanel = () => {
-        if (!this.settings.widgetPanel || !this.settings.widgetPanel.enabled) return;
+        if (!this.isWidgetPanelActive()) return;
         const modal = document.getElementById('settings-modal');
         if (modal && modal.classList.contains('show')) return;
         if (hideTimeout) {
@@ -10706,7 +10725,7 @@ OOOInterface.prototype.initWidgetPanel = function () {
 
     // 全局鼠标移动检测：左边缘触发区域显示面板
     document.addEventListener('mousemove', (e) => {
-        if (!this.settings.widgetPanel || !this.settings.widgetPanel.enabled) return;
+        if (!this.isWidgetPanelActive()) return;
         const modal = document.getElementById('settings-modal');
         if (modal && modal.classList.contains('show')) return;
         const mouseX = e.clientX;
@@ -10730,7 +10749,7 @@ OOOInterface.prototype.initWidgetPanel = function () {
 
     // 容器悬停维持显示
     container.addEventListener('mouseenter', () => {
-        if (!this.settings.widgetPanel || !this.settings.widgetPanel.enabled) return;
+        if (!this.isWidgetPanelActive()) return;
         if (hideTimeout) {
             clearTimeout(hideTimeout);
             hideTimeout = null;
@@ -10764,11 +10783,9 @@ OOOInterface.prototype.initWidgetPanel = function () {
 // 同步设置页 UI
 OOOInterface.prototype.syncWidgetPanelUI = function () {
     const manageGroup = document.getElementById('widget-panel-manage-group');
-    const toggle = document.getElementById('widget-panel-toggle');
-    if (!manageGroup || !toggle) return;
-    const enabled = this.settings.widgetPanel && this.settings.widgetPanel.enabled;
-    manageGroup.style.display = enabled ? 'block' : 'none';
-    toggle.checked = !!enabled;
+    if (!manageGroup) return;
+    // 始终显示，列表为空时由管理界面提示"暂无小组件"
+    manageGroup.style.display = 'block';
 };
 
 // 保存小组件设置（所有 widget 数据持久化）
@@ -10936,7 +10953,7 @@ OOOInterface.prototype.updateWidgetPanelListInMenu = function (listContainer) {
 
         const typeLabel = document.createElement('span');
         typeLabel.className = 'widget-type-label';
-        typeLabel.textContent = widget.size === 'rectangle' ? '大' : widget.size === 'super' ? '超大' : '小';
+        typeLabel.textContent = self.getWidgetSizeLabel(widget.type, widget.size);
         nameRow.appendChild(typeLabel);
 
         const sub = document.createElement('div');
@@ -11247,7 +11264,7 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
 
     const meta = this.WIDGET_TYPES[type];
     const data = widget ? (widget.data || {}) : {};
-    const currentSize = widget ? widget.size : meta.defaultSize;
+    const currentSize = this.normalizeWidgetSize(type, widget ? widget.size : meta.defaultSize);
 
     // 找到底部按钮容器（导出/导入/+ 所在位置）
     const container = listContainer.closest('.settings-menu-container');
@@ -11289,7 +11306,11 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     form.appendChild(typeRow);
 
     // 尺寸分段滑块（iOS 26 分段切换器风格：小 / 大 / 超大）
-    const hasSuper = meta.allowSuper === true;  // 仅 tasks/ai-agent/email 有三段
+    // 允许尺寸由类型元信息决定：不允许小尺寸的类型（任务/AI Agent/邮箱）只显示 大/超大
+    const allowedSizes = this.getWidgetAllowedSizes(type);
+    const currentIdx = allowedSizes.indexOf(currentSize);
+    const hasSuper = allowedSizes.indexOf('super') >= 0;
+    const hasSquare = allowedSizes.indexOf('square') >= 0;
 
     const sizeRow = document.createElement('div');
     sizeRow.className = 'widget-size-row';
@@ -11297,14 +11318,18 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     sizeLabel.textContent = '尺寸';
 
     const seg = document.createElement('div');
-    seg.className = 'widget-size-segmented ' + (hasSuper ? 'seg-3' : 'seg-2');
+    seg.className = 'widget-size-segmented ' + (allowedSizes.length === 3 ? 'seg-3' : 'seg-2')
+        + (hasSquare ? '' : ' no-square');
 
     const segThumb = document.createElement('div');
     segThumb.className = 'widget-size-seg-thumb';
 
-    const squareLbl = document.createElement('span');
-    squareLbl.className = 'widget-size-seg-label widget-size-seg-label-square';
-    squareLbl.textContent = '小';
+    let squareLbl = null;
+    if (hasSquare) {
+        squareLbl = document.createElement('span');
+        squareLbl.className = 'widget-size-seg-label widget-size-seg-label-square';
+        squareLbl.textContent = '小';
+    }
 
     const rectLbl = document.createElement('span');
     rectLbl.className = 'widget-size-seg-label widget-size-seg-label-rect';
@@ -11321,24 +11346,26 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     const sizeSlider = document.createElement('input');
     sizeSlider.type = 'range';
     sizeSlider.min = '0';
-    sizeSlider.max = hasSuper ? '2' : '1';
+    sizeSlider.max = String(allowedSizes.length - 1);
     sizeSlider.step = '1';
     sizeSlider.className = 'widget-size-seg-input';
-    sizeSlider.value = currentSize === 'super' ? '2' : currentSize === 'rectangle' ? '1' : '0';
+    sizeSlider.value = String(currentIdx >= 0 ? currentIdx : 0);
 
     seg.appendChild(segThumb);
-    seg.appendChild(squareLbl);
+    if (squareLbl) seg.appendChild(squareLbl);
     seg.appendChild(rectLbl);
     if (superLbl) seg.appendChild(superLbl);
     seg.appendChild(sizeSlider);
 
     const updateSeg = () => {
         const v = sizeSlider.value;
-        seg.classList.toggle('rect', v === '1');
-        seg.classList.toggle('super', v === '2');
-        squareLbl.classList.toggle('active', v === '0');
-        rectLbl.classList.toggle('active', v === '1');
-        if (superLbl) superLbl.classList.toggle('active', v === '2');
+        const idx = parseInt(v, 10);
+        const size = allowedSizes[idx] || allowedSizes[allowedSizes.length - 1];
+        seg.classList.toggle('rect', size === 'rectangle');
+        seg.classList.toggle('super', size === 'super');
+        if (squareLbl) squareLbl.classList.toggle('active', size === 'square');
+        rectLbl.classList.toggle('active', size === 'rectangle');
+        if (superLbl) superLbl.classList.toggle('active', size === 'super');
     };
     sizeSlider.addEventListener('input', updateSeg);
     updateSeg();
@@ -11728,8 +11755,8 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     });
 
     confirmBtn.addEventListener('click', () => {
-        const sizeMap = { '0': 'square', '1': 'rectangle', '2': 'super' };
-        const size = sizeMap[sizeSlider.value] || 'square';
+        // 尺寸映射：按当前类型允许的尺寸列表取索引对应的尺寸
+        const size = allowedSizes[parseInt(sizeSlider.value, 10)] || allowedSizes[allowedSizes.length - 1];
         const newData = {};
 
         if (extraFields.city) {
@@ -11902,7 +11929,7 @@ OOOInterface.prototype.exportWidgets = function () {
         widgets: widgets.map(w => ({
             id: w.id,
             type: w.type,
-            size: w.size,
+            size: this.normalizeWidgetSize(w.type, w.size),
             data: w.data || {}
         }))
     };
@@ -11938,7 +11965,7 @@ OOOInterface.prototype.importWidgets = function (text, listContainer) {
         let added = 0;
         incoming.forEach(w => {
             if (!w || !w.type || !this.WIDGET_TYPES[w.type]) return;
-            const size = (w.size === 'rectangle' || w.size === 'super') ? w.size : 'square';
+            const size = this.normalizeWidgetSize(w.type, w.size);
             const newWidget = {
                 id: this.genWidgetId(),
                 type: w.type,
