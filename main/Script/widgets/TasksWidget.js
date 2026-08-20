@@ -179,7 +179,8 @@ class TasksWidget extends WidgetBase {
             method: 'DELETE',
             headers: { 'Authorization': 'Bearer ' + this.token }
         });
-        if (resp.status === 401 || resp.status === 403) this.disconnectGoogle();
+        if (resp.status === 401 || resp.status === 403) { this.disconnectGoogle(); return; }
+        if (!resp.ok) throw new Error('API ' + resp.status);
     }
 
     async fetchGoogleTasks() {
@@ -248,7 +249,12 @@ class TasksWidget extends WidgetBase {
     async deleteTask(id) {
         const t = this.tasks.find(x => x.id === id);
         if (t && this.useGoogle && this.token && t.googleId) {
-            try { await this.apiDelete('/lists/@default/tasks/' + t.googleId); } catch (e) { /* 继续 */ }
+            try {
+                await this.apiDelete('/lists/@default/tasks/' + t.googleId);
+            } catch (e) {
+                this.notify('删除失败，请重试');
+                return;
+            }
         }
         this.tasks = this.tasks.filter(x => x.id !== id);
         this.data.items = this.tasks;

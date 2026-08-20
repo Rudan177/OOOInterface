@@ -167,6 +167,7 @@ class OOOInterface {
 
         window.addEventListener('resize', () => {
             this.updateStatusBarTextContrast();
+            this.syncWidgetCardHeights();
             if (document.getElementById('settings-modal').style.display === 'flex') {
                 this.updateSettingsButtonsPosition();
             }
@@ -4956,7 +4957,7 @@ class OOOInterface {
 
         let hideTimeout = null;
         let isVisible = false;
-        const TRIGGER_ZONE_WIDTH = 60;   // 右侧触发区域宽度（像素，与小组件一致）
+        const TRIGGER_ZONE_WIDTH = 100;   // 右侧触发区域宽度（像素）
         const HIDE_DELAY = 0;            // 鼠标离开立即关闭
 
         const pushWallpaper = (pushIn) => {
@@ -9685,7 +9686,8 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
-    document.getElementById('settings-modal').classList.add('right-panel-open');
+    const settingsModal = document.getElementById('settings-modal');
+    if (settingsModal) settingsModal.classList.add('right-panel-open');
 
     rightPanelUpper.innerHTML = '';
 
@@ -10668,7 +10670,7 @@ OOOInterface.prototype.initWidgetPanel = function () {
 
     let hideTimeout = null;
     let isVisible = false;
-    const TRIGGER_ZONE_WIDTH = 60;   // 左侧触发区域宽度（像素）
+    const TRIGGER_ZONE_WIDTH = 100;   // 左侧触发区域宽度（像素）
     const HIDE_DELAY = 0;            // 鼠标离开立即关闭
 
     const showPanel = () => {
@@ -10805,7 +10807,8 @@ OOOInterface.prototype.showWidgetPanelMenuInRightPanel = function () {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
-    document.getElementById('settings-modal').classList.add('right-panel-open');
+    const settingsModal = document.getElementById('settings-modal');
+    if (settingsModal) settingsModal.classList.add('right-panel-open');
 
     rightPanelUpper.innerHTML = '';
 
@@ -11286,8 +11289,6 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     form.appendChild(typeRow);
 
     // 尺寸分段滑块（iOS 26 分段切换器风格：小 / 大 / 超大）
-    const forceSquare = (type === 'clock' || type === 'weather') && !meta.allowBoth;
-    const canChoose = !forceSquare;
     const hasSuper = meta.allowSuper === true;  // 仅 tasks/ai-agent/email 有三段
 
     const sizeRow = document.createElement('div');
@@ -11323,12 +11324,7 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
     sizeSlider.max = hasSuper ? '2' : '1';
     sizeSlider.step = '1';
     sizeSlider.className = 'widget-size-seg-input';
-    sizeSlider.disabled = !canChoose;
     sizeSlider.value = currentSize === 'super' ? '2' : currentSize === 'rectangle' ? '1' : '0';
-
-    if (!canChoose) {
-        seg.classList.add('disabled');
-    }
 
     seg.appendChild(segThumb);
     seg.appendChild(squareLbl);
@@ -11364,7 +11360,7 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
         inputWrap.className = 'widget-input-row';
         const cityInput = document.createElement('input');
         cityInput.type = 'text';
-        cityInput.placeholder = '如：南昌';
+        cityInput.placeholder = '城市';
         cityInput.value = data.city && data.city !== '当前位置' ? data.city : '';
         inputWrap.appendChild(cityInput);
         const geoBtn = document.createElement('button');
@@ -11479,10 +11475,15 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
             disconnectBtn.className = 'gtasks-btn gtasks-btn-disconnect';
             disconnectBtn.textContent = '断开连接';
             disconnectBtn.addEventListener('click', () => {
-                data.googleConnected = false;
-                data.googleEmail = '';
-                data.googleToken = '';
-                self.saveWidgetSettings();
+                const wi = (self.widgetInstances || []).find(w => w.id === widget.id);
+                if (wi && typeof wi.disconnectGoogle === 'function') {
+                    wi.disconnectGoogle();
+                } else {
+                    data.googleConnected = false;
+                    data.googleEmail = '';
+                    data.googleToken = '';
+                    self.saveWidgetSettings();
+                }
                 self.showNotification('已断开 Gmail');
                 self.showWidgetConfigForm(listContainer, widget, presetType);
             });
@@ -11506,6 +11507,10 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
                 if (!clientId || !clientId.endsWith('.apps.googleusercontent.com')) {
                     self.showNotification('请输入有效的 Client ID');
                     clientIdInput.focus();
+                    return;
+                }
+                if (!widget) {
+                    self.showNotification('请先点击"确定"保存小组件，再连接 Google');
                     return;
                 }
                 connectBtn.disabled = true;
@@ -11613,10 +11618,15 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
             disconnectBtn.className = 'gtasks-btn gtasks-btn-disconnect';
             disconnectBtn.textContent = '断开连接';
             disconnectBtn.addEventListener('click', () => {
-                data.googleConnected = false;
-                data.googleEmail = '';
-                data.googleToken = '';
-                self.saveWidgetSettings();
+                const wi = (self.widgetInstances || []).find(w => w.id === widget.id);
+                if (wi && typeof wi.disconnectGoogle === 'function') {
+                    wi.disconnectGoogle();
+                } else {
+                    data.googleConnected = false;
+                    data.googleEmail = '';
+                    data.googleToken = '';
+                    self.saveWidgetSettings();
+                }
                 self.showNotification('已断开 Google Tasks');
                 self.showWidgetConfigForm(listContainer, widget, presetType);
             });
@@ -11641,6 +11651,10 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
                 if (!clientId || !clientId.endsWith('.apps.googleusercontent.com')) {
                     self.showNotification('请输入有效的 Client ID');
                     clientIdInput.focus();
+                    return;
+                }
+                if (!widget) {
+                    self.showNotification('请先点击"确定"保存小组件，再连接 Google');
                     return;
                 }
                 connectBtn.disabled = true;

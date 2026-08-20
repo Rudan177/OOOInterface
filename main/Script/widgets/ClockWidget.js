@@ -27,28 +27,23 @@ class ClockWidget extends WidgetBase {
     }
 
     afterMount() {
-        this.setInterval(() => this.update(), 1000);
+        this.setIntervalTimer(() => this.update(), 1000);
     }
 
     update() {
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, '0');
         const mm = String(now.getMinutes()).padStart(2, '0');
+        const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+        const dateText = weekdays[now.getDay()] + ' ' + (now.getMonth() + 1) + '月' + now.getDate() + '日';
 
         if (this.isRect) {
             // 长方形：时间 + 秒
             const ss = String(now.getSeconds()).padStart(2, '0');
             this.timeEl.textContent = hh + ':' + mm + ':' + ss;
-            const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-            const month = now.getMonth() + 1;
-            const day = now.getDate();
-            this.dateEl.textContent = weekdays[now.getDay()] + ' ' + month + '月' + day + '日';
         } else {
             this.timeEl.textContent = hh + ':' + mm;
-            const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-            const month = now.getMonth() + 1;
-            const day = now.getDate();
-            this.dateEl.textContent = weekdays[now.getDay()] + ' ' + month + '月' + day + '日';
         }
+        this.dateEl.textContent = dateText;
     }
 }

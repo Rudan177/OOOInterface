@@ -9,6 +9,7 @@ class EmailWidget extends WidgetBase {
         this.googleToken = (this.data && this.data.googleToken) || '';
         this.googleEmail = (this.data && this.data.googleEmail) || '';
         this.googleConnected = !!(this.data && this.data.googleConnected);
+        this.apiUrl = (this.data && this.data.apiUrl) || '';
     }
 
     getProviderMeta(provider) {
@@ -72,9 +73,16 @@ class EmailWidget extends WidgetBase {
         this.bodyEl.className = 'widget-email-body';
         this.element.appendChild(this.bodyEl);
 
-        if (this.provider === 'gmail' && this.googleConnected) {
+        if (this.provider === 'gmail') {
+            if (this.googleConnected) {
+                this.renderList();
+                this.fetchGmail();
+            } else {
+                this.renderNoApi();
+            }
+        } else if (this.apiUrl) {
             this.renderList();
-            this.fetchGmail();
+            this.fetchApiEmails();
         } else {
             this.renderNoApi();
         }
@@ -84,7 +92,11 @@ class EmailWidget extends WidgetBase {
         this.bodyEl.innerHTML = '';
         const hint = document.createElement('div');
         hint.className = 'widget-email-empty';
-        hint.textContent = '连接 Google 账号后可直接查看收件箱';
+        if (this.provider === 'gmail') {
+            hint.textContent = '连接 Google 账号后可直接查看收件箱';
+        } else {
+            hint.textContent = '配置邮件 API 地址后可直接查看邮件';
+        }
         this.bodyEl.appendChild(hint);
     }
 
@@ -126,6 +138,36 @@ class EmailWidget extends WidgetBase {
             this.renderList();
         } catch (err) {
             console.warn('[EmailWidget] Gmail 拉取失败:', err.message);
+            if (this.cachedEmails.length) {
+                this.renderList(true);
+                this.notify('邮件拉取失败，显示缓存');
+            } else {
+                this.bodyEl.innerHTML = '';
+                const errEl = document.createElement('div');
+                errEl.className = 'widget-email-empty';
+                errEl.textContent = '获取失败：' + (err.message || '未知错误');
+                this.bodyEl.appendChild(errEl);
+            }
+        }
+    }
+
+    async fetchApiEmails() {
+        if (!this.apiUrl) return;
+        try {
+            const data = await this.fetchJSON(this.apiUrl);
+            const emails = (data && Array.isArray(data.emails)) ? data.emails : [];
+            this.cachedEmails = emails
+                .filter(e => e && (e.from || e.subject))
+                .map(e => ({
+                    from: e.from || '未知',
+                    subject: e.subject || '(无主题)',
+                    time: e.time || ''
+                }));
+            this.data.cachedEmails = this.cachedEmails;
+            this.persist();
+            this.renderList();
+        } catch (err) {
+            console.warn('[EmailWidget] 邮件 API 拉取失败:', err.message);
             if (this.cachedEmails.length) {
                 this.renderList(true);
                 this.notify('邮件拉取失败，显示缓存');

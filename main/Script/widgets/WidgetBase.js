@@ -6,7 +6,7 @@ class WidgetBase {
     /**
      * @param {Object} config 小组件配置
      * @param {string} config.id 唯一 ID
-     * @param {string} config.type 类型：clock/weather/tasks/ai-agent/email/audio
+     * @param {string} config.type 类型：clock/weather/tasks/ai-agent/email
      * @param {string} config.size 尺寸：square/rectangle/super
      * @param {Object} config.data 类型专属数据
      * @param {OOOInterface} config.ooo OOOInterface 实例（用于访问 settings/notification 等）
@@ -94,7 +94,7 @@ class WidgetBase {
     /**
      * 注册循环定时器
      */
-    setInterval(fn, ms) {
+    setIntervalTimer(fn, ms) {
         const id = setInterval(fn, ms);
         this._timers.push(id);
         return id;

@@ -12,11 +12,18 @@ class WeatherWidget extends WidgetBase {
         super(config);
         this.type = 'weather';
         this.city = (this.data && this.data.city) || '南昌';
-        this.coords = (this.data && this.data.lat && this.data.lon)
+        // 仅当缓存坐标对应的城市与当前城市一致时才复用，避免改城市后仍用旧坐标
+        const coordsMatch = !!(this.data && this.data.coordsCity === this.city);
+        this.coords = (coordsMatch && this.data && this.data.lat && this.data.lon)
             ? { lat: this.data.lat, lon: this.data.lon }
-            : { lat: 28.68, lon: 115.8575 };
+            : null;
         this.lastUpdate = (this.data && this.data.lastUpdate) || 0;
         this.cachedWeather = (this.data && this.data.cached) || null;
+        // 城市变更后旧缓存天气失效，强制重新获取
+        if (!coordsMatch && this.cachedWeather) {
+            this.cachedWeather = null;
+            this.lastUpdate = 0;
+        }
     }
 
     buildContent() {
@@ -116,7 +123,7 @@ class WeatherWidget extends WidgetBase {
 
     afterMount() {
         this.refresh();
-        this.setInterval(() => this.refresh(), 30 * 60 * 1000);
+        this.setIntervalTimer(() => this.refresh(), 30 * 60 * 1000);
     }
 
     async refresh() {
@@ -124,13 +131,15 @@ class WeatherWidget extends WidgetBase {
             return;
         }
 
-        try {
-            const located = await this.tryGeolocate();
-            if (located) {
-                this.coords = located;
-                this.city = '当前位置';
+        // 解析坐标：留空/“当前位置”→ 浏览器定位；命名城市 → 地理编码
+        if (!this.coords) {
+            const resolved = await this.resolveCoords();
+            if (!resolved) {
+                this.showError('城市定位失败');
+                return;
             }
-        } catch (e) { /* 定位失败，使用配置城市 */ }
+            this.coords = resolved;
+        }
 
         try {
             const url = 'https://api.open-meteo.com/v1/forecast' +
@@ -153,6 +162,7 @@ class WeatherWidget extends WidgetBase {
                 this.lastUpdate = Date.now();
                 this.data.lat = this.coords.lat;
                 this.data.lon = this.coords.lon;
+                this.data.coordsCity = this.city;
                 this.data.city = this.city;
                 this.data.cached = weather;
                 this.data.lastUpdate = this.lastUpdate;
@@ -162,17 +172,16 @@ class WeatherWidget extends WidgetBase {
         } catch (err) {
             console.warn('[WeatherWidget] 天气获取失败:', err.message);
             if (!this.cachedWeather) {
-                this.tempEl.textContent = '--°';
-                this.descEl.textContent = '天气获取失败';
-                this.descEl.classList.add('widget-weather-error');
+                this.showError('天气获取失败');
             }
         }
     }
 
     applyWeather(w) {
-        // 兼容旧缓存：Material Icons 图标名 → Material Symbols 图标名
+        // 兼容旧缓存：Material Icons 图标名 → Material Symbols 图标名（历史数据仅 wb_sunny 需要转换）
         const iconFix = { 'wb_sunny': 'sunny' };
         if (iconFix[w.icon]) w.icon = iconFix[w.icon];
+        if (!w.icon) w.icon = 'sunny'; // 兜底：缓存缺图标字段时使用默认
         this.iconEl.textContent = w.icon;
         this.tempEl.textContent = w.temp + '°';
         this.descEl.textContent = w.desc;
@@ -194,6 +203,43 @@ class WeatherWidget extends WidgetBase {
                 { enableHighAccuracy: false, timeout: 5000, maximumAge: 10 * 60 * 1000 }
             );
         });
+    }
+
+    // 解析坐标：未配置城市或“当前位置”走浏览器定位，命名城市走地理编码
+    async resolveCoords() {
+        if (!this.city || this.city === '当前位置') {
+            const located = await this.tryGeolocate();
+            if (located) {
+                this.city = '当前位置';
+                return located;
+            }
+            // 定位失败回退到默认城市南昌
+            return { lat: 28.68, lon: 115.8575 };
+        }
+        return this.geocodeCity(this.city);
+    }
+
+    // 使用 Open-Meteo 地理编码接口把城市名解析为经纬度
+    async geocodeCity(name) {
+        try {
+            const url = 'https://geocoding-api.open-meteo.com/v1/search'
+                + '?name=' + encodeURIComponent(name)
+                + '&count=1&language=zh&format=json';
+            const data = await this.fetchJSON(url);
+            if (data && Array.isArray(data.results) && data.results.length) {
+                return { lat: data.results[0].latitude, lon: data.results[0].longitude };
+            }
+        } catch (e) {
+            console.warn('[WeatherWidget] 城市地理编码失败:', e.message);
+        }
+        return null;
+    }
+
+    showError(message) {
+        if (!this.tempEl) return;
+        this.tempEl.textContent = '--°';
+        this.descEl.textContent = message;
+        this.descEl.classList.add('widget-weather-error');
     }
 
     mapWmoCode(code) {
