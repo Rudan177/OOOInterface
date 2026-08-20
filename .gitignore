@@ -23,3 +23,5 @@ needs/
 
 # Agnes plan documents
 .trae/
+.dsh-vision-toolkit/
+test/
