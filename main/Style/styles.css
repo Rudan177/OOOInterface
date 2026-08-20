@@ -302,8 +302,13 @@ body.sidebar-visible #quick-access-links {
     max-width: min(600px, calc(100vw - 70px - 2 * clamp(50px, 10vw, 120px)));
 }
 
+/* 壁纸模式下不推动主内容与搜索框 */
+body.scrolled.sidebar-visible .container {
+    transform: none;
+}
+
 body.scrolled.sidebar-visible .search-section {
-    max-width: calc(100% - 80px);
+    max-width: none;
 }
 
 
@@ -1629,7 +1634,8 @@ body.scrolled.dynamic-blur .ooo-badge {
 }
 
 .right-panel-upper .settings-menu-options,
-.right-panel-upper .quick-links-list-container {
+.right-panel-upper .quick-links-list-container,
+.right-panel-upper .widget-panel-list-container {
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -5113,12 +5119,8 @@ body.dynamic-blur .quick-access-sidebar-container {
     font-size: 13px;
 }
 
-/* 壁纸滚动模式下侧边栏不受影响 */
-body.scrolled .quick-access-sidebar-container {
-    transform: translateX(calc(100% + 20px));
-    opacity: 0;
-}
-
+/* 壁纸滚动模式下侧边栏常显示 */
+body.scrolled .quick-access-sidebar-container,
 body.scrolled .quick-access-sidebar-container.visible {
     transform: translateX(0);
     opacity: 1;

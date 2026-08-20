@@ -50,6 +50,10 @@ class OOOInterface {
             bingRefreshInterval: 0,
             quickAccessSidebar: true,
             showQuickLinkIcons: true,
+            widgetPanel: {
+                enabled: true,
+                widgets: []
+            },
             statusBarEnabled: false,
             showStatusBarSeconds: false,
             hideNotifications: false,
@@ -127,6 +131,8 @@ class OOOInterface {
         this.updateCustomWallpapersList();
 
         this.initQuickAccessSidebar();
+
+        this.initWidgetPanel();
 
         // 先加载主题列表（含用户导入的自定义主题），再应用外观设置，
         // 确保页面刷新后主题在首屏渲染前即恢复，避免出现默认外观闪动
@@ -231,6 +237,7 @@ class OOOInterface {
         if (hip) hip.checked = this.settings.hideInfoPopup.enabled;
         this.updateHideInfoPopupLabel();
         this.syncStatusBarUI();
+        this.syncWidgetPanelUI();
     }
 
     syncStatusBarUI() {
@@ -952,6 +959,18 @@ class OOOInterface {
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
         if (savedSettings.quickAccessSidebar !== undefined) result.quickAccessSidebar = savedSettings.quickAccessSidebar;
         if (savedSettings.showQuickLinkIcons !== undefined) result.showQuickLinkIcons = savedSettings.showQuickLinkIcons;
+
+        // 合并小组件面板配置
+        if (savedSettings.widgetPanel && typeof savedSettings.widgetPanel === 'object') {
+            result.widgetPanel = {
+                enabled: savedSettings.widgetPanel.enabled !== false,
+                widgets: Array.isArray(savedSettings.widgetPanel.widgets)
+                    ? savedSettings.widgetPanel.widgets.filter(w =>
+                        w && typeof w === 'object' && w.type && w.id
+                      )
+                    : []
+            };
+        }
         if (savedSettings.statusBarEnabled !== undefined) result.statusBarEnabled = savedSettings.statusBarEnabled;
         if (savedSettings.showStatusBarSeconds !== undefined) result.showStatusBarSeconds = savedSettings.showStatusBarSeconds;
         if (savedSettings.hideNotifications !== undefined) result.hideNotifications = savedSettings.hideNotifications;
@@ -2118,6 +2137,15 @@ class OOOInterface {
                             if (container && container._qlinput) {
                                 this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
                             }
+                        } else if (rpu && (rpu.dataset.subView === 'widget-config' || rpu.dataset.subView === 'widget-type-picker')) {
+                            // 小组件编辑/添加表单：ESC 返回列表（带滑出动画）
+                            const listContainer = rpu.querySelector('.widget-panel-list-container');
+                            if (listContainer) {
+                                this.exitWidgetFormView(listContainer, () => {
+                                    this.restoreWidgetPanelButtons();
+                                    this.updateWidgetPanelListInMenu(listContainer);
+                                });
+                            }
                         } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
                             this.backToCustomColorView(rpu);
                         } else if (rpu) {
@@ -2232,6 +2260,27 @@ class OOOInterface {
                 }
             }
         });
+
+        // 小组件面板开关
+        const widgetPanelToggle = document.getElementById('widget-panel-toggle');
+        if (widgetPanelToggle) {
+            widgetPanelToggle.addEventListener('change', (e) => {
+                this.settings.widgetPanel.enabled = e.target.checked;
+                this.saveSettings();
+                this.syncWidgetPanelUI();
+                this.updateWidgetPanelVisibility();
+                this.showNotification(e.target.checked ? '小组件面板：开启' : '小组件面板：关闭');
+            });
+        }
+
+        // 小组件列表下拉点击 → 右面板管理界面
+        const widgetPanelSelectSelected = document.getElementById('widget-panel-select-selected');
+        if (widgetPanelSelectSelected) {
+            widgetPanelSelectSelected.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showWidgetPanelMenuInRightPanel();
+            });
+        }
 
         // 状态栏主开关改变时，显示/隐藏子开关并保留上次保存的秒钟偏好
         document.getElementById('status-bar-toggle').addEventListener('change', (e) => {
@@ -2550,6 +2599,7 @@ class OOOInterface {
         let touchActive = false;
 
         window.addEventListener('touchstart', (e) => {
+            if (document.body.classList.contains('widget-panel-open')) return;
             if (e.target.closest('.modal') ||
                 e.target.closest('.search-section') ||
                 e.target.closest('.engine-buttons') ||
@@ -2559,6 +2609,7 @@ class OOOInterface {
         }, { passive: true });
 
         window.addEventListener('touchmove', (e) => {
+            if (document.body.classList.contains('widget-panel-open')) return;
             if (!touchActive || this.isAnimating) return;
             const deltaY = touchStartY - e.touches[0].pageY;
             if (Math.abs(deltaY) > 15) {
@@ -4905,8 +4956,8 @@ class OOOInterface {
 
         let hideTimeout = null;
         let isVisible = false;
-        const TRIGGER_ZONE_WIDTH = 100;  // 右侧触发区域宽度（像素）
-        const HIDE_DELAY = 0;
+        const TRIGGER_ZONE_WIDTH = 60;   // 右侧触发区域宽度（像素，与小组件一致）
+        const HIDE_DELAY = 0;            // 鼠标离开立即关闭
 
         const pushWallpaper = (pushIn) => {
             this._sidebarPushing = pushIn && window.innerWidth >= 750;
@@ -4919,6 +4970,8 @@ class OOOInterface {
 
         const showSidebar = () => {
             if (!this.settings.quickAccessSidebar) return;
+            const modal = document.getElementById('settings-modal');
+            if (modal && modal.classList.contains('show')) return;
             if (hideTimeout) {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
@@ -4948,15 +5001,18 @@ class OOOInterface {
             }, HIDE_DELAY);
         };
 
-        // 全局鼠标移动检测：在右侧边缘触发区域显示容器
+        // 全局鼠标移动检测：在右侧边缘触发区域显示容器（与小组件一致）
         document.addEventListener('mousemove', (e) => {
             if (!this.settings.quickAccessSidebar) return;
+            const modal = document.getElementById('settings-modal');
+            if (modal && modal.classList.contains('show')) return;
             const viewportWidth = window.innerWidth;
             const mouseX = e.clientX;
 
             if (mouseX >= viewportWidth - TRIGGER_ZONE_WIDTH) {
                 showSidebar();
-            } else if (isVisible) {
+            } else if (isVisible && !document.body.classList.contains('scrolled')) {
+                // 壁纸模式下常显示，不做隐藏判断
                 // 仅在容器可见时检查是否需要隐藏
                 const containerRect = container.getBoundingClientRect();
                 const isOverContainer = (
@@ -4971,7 +5027,7 @@ class OOOInterface {
             }
         });
 
-        // 容器悬停维持显示
+        // 容器悬停维持显示（与小组件一致）
         container.addEventListener('mouseenter', () => {
             if (!this.settings.quickAccessSidebar) return;
             if (hideTimeout) {
@@ -4982,20 +5038,28 @@ class OOOInterface {
                 isVisible = true;
                 container.classList.remove('hiding');
                 container.classList.add('visible');
+                document.body.classList.add('sidebar-visible');
+                pushWallpaper(true);
             }
         });
 
         container.addEventListener('mouseleave', () => {
+            // 壁纸模式下常显示，鼠标移开不隐藏
+            if (document.body.classList.contains('scrolled')) return;
             scheduleHide();
         });
 
-        // 禁用快速访问侧边栏内的滚轮事件触发壁纸模式
-        sidebar.addEventListener('wheel', (e) => {
-            e.stopPropagation();
-        }, { passive: true });
-        container.addEventListener('wheel', (e) => {
-            e.stopPropagation();
-        }, { passive: true });
+        // 侧边栏滚轮：内容溢出时拦截（只滚动侧边栏内容，不触发壁纸模式进退）；
+        // 内容不溢出时放行（交给页面滚动处理）
+        const sidebarLinks = document.getElementById('quick-access-sidebar-links');
+        const sidebarWheelHandler = (e) => {
+            if (!sidebarLinks) return;
+            const maxScroll = sidebarLinks.scrollHeight - sidebarLinks.clientHeight;
+            if (maxScroll <= 0) return; // 内容不溢出，放行
+            e.stopPropagation();        // 内容溢出：拦截，只滚动侧边栏内容
+        };
+        sidebar.addEventListener('wheel', sidebarWheelHandler, { passive: true });
+        container.addEventListener('wheel', sidebarWheelHandler, { passive: true });
     }
 
     // 设置文字Logo
@@ -5176,6 +5240,9 @@ class OOOInterface {
                 document.body.classList.add('user-scrolled');
             }
 
+            // 壁纸模式下常显示侧边栏与小组件面板（清除 hiding 残留状态）
+            this.syncWidgetPanelsForWallpaper(true);
+
             // 动画完成后移除退出动画类（350ms + 缓冲）
             setTimeout(() => {
                 document.body.classList.remove('exit-animation');
@@ -5270,6 +5337,9 @@ class OOOInterface {
         }
 
         document.body.classList.remove('scrolled');
+
+        // 退出壁纸模式：恢复侧边栏与小组件面板由 hover 控制
+        this.syncWidgetPanelsForWallpaper(false);
         document.body.classList.remove('user-scrolled');
 
         if (this.settings.persistentWallpaper) {
@@ -5808,6 +5878,13 @@ class OOOInterface {
             showIconsToggle.checked = this.settings.quickAccessSidebar ? this.settings.showQuickLinkIcons : false;
         }
 
+        // 小组件面板开关
+        const widgetPanelToggle = document.getElementById('widget-panel-toggle');
+        if (widgetPanelToggle) {
+            widgetPanelToggle.checked = this.settings.widgetPanel.enabled;
+        }
+        this.syncWidgetPanelUI();
+
         // 更新设置打开方式
         const badgeOpenMethodValue = this.settings.badgeOpenMethod || 'both';
         const badgeMethodSelect = document.getElementById('badge-open-method-select');
@@ -6286,6 +6363,7 @@ class OOOInterface {
         this.applyWallpaper();
         this.applyDeveloperSettings();
         this.applyContextMenuStyle();
+        this.renderWidgetPanel();
 
         if (this.infoManager) {
             this.infoManager.applyHideInfoPopup();
@@ -10439,5 +10517,1118 @@ OOOInterface.prototype.importBookmarksFromChrome = function (mode, folderId, dro
         });
     } catch (e) {
         self.showNotification('无法访问Chrome书签数据');
+    }
+};
+
+// ============================================
+// 小组件面板（Widget Panel）
+// ============================================
+
+// 小组件类型元信息
+OOOInterface.prototype.WIDGET_TYPES = {
+    'clock':    { name: '大时钟', icon: 'schedule',        defaultSize: 'square', allowBoth: true },
+    'weather':  { name: '天气',   icon: 'wb_sunny',        defaultSize: 'square', allowBoth: true },
+    'tasks':    { name: '任务',   icon: 'checklist',       defaultSize: 'rectangle' },
+    'ai-agent': { name: 'AI Agent', icon: 'smart_toy',     defaultSize: 'square' },
+    'email':    { name: '邮箱',   icon: 'mail',            defaultSize: 'square' },
+    'audio':    { name: '音频播控', icon: 'music_note',    defaultSize: 'rectangle' }
+};
+
+// 小组件实例化
+OOOInterface.prototype.createWidgetInstance = function (config) {
+    const baseConfig = {
+        id: config.id,
+        type: config.type,
+        size: config.size,
+        data: config.data || {},
+        ooo: this
+    };
+    switch (config.type) {
+        case 'clock': return new ClockWidget(baseConfig);
+        case 'weather': return new WeatherWidget(baseConfig);
+        case 'tasks': return new TasksWidget(baseConfig);
+        case 'ai-agent': return new AiAgentWidget(baseConfig);
+        case 'email': return new EmailWidget(baseConfig);
+        case 'audio': return new AudioWidget(baseConfig);
+        default: return null;
+    }
+};
+
+// 渲染小组件网格
+OOOInterface.prototype.renderWidgetPanel = function () {
+    const grid = document.getElementById('widget-panel-grid');
+    if (!grid) return;
+
+    // 销毁旧实例
+    if (this.widgetInstances) {
+        this.widgetInstances.forEach(w => {
+            try { w.destroy(); } catch (e) { /* 忽略 */ }
+        });
+    }
+    this.widgetInstances = [];
+    grid.innerHTML = '';
+
+    const widgets = (this.settings.widgetPanel && Array.isArray(this.settings.widgetPanel.widgets))
+        ? this.settings.widgetPanel.widgets : [];
+
+    if (widgets.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'widget-panel-empty';
+        empty.textContent = '暂无小组件，可在设置中添加';
+        grid.appendChild(empty);
+    } else {
+        widgets.forEach(config => {
+            const widget = this.createWidgetInstance(config);
+            if (widget) {
+                try {
+                    widget.render(grid);
+                    this.widgetInstances.push(widget);
+                } catch (e) {
+                    console.warn('[WidgetPanel] 渲染小组件失败:', config.type, e);
+                }
+            }
+        });
+    }
+
+    this.updateWidgetPanelVisibility();
+
+    // 长方形高度 = 正方形宽度（列宽），通过 JS 计算确保与正方形完全一致
+    this.syncWidgetCardHeights();
+};
+
+// 同步小组件网格行高：行高 = 列宽（正方形宽度），所有卡片自动填满行高
+OOOInterface.prototype.syncWidgetCardHeights = function () {
+    const grid = document.getElementById('widget-panel-grid');
+    if (!grid) return;
+
+    // 等待布局完成后再测量
+    requestAnimationFrame(() => {
+        if (!grid.isConnected) return;
+        const gap = 8; // grid gap（与 CSS 一致）
+        const colWidth = (grid.clientWidth - gap) / 2;
+        if (!(colWidth > 0)) return;
+
+        // 设置 grid 行高 = 正方形宽度（列宽）
+        // 正方形（1列）与长方形（2列）均被 stretch 填满行高，两者高度完全一致
+        grid.style.gridAutoRows = colWidth + 'px';
+    });
+};
+
+// 根据设置更新面板可见性
+OOOInterface.prototype.updateWidgetPanelVisibility = function () {
+    const panel = document.getElementById('widget-panel');
+    const container = document.getElementById('widget-panel-container');
+    if (!panel) return;
+    const enabled = this.settings.widgetPanel && this.settings.widgetPanel.enabled;
+    if (enabled) {
+        panel.classList.add('active');
+    } else {
+        panel.classList.remove('active');
+        if (container) {
+            container.classList.remove('visible');
+            container.classList.add('hiding');
+        }
+        document.body.classList.remove('widget-panel-open');
+    }
+};
+
+// 壁纸模式切换时同步侧边栏与小组件面板的显示状态
+// wallpaperMode=true：常显示（清除 hiding，强制 visible）
+// wallpaperMode=false：恢复 hover 控制（清除 visible 与推动残留）
+OOOInterface.prototype.syncWidgetPanelsForWallpaper = function (wallpaperMode) {
+    const sidebarContainer = document.getElementById('quick-access-sidebar-container');
+    const widgetContainer = document.getElementById('widget-panel-container');
+
+    if (wallpaperMode) {
+        // 常显示：清除 hiding 残留，确保壁纸模式下可见
+        [sidebarContainer, widgetContainer].forEach(container => {
+            if (!container) return;
+            container.classList.remove('hiding');
+            if (!container.classList.contains('visible')) {
+                container.classList.add('visible');
+            }
+        });
+    } else {
+        // 恢复 hover 控制：清除 visible 与推动残留（widget-panel-open / sidebar-visible）
+        document.body.classList.remove('widget-panel-open');
+        document.body.classList.remove('sidebar-visible');
+        [sidebarContainer, widgetContainer].forEach(container => {
+            if (!container) return;
+            container.classList.remove('visible');
+            container.classList.add('hiding');
+        });
+    }
+};
+
+// 初始化左侧小组件面板交互
+OOOInterface.prototype.initWidgetPanel = function () {
+    const trigger = document.getElementById('widget-panel-trigger');
+    const container = document.getElementById('widget-panel-container');
+    const panel = document.getElementById('widget-panel');
+
+    if (!trigger || !container || !panel) return;
+
+    let hideTimeout = null;
+    let isVisible = false;
+    const TRIGGER_ZONE_WIDTH = 60;   // 左侧触发区域宽度（像素）
+    const HIDE_DELAY = 0;            // 鼠标离开立即关闭
+
+    const showPanel = () => {
+        if (!this.settings.widgetPanel || !this.settings.widgetPanel.enabled) return;
+        const modal = document.getElementById('settings-modal');
+        if (modal && modal.classList.contains('show')) return;
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+        }
+        if (!isVisible) {
+            isVisible = true;
+            container.classList.remove('hiding');
+            container.classList.add('visible');
+            document.body.classList.add('widget-panel-open');
+            // 面板可见后重新同步卡片高度（隐藏时无法测量宽度）
+            this.syncWidgetCardHeights();
+        }
+    };
+
+    const scheduleHide = () => {
+        if (hideTimeout) clearTimeout(hideTimeout);
+        hideTimeout = setTimeout(() => {
+            if (isVisible) {
+                isVisible = false;
+                container.classList.remove('visible');
+                container.classList.add('hiding');
+                document.body.classList.remove('widget-panel-open');
+            }
+            hideTimeout = null;
+        }, HIDE_DELAY);
+    };
+
+    // 全局鼠标移动检测：左边缘触发区域显示面板
+    document.addEventListener('mousemove', (e) => {
+        if (!this.settings.widgetPanel || !this.settings.widgetPanel.enabled) return;
+        const modal = document.getElementById('settings-modal');
+        if (modal && modal.classList.contains('show')) return;
+        const mouseX = e.clientX;
+
+        if (mouseX <= TRIGGER_ZONE_WIDTH) {
+            showPanel();
+        } else if (isVisible && !document.body.classList.contains('scrolled')) {
+            // 壁纸模式下常显示，不做隐藏判断
+            const containerRect = container.getBoundingClientRect();
+            const isOverContainer = (
+                mouseX >= containerRect.left &&
+                mouseX <= containerRect.right &&
+                e.clientY >= containerRect.top &&
+                e.clientY <= containerRect.bottom
+            );
+            if (!isOverContainer) {
+                scheduleHide();
+            }
+        }
+    });
+
+    // 容器悬停维持显示
+    container.addEventListener('mouseenter', () => {
+        if (!this.settings.widgetPanel || !this.settings.widgetPanel.enabled) return;
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+        }
+        if (!isVisible) {
+            isVisible = true;
+            container.classList.remove('hiding');
+            container.classList.add('visible');
+            document.body.classList.add('widget-panel-open');
+        }
+    });
+
+    container.addEventListener('mouseleave', () => {
+        // 壁纸模式下常显示，鼠标移开不隐藏
+        if (document.body.classList.contains('scrolled')) return;
+        scheduleHide();
+    });
+
+    // 面板滚轮：内容溢出时拦截（只滚动面板内容，不触发壁纸模式进退）；
+    // 内容不溢出时放行（交给页面滚动处理）
+    const grid = document.getElementById('widget-panel-grid');
+    const panelWheelHandler = (e) => {
+        if (!grid) return;
+        const maxScroll = grid.scrollHeight - grid.clientHeight;
+        if (maxScroll <= 0) return; // 内容不溢出，放行
+        e.stopPropagation();        // 内容溢出：拦截，只滚动面板内容
+    };
+    panel.addEventListener('wheel', panelWheelHandler, { passive: true });
+    container.addEventListener('wheel', panelWheelHandler, { passive: true });
+};
+
+// 同步设置页 UI
+OOOInterface.prototype.syncWidgetPanelUI = function () {
+    const manageGroup = document.getElementById('widget-panel-manage-group');
+    const toggle = document.getElementById('widget-panel-toggle');
+    if (!manageGroup || !toggle) return;
+    const enabled = this.settings.widgetPanel && this.settings.widgetPanel.enabled;
+    manageGroup.style.display = enabled ? 'block' : 'none';
+    toggle.checked = !!enabled;
+};
+
+// 保存小组件设置（所有 widget 数据持久化）
+OOOInterface.prototype.saveWidgetSettings = function () {
+    this.saveSettings();
+};
+
+// 保存单个小组件数据（由 WidgetBase.persist 调用）
+OOOInterface.prototype.saveWidgetData = function (widgetId, data) {
+    const widgets = this.settings.widgetPanel && this.settings.widgetPanel.widgets;
+    if (!Array.isArray(widgets)) return;
+    const idx = widgets.findIndex(w => w.id === widgetId);
+    if (idx >= 0) {
+        widgets[idx].data = data;
+        this.saveSettings();
+    }
+};
+
+// 打开设置并定位到小组件管理
+OOOInterface.prototype.openWidgetSettings = function (widgetId) {
+    this.openSettings('badge');
+    setTimeout(() => {
+        this.showWidgetPanelMenuInRightPanel();
+        // 尝试滚动到指定小组件
+        if (widgetId) {
+            setTimeout(() => {
+                const item = document.querySelector(`.widget-menu-item[data-widget-id="${widgetId}"]`);
+                if (item) item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 150);
+        }
+    }, 100);
+};
+
+// 设置右面板：小组件管理界面
+OOOInterface.prototype.showWidgetPanelMenuInRightPanel = function () {
+    const self = this;
+    const rightPanelUpper = document.getElementById('right-panel-upper');
+    if (!rightPanelUpper) return;
+    document.getElementById('settings-modal').classList.add('right-panel-open');
+
+    rightPanelUpper.innerHTML = '';
+
+    const container = document.createElement('div');
+    container.className = 'settings-menu-container slide-in-right';
+
+    const listContainer = document.createElement('div');
+    listContainer.className = 'widget-panel-list-container';
+    container.appendChild(listContainer);
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'settings-menu-button-container';
+
+    const plusBtn = document.createElement('button');
+    plusBtn.className = 'upload-btn settings-plus-btn';
+    plusBtn.textContent = '+';
+    plusBtn.title = '添加小组件';
+
+    // 导出按钮
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'settings-import-btn settings-export-btn';
+    exportBtn.title = '导出小组件配置为 JSON';
+    exportBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+
+    // 导入按钮
+    const importBtn = document.createElement('button');
+    importBtn.className = 'settings-import-btn';
+    importBtn.title = '导入小组件配置';
+    importBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+    const ioRow = document.createElement('div');
+    ioRow.className = 'quick-links-io-row';
+    ioRow.appendChild(exportBtn);
+    ioRow.appendChild(importBtn);
+
+    buttonContainer.appendChild(ioRow);
+    buttonContainer.appendChild(plusBtn);
+    container.appendChild(buttonContainer);
+
+    rightPanelUpper.appendChild(container);
+
+    this.updateWidgetPanelListInMenu(listContainer);
+
+    // "+" 按钮：显示类型选择器
+    plusBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        self.showWidgetTypePicker(container, listContainer, buttonContainer);
+    });
+
+    // 导出
+    exportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        self.exportWidgets();
+    });
+
+    // 导入
+    importBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.addEventListener('change', () => {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => self.importWidgets(reader.result, listContainer);
+            reader.readAsText(file);
+        });
+        input.click();
+    });
+};
+
+// 右面板：小组件列表（支持拖拽排序 + 点击编辑，参考快速访问链接）
+OOOInterface.prototype.updateWidgetPanelListInMenu = function (listContainer) {
+    const self = this;
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    const widgets = (this.settings.widgetPanel && Array.isArray(this.settings.widgetPanel.widgets))
+        ? this.settings.widgetPanel.widgets : [];
+
+    if (widgets.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'quick-links-empty';
+        empty.textContent = '暂无小组件，可在设置中添加';
+        listContainer.appendChild(empty);
+        return;
+    }
+
+    // 使用 DocumentFragment 批量构建条目
+    const fragment = document.createDocumentFragment();
+
+    widgets.forEach((widget, index) => {
+        const meta = this.WIDGET_TYPES[widget.type] || { name: widget.type, icon: 'widgets' };
+
+        const item = document.createElement('div');
+        item.className = 'widget-menu-item';
+        item.setAttribute('data-index', index);
+        item.setAttribute('data-widget-id', widget.id);
+        item.draggable = true;
+
+        // 拖拽手柄（复用快速访问链接样式）
+        const dragHandle = document.createElement('div');
+        dragHandle.className = 'quick-link-drag-handle';
+        dragHandle.innerHTML = '<span></span><span></span>';
+        dragHandle.title = '拖拽排序';
+
+        const typeIcon = document.createElement('span');
+        typeIcon.className = 'material-icons';
+        typeIcon.style.cssText = 'font-size:20px;color:var(--scheme-accent);flex-shrink:0;';
+        typeIcon.textContent = meta.icon;
+
+        const info = document.createElement('div');
+        info.className = 'widget-menu-info';
+
+        const nameRow = document.createElement('div');
+        nameRow.className = 'widget-menu-name';
+
+        const name = document.createElement('span');
+        name.textContent = meta.name;
+        nameRow.appendChild(name);
+
+        const typeLabel = document.createElement('span');
+        typeLabel.className = 'widget-type-label';
+        typeLabel.textContent = widget.size === 'rectangle' ? '长方形' : '正方形';
+        nameRow.appendChild(typeLabel);
+
+        const sub = document.createElement('div');
+        sub.className = 'widget-menu-sub';
+        sub.textContent = self.getWidgetSubtitle(widget);
+
+        info.appendChild(nameRow);
+        info.appendChild(sub);
+
+        // 点击条目编辑（参考快速访问链接）
+        info.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const container = listContainer.closest('.settings-menu-container');
+            const currentIndex = parseInt(item.getAttribute('data-index'), 10);
+            const currentWidget = self.settings.widgetPanel.widgets[currentIndex];
+            if (currentWidget) {
+                self.showWidgetConfigForm(listContainer, currentWidget);
+            }
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-link-menu-btn';
+        deleteBtn.textContent = '×';
+        deleteBtn.title = '删除小组件';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const currentIndex = parseInt(item.getAttribute('data-index'), 10);
+            if (isNaN(currentIndex) || currentIndex < 0 || currentIndex >= self.settings.widgetPanel.widgets.length) return;
+            const removed = self.settings.widgetPanel.widgets[currentIndex];
+            const removedName = self.WIDGET_TYPES[removed.type] ? self.WIDGET_TYPES[removed.type].name : '小组件';
+            self.settings.widgetPanel.widgets.splice(currentIndex, 1);
+            self.saveWidgetSettings();
+            self.renderWidgetPanel();
+            self.updateWidgetPanelListInMenu(listContainer);
+            self.showNotification('"' + removedName + '" 已删除');
+        });
+
+        item.appendChild(dragHandle);
+        item.appendChild(typeIcon);
+        item.appendChild(info);
+        item.appendChild(deleteBtn);
+        fragment.appendChild(item);
+
+        // ===== 拖拽排序（参考快速访问链接） =====
+
+        item.addEventListener('dragstart', (e) => {
+            item.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', 'move');
+            e.dataTransfer.effectAllowed = 'move';
+            // 清除默认拖拽半透明预览
+            const blankImg = new Image();
+            blankImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            e.dataTransfer.setDragImage(blankImg, 0, 0);
+        });
+
+        item.addEventListener('dragend', () => {
+            item.classList.remove('dragging');
+            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
+            listContainer.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        });
+
+        item.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const dragged = listContainer.querySelector('.dragging');
+            if (!dragged || dragged === item) return;
+
+            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
+
+            const rect = item.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const insertBefore = e.clientY < midY;
+
+            const indicator = document.createElement('div');
+            indicator.className = 'drag-indicator';
+            if (insertBefore) {
+                item.parentNode.insertBefore(indicator, item);
+            } else {
+                item.parentNode.insertBefore(indicator, item.nextSibling);
+            }
+        });
+
+        item.addEventListener('dragleave', (e) => {
+            if (e.target === item) {
+                const indicator = item.parentNode.querySelector('.drag-indicator');
+                if (indicator) indicator.remove();
+            }
+        });
+
+        item.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const dragged = listContainer.querySelector('.dragging');
+            if (!dragged) return;
+
+            const indicator = listContainer.querySelector('.drag-indicator');
+            if (!indicator) return;
+
+            const referenceNode = indicator.nextSibling;
+            indicator.remove();
+
+            if (referenceNode) {
+                listContainer.insertBefore(dragged, referenceNode);
+            } else {
+                listContainer.appendChild(dragged);
+            }
+
+            // 更新所有项的 data-index
+            const allItems = listContainer.querySelectorAll('.widget-menu-item');
+            allItems.forEach((el, i) => {
+                el.setAttribute('data-index', i);
+            });
+
+            // 根据 DOM 顺序重建设置数组（按 widget id 重新排列，保留原对象引用）
+            const newWidgets = [];
+            allItems.forEach(el => {
+                const wid = el.getAttribute('data-widget-id');
+                const w = self.settings.widgetPanel.widgets.find(x => x.id === wid);
+                if (w) newWidgets.push(w);
+            });
+
+            self.settings.widgetPanel.widgets = newWidgets;
+            self.saveWidgetSettings();
+            self.renderWidgetPanel();
+            self.showNotification('顺序已调整');
+        });
+    });
+
+    listContainer.appendChild(fragment);
+};
+
+// 小组件副标题（显示配置摘要）
+OOOInterface.prototype.getWidgetSubtitle = function (widget) {
+    const data = widget.data || {};
+    switch (widget.type) {
+        case 'weather': return data.city ? '城市：' + data.city : '默认城市：南昌';
+        case 'ai-agent': return data.port ? '端口：' + data.port : '未配置端口';
+        case 'email': return data.apiUrl ? 'API：' + data.apiUrl : (data.provider || 'gmail');
+        case 'tasks': {
+            const n = Array.isArray(data.items) ? data.items.length : 0;
+            return n + ' 个任务';
+        }
+        case 'audio': return '媒体控制';
+        case 'clock': return '本地时间';
+        default: return '';
+    }
+};
+
+// 右面板：类型选择器
+OOOInterface.prototype.showWidgetTypePicker = function (container, listContainer, buttonContainer) {
+    const self = this;
+
+    // 标记当前子视图（ESC 返回列表用）
+    const rpu = document.getElementById('right-panel-upper');
+    if (rpu) rpu.dataset.subView = 'widget-type-picker';
+
+    // 添加流程中隐藏底部导出/导入/+ 按钮
+    if (buttonContainer) {
+        const ioRow = buttonContainer.querySelector('.quick-links-io-row');
+        const plusBtn = buttonContainer.querySelector('.settings-plus-btn');
+        if (ioRow) ioRow.style.display = 'none';
+        if (plusBtn) plusBtn.style.display = 'none';
+    }
+
+    const exitTo = (fn) => {
+        self.exitWidgetFormView(listContainer, () => {
+            self.restoreWidgetPanelButtons();
+            fn && fn();
+        });
+    };
+
+    this.showWidgetFormView(listContainer, (view) => {
+        const title = document.createElement('div');
+        title.className = 'widget-add-form';
+        title.style.cssText = 'padding-bottom:0;';
+        const tRow = document.createElement('div');
+        tRow.className = 'widget-add-form-row';
+        const tLabel = document.createElement('label');
+        tLabel.textContent = '选择小组件类型';
+        tRow.appendChild(tLabel);
+        title.appendChild(tRow);
+        view.appendChild(title);
+
+        const picker = document.createElement('div');
+        picker.className = 'widget-type-picker';
+
+        Object.keys(self.WIDGET_TYPES).forEach(type => {
+            const meta = self.WIDGET_TYPES[type];
+            const item = document.createElement('button');
+            item.className = 'widget-type-picker-item';
+            item.innerHTML = '<span class="material-icons">' + meta.icon + '</span><span>' + meta.name + '</span>';
+            item.addEventListener('click', () => {
+                // 先滑出类型选择器，再进入配置表单
+                self.exitWidgetFormView(listContainer, () => {
+                    self.showWidgetConfigForm(listContainer, null, type);
+                });
+            });
+            picker.appendChild(item);
+        });
+
+        view.appendChild(picker);
+
+        // 返回按钮
+        const backRow = document.createElement('div');
+        backRow.className = 'widget-add-form';
+        backRow.style.cssText = 'padding-top:0;';
+        const backBtn = document.createElement('button');
+        backBtn.className = 'widget-add-form-btn cancel';
+        backBtn.textContent = '← 返回列表';
+        backBtn.addEventListener('click', () => {
+            exitTo(() => self.updateWidgetPanelListInMenu(listContainer));
+        });
+        backRow.appendChild(backBtn);
+        view.appendChild(backRow);
+    });
+};
+
+// 在列表容器中显示表单视图（带滑入动画）
+OOOInterface.prototype.showWidgetFormView = function (listContainer, buildContentFn) {
+    listContainer.innerHTML = '';
+    const view = document.createElement('div');
+    view.className = 'widget-form-view';
+    buildContentFn(view);
+    listContainer.appendChild(view);
+    requestAnimationFrame(() => {
+        view.classList.add('slide-in-right');
+    });
+    return view;
+};
+
+// 退出表单视图（表单内容 + 底部按钮同步滑出，动画结束后执行回调）
+OOOInterface.prototype.exitWidgetFormView = function (listContainer, callback) {
+    const view = listContainer.querySelector('.widget-form-view');
+
+    // 底部表单按钮（确定/取消）同步滑出
+    const rpu = document.getElementById('right-panel-upper');
+    const buttonContainer = rpu ? rpu.querySelector('.settings-menu-button-container') : null;
+    const btnRow = buttonContainer ? buttonContainer.querySelector('.widget-form-bottom-buttons') : null;
+
+    const targets = [];
+    if (view) targets.push(view);
+    if (btnRow) targets.push(btnRow);
+
+    if (targets.length === 0) {
+        if (callback) callback();
+        return;
+    }
+
+    let pending = targets.length;
+    const onDone = () => {
+        pending--;
+        if (pending > 0) return;
+        targets.forEach(t => {
+            if (t.parentNode) t.parentNode.removeChild(t);
+        });
+        if (callback) callback();
+    };
+
+    targets.forEach(t => {
+        t.classList.remove('slide-in-right');
+        t.classList.add('slide-out-right');
+        t.addEventListener('animationend', onDone, { once: true });
+        // 兜底：动画异常时 300ms 后强制完成
+        setTimeout(() => {
+            if (t.parentNode) {
+                t.dispatchEvent(new Event('animationend'));
+            }
+        }, 300);
+    });
+};
+
+// 恢复小组件面板底部按钮（导出/导入/+），移除表单底部按钮并清除 subView
+OOOInterface.prototype.restoreWidgetPanelButtons = function () {
+    const rpu = document.getElementById('right-panel-upper');
+    if (!rpu) return;
+    const container = rpu.querySelector('.settings-menu-container');
+    const buttonContainer = container ? container.querySelector('.settings-menu-button-container') : null;
+    if (buttonContainer) {
+        const ioRow = buttonContainer.querySelector('.quick-links-io-row');
+        const plusBtn = buttonContainer.querySelector('.settings-plus-btn');
+        const formBtns = buttonContainer.querySelector('.widget-form-bottom-buttons');
+        if (ioRow) ioRow.style.display = '';
+        if (plusBtn) plusBtn.style.display = '';
+        if (formBtns && formBtns.parentNode) formBtns.parentNode.removeChild(formBtns);
+
+        // 恢复的按钮滑入（避免闪现）
+        requestAnimationFrame(() => {
+            if (ioRow) {
+                ioRow.classList.remove('slide-in-right');
+                void ioRow.offsetWidth; // 强制回流以重启动画
+                ioRow.classList.add('slide-in-right');
+            }
+            if (plusBtn) {
+                plusBtn.classList.remove('slide-in-right');
+                void plusBtn.offsetWidth;
+                plusBtn.classList.add('slide-in-right');
+            }
+        });
+    }
+    delete rpu.dataset.subView;
+};
+
+// 右面板：小组件配置/添加表单
+// widget 为 null 时是添加新小组件；否则是编辑现有配置
+OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, presetType) {
+    const self = this;
+    const type = widget ? widget.type : presetType;
+    if (!type || !this.WIDGET_TYPES[type]) return;
+
+    const meta = this.WIDGET_TYPES[type];
+    const data = widget ? (widget.data || {}) : {};
+    const currentSize = widget ? widget.size : meta.defaultSize;
+
+    // 找到底部按钮容器（导出/导入/+ 所在位置）
+    const container = listContainer.closest('.settings-menu-container');
+    const buttonContainer = container ? container.querySelector('.settings-menu-button-container') : null;
+
+    // 标记当前子视图（ESC 返回列表用）
+    const rpu = document.getElementById('right-panel-upper');
+    if (rpu) rpu.dataset.subView = 'widget-config';
+
+    // 进入表单模式：隐藏导出/导入/+ 按钮
+    let ioRow = null, plusBtn = null;
+    if (buttonContainer) {
+        ioRow = buttonContainer.querySelector('.quick-links-io-row');
+        plusBtn = buttonContainer.querySelector('.settings-plus-btn');
+        if (ioRow) ioRow.style.display = 'none';
+        if (plusBtn) plusBtn.style.display = 'none';
+    }
+
+    listContainer.innerHTML = '';
+
+    // 表单视图容器（带滑入动画）
+    const formView = document.createElement('div');
+    formView.className = 'widget-form-view';
+    listContainer.appendChild(formView);
+
+    const form = document.createElement('div');
+    form.className = 'widget-add-form';
+
+    // 类型（只读展示）
+    const typeRow = document.createElement('div');
+    typeRow.className = 'widget-add-form-row';
+    const typeLabel = document.createElement('label');
+    typeLabel.textContent = '类型';
+    const typeVal = document.createElement('div');
+    typeVal.textContent = meta.name;
+    typeVal.style.cssText = 'font-size:13px;color:var(--text-color);';
+    typeRow.appendChild(typeLabel);
+    typeRow.appendChild(typeVal);
+    form.appendChild(typeRow);
+
+    // 尺寸分段滑块（iOS 26 分段切换器风格：左正方形、右长方形）
+    const forceSquare = (type === 'clock' || type === 'weather') && !meta.allowBoth;
+    const forceRect = (type === 'tasks' || type === 'audio');
+    const canChoose = !forceSquare && !forceRect;
+
+    const sizeRow = document.createElement('div');
+    sizeRow.className = 'widget-size-row';
+    const sizeLabel = document.createElement('label');
+    sizeLabel.textContent = '尺寸';
+
+    const seg = document.createElement('div');
+    seg.className = 'widget-size-segmented';
+
+    const segThumb = document.createElement('div');
+    segThumb.className = 'widget-size-seg-thumb';
+
+    const squareLbl = document.createElement('span');
+    squareLbl.className = 'widget-size-seg-label';
+    squareLbl.textContent = '正方形';
+
+    const rectLbl = document.createElement('span');
+    rectLbl.className = 'widget-size-seg-label';
+    rectLbl.textContent = '长方形';
+
+    // 透明 range 覆盖层：负责拖动与点击切换（视觉由下方分段控件呈现）
+    const sizeSlider = document.createElement('input');
+    sizeSlider.type = 'range';
+    sizeSlider.min = '0';
+    sizeSlider.max = '1';
+    sizeSlider.step = '1';
+    sizeSlider.className = 'widget-size-seg-input';
+    sizeSlider.disabled = !canChoose;
+    sizeSlider.value = currentSize === 'rectangle' ? '1' : '0';
+
+    if (!canChoose) {
+        seg.classList.add('disabled');
+    }
+
+    seg.appendChild(segThumb);
+    seg.appendChild(squareLbl);
+    seg.appendChild(rectLbl);
+    seg.appendChild(sizeSlider);
+
+    const updateSeg = () => {
+        seg.classList.toggle('rect', sizeSlider.value === '1');
+        squareLbl.classList.toggle('active', sizeSlider.value === '0');
+        rectLbl.classList.toggle('active', sizeSlider.value === '1');
+    };
+    sizeSlider.addEventListener('input', updateSeg);
+    updateSeg();
+
+    sizeRow.appendChild(sizeLabel);
+    sizeRow.appendChild(seg);
+    form.appendChild(sizeRow);
+
+    // 类型专属配置
+    const extraFields = {};
+
+    if (type === 'weather') {
+        const cityRow = document.createElement('div');
+        cityRow.className = 'widget-add-form-row';
+        const cityLabel = document.createElement('label');
+        cityLabel.textContent = '城市（默认南昌，留空自动定位）';
+        const cityInput = document.createElement('input');
+        cityInput.type = 'text';
+        cityInput.placeholder = '如：南昌';
+        cityInput.value = data.city && data.city !== '当前位置' ? data.city : '';
+        cityRow.appendChild(cityLabel);
+        cityRow.appendChild(cityInput);
+        form.appendChild(cityRow);
+        extraFields.city = cityInput;
+    }
+
+    if (type === 'ai-agent') {
+        const portRow = document.createElement('div');
+        portRow.className = 'widget-add-form-row';
+        const portLabel = document.createElement('label');
+        portLabel.textContent = '端口号';
+        const portInput = document.createElement('input');
+        portInput.type = 'number';
+        portInput.min = '1';
+        portInput.max = '65535';
+        portInput.placeholder = '如：8899';
+        portInput.value = data.port || '';
+        portRow.appendChild(portLabel);
+        portRow.appendChild(portInput);
+        const hint = document.createElement('div');
+        hint.className = 'widget-add-form-hint';
+        hint.textContent = 'AI Agent 服务地址为 127.0.0.1:' + (data.port || '端口号') + '，需本地已运行对应服务';
+        portRow.appendChild(hint);
+        form.appendChild(portRow);
+        extraFields.port = portInput;
+    }
+
+    if (type === 'email') {
+        const providerRow = document.createElement('div');
+        providerRow.className = 'widget-add-form-row';
+        const providerLabel = document.createElement('label');
+        providerLabel.textContent = '邮箱服务商';
+        const providerSelect = document.createElement('select');
+        const providers = [
+            { v: 'gmail', t: 'Gmail' },
+            { v: 'outlook', t: 'Outlook' },
+            { v: 'qq', t: 'QQ邮箱' },
+            { v: 'custom', t: '自定义' }
+        ];
+        providers.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.v;
+            opt.textContent = p.t;
+            providerSelect.appendChild(opt);
+        });
+        providerSelect.value = data.provider || 'gmail';
+        providerRow.appendChild(providerLabel);
+        providerRow.appendChild(providerSelect);
+        form.appendChild(providerRow);
+
+        const apiRow = document.createElement('div');
+        apiRow.className = 'widget-add-form-row';
+        const apiLabel = document.createElement('label');
+        apiLabel.textContent = '邮件 API 地址（可选）';
+        const apiInput = document.createElement('input');
+        apiInput.type = 'text';
+        apiInput.placeholder = '如：http://127.0.0.1:8899/api/emails';
+        apiInput.value = data.apiUrl || '';
+        apiRow.appendChild(apiLabel);
+        apiRow.appendChild(apiInput);
+        const apiHint = document.createElement('div');
+        apiHint.className = 'widget-add-form-hint';
+        apiHint.textContent = '留空则仅提供网页版入口；配置后返回 { emails: [{from, subject, time}] }';
+        apiRow.appendChild(apiHint);
+        form.appendChild(apiRow);
+        extraFields.provider = providerSelect;
+        extraFields.apiUrl = apiInput;
+    }
+
+    formView.appendChild(form);
+
+    // 滑入动画
+    requestAnimationFrame(() => {
+        formView.classList.add('slide-in-right');
+    });
+
+    // 底部按钮：确定/取消（放入底部按钮容器，替代导出/导入/+）
+    const btnRow = document.createElement('div');
+    btnRow.className = 'widget-form-bottom-buttons';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'widget-add-form-btn cancel';
+    cancelBtn.textContent = '取消';
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'widget-add-form-btn confirm';
+    confirmBtn.textContent = '确定';
+
+    btnRow.appendChild(cancelBtn);
+    btnRow.appendChild(confirmBtn);
+
+    if (buttonContainer) {
+        buttonContainer.appendChild(btnRow);
+        // 底部按钮与表单内容同步滑入
+        requestAnimationFrame(() => {
+            btnRow.classList.add('slide-in-right');
+        });
+    } else {
+        form.appendChild(btnRow); // 兜底：找不到容器时直接放表单底部
+    }
+
+    // 退出表单：滑出动画后恢复导出/导入/+ 按钮，回到列表
+    const exitForm = (backToList) => {
+        self.exitWidgetFormView(listContainer, () => {
+            self.restoreWidgetPanelButtons();
+            if (backToList) self.updateWidgetPanelListInMenu(listContainer);
+        });
+    };
+
+    cancelBtn.addEventListener('click', () => {
+        exitForm(true);
+    });
+
+    confirmBtn.addEventListener('click', () => {
+        const size = sizeSlider.value === '1' ? 'rectangle' : 'square';
+        const newData = {};
+
+        if (extraFields.city) {
+            newData.city = extraFields.city.value.trim() || '南昌';
+        }
+        if (extraFields.port) {
+            const port = extraFields.port.value.trim();
+            if (port && (!/^\d+$/.test(port) || +port < 1 || +port > 65535)) {
+                self.showNotification('端口号无效（1-65535）');
+                return;
+            }
+            newData.port = port;
+        }
+        if (extraFields.provider) {
+            newData.provider = extraFields.provider.value;
+            newData.url = self.getEmailProviderUrl(extraFields.provider.value);
+        }
+        if (extraFields.apiUrl) {
+            newData.apiUrl = extraFields.apiUrl.value.trim();
+        }
+
+        if (widget) {
+            // 编辑：更新配置并重渲染
+            widget.size = size;
+            widget.data = Object.assign({}, widget.data, newData);
+            const idx = self.settings.widgetPanel.widgets.findIndex(w => w.id === widget.id);
+            if (idx >= 0) {
+                self.settings.widgetPanel.widgets[idx] = {
+                    id: widget.id,
+                    type: widget.type,
+                    size: size,
+                    data: Object.assign({}, widget.data, newData)
+                };
+            }
+            self.saveWidgetSettings();
+            self.renderWidgetPanel();
+            self.showNotification('小组件已更新');
+        } else {
+            // 添加
+            const newWidget = {
+                id: self.genWidgetId(),
+                type: type,
+                size: size,
+                data: newData
+            };
+            self.settings.widgetPanel.widgets.push(newWidget);
+            self.saveWidgetSettings();
+            self.renderWidgetPanel();
+            self.showNotification('小组件已添加');
+        }
+        exitForm(true);
+    });
+};
+
+// 邮箱服务商默认 URL
+OOOInterface.prototype.getEmailProviderUrl = function (provider) {
+    const urls = {
+        gmail: 'https://mail.google.com',
+        outlook: 'https://outlook.live.com/mail/',
+        qq: 'https://mail.qq.com',
+        custom: ''
+    };
+    return urls[provider] || '';
+};
+
+// 生成小组件 ID
+OOOInterface.prototype.genWidgetId = function () {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+    }
+    return 'w-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+};
+
+// 删除小组件
+OOOInterface.prototype.deleteWidget = function (id) {
+    const widgets = this.settings.widgetPanel && this.settings.widgetPanel.widgets;
+    if (!Array.isArray(widgets)) return;
+    const idx = widgets.findIndex(w => w.id === id);
+    if (idx >= 0) {
+        const name = this.WIDGET_TYPES[widgets[idx].type] ? this.WIDGET_TYPES[widgets[idx].type].name : '小组件';
+        widgets.splice(idx, 1);
+        this.saveWidgetSettings();
+        this.renderWidgetPanel();
+        this.showNotification('"' + name + '" 已删除');
+    }
+};
+
+// 导出小组件配置
+OOOInterface.prototype.exportWidgets = function () {
+    const widgets = (this.settings.widgetPanel && Array.isArray(this.settings.widgetPanel.widgets))
+        ? this.settings.widgetPanel.widgets : [];
+    if (widgets.length === 0) {
+        this.showNotification('没有可导出的小组件');
+        return;
+    }
+    const data = {
+        app: 'OOOInterface',
+        type: 'widgets',
+        version: (typeof VERSION !== 'undefined') ? VERSION : '',
+        exportedAt: new Date().toISOString(),
+        widgets: widgets.map(w => ({
+            id: w.id,
+            type: w.type,
+            size: w.size,
+            data: w.data || {}
+        }))
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'OOOInterface-Widgets-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+        if (a.parentNode) a.parentNode.removeChild(a);
+    }, 0);
+    this.showNotification('已导出 ' + widgets.length + ' 个小组件');
+};
+
+// 导入小组件配置
+OOOInterface.prototype.importWidgets = function (text, listContainer) {
+    const self = this;
+    try {
+        const data = JSON.parse(text);
+        let incoming = [];
+        if (Array.isArray(data)) {
+            incoming = data;
+        } else if (data && Array.isArray(data.widgets)) {
+            incoming = data.widgets;
+        } else {
+            throw new Error('JSON 结构不正确');
+        }
+
+        let added = 0;
+        incoming.forEach(w => {
+            if (!w || !w.type || !this.WIDGET_TYPES[w.type]) return;
+            const size = (w.size === 'rectangle') ? 'rectangle' : 'square';
+            const newWidget = {
+                id: this.genWidgetId(),
+                type: w.type,
+                size: size,
+                data: w.data || {}
+            };
+            this.settings.widgetPanel.widgets.push(newWidget);
+            added++;
+        });
+
+        if (added === 0) {
+            this.showNotification('文件中没有有效的小组件');
+            return;
+        }
+        this.saveWidgetSettings();
+        this.renderWidgetPanel();
+        if (listContainer) this.updateWidgetPanelListInMenu(listContainer);
+        this.showNotification('已导入 ' + added + ' 个小组件');
+    } catch (e) {
+        this.showNotification('导入失败：' + e.message);
     }
 };

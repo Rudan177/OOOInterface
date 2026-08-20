@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="Style/styles.css">
     <link rel="stylesheet" href="Style/dynamic-blur.css">
     <link rel="stylesheet" href="Style/info.css">
+    <link rel="stylesheet" href="Style/widget-panel.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
         rel="stylesheet">
@@ -364,6 +365,28 @@
 
                         <div class="setting-group">
                             <div class="switch-label">
+                                <span class="setting-label">小组件面板</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="widget-panel-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-group" id="widget-panel-manage-group"
+                            style="padding-left: 20px; display: none;">
+                            <label>小组件列表:</label>
+                            <div class="custom-select">
+                                <div class="select-selected" id="widget-panel-select-selected">管理小组件</div>
+                                <div class="select-items select-hide" id="widget-panel-select-items">
+                                </div>
+                                <select id="widget-panel-select" style="display: none;">
+                                    <option value="manage">管理小组件</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <div class="switch-label">
                                 <span class="setting-label">搜索历史</span>
                                 <label class="switch">
                                     <input type="checkbox" id="search-history-toggle">
@@ -581,6 +604,14 @@
         </div>
     </div>
 
+    <!-- 小组件左侧面板 -->
+    <div id="widget-panel" class="widget-panel">
+        <div class="widget-panel-trigger" id="widget-panel-trigger"></div>
+        <div class="widget-panel-container" id="widget-panel-container">
+            <div class="widget-panel-grid" id="widget-panel-grid"></div>
+        </div>
+    </div>
+
     <!-- 快速访问链接侧边栏 -->
     <div id="quick-access-sidebar" class="quick-access-sidebar">
         <div class="quick-access-sidebar-trigger" id="quick-access-sidebar-trigger"></div>
@@ -654,6 +685,13 @@
     <script src="Script/proxy.js"></script>
     <script src="Script/color.js"></script>
     <script src="Script/quicklinks-export.js"></script>
+    <script src="Script/widgets/WidgetBase.js"></script>
+    <script src="Script/widgets/ClockWidget.js"></script>
+    <script src="Script/widgets/WeatherWidget.js"></script>
+    <script src="Script/widgets/TasksWidget.js"></script>
+    <script src="Script/widgets/AiAgentWidget.js"></script>
+    <script src="Script/widgets/EmailWidget.js"></script>
+    <script src="Script/widgets/AudioWidget.js"></script>
     <script src="Script/script.js"></script>
     <script src="Script/Controller.js"></script>
 </body>
