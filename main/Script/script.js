@@ -10515,6 +10515,7 @@ OOOInterface.prototype.importBookmarksFromChrome = function (mode, folderId, dro
 // 内容密集型小组件（任务/AI Agent/邮箱）不允许小尺寸，否则显示错乱
 OOOInterface.prototype.WIDGET_TYPES = {
     'clock':    { name: '大时钟', icon: 'schedule',        defaultSize: 'square', allowSquare: true,  allowSuper: false },
+    'calendar': { name: '日历',   icon: 'calendar_month',  defaultSize: 'square', allowSquare: true,  allowSuper: true  },
     'weather':  { name: '天气',   icon: 'wb_sunny',        defaultSize: 'square', allowSquare: true,  allowSuper: false },
     'tasks':    { name: '任务',   icon: 'checklist',       defaultSize: 'super',   allowSquare: false, allowSuper: true  },
     'ai-agent': { name: 'AI Agent', icon: 'smart_toy',     defaultSize: 'super',   allowSquare: false, allowSuper: true  },
@@ -10558,6 +10559,7 @@ OOOInterface.prototype.createWidgetInstance = function (config) {
     };
     switch (config.type) {
         case 'clock': return new ClockWidget(baseConfig);
+        case 'calendar': return new CalendarWidget(baseConfig);
         case 'weather': return new WeatherWidget(baseConfig);
         case 'tasks': return new TasksWidget(baseConfig);
         case 'ai-agent': return new AiAgentWidget(baseConfig);
@@ -11097,6 +11099,7 @@ OOOInterface.prototype.getWidgetSubtitle = function (widget) {
             return prefix + (n ? ' · ' + n + ' 个' : '');
         }
         case 'clock': return '本地时间';
+        case 'calendar': return '本地日期与农历';
         default: return '';
     }
 };
