@@ -2108,6 +2108,18 @@ class OOOInterface {
 
         // 设置弹窗事件
         document.getElementById('close-modal').addEventListener('click', () => this.closeSettings());
+        document.getElementById('export-settings-btn').addEventListener('click', () => this.exportSettingsAsMarkdown());
+        document.getElementById('import-settings-btn').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.md,text/markdown';
+            input.addEventListener('change', () => {
+                const file = input.files && input.files[0];
+                if (!file) return;
+                this.importSettingsFromMarkdown(file);
+            });
+            input.click();
+        });
         document.getElementById('back-right-panel').addEventListener('click', () => {
             const rpu = document.getElementById('right-panel-upper');
             if (rpu && rpu.dataset.subView === 'customize-items') {
@@ -6064,6 +6076,11 @@ class OOOInterface {
         if (contextFeedbackItem) {
             contextFeedbackItem.style.display = this.settings.developerMode ? '' : 'none';
         }
+
+        // 仅开发者模式可见的导出/导入按钮
+        document.querySelectorAll('.dev-only').forEach(btn => {
+            btn.style.display = this.settings.developerMode ? '' : 'none';
+        });
 
         if (this.settings.developerMode) {
             document.getElementById('font-size-slider').value = this.settings.fontSize;
@@ -10520,6 +10537,7 @@ OOOInterface.prototype.WIDGET_TYPES = {
     'tasks':    { name: '任务',   icon: 'checklist',       defaultSize: 'super',   allowSquare: false, allowSuper: true  },
     'ai-agent': { name: 'AI Agent', icon: 'smart_toy',     defaultSize: 'super',   allowSquare: false, allowSuper: true  },
     'email':    { name: '邮箱',   icon: 'mail',            defaultSize: 'super',   allowSquare: false, allowSuper: true  },
+    'upgrade-tool': { name: '升级工具', icon: 'system_update', defaultSize: 'square', allowSquare: true,  allowSuper: true  },
 };
 
 // 获取某类型允许的尺寸列表（按 小→大→超大 顺序）
@@ -10564,6 +10582,7 @@ OOOInterface.prototype.createWidgetInstance = function (config) {
         case 'tasks': return new TasksWidget(baseConfig);
         case 'ai-agent': return new AiAgentWidget(baseConfig);
         case 'email': return new EmailWidget(baseConfig);
+        case 'upgrade-tool': return new UpgradeToolWidget(baseConfig);
         default: return null;
     }
 };
@@ -11103,8 +11122,7 @@ OOOInterface.prototype.getWidgetSubtitle = function (widget) {
         case 'email': return data.apiUrl ? 'API：' + data.apiUrl : (data.provider || 'gmail');
         case 'tasks': {
             const n = Array.isArray(data.items) ? data.items.length : 0;
-            const prefix = data.googleConnected ? 'Google Tasks' : '任务';
-            return prefix + (n ? ' · ' + n + ' 个' : '');
+            return '任务' + (n ? ' · ' + n + ' 个' : '');
         }
         case 'clock': return '本地时间';
         case 'calendar': return '本地日期与农历';
@@ -11618,109 +11636,6 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
         });
     }
 
-    if (type === 'tasks') {
-        const tasksRow = document.createElement('div');
-        tasksRow.className = 'widget-add-form-row widget-google-tasks-panel';
-        const isConnected = !!(data && data.googleConnected);
-
-        // 顶栏：状态 + info 按钮
-        const topRow = document.createElement('div');
-        topRow.className = 'gtasks-top';
-
-        const statusDot = document.createElement('span');
-        statusDot.className = 'gtasks-dot' + (isConnected ? ' on' : '');
-
-        const statusLabel = document.createElement('span');
-        statusLabel.className = 'gtasks-top-label';
-        statusLabel.textContent = isConnected ? 'Google Tasks 已连接' : 'Google Tasks 未连接';
-
-        const infoBtn = document.createElement('button');
-        infoBtn.className = 'gtasks-info-btn';
-        infoBtn.innerHTML = '<span class="material-icons">info_outline</span>';
-        infoBtn.title = '查看连接教程';
-        infoBtn.addEventListener('click', () => this.showGoogleTasksTutorial());
-
-        topRow.appendChild(statusDot);
-        topRow.appendChild(statusLabel);
-        topRow.appendChild(infoBtn);
-        tasksRow.appendChild(topRow);
-
-        if (isConnected) {
-            // 已连接：显示邮箱 + 断开按钮
-            const emailEl = document.createElement('div');
-            emailEl.className = 'gtasks-email';
-            emailEl.textContent = data.googleEmail || '';
-            tasksRow.appendChild(emailEl);
-
-            const disconnectBtn = document.createElement('button');
-            disconnectBtn.className = 'gtasks-btn gtasks-btn-disconnect';
-            disconnectBtn.textContent = '断开连接';
-            disconnectBtn.addEventListener('click', () => {
-                const wi = (self.widgetInstances || []).find(w => w.id === widget.id);
-                if (wi && typeof wi.disconnectGoogle === 'function') {
-                    wi.disconnectGoogle();
-                } else {
-                    data.googleConnected = false;
-                    data.googleEmail = '';
-                    data.googleToken = '';
-                    self.saveWidgetSettings();
-                }
-                self.showNotification('已断开 Google Tasks');
-                self.showWidgetConfigForm(listContainer, widget, presetType);
-            });
-            tasksRow.appendChild(disconnectBtn);
-        } else {
-            // 未连接：Client ID 输入 + 连接按钮（同行）
-            const inputRow = document.createElement('div');
-            inputRow.className = 'gtasks-input-row';
-
-            const clientIdInput = document.createElement('input');
-            clientIdInput.type = 'text';
-            clientIdInput.className = 'gtasks-clientid-input';
-            clientIdInput.placeholder = 'Client ID';
-            clientIdInput.value = data.googleClientId || '';
-            clientIdInput.maxLength = 200;
-
-            const connectBtn = document.createElement('button');
-            connectBtn.className = 'gtasks-btn gtasks-btn-connect';
-            connectBtn.innerHTML = '<span class="material-icons">link</span>连接';
-            connectBtn.addEventListener('click', async () => {
-                const clientId = clientIdInput.value.trim();
-                if (!clientId || !clientId.endsWith('.apps.googleusercontent.com')) {
-                    self.showNotification('请输入有效的 Client ID');
-                    clientIdInput.focus();
-                    return;
-                }
-                if (!widget) {
-                    self.showNotification('请先点击"确定"保存小组件，再连接 Google');
-                    return;
-                }
-                connectBtn.disabled = true;
-                connectBtn.innerHTML = '<span class="material-icons">hourglass_top</span>';
-                try {
-                    const wi = (self.widgetInstances || []).find(w => w.id === widget.id);
-                    if (wi && typeof wi.connectGoogle === 'function') {
-                        await wi.connectGoogle(clientId);
-                    } else {
-                        throw new Error('小组件实例未就绪');
-                    }
-                    self.showNotification('Google Tasks 已连接');
-                    self.showWidgetConfigForm(listContainer, widget, presetType);
-                } catch (e) {
-                    self.showNotification('连接失败：' + (e.message || '请检查 Client ID'));
-                    connectBtn.disabled = false;
-                    connectBtn.innerHTML = '<span class="material-icons">link</span>连接';
-                }
-            });
-
-            inputRow.appendChild(clientIdInput);
-            inputRow.appendChild(connectBtn);
-            tasksRow.appendChild(inputRow);
-        }
-
-        form.appendChild(tasksRow);
-    }
-
     formView.appendChild(form);
 
     // 滑入动画
@@ -11831,40 +11746,6 @@ OOOInterface.prototype.getEmailProviderUrl = function (provider) {
         custom: ''
     };
     return urls[provider] || '';
-};
-
-// Google Tasks 连接教程弹窗
-OOOInterface.prototype.showGoogleTasksTutorial = function () {
-    const overlay = document.createElement('div');
-    overlay.className = 'gtasks-tutorial-overlay';
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-
-    const card = document.createElement('div');
-    card.className = 'gtasks-tutorial-card';
-
-    card.innerHTML = [
-        '<div class="gtasks-tutorial-header">',
-        '  <span class="material-icons">school</span>',
-        '  <span>连接 Google Tasks 教程</span>',
-        '</div>',
-        '<div class="gtasks-tutorial-steps">',
-        '  <div class="gtasks-step"><span class="gtasks-step-num">1</span><div><b>打开</b> <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a>，登录你的 Google 账号</div></div>',
-        '  <div class="gtasks-step"><span class="gtasks-step-num">2</span><div><b>创建项目</b>（或选择已有项目），点击顶部项目选择器 → 新建项目</div></div>',
-        '  <div class="gtasks-step"><span class="gtasks-step-num">3</span><div><b>启用 API</b>：左侧菜单 → API 和服务 → 库 → 搜索 "Google Tasks API" → 点击启用</div></div>',
-        '  <div class="gtasks-step"><span class="gtasks-step-num">4</span><div><b>配置 OAuth 同意屏幕</b>：API 和服务 → OAuth 同意屏幕 → 选"外部" → 填写应用名称 → 保存</div></div>',
-        '  <div class="gtasks-step"><span class="gtasks-step-num">5</span><div><b>创建凭据</b>：API 和服务 → 凭据 → 创建 OAuth 客户端 ID → 应用类型选 <b>Chrome 扩展</b></div></div>',
-        '  <div class="gtasks-step"><span class="gtasks-step-num">6</span><div><b>填写扩展 ID</b>：打开 <code>chrome://extensions</code> → 复制本扩展的 ID → 粘贴到"已授权的重定向 URI"中，格式为 <code>https://&lt;扩展ID&gt;.chromiumapp.org/</code></div></div>',
-        '  <div class="gtasks-step"><span class="gtasks-step-num">7</span><div><b>复制 Client ID</b>：创建完成后复制 Client ID（以 <code>.apps.googleusercontent.com</code> 结尾），粘贴到上方输入框</div></div>',
-        '</div>',
-        '<div class="gtasks-tutorial-footer">',
-        '  <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="gtasks-btn gtasks-btn-connect" style="text-decoration:none">',
-        '    <span class="material-icons">open_in_new</span>打开 Google Cloud Console',
-        '  </a>',
-        '</div>'
-    ].join('');
-
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
 };
 
 // Gmail 连接教程弹窗
@@ -11999,3 +11880,87 @@ OOOInterface.prototype.importWidgets = function (text, listContainer) {
         this.showNotification('导入失败：' + e.message);
     }
 };
+
+// ─── 导出 / 导入完整配置（Markdown） ───────────────────────────────
+
+/**
+ * 将当前全部 settings 序列化为 Markdown 并下载。
+ * 格式：
+ *   # OOOInterface 配置备份
+ *   - 导出时间：...
+ *   - 版本：...
+ *
+ *   ```json
+ *   { ... }
+ *   ```
+ */
+OOOInterface.prototype.exportSettingsAsMarkdown = function () {
+    const version = (typeof VERSION !== 'undefined') ? VERSION : 'unknown';
+    const now = new Date();
+    const timeStr = now.toLocaleString('zh-CN', { hour12: false });
+    const timestamp = now.toISOString();
+
+    const json = JSON.stringify(this.settings, null, 2);
+    const md = [
+        '# OOOInterface 配置备份',
+        '',
+        '- 导出时间：' + timeStr,
+        '- ISO 时间戳：' + timestamp,
+        '- 版本：' + version,
+        '',
+        '```json',
+        json,
+        '```'
+    ].join('\n');
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'OOOInterface-Settings-' + timestamp.replace(/[:T]/g, '-').slice(0, 19) + '.md';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+        if (a.parentNode) a.parentNode.removeChild(a);
+    }, 0);
+    this.showNotification('配置已导出为 Markdown');
+};
+
+/**
+ * 从上传的 Markdown 文件读取并恢复完整 settings。
+ * 支持格式：
+ *   # OOOInterface 配置备份   （可选，容错）
+ *   ```json\n{...}\n```
+ */
+OOOInterface.prototype.importSettingsFromMarkdown = function (file) {
+    const self = this;
+    if (!file || !file.name.toLowerCase().endsWith('.md')) {
+        this.showNotification('请选择 .md 文件');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function () {
+        try {
+            const text = reader.result;
+            // 提取 ```json ... ``` 块
+            const match = text.match(/```(?:json)?\s*\n([\s\S]*?)\n\s*```/);
+            if (!match) throw new Error('未找到 ```json 代码块，文件格式不正确');
+            const settings = JSON.parse(match[1].trim());
+            if (!settings || typeof settings !== 'object') throw new Error('JSON 解析失败，根节点不是对象');
+
+            // 写入并立即保存
+            self.settings = settings;
+            self.saveSettings();
+            self.applySettings();
+            self.showNotification('配置导入成功，已刷新页面');
+        } catch (e) {
+            self.showNotification('导入失败：' + (e.message || '未知错误'));
+            console.error('[importSettingsFromMarkdown]', e);
+        }
+    };
+    reader.onerror = function () {
+        self.showNotification('文件读取失败');
+    };
+    reader.readAsText(file);
+}

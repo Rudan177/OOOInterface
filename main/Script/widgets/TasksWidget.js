@@ -1,16 +1,11 @@
 /**
- * 任务小组件（支持 Google Tasks）
- * - 未登录：本地 localStorage 任务
- * - 已登录：同步 Google Tasks API（默认任务列表）
- * - 通过 chrome.identity.launchWebAuthFlow 授权（用户在设置中填入 Client ID）
+ * 任务小组件（仅本地 localStorage）
  */
 class TasksWidget extends WidgetBase {
     constructor(config) {
         super(config);
         this.type = 'tasks';
         this.tasks = (this.data && Array.isArray(this.data.items)) ? this.data.items : [];
-        this.useGoogle = !!(this.data && this.data.googleConnected);
-        this.token = this.data.googleToken || null;
     }
 
     buildContent() {
@@ -18,6 +13,10 @@ class TasksWidget extends WidgetBase {
 
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'widget-tasks-header';
+
+        this.headerTitle = document.createElement('span');
+        this.headerTitle.className = 'widget-tasks-header-title';
+        this.headerEl.appendChild(this.headerTitle);
 
         this.listEl = document.createElement('div');
         this.listEl.className = 'widget-tasks-list';
@@ -51,211 +50,144 @@ class TasksWidget extends WidgetBase {
     }
 
     afterMount() {
-        if (this.useGoogle && this.token) {
-            this.trySync();
-        }
+        // 在 header 右侧插入导出 / 导入按钮
+        this._addHeaderActions();
     }
 
-    // ─── OAuth2 ───
+    _addHeaderActions() {
+        const self = this;
+        const actions = document.createElement('div');
+        actions.className = 'widget-tasks-header-actions';
 
-    getRedirectUri() {
-        if (typeof chrome !== 'undefined' && chrome.identity && chrome.identity.getRedirectURL) {
-            return chrome.identity.getRedirectURL();
-        }
-        return 'https://' + (typeof chrome !== 'undefined' && chrome.runtime ? chrome.runtime.id : '') + '.chromiumapp.org/';
+        const exportBtn = document.createElement('button');
+        exportBtn.className = 'widget-task-io-btn';
+        exportBtn.innerHTML = '<span class="material-icons" style="font-size:14px">download</span>';
+        exportBtn.title = '导出此小组件任务';
+        exportBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            self._export();
+        });
+
+        const importBtn = document.createElement('button');
+        importBtn.className = 'widget-task-io-btn';
+        importBtn.innerHTML = '<span class="material-icons" style="font-size:14px">upload</span>';
+        importBtn.title = '导入任务到此小组件';
+        importBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            self._import();
+        });
+
+        actions.appendChild(exportBtn);
+        actions.appendChild(importBtn);
+        this.headerEl.appendChild(actions);
     }
 
-    async connectGoogle(clientId) {
-        if (!clientId) throw new Error('请先填写 Client ID');
-        if (typeof chrome === 'undefined' || !chrome.identity) {
-            throw new Error('chrome.identity 不可用，请检查扩展权限');
+    _export() {
+        const items = this.tasks.map(t => ({ id: t.id, text: t.text || '', done: !!t.done }));
+        if (items.length === 0) {
+            oooInterface.showNotification('当前小组件没有任务');
+            return;
         }
+        const now = new Date();
+        const timeStr = now.toLocaleString('zh-CN', { hour12: false });
+        const json = JSON.stringify(items, null, 2);
+        const md = [
+            '# OOOInterface 任务列表备份',
+            '',
+            '- 导出时间：' + timeStr,
+            '- 任务总数：' + items.length,
+            '',
+            '```json',
+            json,
+            '```'
+        ].join('\n');
+        const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        a.href = url;
+        a.download = 'OOOInterface-Tasks-' + dateStr + '.md';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+            if (a.parentNode) a.parentNode.removeChild(a);
+        }, 0);
+        oooInterface.showNotification('已导出 ' + items.length + ' 条任务');
+    }
 
-        const redirectUri = this.getRedirectUri();
-        const scopes = ['https://www.googleapis.com/auth/tasks'];
-        const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth'
-            + '?client_id=' + encodeURIComponent(clientId)
-            + '&redirect_uri=' + encodeURIComponent(redirectUri)
-            + '&response_type=token'
-            + '&scope=' + encodeURIComponent(scopes.join(' '))
-            + '&prompt=consent';
+    _import() {
+        const self = this;
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.md,text/markdown';
+        input.addEventListener('change', () => {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function () {
+                try {
+                    const text = reader.result;
+                    let jsonText = '';
+                    const match = text.match(/```(?:json)?\s*\n([\s\S]*?)\n\s*```/);
+                    if (match) {
+                        jsonText = match[1].trim();
+                    } else {
+                        jsonText = text.trim();
+                    }
+                    const items = JSON.parse(jsonText);
+                    if (!Array.isArray(items)) throw new Error('数据格式错误，期望 JSON 数组');
 
-        const responseUrl = await new Promise((resolve, reject) => {
-            chrome.identity.launchWebAuthFlow({
-                url: authUrl,
-                interactive: true
-            }, (url) => {
-                if (chrome.runtime.lastError || !url) {
-                    reject(chrome.runtime.lastError || new Error('授权被取消'));
-                } else {
-                    resolve(url);
+                    const existing = self.tasks;
+                    const existingIds = new Set(existing.map(t => t.id));
+                    let added = 0, skipped = 0;
+                    items.forEach(item => {
+                        if (!item || !item.text) { skipped++; return; }
+                        if (existingIds.has(item.id)) { skipped++; return; }
+                        existing.push({ id: item.id, text: item.text, done: !!item.done });
+                        added++;
+                    });
+
+                    self.tasks = existing;
+                    self.data.items = existing;
+                    self.persist();
+                    self.renderList();
+                    oooInterface.showNotification('已导入 ' + added + ' 条任务（跳过 ' + skipped + ' 条重复）');
+                } catch (e) {
+                    oooInterface.showNotification('导入失败：' + (e.message || '未知错误'));
+                    console.error('[TasksWidget._import]', e);
                 }
-            });
+            };
+            reader.onerror = function () {
+                oooInterface.showNotification('文件读取失败');
+            };
+            reader.readAsText(file);
         });
-
-        const token = this.parseToken(responseUrl);
-        if (!token) throw new Error('未能获取访问令牌');
-
-        this.token = token;
-        this.useGoogle = true;
-        this.data.googleConnected = true;
-        this.data.googleClientId = clientId;
-        this.data.googleToken = token;
-
-        // 获取用户邮箱
-        try {
-            const resp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
-            if (resp.ok) {
-                const profile = await resp.json();
-                this.data.googleEmail = profile.email || '';
-            }
-        } catch (e) { /* 忽略 */ }
-
-        this.persist();
-        this.inputEl.placeholder = '添加任务到 Google Tasks…';
-        await this.fetchGoogleTasks();
-        this.renderList();
-    }
-
-    parseToken(url) {
-        try {
-            const hash = new URL(url).hash;
-            const params = new URLSearchParams(hash.replace(/^#/, ''));
-            return params.get('access_token') || null;
-        } catch (e) { return null; }
-    }
-
-    disconnectGoogle() {
-        this.token = null;
-        this.useGoogle = false;
-        this.data.googleConnected = false;
-        this.data.googleToken = '';
-        this.data.googleEmail = '';
-        this.inputEl.placeholder = '添加任务…';
-        this.persist();
-        this.renderList();
-    }
-
-    // ─── Google Tasks API ───
-
-    async apiFetch(path) {
-        const resp = await fetch('https://www.googleapis.com/tasks/v1' + path, {
-            headers: { 'Authorization': 'Bearer ' + this.token }
-        });
-        if (resp.status === 401 || resp.status === 403) {
-            this.disconnectGoogle();
-            return null;
-        }
-        if (!resp.ok) throw new Error('API ' + resp.status);
-        return resp.json();
-    }
-
-    async apiPost(path, body) {
-        const resp = await fetch('https://www.googleapis.com/tasks/v1' + path, {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + this.token, 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        if (resp.status === 401 || resp.status === 403) { this.disconnectGoogle(); return null; }
-        if (!resp.ok) throw new Error('API ' + resp.status);
-        return resp.json();
-    }
-
-    async apiPatch(path, body) {
-        const resp = await fetch('https://www.googleapis.com/tasks/v1' + path, {
-            method: 'PATCH',
-            headers: { 'Authorization': 'Bearer ' + this.token, 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        if (resp.status === 401 || resp.status === 403) { this.disconnectGoogle(); return null; }
-        if (!resp.ok) throw new Error('API ' + resp.status);
-        return resp.json();
-    }
-
-    async apiDelete(path) {
-        const resp = await fetch('https://www.googleapis.com/tasks/v1' + path, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + this.token }
-        });
-        if (resp.status === 401 || resp.status === 403) { this.disconnectGoogle(); return; }
-        if (!resp.ok) throw new Error('API ' + resp.status);
-    }
-
-    async fetchGoogleTasks() {
-        const data = await this.apiFetch('/lists/@default/tasks?showCompleted=true&showHidden=true');
-        if (!data || !data.items) return;
-        this.tasks = data.items.map(item => ({
-            id: item.id,
-            text: item.title || '',
-            done: item.status === 'completed',
-            googleId: item.id
-        })).filter(t => t.text);
-        this.data.items = this.tasks;
-        this.persist();
-    }
-
-    async trySync() {
-        if (!this.token || !this.useGoogle) return;
-        try {
-            await this.fetchGoogleTasks();
-            this.renderList();
-        } catch (e) {
-            // token 过期等，不做处理
-        }
+        input.click();
     }
 
     // ─── 任务操作 ───
 
-    async addTask() {
+    addTask() {
         const text = this.inputEl.value.trim();
         if (!text) return;
-
-        if (this.useGoogle && this.token) {
-            try {
-                const item = await this.apiPost('/lists/@default/tasks', { title: text, status: 'needsAction' });
-                if (item && item.id) {
-                    this.tasks.push({ id: item.id, text, done: false, googleId: item.id });
-                }
-            } catch (e) {
-                this.tasks.push({ id: this.genId(), text, done: false });
-            }
-        } else {
-            this.tasks.push({ id: this.genId(), text, done: false });
-        }
+        this.tasks.push({ id: this.genId(), text, done: false });
         this.inputEl.value = '';
         this.data.items = this.tasks;
         this.persist();
         this.renderList();
     }
 
-    async toggleTask(id) {
+    toggleTask(id) {
         const t = this.tasks.find(x => x.id === id);
         if (!t) return;
         t.done = !t.done;
-        if (this.useGoogle && this.token && t.googleId) {
-            try {
-                await this.apiPatch('/lists/@default/tasks/' + t.googleId, {
-                    status: t.done ? 'completed' : 'needsAction'
-                });
-            } catch (e) { /* 本地已更新 */ }
-        }
         this.data.items = this.tasks;
         this.persist();
         this.renderList();
     }
 
-    async deleteTask(id) {
-        const t = this.tasks.find(x => x.id === id);
-        if (t && this.useGoogle && this.token && t.googleId) {
-            try {
-                await this.apiDelete('/lists/@default/tasks/' + t.googleId);
-            } catch (e) {
-                this.notify('删除失败，请重试');
-                return;
-            }
-        }
+    deleteTask(id) {
         this.tasks = this.tasks.filter(x => x.id !== id);
         this.data.items = this.tasks;
         this.persist();
@@ -267,15 +199,14 @@ class TasksWidget extends WidgetBase {
     renderList() {
         const done = this.tasks.filter(t => t.done).length;
         const total = this.tasks.length;
-        const prefix = this.useGoogle ? 'Google Tasks' : '任务';
-        this.headerEl.textContent = prefix + (total ? '  ' + done + '/' + total : '');
+        this.headerTitle.textContent = '任务' + (total ? '  ' + done + '/' + total : '');
 
         this.listEl.innerHTML = '';
 
         if (this.tasks.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'widget-task-empty';
-            empty.textContent = this.useGoogle ? '暂无任务' : '暂无任务';
+            empty.textContent = '暂无任务';
             this.listEl.appendChild(empty);
             return;
         }
