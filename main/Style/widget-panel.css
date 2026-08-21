@@ -106,10 +106,6 @@
     -webkit-user-select: none;
 }
 
-.widget-card:hover {
-    background: var(--surface-color);
-    border-color: var(--border-color);
-}
 
 /* 正方形：占 1 列，宽=高=列宽（行高由 JS 控制） */
 .widget-card.square {
@@ -149,10 +145,6 @@
         background: var(--surface-variant);
     }
 
-    .widget-card:hover {
-        background: var(--background-color);
-        border-color: var(--border-color);
-    }
 }
 
 /* 面板展开时：推动主内容向右（与快速访问侧边栏的推入效果一致，方向相反） */
@@ -225,17 +217,6 @@ body.dynamic-blur.scrolled .widget-panel-container .widget-card:nth-child(n+7) {
     }
 }
 
-/* 增强显示：卡片 hover 上浮 + 阴影 */
-body.dynamic-blur.enhanced-display .widget-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-@media (prefers-color-scheme: dark) {
-    body.dynamic-blur.enhanced-display .widget-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-    }
-}
 
 /* 壁纸滚动模式下小组件面板常显示 */
 body.scrolled .widget-panel-container,

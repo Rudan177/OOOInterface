@@ -10643,6 +10643,16 @@ OOOInterface.prototype.updateWidgetPanelVisibility = function () {
     const enabled = this.isWidgetPanelActive();
     if (enabled) {
         panel.classList.add('active');
+        // 重新初始化交互（处理"先禁用再启用"的情况，确保 mousemove 监听器已绑定）
+        if (!this._widgetPanelMouseMoveHandler) {
+            this.initWidgetPanel();
+            return;
+        }
+        // 确保容器初始为隐藏状态（与侧边栏保持一致）
+        if (container) {
+            container.classList.remove('visible');
+            container.classList.add('hiding');
+        }
     } else {
         panel.classList.remove('active');
         if (container) {
@@ -10650,6 +10660,7 @@ OOOInterface.prototype.updateWidgetPanelVisibility = function () {
             container.classList.add('hiding');
         }
         document.body.classList.remove('widget-panel-open');
+        this.cleanupWidgetPanel();
     }
 };
 
@@ -10683,16 +10694,17 @@ OOOInterface.prototype.syncWidgetPanelsForWallpaper = function (wallpaperMode) {
 
 // 初始化左侧小组件面板交互
 OOOInterface.prototype.initWidgetPanel = function () {
-    const trigger = document.getElementById('widget-panel-trigger');
+    // 幂等：若 mousemove 监听器已绑定（非首次调用），跳过
+    if (this._widgetPanelMouseMoveHandler) return;
     const container = document.getElementById('widget-panel-container');
     const panel = document.getElementById('widget-panel');
 
-    if (!trigger || !container || !panel) return;
+    if (!container || !panel) return;
 
     let hideTimeout = null;
     let isVisible = false;
     const TRIGGER_ZONE_WIDTH = 100;   // 左侧触发区域宽度（像素）
-    const HIDE_DELAY = 0;            // 鼠标离开立即关闭
+    const HIDE_DELAY = 0;            // 鼠标离开后延一帧隐藏（防抖窗口：快速移回则 clearTimeout 先于回调执行）
 
     const showPanel = () => {
         if (!this.isWidgetPanelActive()) return;
@@ -10715,18 +10727,18 @@ OOOInterface.prototype.initWidgetPanel = function () {
     const scheduleHide = () => {
         if (hideTimeout) clearTimeout(hideTimeout);
         hideTimeout = setTimeout(() => {
-            if (isVisible) {
-                isVisible = false;
-                container.classList.remove('visible');
-                container.classList.add('hiding');
-                document.body.classList.remove('widget-panel-open');
-            }
+            if (!isVisible) return;
+            // HIDE_DELAY=0 提供一帧窗口：若鼠标仍在面板上，下一帧 mousemove 会触发 showPanel 清除此回调
+            isVisible = false;
+            container.classList.remove('visible');
+            container.classList.add('hiding');
+            document.body.classList.remove('widget-panel-open');
             hideTimeout = null;
         }, HIDE_DELAY);
     };
 
-    // 全局鼠标移动检测：左边缘触发区域显示面板
-    document.addEventListener('mousemove', (e) => {
+    // 全局鼠标移动检测：触发区显示面板，鼠标进入面板范围维持显示，离开则关闭
+    const widgetPanelMouseMoveHandler = (e) => {
         if (!this.isWidgetPanelActive()) return;
         const modal = document.getElementById('settings-modal');
         if (modal && modal.classList.contains('show')) return;
@@ -10734,8 +10746,7 @@ OOOInterface.prototype.initWidgetPanel = function () {
 
         if (mouseX <= TRIGGER_ZONE_WIDTH) {
             showPanel();
-        } else if (isVisible && !document.body.classList.contains('scrolled')) {
-            // 壁纸模式下常显示，不做隐藏判断
+        } else if (!document.body.classList.contains('scrolled')) {
             const containerRect = container.getBoundingClientRect();
             const isOverContainer = (
                 mouseX >= containerRect.left &&
@@ -10743,43 +10754,40 @@ OOOInterface.prototype.initWidgetPanel = function () {
                 e.clientY >= containerRect.top &&
                 e.clientY <= containerRect.bottom
             );
-            if (!isOverContainer) {
+            if (isOverContainer) {
+                showPanel();
+            } else if (isVisible) {
                 scheduleHide();
             }
         }
-    });
-
-    // 容器悬停维持显示
-    container.addEventListener('mouseenter', () => {
-        if (!this.isWidgetPanelActive()) return;
-        if (hideTimeout) {
-            clearTimeout(hideTimeout);
-            hideTimeout = null;
-        }
-        if (!isVisible) {
-            isVisible = true;
-            container.classList.remove('hiding');
-            container.classList.add('visible');
-            document.body.classList.add('widget-panel-open');
-        }
-    });
-
-    container.addEventListener('mouseleave', () => {
-        // 壁纸模式下常显示，鼠标移开不隐藏
-        if (document.body.classList.contains('scrolled')) return;
-        scheduleHide();
-    });
+    };
+    this._widgetPanelMouseMoveHandler = widgetPanelMouseMoveHandler;
+    document.addEventListener('mousemove', widgetPanelMouseMoveHandler);
 
     // 面板滚轮：内容溢出时拦截（只滚动面板内容，不触发壁纸模式进退）；
     // 内容不溢出时放行（交给页面滚动处理）
     const panelWheelHandler = (e) => {
-        if (!container) return;
         const maxScroll = container.scrollHeight - container.clientHeight;
         if (maxScroll <= 0) return; // 内容不溢出，放行
         e.stopPropagation();        // 内容溢出：拦截，只滚动面板内容
     };
+    this._widgetPanelEl = panel;
+    this._widgetPanelContainer = container;
+    this._widgetPanelWheelHandler = panelWheelHandler;
     panel.addEventListener('wheel', panelWheelHandler, { passive: true });
     container.addEventListener('wheel', panelWheelHandler, { passive: true });
+};
+
+OOOInterface.prototype.cleanupWidgetPanel = function () {
+    if (this._widgetPanelMouseMoveHandler) {
+        document.removeEventListener('mousemove', this._widgetPanelMouseMoveHandler);
+        this._widgetPanelMouseMoveHandler = null;
+    }
+    if (this._widgetPanelWheelHandler) {
+        if (this._widgetPanelEl) this._widgetPanelEl.removeEventListener('wheel', this._widgetPanelWheelHandler);
+        if (this._widgetPanelContainer) this._widgetPanelContainer.removeEventListener('wheel', this._widgetPanelWheelHandler);
+        this._widgetPanelWheelHandler = null;
+    }
 };
 
 // 同步设置页 UI
