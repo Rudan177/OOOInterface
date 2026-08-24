@@ -430,7 +430,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var infoGrid = null;
     var progressEl = null;
     var progressFill = null;
-    var progressText = null;
     var tipEl = null;
     var closeBtn = null;
     var titleEl = null;
@@ -470,7 +469,6 @@ document.addEventListener('DOMContentLoaded', function () {
         infoGrid = infoEl ? infoEl.querySelector('.info-grid') : null;
         progressEl = YuanJian('updateProgress');
         progressFill = YuanJian('updateProgressFill');
-        progressText = YuanJian('updateProgressText');
         tipEl = YuanJian('updateTip');
         closeBtn = YuanJian('updateDialogClose');
         titleEl = YuanJian('updateDialogTitle');
@@ -651,8 +649,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function setProgress(percent, message) {
         var p = Math.max(0, Math.min(100, percent || 0));
-        progressFill.style.width = p + '%';
-        progressText.textContent = message || (p + '%');
+        progressFill.style.transform = 'scaleX(' + (p / 100) + ')';
     }
 
     function renderCheckResult(data) {
@@ -743,6 +740,21 @@ document.addEventListener('DOMContentLoaded', function () {
         progressEl.style.display = '';
         setProgress(0, '正在连接 OUA 后端…');
 
+        // 伪进度：0~80% 匀速平滑动画，SSE 真实进度到达后接管
+        var fakeDone = false;
+        var fakeStart = performance.now();
+        var fakeTimer = requestAnimationFrame(function tick() {
+            if (fakeDone) return;
+            var elapsed = performance.now() - fakeStart;
+            var shown = Math.min(78, (elapsed / 4000) * 78);
+            progressFill.style.transform = 'scaleX(' + (shown / 100) + ')';
+            if (!fakeDone) fakeTimer = requestAnimationFrame(tick);
+        });
+        function stopFake() {
+            fakeDone = true;
+            cancelAnimationFrame(fakeTimer);
+        }
+
         // 通过 SSE 订阅更新进度（优先使用检查成功时确认可用的后端地址）
         var es = null;
         try {
@@ -759,17 +771,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
                 if (data.channel === 'update-progress') {
-                    setProgress(data.percent || 0, data.message || '');
+                    stopFake();
+                    // 真实进度 0~100 映射到 80~100 区间
+                    var mapped = 80 + (data.percent / 100) * 20;
+                    setProgress(mapped, data.message || '');
                 }
             });
         }
 
         apiFetch('/api/interface/update', { method: 'POST' })
             .then(function () {
+                stopFake();
                 if (es) es.close();
                 updating = false;
                 busy = false;
-                setBadgeBusy(false);
+                setProgress(100, '更新完成');
                 titleEl.textContent = '更新完成';
                 tipEl.style.display = '';
                 tipEl.textContent = '更新已完成，点击「确定」刷新页面。';
@@ -784,10 +800,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }]);
             })
             .catch(function (err) {
+                stopFake();
                 if (es) es.close();
                 updating = false;
                 busy = false;
-                setBadgeBusy(false);
+                setProgress(100, '');
                 titleEl.textContent = '更新失败';
                 tipEl.style.display = '';
                 var msg = err.message || '';
