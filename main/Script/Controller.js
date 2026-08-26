@@ -757,6 +757,11 @@ class Controller {
         if (document.body.classList.contains('sidebar-visible')) {
             const container = document.getElementById('quick-access-sidebar-container');
             if (container) {
+                // 当前视图处于固定模式时，Escape 不隐藏固定的侧边栏
+                if (this.ooo && this.ooo.isSidebarFixed()) {
+                    document.body.classList.remove('sidebar-visible');
+                    return;
+                }
                 container.classList.remove('visible');
                 container.classList.add('hiding');
             }
@@ -805,6 +810,8 @@ class Controller {
         }
         else if (action === 'wallpaper' && this.ooo) {
             if (this.ooo.settings.quickAccessSidebar) {
+                // 当前视图处于固定模式时，径向菜单的壁纸操作不切换固定侧边栏的显示状态
+                if (this.ooo.isSidebarFixed()) return;
                 const container = document.getElementById('quick-access-sidebar-container');
                 if (container && document.body.classList.contains('sidebar-visible')) {
                     container.classList.remove('visible');

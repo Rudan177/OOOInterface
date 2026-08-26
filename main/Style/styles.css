@@ -5178,6 +5178,19 @@ body.scrolled .quick-access-sidebar-container.visible {
     opacity: 1;
 }
 
+/* 固定侧边栏：壁纸模式下未勾选"壁纸模式固定"时，覆盖 body.scrolled 的常显示规则，保持隐藏 */
+body.scrolled.sidebar-fixed .quick-access-sidebar-container.hiding {
+    transform: translateX(calc(100% + 20px));
+    opacity: 0;
+}
+
+/* 固定侧边栏：壁纸模式下未勾选"壁纸模式固定"时，覆盖 dynamic-blur 的常显示/动画规则 */
+body.dynamic-blur.scrolled.sidebar-fixed .quick-access-sidebar-container.hiding {
+    transform: translateX(calc(100% + 20px)) scale(0.9);
+    opacity: 0;
+    filter: blur(4px);
+}
+
 /* 窄屏（<750px）侧边栏推出不推动其他元素 */
 @media (max-width: 749px) {
     body.sidebar-visible .container {

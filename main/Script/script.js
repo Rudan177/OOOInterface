@@ -50,6 +50,11 @@ class OOOInterface {
             bingRefreshInterval: 0,
             quickAccessSidebar: true,
             showQuickLinkIcons: true,
+            // 固定侧边栏：主开关（false = 恢复 hover 控制）与两个子开关（默认沿用现有行为：
+            // 主页面 hover 控制、壁纸模式常显示）
+            fixSidebarEnabled: false,
+            fixSidebarHomepage: false,
+            fixSidebarWallpaper: true,
             widgetPanel: {
                 enabled: true,
                 widgets: []
@@ -230,6 +235,17 @@ class OOOInterface {
         if (wp) wp.checked = this.settings.persistentWallpaper;
         const sh = document.getElementById('search-history-toggle');
         if (sh) sh.checked = this.settings.searchHistory;
+        // 固定侧边栏主开关与两个子开关
+        const fs = document.getElementById('fix-sidebar-toggle');
+        if (fs) fs.checked = this.settings.fixSidebarEnabled;
+        const fh = document.getElementById('fix-sidebar-homepage-toggle');
+        if (fh) fh.checked = this.settings.fixSidebarHomepage;
+        const fw = document.getElementById('fix-sidebar-wallpaper-toggle');
+        if (fw) fw.checked = this.settings.fixSidebarWallpaper;
+        const fsHomepageGroup = document.getElementById('fix-homepage-group');
+        if (fsHomepageGroup) fsHomepageGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
+        const fsWallpaperGroup = document.getElementById('fix-wallpaper-group');
+        if (fsWallpaperGroup) fsWallpaperGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
         const el = document.getElementById('engine-lock-toggle');
         if (el) el.checked = this.settings.engineLocked;
         const hn = document.getElementById('hide-notifications-toggle');
@@ -960,6 +976,9 @@ class OOOInterface {
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
         if (savedSettings.quickAccessSidebar !== undefined) result.quickAccessSidebar = savedSettings.quickAccessSidebar;
         if (savedSettings.showQuickLinkIcons !== undefined) result.showQuickLinkIcons = savedSettings.showQuickLinkIcons;
+        if (savedSettings.fixSidebarEnabled !== undefined) result.fixSidebarEnabled = savedSettings.fixSidebarEnabled;
+        if (savedSettings.fixSidebarHomepage !== undefined) result.fixSidebarHomepage = savedSettings.fixSidebarHomepage;
+        if (savedSettings.fixSidebarWallpaper !== undefined) result.fixSidebarWallpaper = savedSettings.fixSidebarWallpaper;
 
         // 合并小组件面板配置
         // enabled 字段已废弃（开关已移除，面板显示完全由列表是否为空决定），固定为 true
@@ -2286,6 +2305,25 @@ class OOOInterface {
             }
         });
 
+        // 固定侧边栏主开关改变时，显示/隐藏两个子开关并同步状态
+        document.getElementById('fix-sidebar-toggle').addEventListener('change', (e) => {
+            const homepageGroup = document.getElementById('fix-homepage-group');
+            const wallpaperGroup = document.getElementById('fix-wallpaper-group');
+            const homepageToggle = document.getElementById('fix-sidebar-homepage-toggle');
+            const wallpaperToggle = document.getElementById('fix-sidebar-wallpaper-toggle');
+            if (e.target.checked) {
+                if (homepageGroup) homepageGroup.style.display = 'block';
+                if (wallpaperGroup) wallpaperGroup.style.display = 'block';
+                // 恢复上次保存的子开关状态（壁纸模式固定默认保持开启）
+                if (homepageToggle) homepageToggle.checked = this.settings.fixSidebarHomepage;
+                if (wallpaperToggle) wallpaperToggle.checked = this.settings.fixSidebarWallpaper;
+            } else {
+                if (homepageGroup) homepageGroup.style.display = 'none';
+                if (wallpaperGroup) wallpaperGroup.style.display = 'none';
+                // 只隐藏子开关，不修改其状态，避免应用时覆盖已保存的配置
+            }
+        });
+
         // 小组件列表下拉点击 → 右面板管理界面
         const widgetPanelSelectSelected = document.getElementById('widget-panel-select-selected');
         if (widgetPanelSelectSelected) {
@@ -2346,6 +2384,19 @@ class OOOInterface {
                 const panelFillToggle = document.getElementById('wallpaper-fill-toggle-panel');
                 if (panelFillToggle) {
                     this.settings.wallpaperFill = panelFillToggle.checked;
+                }
+                // 读取固定侧边栏主开关与子开关
+                const fixSidebarToggle = document.getElementById('fix-sidebar-toggle');
+                if (fixSidebarToggle) {
+                    this.settings.fixSidebarEnabled = fixSidebarToggle.checked;
+                }
+                const fixHomepageToggle = document.getElementById('fix-sidebar-homepage-toggle');
+                if (fixHomepageToggle) {
+                    this.settings.fixSidebarHomepage = fixHomepageToggle.checked;
+                }
+                const fixWallpaperToggle = document.getElementById('fix-sidebar-wallpaper-toggle');
+                if (fixWallpaperToggle) {
+                    this.settings.fixSidebarWallpaper = fixWallpaperToggle.checked;
                 }
                 this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
                 this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
@@ -4938,13 +4989,21 @@ class OOOInterface {
             sidebar.classList.add('active');
         } else {
             sidebar.classList.remove('active');
-            // 同时隐藏容器
+            // 侧边栏功能关闭时始终隐藏容器（固定侧边栏不生效）
             const container = document.getElementById('quick-access-sidebar-container');
             if (container) {
                 container.classList.remove('visible');
                 container.classList.add('hiding');
             }
         }
+    }
+
+    // 当前视图下侧边栏是否固定显示（壁纸模式固定独立生效，不受主开关限制）
+    isSidebarFixed() {
+        if (!this.settings.quickAccessSidebar) return false;
+        return this.isScrolled
+            ? this.settings.fixSidebarWallpaper
+            : (this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage);
     }
 
     // 初始化快速访问侧边栏交互
@@ -5003,6 +5062,8 @@ class OOOInterface {
         const scheduleHide = () => {
             if (hideTimeout) clearTimeout(hideTimeout);
             hideTimeout = setTimeout(() => {
+                // 当前视图处于固定模式时，不被 hover 隐藏
+                if (this.isSidebarFixed()) return;
                 if (isVisible) {
                     isVisible = false;
                     container.classList.remove('visible');
@@ -5023,10 +5084,11 @@ class OOOInterface {
             const mouseX = e.clientX;
 
             if (mouseX >= viewportWidth - TRIGGER_ZONE_WIDTH) {
+                // 当前视图处于固定模式时，无需 hover 触发
+                if (this.isSidebarFixed()) return;
                 showSidebar();
-            } else if (isVisible && !document.body.classList.contains('scrolled')) {
-                // 壁纸模式下常显示，不做隐藏判断
-                // 仅在容器可见时检查是否需要隐藏
+            } else if (isVisible && !this.isSidebarFixed()) {
+                // 仅在容器可见且未固定时检查是否需要隐藏
                 const containerRect = container.getBoundingClientRect();
                 const isOverContainer = (
                     mouseX >= containerRect.left &&
@@ -5043,6 +5105,7 @@ class OOOInterface {
         // 容器悬停维持显示（与小组件一致）
         container.addEventListener('mouseenter', () => {
             if (!this.settings.quickAccessSidebar) return;
+            if (this.isSidebarFixed()) return;
             if (hideTimeout) {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
@@ -5057,8 +5120,8 @@ class OOOInterface {
         });
 
         container.addEventListener('mouseleave', () => {
-            // 壁纸模式下常显示，鼠标移开不隐藏
-            if (document.body.classList.contains('scrolled')) return;
+            // 当前视图固定时鼠标移开不隐藏
+            if (this.isSidebarFixed()) return;
             scheduleHide();
         });
 
@@ -5254,6 +5317,7 @@ class OOOInterface {
             }
 
             // 壁纸模式下常显示侧边栏与小组件面板（清除 hiding 残留状态）
+            // isScrolled 已在进入壁纸模式时置为 true，固定侧边栏按"壁纸模式固定"生效
             this.syncWidgetPanelsForWallpaper(true);
 
             // 动画完成后移除退出动画类（350ms + 缓冲）
@@ -5869,6 +5933,10 @@ class OOOInterface {
         document.getElementById('hide-info-popup-toggle').checked = this.settings.hideInfoPopup.enabled;
         document.getElementById('quick-access-sidebar-toggle').checked = this.settings.quickAccessSidebar;
         document.getElementById('hide-notifications-toggle').checked = this.settings.hideNotifications;
+        // 固定侧边栏主开关与两个子开关
+        document.getElementById('fix-sidebar-toggle').checked = this.settings.fixSidebarEnabled;
+        document.getElementById('fix-sidebar-homepage-toggle').checked = this.settings.fixSidebarHomepage;
+        document.getElementById('fix-sidebar-wallpaper-toggle').checked = this.settings.fixSidebarWallpaper;
         this.updateHideInfoPopupLabel();
 
         // 根据动态模糊的状态显示/隐藏增强显示开关
@@ -5889,6 +5957,16 @@ class OOOInterface {
         if (iconsGroup && showIconsToggle) {
             iconsGroup.style.display = this.settings.quickAccessSidebar ? 'block' : 'none';
             showIconsToggle.checked = this.settings.quickAccessSidebar ? this.settings.showQuickLinkIcons : false;
+        }
+
+        // 根据固定侧边栏主开关状态显示/隐藏子开关
+        const fsHomepageGroup = document.getElementById('fix-homepage-group');
+        const fsWallpaperGroup = document.getElementById('fix-wallpaper-group');
+        if (fsHomepageGroup) {
+            fsHomepageGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
+        }
+        if (fsWallpaperGroup) {
+            fsWallpaperGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
         }
 
         this.syncWidgetPanelUI();
@@ -6403,6 +6481,8 @@ class OOOInterface {
         this.handlePersistentWallpaperToggle();
         this.applyStatusBarSettings();
         this.applyColorScheme();
+        // 同步固定侧边栏状态（关闭时内部负责移除 sidebar-fixed 标记并恢复 hover 控制）
+        this.syncSidebarFixedState();
     }
 
     // ========== 主题应用 ==========
@@ -10678,6 +10758,14 @@ OOOInterface.prototype.updateWidgetPanelVisibility = function () {
             this.initWidgetPanel();
             return;
         }
+        // 当前视图处于固定状态时，面板显隐由固定配置接管
+        const fixed = this.isScrolled
+            ? this.settings.fixSidebarWallpaper
+            : (this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage);
+        if (fixed) {
+            this.syncSidebarFixedState();
+            return;
+        }
         // 确保容器初始为隐藏状态（与侧边栏保持一致）
         if (container) {
             container.classList.remove('visible');
@@ -10685,6 +10773,7 @@ OOOInterface.prototype.updateWidgetPanelVisibility = function () {
         }
     } else {
         panel.classList.remove('active');
+        // 无小组件时始终隐藏面板容器（不显示空面板）
         if (container) {
             container.classList.remove('visible');
             container.classList.add('hiding');
@@ -10695,31 +10784,76 @@ OOOInterface.prototype.updateWidgetPanelVisibility = function () {
 };
 
 // 壁纸模式切换时同步侧边栏与小组件面板的显示状态
-// wallpaperMode=true：常显示（清除 hiding，强制 visible）
-// wallpaperMode=false：恢复 hover 控制（清除 visible 与推动残留）
+// wallpaperMode=true：进入壁纸模式，由"壁纸模式固定"（独立于主开关）决定是否常显示
+// wallpaperMode=false：退出壁纸模式，主开关开启时由"主页面固定"接管，否则恢复 hover 控制
 OOOInterface.prototype.syncWidgetPanelsForWallpaper = function (wallpaperMode) {
+    // 进入壁纸模式：壁纸模式固定独立生效，一律由固定配置接管
+    if (wallpaperMode) {
+        this.syncSidebarFixedState();
+        return;
+    }
+
+    // 退出壁纸模式：主开关开启时由固定配置接管（主页面固定）
+    if (this.settings.fixSidebarEnabled) {
+        this.syncSidebarFixedState();
+        return;
+    }
+
+    // 恢复 hover 控制：清除 visible 与推动残留（widget-panel-open / sidebar-visible）
     const sidebarContainer = document.getElementById('quick-access-sidebar-container');
     const widgetContainer = document.getElementById('widget-panel-container');
+    document.body.classList.remove('widget-panel-open');
+    document.body.classList.remove('sidebar-visible');
+    document.body.classList.remove('sidebar-fixed');
+    [sidebarContainer, widgetContainer].forEach(container => {
+        if (!container) return;
+        container.classList.remove('visible');
+        container.classList.add('hiding');
+    });
+};
 
-    if (wallpaperMode) {
-        // 常显示：清除 hiding 残留，确保壁纸模式下可见
-        [sidebarContainer, widgetContainer].forEach(container => {
-            if (!container) return;
-            container.classList.remove('hiding');
-            if (!container.classList.contains('visible')) {
-                container.classList.add('visible');
-            }
-        });
+// 根据固定侧边栏配置同步侧边栏与小组件面板的显示状态
+// 壁纸模式下：常显示由"壁纸模式固定"独立控制（不受主开关限制）
+// 主页面下：固定由"主开关 + 主页面固定"控制
+OOOInterface.prototype.syncSidebarFixedState = function () {
+    const sidebarContainer = document.getElementById('quick-access-sidebar-container');
+    const widgetContainer = document.getElementById('widget-panel-container');
+    // sidebar-fixed 标记：主开关开启或壁纸模式固定关闭时需要（后者用于 CSS 覆盖 body.scrolled 的常显示规则）
+    document.body.classList.toggle('sidebar-fixed', !!this.settings.fixSidebarEnabled || !this.settings.fixSidebarWallpaper);
+
+    // 当前视图是否固定显示（壁纸模式固定独立生效）
+    const fixed = this.isScrolled
+        ? this.settings.fixSidebarWallpaper
+        : (this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage);
+    // 侧边栏固定还需快速访问侧边栏功能开启；小组件面板固定还需面板有内容
+    const sidebarFixed = fixed && this.settings.quickAccessSidebar;
+    const widgetFixed = fixed && this.isWidgetPanelActive();
+
+    if (sidebarFixed) {
+        // 固定显示：清除 hiding 残留，确保可见
+        sidebarContainer.classList.remove('hiding');
+        if (!sidebarContainer.classList.contains('visible')) {
+            sidebarContainer.classList.add('visible');
+        }
     } else {
-        // 恢复 hover 控制：清除 visible 与推动残留（widget-panel-open / sidebar-visible）
-        document.body.classList.remove('widget-panel-open');
-        document.body.classList.remove('sidebar-visible');
-        [sidebarContainer, widgetContainer].forEach(container => {
-            if (!container) return;
-            container.classList.remove('visible');
-            container.classList.add('hiding');
-        });
+        sidebarContainer.classList.remove('visible');
+        sidebarContainer.classList.add('hiding');
     }
+
+    if (widgetFixed) {
+        // 固定显示：清除 hiding 残留，确保可见
+        widgetContainer.classList.remove('hiding');
+        if (!widgetContainer.classList.contains('visible')) {
+            widgetContainer.classList.add('visible');
+        }
+    } else {
+        widgetContainer.classList.remove('visible');
+        widgetContainer.classList.add('hiding');
+    }
+
+    // 清除推动残留（widget-panel-open / sidebar-visible），避免固定状态误触发推挤
+    document.body.classList.remove('widget-panel-open');
+    document.body.classList.remove('sidebar-visible');
 };
 
 // 初始化左侧小组件面板交互
@@ -10758,6 +10892,8 @@ OOOInterface.prototype.initWidgetPanel = function () {
         if (hideTimeout) clearTimeout(hideTimeout);
         hideTimeout = setTimeout(() => {
             if (!isVisible) return;
+            // 当前视图处于固定模式时，不被 hover 隐藏
+            if (this.isSidebarFixed()) return;
             // HIDE_DELAY=0 提供一帧窗口：若鼠标仍在面板上，下一帧 mousemove 会触发 showPanel 清除此回调
             isVisible = false;
             container.classList.remove('visible');
@@ -10775,8 +10911,10 @@ OOOInterface.prototype.initWidgetPanel = function () {
         const mouseX = e.clientX;
 
         if (mouseX <= TRIGGER_ZONE_WIDTH) {
+            // 当前视图处于固定模式时，无需 hover 触发
+            if (this.isSidebarFixed()) return;
             showPanel();
-        } else if (!document.body.classList.contains('scrolled')) {
+        } else if (!this.isSidebarFixed()) {
             const containerRect = container.getBoundingClientRect();
             const isOverContainer = (
                 mouseX >= containerRect.left &&
