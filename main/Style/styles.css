@@ -460,6 +460,11 @@ body:not(.enhanced-display) .search-container:focus-within {
     align-items: center;
     justify-content: center;
     opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.search-clear-btn[style*="display: flex"] {
+    opacity: 1;
 }
 
 .search-clear-btn:hover {

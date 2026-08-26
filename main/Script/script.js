@@ -1708,12 +1708,23 @@ class OOOInterface {
             const result = chrome.storage.local.set({ oooInterfaceSettings: settingsToSave });
             if (result && typeof result.catch === 'function') {
                 result.catch(error => {
-                    console.error('保存设置异步失败:', error);
+                    console.warn('chrome.storage 保存失败，尝试 localStorage:', error);
+                    try {
+                        localStorage.setItem('oooInterfaceSettings', JSON.stringify(settingsToSave));
+                    } catch (e) {
+                        console.error('localStorage 保存也失败:', e);
+                        this.showNotification('保存设置失败');
+                    }
                 });
             }
         } catch (error) {
-            console.error('保存设置失败:', error);
-            this.showNotification('保存设置失败');
+            console.warn('chrome.storage 保存失败，尝试 localStorage:', error);
+            try {
+                localStorage.setItem('oooInterfaceSettings', JSON.stringify(settingsToSave));
+            } catch (e) {
+                console.error('localStorage 保存也失败:', e);
+                this.showNotification('保存设置失败');
+            }
         }
     }
 
