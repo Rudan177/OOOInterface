@@ -35,6 +35,10 @@
                         </path>
                     </svg>
                 </div>
+                <div id="search-mode-chip" class="search-mode-chip" title="点击 / Esc / 退格 退出当前模式">
+                    <span class="material-icons search-mode-chip-icon">language</span>
+                    <span class="search-mode-chip-text"></span>
+                </div>
                 <input type="text" id="search-input" class="search-input" placeholder="" autofocus>
                 <div class="search-clear-btn" style="display: none;">
                     <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -44,6 +48,12 @@
                     </svg>
                 </div>
             </div>
+        </div>
+
+        <!-- “/” 命令列表 / 翻译语言历史显示区域 -->
+        <div id="search-command-container" class="search-command-container">
+            <div class="search-command-list"></div>
+            <div class="translate-history-list"></div>
         </div>
 
         <!-- 搜索历史显示区域 -->

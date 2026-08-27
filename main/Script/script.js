@@ -91,6 +91,13 @@ class OOOInterface {
         this.wallpaperAnalysisUrl = null;
         this.wallpaperAnalysisPromise = null;
 
+        // “/” 命令列表状态
+        this.commandListState = { visible: false, items: [], highlight: -1 };
+
+        // 搜索框组件模式：null | 'web' | 'translate'；translate 下已锁定的语言对
+        this.searchCommandMode = null;
+        this.translateSelectedPair = null;
+
         // 壁纸填充层
         this.wallpaperBlur = null;
         this.wallpaperMain = null;
@@ -2068,14 +2075,54 @@ class OOOInterface {
             }
         });
 
+        // “/” 命令列表键盘导航（ArrowUp/Down 选择、Enter 插入命令、Esc/Backspace 删除模式 chip）
+        // 注意：在拦截 Enter 时必须 preventDefault，否则随后的 keypress 仍会触发 performSearch
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const chipActive = !!this.searchCommandMode;
+                if ((this.commandListState && this.commandListState.visible) || chipActive) {
+                    e.preventDefault();
+                    if (this.searchCommandMode) {
+                        this.exitSearchCommandMode();
+                    } else {
+                        this.hideSearchCommandList();
+                        searchInput.value = '';
+                        this.syncSearchAssistantUI('');
+                    }
+                }
+                return;
+            }
+            // 组件模式下按退格删除椭圆：输入为空时才生效；
+            // translate 已锁定语言对时先解锁语言对，再退格彻底退出
+            if (e.key === 'Backspace' && this.searchCommandMode && searchInput.value === '') {
+                e.preventDefault();
+                if (this.searchCommandMode === 'translate' && this.translateSelectedPair) {
+                    this.translateSelectedPair = null;
+                    this.updateSearchModeChip();
+                    this.refreshSearchDropdownPanels();
+                } else {
+                    this.exitSearchCommandMode();
+                }
+                return;
+            }
+            if (!this.commandListState || !this.commandListState.visible) return;
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.moveSearchCommandHighlight(e.key === 'ArrowDown' ? 1 : -1);
+                return;
+            }
+            if (e.key === 'Enter' && this.commandListState.highlight >= 0) {
+                e.preventDefault();
+                this.applySearchCommand(this.commandListState.items[this.commandListState.highlight]);
+            }
+        });
+
         // 搜索历史相关事件
         const searchHistoryContainer = document.getElementById('search-history-container');
         const searchHistoryList = document.querySelector('.search-history-list');
 
         searchInput.addEventListener('focus', () => {
-            if (this.settings.searchHistory && this.settings.searchHistoryItems.length > 0) {
-                this.showSearchHistory();
-            }
+            this.syncSearchAssistantUI(searchInput.value);
             const clearBtn = document.querySelector('.search-clear-btn');
             if (clearBtn) {
                 clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
@@ -2083,9 +2130,7 @@ class OOOInterface {
         });
 
         searchInput.addEventListener('input', () => {
-            if (this.settings.searchHistory && this.settings.searchHistoryItems.length > 0) {
-                this.showSearchHistory(searchInput.value);
-            }
+            this.syncSearchAssistantUI(searchInput.value);
             const clearBtn = document.querySelector('.search-clear-btn');
             if (clearBtn) {
                 clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
@@ -2095,16 +2140,24 @@ class OOOInterface {
         const searchClearBtn = document.querySelector('.search-clear-btn');
         if (searchClearBtn) {
             searchClearBtn.addEventListener('click', () => {
-                searchInput.value = '';
-                searchClearBtn.style.display = 'none';
+                if (this.searchCommandMode) {
+                    this.exitSearchCommandMode();
+                } else {
+                    searchInput.value = '';
+                    searchClearBtn.style.display = 'none';
+                    this.syncSearchAssistantUI('');
+                }
                 searchInput.focus();
-                this.hideSearchHistory();
             });
         }
 
         document.addEventListener('click', (e) => {
             if (!searchHistoryContainer.contains(e.target) && !searchInput.contains(e.target)) {
                 this.hideSearchHistory();
+            }
+            const commandContainer = document.getElementById('search-command-container');
+            if (commandContainer && !commandContainer.contains(e.target) && !searchInput.contains(e.target)) {
+                this.hideSearchCommandList();
             }
         });
 
@@ -2133,6 +2186,66 @@ class OOOInterface {
         searchHistoryContainer.addEventListener('wheel', (e) => {
             e.stopPropagation();
         });
+
+        // “/” 命令列表 / 翻译语言历史 点击事件
+        const searchCommandList = document.querySelector('.search-command-list');
+        if (searchCommandList) {
+            searchCommandList.addEventListener('click', (e) => {
+                const item = e.target.closest('.search-command-item');
+                if (!item) return;
+                const index = parseInt(item.dataset.index, 10);
+                if (this.commandListState && this.commandListState.items[index]) {
+                    this.applySearchCommand(this.commandListState.items[index]);
+                }
+            });
+
+            document.getElementById('search-command-container').addEventListener('wheel', (e) => {
+                e.stopPropagation();
+            });
+        }
+
+        const translateHistoryList = document.querySelector('.translate-history-list');
+        if (translateHistoryList) {
+            translateHistoryList.addEventListener('click', (e) => {
+                // 删除按钮：按 kind 分流清理对应存储，然后刷新面板
+                const deleteBtn = e.target.closest('.search-history-delete');
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    if (deleteBtn.dataset.kind === 'web') {
+                        this.setWebHistory(this.getWebHistory().filter(x => x && x.key !== deleteBtn.dataset.key));
+                    } else if (deleteBtn.dataset.kind === 'translate') {
+                        this.setTranslateHistory(this.getTranslateHistory().filter(x => x && x.pair !== deleteBtn.dataset.pair));
+                    }
+                    this.refreshSearchDropdownPanels();
+                    return;
+                }
+
+                // 行点击：web 按 key 回填网址；translate 套用语言对
+                const item = e.target.closest('.search-history-item');
+                if (!item) return;
+
+                if (item.dataset.key !== undefined) {
+                    const entry = this.getWebHistory().find(x => x && x.key === item.dataset.key);
+                    if (entry) {
+                        this.applyWebHistoryEntry(entry);
+                    }
+                } else {
+                    this.applyTranslateHistoryPair(item.dataset.pair || '');
+                }
+            });
+        }
+
+        // 模式 chip 点击退出当前模式
+        const modeChip = document.getElementById('search-mode-chip');
+        if (modeChip) {
+            modeChip.addEventListener('click', () => {
+                if (this.searchCommandMode) {
+                    this.exitSearchCommandMode();
+                    this.showNotification('已退出模式');
+                }
+                searchInput.focus();
+            });
+        }
 
         // 铭牌点击事件 - 已在 setupBadgeOpenMethod() 中处理
 
@@ -3124,6 +3237,7 @@ class OOOInterface {
                 if (clearBtn) {
                     clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
                 }
+                this.syncSearchAssistantUI(searchInput.value);
                 this.showNotification('粘贴');
             })
             .catch(err => {
@@ -5520,9 +5634,32 @@ class OOOInterface {
     performSearch(query) {
         if (!query.trim()) return;
 
+        const trimmedQuery = query.trim();
+
+        // 组件模式激活时（chip 在左，输入内容为纯参数），按模式执行
+        if (this.searchCommandMode === 'web') {
+            if (!trimmedQuery) {
+                this.showNotification('请输入网址，例如：google.com');
+                return;
+            }
+            this.openExternalUrl(trimmedQuery);
+            this.searchCommandMode = null;
+            return;
+        }
+        if (this.searchCommandMode === 'translate') {
+            this.executeTranslateModeQuery(trimmedQuery);
+            return;
+        }
+
+        // “/” 命令语法兜底路径（正常流程中前缀在输入空格时已被替换）：不进入搜索历史
+        if (trimmedQuery.startsWith('/')) {
+            this.executeSlashCommand(trimmedQuery);
+            this.hideSearchCommandList();
+            return;
+        }
+
         this.addToSearchHistory(query);
 
-        const trimmedQuery = query.trim();
         const lowerQuery = trimmedQuery.toLowerCase();
 
         if (lowerQuery.startsWith('网址/') || lowerQuery.startsWith('web/')) {
@@ -5530,16 +5667,7 @@ class OOOInterface {
 
             if (!url) return;
 
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = 'https://' + url;
-            }
-
-            try {
-                new URL(url);
-                window.location.href = url;
-            } catch (e) {
-                this.showNotification('无效的URL地址');
-            }
+            this.openExternalUrl(url);
             return;
         }
 
@@ -5551,6 +5679,700 @@ class OOOInterface {
         }
 
         window.location.href = searchUrl;
+    }
+
+    openExternalUrl(urlText) {
+        let url = (urlText || '').trim();
+        if (!url) return;
+
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+        }
+
+        try {
+            new URL(url);
+            this.recordWebHistory(url);
+            window.location.href = url;
+        } catch (e) {
+            this.showNotification('无效的URL地址');
+        }
+    }
+
+    // ===================== “/” 命令系统（网址 / 翻译） =====================
+
+    getSlashCommands() {
+        return [
+            { name: 'web', icon: 'language', desc: '打开网页' },
+            { name: 'translate', icon: 'translate', desc: '翻译文本' }
+        ];
+    }
+
+    isWebCommand(word) {
+        return ['web', 'w', '网址'].includes((word || '').toLowerCase());
+    }
+
+    isTranslateCommand(word) {
+        return ['translate', 't', '翻译'].includes((word || '').toLowerCase());
+    }
+
+    // 统一同步搜索框辅助 UI：
+    // - 组件模式（web/translate）激活时：左侧 chip 替代命令文字，下方展示翻译语言历史
+    // - 未进入模式且以“/”开头：显示命令工作列表，“/别名+空格”立即进入对应模式
+    // - 其他情况：回到搜索历史逻辑
+    syncSearchAssistantUI(value) {
+        if (typeof value !== 'string') value = '';
+
+        if (this.searchCommandMode === 'web') {
+            this.hideSearchCommandList();
+            this.updateSearchModeChip();
+            this.refreshSearchDropdownPanels();
+            return;
+        }
+
+        if (this.searchCommandMode === 'translate') {
+            this.hideSearchCommandList();
+            this.lockTranslatePairFromInput(value);
+            this.updateSearchModeChip();
+            this.refreshSearchDropdownPanels();
+            return;
+        }
+
+        if (value.startsWith('/')) {
+            this.hideSearchHistory();
+
+            // “/别名 + 空格”：把前缀替换为左侧 chip，剩余文本作为参数继续输入
+            const entered = value.match(/^\/(\S+)\s([\s\S]*)$/);
+            if (entered && (this.isWebCommand(entered[1]) || this.isTranslateCommand(entered[1]))) {
+                const mode = this.isWebCommand(entered[1]) ? 'web' : 'translate';
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) {
+                    searchInput.value = entered[2] || '';
+                    const clearBtn = document.querySelector('.search-clear-btn');
+                    if (clearBtn) {
+                        clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
+                    }
+                }
+                this.enterSearchCommandMode(mode);
+                if (mode === 'translate') {
+                    const restValue = searchInput ? searchInput.value : '';
+                    this.lockTranslatePairFromInput(restValue);
+                    this.updateSearchModeChip();
+                    this.refreshSearchDropdownPanels();
+                }
+                return;
+            }
+
+            this.updateSearchModeChip();
+            this.showSearchCommandList(value);
+            return;
+        }
+
+        this.hideSearchCommandList();
+        this.updateSearchModeChip();
+        if (this.settings.searchHistory && this.settings.searchHistoryItems.length > 0) {
+            this.showSearchHistory(value);
+        }
+    }
+
+    showSearchCommandList(currentInput = '') {
+        if (!currentInput.startsWith('/')) {
+            this.hideSearchCommandList();
+            return;
+        }
+
+        // 只在第一个空格之前提供候选；出现空格说明已进入对应组件模式
+        const partial = currentInput.slice(1);
+        if (/\s/.test(partial)) {
+            this.hideSearchCommandList();
+            return;
+        }
+
+        const filter = partial.toLowerCase();
+        const items = this.getSlashCommands().filter(cmd => {
+            if (!filter) return true;
+            if (cmd.name.toLowerCase().startsWith(filter)) return true;
+            const extraAliases = this.isWebCommand(cmd.name)
+                ? ['w', '网址']
+                : (this.isTranslateCommand(cmd.name) ? ['t', '翻译'] : []);
+            return extraAliases.some(alias => alias.toLowerCase().startsWith(filter));
+        });
+
+        if (items.length === 0) {
+            this.hideSearchCommandList();
+            return;
+        }
+
+        this.commandListState = { visible: true, items: items, highlight: -1 };
+        this.renderSearchCommandItems();
+        this.refreshSearchDropdownPanels();
+    }
+
+    hideSearchCommandList() {
+        const container = document.getElementById('search-command-container');
+        if (container) {
+            container.classList.remove('show');
+        }
+        if (this.commandListState) {
+            this.commandListState.visible = false;
+            this.commandListState.highlight = -1;
+        }
+    }
+
+    renderSearchCommandItems() {
+        const list = document.querySelector('.search-command-list');
+        if (!list || !this.commandListState) return;
+
+        list.innerHTML = '';
+
+        this.commandListState.items.forEach((cmd, index) => {
+            const item = document.createElement('div');
+            item.className = 'search-command-item' + (index === this.commandListState.highlight ? ' selected' : '');
+            item.dataset.index = index;
+            item.innerHTML = `
+                <span class="search-command-icon material-icons">${cmd.icon}</span>
+                <div class="search-command-info">
+                    <span class="search-command-name">/${cmd.name}</span>
+                    <span class="search-command-desc">${this.escapeHtml(cmd.desc)}</span>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    moveSearchCommandHighlight(delta) {
+        const state = this.commandListState;
+        if (!state || !state.visible || state.items.length === 0) return;
+
+        const max = state.items.length - 1;
+        state.highlight += delta;
+        if (state.highlight > max) state.highlight = 0;
+        if (state.highlight < 0) state.highlight = max;
+
+        this.renderSearchCommandItems();
+    }
+
+    applySearchCommand(cmd) {
+        if (!cmd) return;
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+        }
+        const clearBtn = document.querySelector('.search-clear-btn');
+        if (clearBtn) {
+            clearBtn.style.display = 'none';
+        }
+
+        this.enterSearchCommandMode(this.isWebCommand(cmd.name) ? 'web' : 'translate');
+    }
+
+    enterSearchCommandMode(mode) {
+        this.searchCommandMode = mode;
+        this.translateSelectedPair = null;
+        this.hideSearchCommandList();
+        this.updateSearchModeChip();
+        this.refreshSearchDropdownPanels();
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.focus();
+        }
+        this.showNotification('已进入' + (mode === 'web' ? '网址' : '翻译') + '模式');
+    }
+
+    // 退出组件模式；clearInput=false 时保留输入框现有内容（如翻译结果）
+    exitSearchCommandMode(clearInput = true) {
+        this.searchCommandMode = null;
+        this.translateSelectedPair = null;
+
+        const searchInput = document.getElementById('search-input');
+        if (clearInput && searchInput) {
+            searchInput.value = '';
+        }
+        const clearBtn = document.querySelector('.search-clear-btn');
+        if (clearBtn && searchInput) {
+            clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
+        }
+        this.updateSearchModeChip();
+        this.hideSearchCommandList();
+    }
+
+    // 模式 chip：由组件模式状态驱动（替代原命令前缀文字，位于输入框左侧）。
+    // 进入模式时放大镜图标收缩隐去、椭圆展开顶入（CSS 过渡联动），退出时反向还原
+    updateSearchModeChip() {
+        const chip = document.getElementById('search-mode-chip');
+        if (!chip) return;
+
+        const searchContainer = document.querySelector('.search-container');
+        if (searchContainer) {
+            searchContainer.classList.toggle('mode-active', !!this.searchCommandMode);
+        }
+
+        const iconEl = chip.querySelector('.search-mode-chip-icon');
+        const textEl = chip.querySelector('.search-mode-chip-text');
+
+        if (this.searchCommandMode === 'web') {
+            iconEl.textContent = 'language';
+            textEl.textContent = '网址';
+            chip.classList.add('expanded');
+        } else if (this.searchCommandMode === 'translate') {
+            iconEl.textContent = 'translate';
+            textEl.textContent = this.translateSelectedPair
+                ? this.translateSelectedPair.from.label + '→' + this.translateSelectedPair.to.label
+                : '翻译';
+            chip.classList.add('expanded');
+        } else {
+            chip.classList.remove('expanded');
+        }
+    }
+
+    // translate 模式下从输入中锁定语言对：首个空白之前的部分若可解析则锁定，并把它从输入中移除
+    lockTranslatePairFromInput(value) {
+        if (this.translateSelectedPair || !value) return;
+
+        const spIndex = value.search(/\s/);
+        if (spIndex === -1) return; // 尚未出现空格，等待继续输入
+
+        const pair = this.resolveLanguagePair(value.slice(0, spIndex));
+        if (!pair) return; // 无法解析时保留原样，交由 Enter 时提示
+
+        this.translateSelectedPair = pair;
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = value.slice(spIndex).replace(/^\s+/, '');
+            const clearBtn = document.querySelector('.search-clear-btn');
+            if (clearBtn) {
+                clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
+            }
+        }
+    }
+
+    // 解析语言对文本：'sc-jp' 或省略源语言的 'jp'
+    resolveLanguagePair(pairText) {
+        const parts = (pairText || '').toLowerCase().split('-').filter(Boolean);
+        if (parts.length === 0) return null;
+
+        let fromEntry;
+        let toEntry;
+        if (parts.length >= 2) {
+            fromEntry = this.resolveTranslateLanguage(parts[0]);
+            toEntry = this.resolveTranslateLanguage(parts[1]);
+        } else {
+            fromEntry = this.resolveTranslateLanguage('auto');
+            toEntry = this.resolveTranslateLanguage(parts[0]);
+        }
+        if (!fromEntry || !toEntry) return null;
+
+        return { raw: fromEntry.key + '-' + toEntry.key, from: fromEntry, to: toEntry };
+    }
+
+    getTranslateHistory() {
+        try {
+            return JSON.parse(localStorage.getItem('oooTranslateHistory') || '[]') || [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    setTranslateHistory(list) {
+        localStorage.setItem('oooTranslateHistory', JSON.stringify(list || []));
+    }
+
+    recordTranslateHistory(fromEntry, toEntry) {
+        if (!fromEntry || !toEntry) return;
+
+        let list = this.getTranslateHistory();
+        const raw = fromEntry.key + '-' + toEntry.key;
+        list = list.filter(item => item && item.pair !== raw);
+        list.unshift({ pair: raw });
+        if (list.length > 12) {
+            list.length = 12;
+        }
+        this.setTranslateHistory(list);
+    }
+
+    // 下方共享下拉面板：命令列表可见时优先；否则按当前组件模式展示使用历史
+    // （web → 最近网址，translate → 最近语言对）。隐藏的一方内容在此统一清空
+    refreshSearchDropdownPanels() {
+        const container = document.getElementById('search-command-container');
+        if (!container) return;
+
+        const commandVisible = !!(this.commandListState && this.commandListState.visible);
+
+        const commandList = container.querySelector('.search-command-list');
+        if (commandList && !commandVisible) {
+            commandList.innerHTML = '';
+        }
+
+        // 组装历史内容（仅 translate / web 模式且命令列表不可见时）
+        const historyEntries = [];
+        let historyKind = '';
+        if (!commandVisible) {
+            if (this.searchCommandMode === 'translate') {
+                historyEntries.push(...this.getTranslateHistory());
+                historyKind = 'translate';
+            } else if (this.searchCommandMode === 'web') {
+                historyEntries.push(...this.getWebHistory());
+                historyKind = 'web';
+            }
+        }
+
+        const historyList = container.querySelector('.translate-history-list');
+        if (historyList) {
+            historyList.innerHTML = '';
+
+            // 行结构与原生搜索历史一致（search-history-item），含悬停出现的删除按钮
+            if (historyKind === 'translate' && historyEntries.length > 0) {
+                historyEntries.forEach(entry => {
+                    if (!entry || !entry.pair) return;
+                    const sides = String(entry.pair).split('-');
+                    const fromE = this.resolveTranslateLanguage(sides[0]);
+                    const toE = this.resolveTranslateLanguage(sides[1]);
+                    const labels = (fromE ? fromE.label : sides[0]) + '→' + (toE ? toE.label : sides[1]);
+                    const display = entry.pair + ' · ' + labels;
+
+                    const row = document.createElement('div');
+                    row.className = 'search-history-item';
+                    row.dataset.pair = entry.pair;
+                    row.innerHTML = `
+                        <span class="search-history-text">${this.escapeHtml(display)}</span>
+                        <button class="search-history-delete" data-kind="translate" data-pair="${this.escapeHtml(entry.pair)}">
+                            ×
+                        </button>
+                    `;
+                    historyList.appendChild(row);
+                });
+            } else if (historyKind === 'web' && historyEntries.length > 0) {
+                historyEntries.forEach(entry => {
+                    if (!entry || !entry.host) return;
+
+                    const row = document.createElement('div');
+                    row.className = 'search-history-item';
+                    row.dataset.key = entry.key || '';
+                    row.innerHTML = `
+                        <span class="search-history-text">${this.escapeHtml(entry.host + (entry.rest || ''))}</span>
+                        <button class="search-history-delete" data-kind="web" data-key="${this.escapeHtml(entry.key || '')}">
+                            ×
+                        </button>
+                    `;
+                    historyList.appendChild(row);
+                });
+            }
+        }
+
+        if (commandVisible || (historyList && historyList.children.length > 0)) {
+            container.classList.add('show');
+        } else {
+            container.classList.remove('show');
+        }
+    }
+
+    applyTranslateHistoryPair(pairRaw) {
+        if (this.searchCommandMode !== 'translate') {
+            this.enterSearchCommandMode('translate');
+        }
+
+        const pair = this.resolveLanguagePair((pairRaw || '').replace(/→/g, '-'));
+        if (!pair) {
+            this.showNotification('语言对不可用：' + pairRaw);
+            return;
+        }
+
+        this.translateSelectedPair = pair;
+        this.updateSearchModeChip();
+        this.refreshSearchDropdownPanels();
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.focus();
+        }
+        this.showNotification('已选择 ' + pair.from.label + '→' + pair.to.label);
+    }
+
+    getWebHistory() {
+        try {
+            return JSON.parse(localStorage.getItem('oooWebCommandHistory') || '[]') || [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    setWebHistory(list) {
+        localStorage.setItem('oooWebCommandHistory', JSON.stringify(list || []));
+    }
+
+    // 记录通过命令打开的网址（存主机名用于展示，key 用于去重）
+    recordWebHistory(urlText) {
+        let parsed;
+        try {
+            parsed = new URL(urlText);
+        } catch (e) {
+            return;
+        }
+
+        let list = this.getWebHistory();
+        const rest = (parsed.pathname === '/' && !parsed.search) ? '' : parsed.pathname + parsed.search;
+        const key = parsed.origin + (rest || '/');
+
+        list = list.filter(item => item && item.key !== key);
+        list.unshift({
+            key: key,
+            host: parsed.host.replace(/^www\./, ''),
+            rest: rest
+        });
+        if (list.length > 12) {
+            list.length = 12;
+        }
+        this.setWebHistory(list);
+    }
+
+    applyWebHistoryEntry(entry) {
+        if (!entry || !entry.host) return;
+
+        if (this.searchCommandMode !== 'web') {
+            this.enterSearchCommandMode('web');
+        }
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = entry.host + (entry.rest || '');
+            const clearBtn = document.querySelector('.search-clear-btn');
+            if (clearBtn) {
+                clearBtn.style.display = 'flex';
+            }
+            searchInput.focus();
+        }
+    }
+
+    // 翻译模式的回车执行：未锁定语言对时把首词作为语言对兜底解析
+    async executeTranslateModeQuery(rawText) {
+        const text = (rawText || '').trim();
+
+        if (!text) return;
+
+        if (!this.translateSelectedPair) {
+            const inlineMatch = text.match(/^(\S+)\s+([\s\S]+)$/);
+            if (inlineMatch) {
+                const inlinePair = this.resolveLanguagePair(inlineMatch[1]);
+                if (inlinePair) {
+                    this.translateSelectedPair = inlinePair;
+                    this.updateSearchModeChip();
+                    await this.runTranslateFlow(inlineMatch[2], inlinePair);
+                    return;
+                }
+            }
+            this.showNotification('请输入语言对和文本，例如：sc-jp 你好');
+            return;
+        }
+
+        await this.runTranslateFlow(text, this.translateSelectedPair);
+    }
+
+    // 统一翻译执行：调用引擎 → 结果输出到搜索框 → 复制 → 记录历史 → 退出模式（保留结果）
+    async runTranslateFlow(text, pair) {
+        try {
+            const result = await this.translateText(text, pair.from, pair.to);
+            if (!result) {
+                throw new Error('未获得翻译结果');
+            }
+
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.value = result;
+                const clearBtn = document.querySelector('.search-clear-btn');
+                if (clearBtn) {
+                    clearBtn.style.display = 'flex';
+                }
+            }
+            this.recordTranslateHistory(pair.from, pair.to);
+            this.exitSearchCommandMode(false);
+
+            navigator.clipboard.writeText(result).then(() => {
+                this.showNotification('翻译完成，结果已输出并复制');
+            }).catch(() => {
+                this.showNotification('翻译完成，但复制到剪贴板失败');
+            });
+        } catch (err) {
+            this.showNotification('翻译失败：' + err.message);
+        }
+    }
+
+    async executeSlashCommand(trimmedQuery) {
+        const match = trimmedQuery.slice(1).match(/^(\S*)(?:\s+([\s\S]*))?$/);
+        if (!match) return;
+
+        const word = match[1] || '';
+
+        if (this.isWebCommand(word)) {
+            const url = (match[2] || '').replace(/\s+/g, '');
+            if (!url) {
+                this.showNotification('请输入网址，例如：/w google.com');
+                return;
+            }
+            this.openExternalUrl(url);
+            return;
+        }
+
+        if (this.isTranslateCommand(word)) {
+            const rest = (match[2] || '').trim();
+            if (!rest) {
+                this.showNotification('请输入语言对和文本，例如：/t sc-jp 你好');
+                return;
+            }
+
+            const parts = rest.match(/^(\S+)\s+([\s\S]+)$/);
+            if (!parts) {
+                if (/^[^\s]+-[^\s]+$/.test(rest)) {
+                    this.showNotification('请输入要翻译的文本');
+                } else {
+                    this.showNotification('格式：/t 源语言-目标语言 文本，例如：/t sc-jp 你好');
+                }
+                return;
+            }
+
+            const pair = this.resolveLanguagePair(parts[1]);
+            if (!pair) {
+                const sides = parts[1].toLowerCase().split('-');
+                this.showNotification('不支持的语言：' + sides.join(' / '));
+                return;
+            }
+
+            await this.runTranslateFlow(parts[2], pair);
+            return;
+        }
+
+        this.showNotification('未知命令：“/' + word + '”，可用命令：web(w)、translate(t)');
+    }
+
+    // 语言别名表：sc/jp/en 等缩写映射到两家引擎各自的语言代码；key 为历史记录使用的规范键
+    resolveTranslateLanguage(rawCode) {
+        const code = (rawCode || '').toLowerCase().trim();
+        if (!code) return null;
+
+        const table = [
+            { key: 'auto', label: '自动检测', aliases: ['auto', 'a', '自动'], g: 'auto', m: 'auto-detect' },
+            { key: 'sc', label: '简体中文', aliases: ['sc', 'zh-cn', 'zh', 'cn', '简体', '中文'], g: 'zh-CN', m: 'zh-Hans' },
+            { key: 'tc', label: '繁体中文', aliases: ['tc', 'zh-tw', 'tw', '繁体'], g: 'zh-TW', m: 'zh-Hant' },
+            { key: 'en', label: '英语', aliases: ['en', 'english', '英'], g: 'en', m: 'en' },
+            { key: 'ja', label: '日语', aliases: ['jp', 'jpn', 'ja', '日'], g: 'ja', m: 'ja' },
+            { key: 'ko', label: '韩语', aliases: ['kr', 'kor', 'ko', '韩'], g: 'ko', m: 'ko' },
+            { key: 'fr', label: '法语', aliases: ['fr', '法'], g: 'fr', m: 'fr' },
+            { key: 'de', label: '德语', aliases: ['de', '德'], g: 'de', m: 'de' },
+            { key: 'es', label: '西班牙语', aliases: ['es', '西'], g: 'es', m: 'es' },
+            { key: 'ru', label: '俄语', aliases: ['ru', '俄'], g: 'ru', m: 'ru' },
+            { key: 'pt', label: '葡萄牙语', aliases: ['pt', '葡'], g: 'pt', m: 'pt' },
+            { key: 'it', label: '意大利语', aliases: ['it', '意'], g: 'it', m: 'it' },
+            { key: 'th', label: '泰语', aliases: ['th', '泰'], g: 'th', m: 'th' },
+            { key: 'vi', label: '越南语', aliases: ['vi', '越'], g: 'vi', m: 'vi' },
+            { key: 'ar', label: '阿拉伯语', aliases: ['ar', '阿'], g: 'ar', m: 'ar' }
+        ];
+
+        // 允许直接用规范键匹配
+        return table.find(entry => entry.key === code || entry.aliases.includes(code)) || null;
+    }
+
+    async translateText(text, fromEntry, toEntry) {
+        if (this.currentEngine === 'bing') {
+            try {
+                return await this.fetchBingTranslate(text, fromEntry.m, toEntry.m, false);
+            } catch (err) {
+                console.warn('[搜索框翻译] Microsoft 翻译失败，回退到 Google 翻译:', err.message);
+                this.showNotification('Microsoft 翻译不可用，已改用 Google 翻译');
+            }
+        }
+        return await this.fetchGoogleTranslate(text, fromEntry.g, toEntry.g);
+    }
+
+    // 直连优先，用户配置了本地代理且直连抛错时走代理重试
+    async slashFetch(url, options) {
+        try {
+            return await fetch(url, options);
+        } catch (err) {
+            if (typeof ProxyManager !== 'undefined' && ProxyManager.isProxyEnabled()) {
+                return await ProxyManager.proxiedFetch(url, options);
+            }
+            throw err;
+        }
+    }
+
+    async fetchGoogleTranslate(text, sl, tl) {
+        const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' +
+            encodeURIComponent(sl) + '&tl=' + encodeURIComponent(tl) + '&dt=t&q=' + encodeURIComponent(text);
+
+        const response = await this.slashFetch(url);
+        if (!response.ok) {
+            throw new Error('Google 翻译服务响应异常 (HTTP ' + response.status + ')');
+        }
+
+        const data = await response.json();
+        if (!Array.isArray(data) || !Array.isArray(data[0])) {
+            throw new Error('Google 翻译结果解析失败');
+        }
+
+        return data[0].map(segment => (segment && segment[0]) ? segment[0] : '').join('');
+    }
+
+    // Microsoft(Bing) 免费接口：需先从 bing 首页抓取 IG 与防滥用 token
+    async getBingTranslateAuth(forceRefresh = false) {
+        if (!forceRefresh) {
+            try {
+                const cached = JSON.parse(localStorage.getItem('oooBingTranslateAuth') || 'null');
+                if (cached && cached.token && cached.ig && Date.now() - cached.ts < 20 * 60 * 1000) {
+                    return cached;
+                }
+            } catch (e) { /* 缓存损坏则重新获取 */ }
+        }
+
+        const response = await this.slashFetch('https://www.bing.com/');
+        const html = await response.text();
+
+        const igMatch = html.match(/IG:"([^"]+)"/);
+        const tokenMatch = html.match(/params_AbusePreventionHelper\s*=\s*\[\s*\d+\s*,\s*"([^"]+)"/);
+
+        if (!igMatch || !tokenMatch) {
+            throw new Error('无法获取 Microsoft 翻译凭证');
+        }
+
+        const auth = { ig: igMatch[1], token: tokenMatch[1], ts: Date.now() };
+        localStorage.setItem('oooBingTranslateAuth', JSON.stringify(auth));
+        return auth;
+    }
+
+    async fetchBingTranslate(text, fromCode, toCode, forceNewAuth) {
+        try {
+            const auth = await this.getBingTranslateAuth(!!forceNewAuth);
+
+            const body = new URLSearchParams({
+                from: fromCode,
+                to: toCode,
+                text: text,
+                token: auth.token,
+                key: auth.ig
+            }).toString();
+
+            const response = await this.slashFetch('https://www.bing.com/ttranslatev3?isTanslateReq=true', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            });
+
+            if (!response.ok) {
+                throw new Error('Microsoft 翻译服务响应异常 (HTTP ' + response.status + ')');
+            }
+
+            const data = await response.json();
+            if (Array.isArray(data) && data[0] && Array.isArray(data[0].translations)) {
+                return data[0].translations.map(item => item.text || '').join('');
+            }
+            throw new Error('Microsoft 翻译结果解析失败');
+        } catch (err) {
+            // 凭证失效等情况：强制刷新一次后重试
+            if (!forceNewAuth) {
+                return await this.fetchBingTranslate(text, fromCode, toCode, true);
+            }
+            throw err;
+        }
     }
 
     performGoogleLucky() {
