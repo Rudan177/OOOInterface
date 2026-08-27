@@ -45,11 +45,13 @@
         backdrop-filter: blur(25px);
         -webkit-backdrop-filter: blur(25px);
         border-radius: 20px;
+        overflow: hidden;
         transition: background-color 0.3s ease;
     }
 
     h1 {
-        padding: 25px 10px;
+        padding: 12px 10px;
+        margin: 0;
         text-align: center;
         font-size: 32px;
         font-weight: 800;
@@ -58,7 +60,7 @@
     }
 
     hr {
-        margin-top: -30px;
+        margin-top: 0;
         color: #11111130;
         border: none;
         height: 2px;
@@ -121,6 +123,208 @@
         font-size: 1.5em;
     }
 
+    /* ===== 版本支持状态表格 ===== */
+    .version-card {
+        width: 80%;
+        margin-top: 25px;
+        margin-left: 50%;
+        margin-bottom: 50px;
+        transform: translateX(-50%);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 20px;
+        overflow: hidden;
+        transition: background-color 0.3s ease;
+    }
+
+
+    @media (prefers-color-scheme: dark) {
+        .version-card {
+            background-color: rgba(20, 20, 30, 0.5);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .version-card {
+            width: 92%;
+            margin-bottom: 30px;
+        }
+    }
+
+    .version-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 18px;
+        font-family: serif;
+        color: #000;
+        transition: color 0.3s ease;
+    }
+
+    .version-table th {
+        text-align: left;
+        padding: 10px 16px;
+        font-weight: 700;
+        font-size: 17px;
+        border-bottom: 2px solid rgba(0, 0, 0, 0.15);
+        color: #000;
+        transition: color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .version-table td {
+        padding: 10px 16px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        color: #000;
+        transition: color 0.3s ease;
+    }
+
+    .version-table tr:hover td {
+        background-color: rgba(0, 174, 0, 0.06);
+    }
+
+    .version-table .status-stopped {
+        color: #888;
+    }
+
+    .version-table .status-soon {
+        color: #e6a800;
+        font-weight: 600;
+    }
+
+    .version-table .status-active {
+        color: #00ae00;
+        font-weight: 600;
+    }
+
+    .version-divider {
+        width: 100%;
+        margin-top: 0;
+        border: none;
+        height: 2px;
+        background-color: #11111130;
+        transition: background-color 0.3s ease;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .version-divider {
+            background-color: #ffffff30;
+        }
+    }
+
+    .support-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: flex-end;
+        margin-top: 8px;
+        margin-bottom: 4px;
+        padding-right: 20px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: 'HMSC', serif;
+        font-weight: 600;
+        color: #000;
+        user-select: none;
+        transition: color 0.2s ease;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .support-btn {
+            color: #e0e0e0;
+        }
+    }
+
+    .support-btn input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #00ae00;
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        flex-shrink: 0;
+        position: relative;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .support-btn input[type="checkbox"]:checked {
+        background-color: #00ae00;
+        border-color: #00ae00;
+    }
+
+    .support-btn input[type="checkbox"]:checked::after {
+        content: '';
+        position: absolute;
+        left: 4px;
+        top: 1px;
+        width: 4px;
+        height: 8px;
+        border: solid #fff;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+    }
+
+    /* 小屏幕适配 */
+    @media (max-width: 768px) {
+        .support-btn {
+            font-size: 13px;
+        }
+    }
+
+    /* 深色模式表格适配 */
+    @media (prefers-color-scheme: dark) {
+        .version-table {
+            color: #e0e0e0;
+        }
+
+        .version-table th {
+            border-bottom-color: rgba(255, 255, 255, 0.15);
+            color: #e0e0e0;
+        }
+
+        .version-table td {
+            color: #e8e8e8;
+            border-bottom-color: rgba(255, 255, 255, 0.07);
+        }
+
+        .version-table tr:hover td {
+            background-color: rgba(0, 174, 0, 0.12);
+        }
+
+        .version-table .status-stopped {
+            color: #aaa;
+        }
+
+        .version-table .status-soon {
+            color: #f0c040;
+        }
+
+        .version-table .status-active {
+            color: #00c853;
+        }
+    }
+
+    /* 小屏幕表格适配 */
+    @media (max-width: 768px) {
+        .version-table {
+            font-size: 14px;
+        }
+
+        .version-table th,
+        .version-table td {
+            padding: 8px 10px;
+        }
+
+        .version-table th:nth-child(1),
+        .version-table td:nth-child(1) { width: 40%; }
+
+        .version-table th:nth-child(2),
+        .version-table td:nth-child(2) { width: 40%; }
+
+        .version-table th:nth-child(3),
+        .version-table td:nth-child(3) { width: 20%; text-align: right; }
+    }
+
     /* ===== 深色模式 ===== */
     @media (prefers-color-scheme: dark) {
         body::after {
@@ -158,11 +362,12 @@
 
         h1 {
             font-size: 24px;
-            padding: 18px 8px;
+            margin: 0;
+            padding: 8px 8px;
         }
 
         hr {
-            margin-top: -22px;
+            margin-top: 0;
         }
 
         h2 {
@@ -198,11 +403,63 @@
         <hr>
         <h2>前往下载页</h2>
         <ul>
-            <li><a href="5.2/5.2.html" target="5.2">OOOInterface LTS 5.2 </a></li>
+            <li><a href="30/5.3.html" target="5.2">OOOInterface LTS 5.2 </a></li>
             <li><a href="29/29.html" target="29">OOOInterface 29 </a></li>
         </ul>
-        </li>
     </div>
+    <div class="version-card">
+            <h1>版本支持状态</h1>
+            <hr class="version-divider">
+            <label class="support-btn" id="supportLabel"><input type="checkbox" id="supportCheck"> 仅显示支持版本</label>
+        <table class="version-table" id="versionTable">
+                <thead>
+                    <tr>
+                        <th>版本</th>
+                        <th>状态</th>
+                        <th>天数</th>
+                    </tr>
+                </thead>
+                <tbody id="versionBody">
+                </tbody>
+            </table>
+        </div>
+    <script type="application/json" id="versionData">
+[
+  {"version":"OOOInterface 1.0 ~ 1.4","status":"停止支持","days":"--天","supported":false},
+  {"version":"OOOInterface 2.0 ~ 2.9","status":"停止支持","days":"--天","supported":false},
+  {"version":"OOOInterface 3.0 ~ 3.5","status":"停止支持","days":"--天","supported":false},
+  {"version":"OOOInterface 4.0","status":"已于2026.10.10停止支持","days":"45天","supported":false},
+  {"version":"OOOInterface 5.0","status":"已于2026.3.2停止支持","days":"60天","supported":false},
+  {"version":"OOOInterface 5.1","status":"已于2026.6.18停止支持","days":"128天","supported":false},
+  {"version":"OOOInterface 5.2","status":"即将于2026.10.24停止支持","days":"128天","supported":true},
+  {"version":"OOOInterface 26","status":"已于2026.7.10停止支持","days":"7天","supported":false},
+  {"version":"OOOInterface 27","status":"已于2026.7.17停止支持","days":"7天","supported":false},
+  {"version":"OOOInterface 28","status":"已于2026.8.1停止支持","days":"15天","supported":false},
+  {"version":"OOOInterface 29","status":"已于2026.8.9停止支持","days":"8天","supported":false},
+  {"version":"OOOInterface LTS 5.3","status":"于2026.12.15停止支持","days":"128天","supported":true}
+]
+    </script>
+    <script>
+        const data = JSON.parse(document.getElementById('versionData').textContent);
+        const tbody = document.getElementById('versionBody');
+
+        function renderTable() {
+            const filter = document.getElementById('supportCheck').checked;
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                if (filter && !item.supported) return;
+                const tr = document.createElement('tr');
+                const statusClass = !item.supported ? 'status-stopped'
+                    : item.status.startsWith('即将') ? 'status-soon'
+                    : 'status-active';
+                tr.innerHTML = `<td>${item.version}</td><td class="${statusClass}">${item.status}</td><td>${item.days}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('supportCheck').addEventListener('change', renderTable);
+        renderTable();
+    </script>
 </body>
 <footer style="text-align: center;font-size: 18px; margin-bottom: 30px; ;">
     <a href="../index.html" style="margin-right: 10px;">返回首页</a>
