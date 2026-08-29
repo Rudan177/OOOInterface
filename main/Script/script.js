@@ -1622,6 +1622,7 @@ class OOOInterface {
 
         const items = [
             { key: 'Tab', desc: '快速聚焦到搜索框' },
+            { key: 'Tab（长按）', desc: '打开快捷轮盘，移动鼠标或方向键选择（斜向按两键）' },
             { key: 'Ctrl + ,', desc: '打开设置页面' },
             { key: 'Ctrl + H', desc: '展开 / 收起搜索历史框' },
             { key: 'Ctrl + S（设置页面内）', desc: '应用当前设置' }
@@ -2918,8 +2919,9 @@ class OOOInterface {
                 return;
             }
 
-            // Tab - 聚焦搜索框（不在设置页面时）
-            if (e.key === 'Tab' && !inSettings && !e.shiftKey) {
+            // Tab - 聚焦搜索框（不在设置页面时；快捷轮盘打开时跳过，避免打断选择）
+            if (e.key === 'Tab' && !inSettings && !e.shiftKey &&
+                !(window.oooController && window.oooController.radialActive)) {
                 const searchInput = document.getElementById('search-input');
                 if (searchInput && document.activeElement !== searchInput) {
                     e.preventDefault();
