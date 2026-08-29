@@ -231,7 +231,16 @@ class OOOInterface {
         });
     }
 
+    // 简洁视觉效果主开关状态由三个子开关派生：任一开启即视为开启，保证任何路径修改子项后状态一致
+    syncSimpleVisualMode() {
+        this.settings.simpleVisualMode = !!(this.settings.hideNotifications
+            || (this.settings.hideInfoPopup && this.settings.hideInfoPopup.enabled)
+            || this.settings.hiddenBadge);
+    }
+
     syncSettingsPageToggles() {
+        // 主开关状态派生后再同步 UI
+        this.syncSimpleVisualMode();
         const dyn = document.getElementById('dynamic-blur-toggle');
         if (dyn) dyn.checked = this.settings.dynamicBlur;
         const enh = document.getElementById('enhanced-display-toggle');
@@ -261,9 +270,17 @@ class OOOInterface {
         if (hn) hn.checked = this.settings.hideNotifications;
         const hip = document.getElementById('hide-info-popup-toggle');
         if (hip) hip.checked = this.settings.hideInfoPopup.enabled;
-        // 简洁视觉效果主开关与三个子开关（子开关常显，主开关仅在切换时联动）
+        // 简洁视觉效果主开关与三个子开关（主开关开启时才显示子开关）
         const sv = document.getElementById('simple-visual-toggle');
         if (sv) sv.checked = this.settings.simpleVisualMode;
+        const svSubGroups = [
+            document.getElementById('simple-notifications-group'),
+            document.getElementById('simple-infopopup-group'),
+            document.getElementById('simple-badge-group')
+        ];
+        svSubGroups.forEach(group => {
+            if (group) group.style.display = this.settings.simpleVisualMode ? 'block' : 'none';
+        });
         const hb = document.getElementById('hidden-badge-toggle');
         if (hb) hb.checked = this.settings.hiddenBadge;
         this.updateHideInfoPopupLabel();
@@ -993,12 +1010,6 @@ class OOOInterface {
         if (savedSettings.fixSidebarEnabled !== undefined) result.fixSidebarEnabled = savedSettings.fixSidebarEnabled;
         if (savedSettings.fixSidebarHomepage !== undefined) result.fixSidebarHomepage = savedSettings.fixSidebarHomepage;
         if (savedSettings.fixSidebarWallpaper !== undefined) result.fixSidebarWallpaper = savedSettings.fixSidebarWallpaper;
-        if (savedSettings.simpleVisualMode !== undefined) {
-            result.simpleVisualMode = savedSettings.simpleVisualMode;
-        } else {
-            // 兼容旧版本：未保存过主开关时，按已有子功能状态推断，避免升级后功能被静默关闭
-            result.simpleVisualMode = !!(result.hideNotifications || (result.hideInfoPopup && result.hideInfoPopup.enabled));
-        }
         if (savedSettings.hiddenBadge !== undefined) result.hiddenBadge = savedSettings.hiddenBadge;
 
         // 合并小组件面板配置
@@ -1069,7 +1080,10 @@ class OOOInterface {
             this.userChangedLogo = savedSettings.userChangedLogo;
         }
 
-
+        // 简洁视觉效果主开关由子开关状态派生（所有恢复完成后计算，兼容旧版本数据）
+        result.simpleVisualMode = !!(result.hideNotifications
+            || (result.hideInfoPopup && result.hideInfoPopup.enabled)
+            || result.hiddenBadge);
 
         return result;
     }
@@ -2456,28 +2470,21 @@ class OOOInterface {
             }
         });
 
-        // 简洁视觉效果主开关改变时，联动全部子开关并即时生效（程序设置 checked 不触发子开关的 change 事件）
+        // 简洁视觉效果主开关改变时，联动全部子开关并即时生效
+        // （禁止提示按默认临时7天开启，设置页内双击该子开关才为永久；程序设置 checked 不触发子开关的 change 事件）
         document.getElementById('simple-visual-toggle').addEventListener('change', (e) => {
             const checked = e.target.checked;
 
-            this.settings.simpleVisualMode = checked;
             this.settings.hideNotifications = checked;
             this.settings.hideInfoPopup = checked
-                ? { enabled: true, type: 'permanent', timestamp: Date.now() }
+                ? { enabled: true, type: 'temporary', timestamp: Date.now() }
                 : { enabled: false, type: null, timestamp: null };
             this.settings.hiddenBadge = checked;
 
-            const notifToggle = document.getElementById('hide-notifications-toggle');
-            const infoToggle = document.getElementById('hide-info-popup-toggle');
-            const badgeToggle = document.getElementById('hidden-badge-toggle');
-            if (notifToggle) notifToggle.checked = checked;
-            if (infoToggle) infoToggle.checked = checked;
-            if (badgeToggle) badgeToggle.checked = checked;
-
             this.applySettings();
             this.saveSettings();
+            this.syncSettingsPageToggles();
             this.updateContextMenuIcons();
-            this.updateHideInfoPopupLabel();
             this.showNotification(checked ? '简洁视觉效果：开启' : '简洁视觉效果：关闭');
         });
 
@@ -2486,6 +2493,7 @@ class OOOInterface {
             this.settings.hideNotifications = e.target.checked;
             this.applySettings();
             this.saveSettings();
+            this.syncSettingsPageToggles();
             this.updateContextMenuIcons();
             this.showNotification(e.target.checked ? '隐藏弹窗：开启' : '隐藏弹窗：关闭');
         });
@@ -2495,6 +2503,7 @@ class OOOInterface {
             this.settings.hiddenBadge = e.target.checked;
             this.applySettings();
             this.saveSettings();
+            this.syncSettingsPageToggles();
             this.showNotification(e.target.checked ? '隐藏铭牌：开启' : '隐藏铭牌：关闭');
         });
 
@@ -2614,13 +2623,7 @@ class OOOInterface {
                     };
                 }
 
-                // 读取简洁视觉效果主开关
-                const simpleVisualToggle = document.getElementById('simple-visual-toggle');
-                if (simpleVisualToggle) {
-                    this.settings.simpleVisualMode = simpleVisualToggle.checked;
-                }
-
-                // 读取隐藏铭牌开关
+                // 读取隐藏铭牌开关（简洁视觉效果主开关由子开关状态派生，无需读取）
                 const hiddenBadgeToggle = document.getElementById('hidden-badge-toggle');
                 if (hiddenBadgeToggle) {
                     this.settings.hiddenBadge = hiddenBadgeToggle.checked;
@@ -3063,6 +3066,8 @@ class OOOInterface {
             this.applySettings();
             this.saveSettings();
             this.updateContextMenuIcons();
+            // 同步主开关派生状态与子开关组显隐
+            this.syncSettingsPageToggles();
             // 立即更新状态
             updateToggleState();
         };
@@ -6822,7 +6827,8 @@ class OOOInterface {
         document.getElementById('hide-info-popup-toggle').checked = this.settings.hideInfoPopup.enabled;
         document.getElementById('quick-access-sidebar-toggle').checked = this.settings.quickAccessSidebar;
         document.getElementById('hide-notifications-toggle').checked = this.settings.hideNotifications;
-        // 简洁视觉效果主开关与子开关（子开关常显，主开关仅在切换时联动）
+        // 简洁视觉效果主开关与子开关（主开关开启时才显示子开关）
+        this.syncSimpleVisualMode();
         document.getElementById('simple-visual-toggle').checked = this.settings.simpleVisualMode;
         document.getElementById('hidden-badge-toggle').checked = this.settings.hiddenBadge;
         // 固定侧边栏主开关与两个子开关
@@ -6860,6 +6866,16 @@ class OOOInterface {
         if (fsWallpaperGroup) {
             fsWallpaperGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
         }
+
+        // 根据简洁视觉效果主开关状态显示/隐藏子开关
+        const simpleVisualGroups = [
+            document.getElementById('simple-notifications-group'),
+            document.getElementById('simple-infopopup-group'),
+            document.getElementById('simple-badge-group')
+        ];
+        simpleVisualGroups.forEach(group => {
+            if (group) group.style.display = this.settings.simpleVisualMode ? 'block' : 'none';
+        });
 
         this.syncWidgetPanelUI();
 
