@@ -50,11 +50,10 @@ class OOOInterface {
             bingRefreshInterval: 0,
             quickAccessSidebar: true,
             showQuickLinkIcons: true,
-            // 固定侧边栏：主开关（false = 恢复 hover 控制）与两个子开关（默认沿用现有行为：
-            // 主页面 hover 控制、壁纸模式常显示）
+            // 固定侧边栏：主开关（false = 恢复 hover 控制）；开启主开关时子开关自动跟随
             fixSidebarEnabled: false,
             fixSidebarHomepage: false,
-            fixSidebarWallpaper: true,
+            fixSidebarWallpaper: false,
             widgetPanel: {
                 enabled: true,
                 widgets: []
@@ -246,9 +245,9 @@ class OOOInterface {
         const fs = document.getElementById('fix-sidebar-toggle');
         if (fs) fs.checked = this.settings.fixSidebarEnabled;
         const fh = document.getElementById('fix-sidebar-homepage-toggle');
-        if (fh) fh.checked = this.settings.fixSidebarHomepage;
+        if (fh) { fh.checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage; }
         const fw = document.getElementById('fix-sidebar-wallpaper-toggle');
-        if (fw) fw.checked = this.settings.fixSidebarWallpaper;
+        if (fw) { fw.checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarWallpaper; }
         const fsHomepageGroup = document.getElementById('fix-homepage-group');
         if (fsHomepageGroup) fsHomepageGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
         const fsWallpaperGroup = document.getElementById('fix-wallpaper-group');
@@ -2427,13 +2426,15 @@ class OOOInterface {
             if (e.target.checked) {
                 if (homepageGroup) homepageGroup.style.display = 'block';
                 if (wallpaperGroup) wallpaperGroup.style.display = 'block';
-                // 恢复上次保存的子开关状态（壁纸模式固定默认保持开启）
-                if (homepageToggle) homepageToggle.checked = this.settings.fixSidebarHomepage;
-                if (wallpaperToggle) wallpaperToggle.checked = this.settings.fixSidebarWallpaper;
+                // 开启主开关时，子开关一并开启
+                if (homepageToggle) homepageToggle.checked = true;
+                if (wallpaperToggle) wallpaperToggle.checked = true;
             } else {
                 if (homepageGroup) homepageGroup.style.display = 'none';
                 if (wallpaperGroup) wallpaperGroup.style.display = 'none';
-                // 只隐藏子开关，不修改其状态，避免应用时覆盖已保存的配置
+                // 关闭主开关时，子开关一并关闭
+                if (homepageToggle) homepageToggle.checked = false;
+                if (wallpaperToggle) wallpaperToggle.checked = false;
             }
         });
 
@@ -6757,8 +6758,8 @@ class OOOInterface {
         document.getElementById('hide-notifications-toggle').checked = this.settings.hideNotifications;
         // 固定侧边栏主开关与两个子开关
         document.getElementById('fix-sidebar-toggle').checked = this.settings.fixSidebarEnabled;
-        document.getElementById('fix-sidebar-homepage-toggle').checked = this.settings.fixSidebarHomepage;
-        document.getElementById('fix-sidebar-wallpaper-toggle').checked = this.settings.fixSidebarWallpaper;
+        document.getElementById('fix-sidebar-homepage-toggle').checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage;
+        document.getElementById('fix-sidebar-wallpaper-toggle').checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarWallpaper;
         this.updateHideInfoPopupLabel();
 
         // 根据动态模糊的状态显示/隐藏增强显示开关
