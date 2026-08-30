@@ -1,6 +1,6 @@
-const VERSION = "5.3:31-BS225";
+const VERSION = "5.3:31-RS230";
 const PACKAGE_ID = "0x8F2a4C7e1B9d3A6f";
-const PACKAGE_FLAG = "Beta";
+const PACKAGE_FLAG = "Release";
 const PRODUCT_NAME = "OOOInterface 31";
 const RELEASE_DATE = "2026年8月30日";
 const LICENSE_ID = "ABCD-26W08A";
