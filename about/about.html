@@ -1167,7 +1167,7 @@
             <div class="ultra">历史版本</div>
             <div class="pro">OOOInterface所有版本的列表</div>
         </div>
-        <div class="erkuang" id="erkuang" >
+        <div class="erkuang" id="erkuang">
             <button class="close-btn" id="closeErkuang"
                 onclick="document.getElementById('erkuang').classList.add('hidden')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -1175,8 +1175,8 @@
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
-            <h3>通知</h3>
-            <p>在安装 OOOInterface LTS 5.3 前，前往安装适用于旧版本更新的补丁包</p>
+            <h3></h3>
+            <p></p>
             <div class="download-btn">
                 <a href="http://rudan177.github.io/OOOInterface/Interface/bd.html">点击此处前往</a>
             </div>
@@ -1723,6 +1723,33 @@
             </div>
         </div>
 
+        <div class="verson" data-version="5.3:31" style="--i:35">
+            <h2><span class="ver-num">5.3:31</span> 版本更新</h2>
+            <div class="changelog-item">
+                <h3>新增功能</h3>
+                <ol>
+                    <li>支持接入升级工具</li>
+                    <li>新增全新小组件功能</li>
+                    <li>新增固定侧边栏功能</li>
+                    <li>新增 / 指令功能</li>
+                    <li>新增翻译快速翻译功能</li>
+                    <li>新增简介视觉效果功能</li>
+                    <li>新增隐藏底部铭牌功能</li>
+                    <li>新增键盘Tab呼出快捷轮盘功能</li>
+                </ol>
+            </div>
+            <div class="changelog-item">
+                <h3>体验优化</h3>
+                <ol>
+                    <li>修改主页面基本图标（从Google更改为OOOInterface图标）</li>
+                    <li>优化主页面的布局和显示效果</li>
+                    <li>优化低性能设备体验</li>
+                    <li>优化高级视觉效果动画效果</li>
+                    <li>修复了一些已知问题</li>
+                </ol>
+            </div>
+        </div>
+
         <footer class="footer">
             <p>许可证：ABCD-26W08A</p>
             <p>© 2026 ByRUDAN 保留所有权利。</p>
@@ -1771,6 +1798,13 @@
                     }
                 });
             })();
+
+            // 隐藏二框（erkuang 通知框）
+            function hideErkuang() {
+                var erkuang = document.getElementById('erkuang');
+                if (erkuang) erkuang.classList.add('hidden');
+            }
+            hideErkuang();
 
             const searchInput = document.getElementById('searchInput');
             const noResult = document.getElementById('noResult');
