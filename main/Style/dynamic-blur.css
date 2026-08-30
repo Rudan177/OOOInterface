@@ -721,8 +721,9 @@ body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-acce
     }
 }
 
-/* 搜索历史容器 */
-body.dynamic-blur:not(.scrolled) .search-history-container {
+/* 搜索历史容器 / “/” 命令与历史面板 */
+body.dynamic-blur:not(.scrolled) .search-history-container,
+body.dynamic-blur:not(.scrolled) .search-command-container {
     background: rgba(255, 255, 255, 0.12) !important;
     backdrop-filter: blur(80px) saturate(1.5);
     -webkit-backdrop-filter: blur(80px) saturate(1.5);
@@ -730,7 +731,8 @@ body.dynamic-blur:not(.scrolled) .search-history-container {
     box-shadow: none;
 }
 
-body.scrolled.dynamic-blur .search-history-container {
+body.scrolled.dynamic-blur .search-history-container,
+body.scrolled.dynamic-blur .search-command-container {
     background: rgba(255, 255, 255, 0.15) !important;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -739,23 +741,27 @@ body.scrolled.dynamic-blur .search-history-container {
 }
 
 @media (prefers-color-scheme: dark) {
-    body.dynamic-blur:not(.scrolled) .search-history-container {
+    body.dynamic-blur:not(.scrolled) .search-history-container,
+    body.dynamic-blur:not(.scrolled) .search-command-container {
         background: rgba(0, 0, 0, 0.2) !important;
         border: none;
     }
 
-    body.scrolled.dynamic-blur .search-history-container {
+    body.scrolled.dynamic-blur .search-history-container,
+    body.scrolled.dynamic-blur .search-command-container {
         background: rgba(0, 0, 0, 0.1) !important;
         border: none;
     }
 }
 
 @media (prefers-color-scheme: light) {
-    body.dynamic-blur:not(.scrolled) .search-history-container {
+    body.dynamic-blur:not(.scrolled) .search-history-container,
+    body.dynamic-blur:not(.scrolled) .search-command-container {
         background: rgba(240, 240, 240, 0.5) !important;
     }
 
-    body.scrolled.dynamic-blur .search-history-container {
+    body.scrolled.dynamic-blur .search-history-container,
+    body.scrolled.dynamic-blur .search-command-container {
         background: rgba(240, 240, 240, 0.55) !important;
     }
 }

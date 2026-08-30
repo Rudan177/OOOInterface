@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OOOInterface",
-  "version": "5.3.30",
+  "version": "5.3.31",
   "description": "RUDAN开发的浏览器首页插件。",
   "chrome_url_overrides": {
     "newtab": "main/index.html"
@@ -11,14 +11,22 @@
   },
   "host_permissions": [
     "https://www.bing.com/*",
-    "https://*.bing.net/*"
+    "https://*.bing.net/*",
+    "https://api.open-meteo.com/*",
+    "https://geocoding-api.open-meteo.com/*",
+    "https://www.googleapis.com/*",
+    "https://accounts.google.com/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*"
   ],
   "permissions": [
     "storage",
     "unlimitedStorage",
     "bookmarks",
-    "tabs"
+    "geolocation",
+    "identity"
   ],
+
   "icons": {
     "16": "images/icon16.png",
     "48": "images/icon48.png",

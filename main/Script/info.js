@@ -83,7 +83,7 @@ class InfoManager {
     }
 
     async loadInfoContent() {
-        const remoteUrl = 'https://rudan177.github.io/OOOInterface/info/info-interface-5.2.json';
+        const remoteUrl = 'https://rudan177.github.io/OOOInterface/info/info-interface-5.3.json';
 
         try {
             const response = await fetch(remoteUrl + '?t=' + Date.now());

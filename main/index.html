@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="Style/styles.css">
     <link rel="stylesheet" href="Style/dynamic-blur.css">
     <link rel="stylesheet" href="Style/info.css">
+    <link rel="stylesheet" href="Style/widget-panel.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
         rel="stylesheet">
@@ -21,7 +22,7 @@
     <div class="container">
 
         <div class="logo-section">
-            <img id="logo" src="images/gll.png" alt="Logo" class="logo">
+            <img id="logo" src="images/dll.png" alt="logo" class="logo">
             <div id="text-logo" class="text-logo" style="display: none;"></div>
         </div>
 
@@ -34,6 +35,10 @@
                         </path>
                     </svg>
                 </div>
+                <div id="search-mode-chip" class="search-mode-chip" title="点击 / Esc / 退格 退出当前模式">
+                    <span class="material-icons search-mode-chip-icon">language</span>
+                    <span class="search-mode-chip-text"></span>
+                </div>
                 <input type="text" id="search-input" class="search-input" placeholder="" autofocus>
                 <div class="search-clear-btn" style="display: none;">
                     <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -43,6 +48,12 @@
                     </svg>
                 </div>
             </div>
+        </div>
+
+        <!-- “/” 命令列表 / 翻译语言历史显示区域 -->
+        <div id="search-command-container" class="search-command-container">
+            <div class="search-command-list"></div>
+            <div class="translate-history-list"></div>
         </div>
 
         <!-- 搜索历史显示区域 -->
@@ -94,6 +105,12 @@
                     <h2>设置</h2>
                 </div>
                 <div class="modal-header-buttons">
+                    <button id="export-settings-btn" class="header-action-btn dev-only" title="导出配置为 Markdown">
+                        <span class="material-icons">download</span>
+                    </button>
+                    <button id="import-settings-btn" class="header-action-btn dev-only" title="从 Markdown 导入配置">
+                        <span class="material-icons">upload</span>
+                    </button>
                     <button id="about-btn" class="close-btn"><svg viewBox="0 0 24 24" width="20" height="20">
                             <path fill="currentColor"
                                 d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
@@ -281,6 +298,17 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="setting-group" id="widget-panel-manage-group">
+                            <label>小组件列表:</label>
+                            <div class="custom-select">
+                                <div class="select-selected" id="widget-panel-select-selected">管理小组件</div>
+                                <div class="select-items select-hide" id="widget-panel-select-items">
+                                </div>
+                                <select id="widget-panel-select" style="display: none;">
+                                    <option value="manage">管理小组件</option>
+                                </select>
+                            </div>
+                        </div>
 
                         <div class="setting-group">
                             <label for="badge-open-method-select">设置打开方式:</label>
@@ -362,6 +390,36 @@
                             </div>
                         </div>
 
+
+
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">固定侧边栏</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="fix-sidebar-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-group" id="fix-homepage-group" style="padding-left: 20px; display: none;">
+                            <div class="switch-label">
+                                <span class="setting-label">主页面固定</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="fix-sidebar-homepage-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-group" id="fix-wallpaper-group" style="padding-left: 20px; display: none;">
+                            <div class="switch-label">
+                                <span class="setting-label">壁纸模式固定</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="fix-sidebar-wallpaper-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="setting-group">
                             <div class="switch-label">
                                 <span class="setting-label">搜索历史</span>
@@ -384,6 +442,15 @@
 
                         <div class="setting-group">
                             <div class="switch-label">
+                                <span class="setting-label">简洁视觉效果</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="simple-visual-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-group" id="simple-notifications-group" style="padding-left: 20px; display: none;">
+                            <div class="switch-label">
                                 <span class="setting-label">隐藏弹窗</span>
                                 <label class="switch">
                                     <input type="checkbox" id="hide-notifications-toggle">
@@ -391,11 +458,20 @@
                                 </label>
                             </div>
                         </div>
-                        <div class="setting-group">
+                        <div class="setting-group" id="simple-infopopup-group" style="padding-left: 20px; display: none;">
                             <div class="switch-label">
                                 <span class="setting-label">禁止提示</span>
                                 <label class="switch">
                                     <input type="checkbox" id="hide-info-popup-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-group" id="simple-badge-group" style="padding-left: 20px; display: none;">
+                            <div class="switch-label">
+                                <span class="setting-label">隐藏铭牌</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="hidden-badge-toggle">
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -581,6 +657,14 @@
         </div>
     </div>
 
+    <!-- 小组件左侧面板 -->
+    <div id="widget-panel" class="widget-panel">
+        <div class="widget-panel-trigger" id="widget-panel-trigger"></div>
+        <div class="widget-panel-container" id="widget-panel-container">
+            <div class="widget-panel-grid" id="widget-panel-grid"></div>
+        </div>
+    </div>
+
     <!-- 快速访问链接侧边栏 -->
     <div id="quick-access-sidebar" class="quick-access-sidebar">
         <div class="quick-access-sidebar-trigger" id="quick-access-sidebar-trigger"></div>
@@ -654,6 +738,14 @@
     <script src="Script/proxy.js"></script>
     <script src="Script/color.js"></script>
     <script src="Script/quicklinks-export.js"></script>
+    <script src="Script/widgets/WidgetBase.js"></script>
+    <script src="Script/widgets/ClockWidget.js"></script>
+    <script src="Script/widgets/CalendarWidget.js"></script>
+    <script src="Script/widgets/WeatherWidget.js"></script>
+    <script src="Script/widgets/TasksWidget.js"></script>
+    <script src="Script/widgets/AiAgentWidget.js"></script>
+    <script src="Script/widgets/EmailWidget.js"></script>
+    <script src="Script/widgets/UpgradeToolWidget.js"></script>
     <script src="Script/script.js"></script>
     <script src="Script/Controller.js"></script>
 </body>

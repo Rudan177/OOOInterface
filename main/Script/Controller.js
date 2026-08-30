@@ -16,6 +16,26 @@ class Controller {
         this._actLongFired = false;
         this.longPressThreshold = 500;
 
+        this.tabHoldThreshold = 150;
+        this.tabRadialThreshold = 45;
+        this.tabRadialInnerRadius = 27;
+        this.tabRadialConfirmDelay = 100;
+        this.radialArrowComboDelay = 140;
+        this._tabPressTimer = null;
+        this._tabRadialOrigin = null;
+        this._tabOriginDot = null;
+        this._virtX = 0;
+        this._virtY = 0;
+        this._radialSelectedIdx = -1;
+        this._radialCandidateIdx = -1;
+        this._radialCandidateTime = 0;
+        this._lastMouseX = window.innerWidth / 2;
+        this._lastMouseY = window.innerHeight / 2;
+        this._tabSummonX = 0;
+        this._tabSummonY = 0;
+        this._radialArrowDirs = new Set();
+        this._radialArrowTimer = null;
+
         this.ltHeld = false;
         this.rtHeld = false;
         this.dpadDir = null;
@@ -170,6 +190,84 @@ class Controller {
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.radialActive) {
+                this.hideRadialMenu();
+            }
+        });
+
+        // 鼠标位置跟踪：Tab 轮盘用"指针相对呼出点的位移"驱动虚拟指针（从圆心出发）
+        document.addEventListener('mousemove', (e) => {
+            this._lastMouseX = e.clientX;
+            this._lastMouseY = e.clientY;
+            if (this.radialActive && this._radialMode === 'tab') {
+                this.handleRadialMouseMove(
+                    e.clientX - this._tabSummonX,
+                    e.clientY - this._tabSummonY
+                );
+            }
+        });
+
+        // 方向键选择轮盘：单键对应上下左右四项，斜向需两键组合（如左+上 = 左上角）
+        document.addEventListener('keydown', (e) => {
+            if (!this.radialActive) return;
+            const dir = this.arrowKeyDir(e.key);
+            if (!dir) return;
+            e.preventDefault();
+            if (e.repeat) return;
+            this._radialArrowDirs.add(dir);
+            this.resolveRadialArrowCombo();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (!this.radialActive) return;
+            const dir = this.arrowKeyDir(e.key);
+            if (!dir) return;
+            e.preventDefault();
+            this._radialArrowDirs.delete(dir);
+            if (this._radialArrowDirs.size === 0 && this._radialArrowTimer) {
+                // 单键快速敲击：松开时立即触发
+                clearTimeout(this._radialArrowTimer);
+                this._radialArrowTimer = null;
+                this.fireRadialIndex(this.radialIndexForDirs([dir]));
+            }
+        });
+
+        // Tab 长按打开快捷轮盘（与 Tab 单按聚焦搜索框共存）
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Tab') return;
+            if (this.radialActive && this._radialMode === 'tab') {
+                e.preventDefault();
+                return;
+            }
+            if (this.radialActive) return;
+            if (e.repeat || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+            if (!this.canTriggerTabRadial()) return;
+            clearTimeout(this._tabPressTimer);
+            this._tabPressTimer = setTimeout(() => {
+                this._tabPressTimer = null;
+                this.showRadialMenu('tab');
+            }, this.tabHoldThreshold);
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key !== 'Tab') return;
+            if (this._tabPressTimer) {
+                clearTimeout(this._tabPressTimer);
+                this._tabPressTimer = null;
+            }
+            if (this.radialActive && this._radialMode === 'tab') {
+                const sel = this.radialSelected;
+                this.hideRadialMenu();
+                if (sel) this.doRadialAction(sel);
+            }
+        });
+
+        // 窗口失焦时取消未触发的长按并关闭 Tab 轮盘（如 Alt+Tab 切窗口）
+        window.addEventListener('blur', () => {
+            if (this._tabPressTimer) {
+                clearTimeout(this._tabPressTimer);
+                this._tabPressTimer = null;
+            }
+            if (this.radialActive && this._radialMode === 'tab') {
                 this.hideRadialMenu();
             }
         });
@@ -757,6 +855,11 @@ class Controller {
         if (document.body.classList.contains('sidebar-visible')) {
             const container = document.getElementById('quick-access-sidebar-container');
             if (container) {
+                // 当前视图处于固定模式时，Escape 不隐藏固定的侧边栏
+                if (this.ooo && this.ooo.isSidebarFixed()) {
+                    document.body.classList.remove('sidebar-visible');
+                    return;
+                }
                 container.classList.remove('visible');
                 container.classList.add('hiding');
             }
@@ -805,6 +908,8 @@ class Controller {
         }
         else if (action === 'wallpaper' && this.ooo) {
             if (this.ooo.settings.quickAccessSidebar) {
+                // 当前视图处于固定模式时，径向菜单的壁纸操作不切换固定侧边栏的显示状态
+                if (this.ooo.isSidebarFixed()) return;
                 const container = document.getElementById('quick-access-sidebar-container');
                 if (container && document.body.classList.contains('sidebar-visible')) {
                     container.classList.remove('visible');
@@ -898,6 +1003,30 @@ class Controller {
         this._radialReleaseFired = false;
         this._skipStick = false;
 
+        if (mode === 'tab') {
+            // 虚拟指针从轮盘圆心（屏幕中心）出发，位移取指针相对呼出点的坐标差，
+            // 边缘被系统钳制时也不会像增量累加那样单向漂移
+            const ox = window.innerWidth / 2;
+            const oy = window.innerHeight / 2;
+            this._tabRadialOrigin = { x: ox, y: oy };
+            this._virtX = ox;
+            this._virtY = oy;
+            this._tabSummonX = this._lastMouseX;
+            this._tabSummonY = this._lastMouseY;
+            this._radialSelectedIdx = -1;
+            this._radialCandidateIdx = -1;
+            this._radialCandidateTime = 0;
+            const dot = document.createElement('div');
+            dot.style.cssText =
+                'position:fixed;left:' + ox + 'px;top:' + oy + 'px;width:12px;height:12px;' +
+                'border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:99999;' +
+                'background:var(--scheme-accent,#1a73e8);' +
+                'box-shadow:0 0 0 4px rgba(var(--scheme-accent-rgb,26,115,232),0.25),0 0 12px rgba(var(--scheme-accent-rgb,26,115,232),0.5);';
+            document.body.appendChild(dot);
+            this._tabOriginDot = dot;
+            this.setCursorHidden(true);
+        }
+
         requestAnimationFrame(() => {
             wheel.style.transform = 'scale(1)';
         });
@@ -905,6 +1034,7 @@ class Controller {
 
     hideRadialMenu() {
         if (!this.radialActive) return;
+        const wasTab = this._radialMode === 'tab';
         this.radialActive = false;
         this._radialMode = null;
         this.radialSelected = null;
@@ -914,6 +1044,21 @@ class Controller {
         this.radialEl = null;
         this._radialWheel = null;
         this._skipStick = true;
+        this._radialSelectedIdx = -1;
+        this._resetRadialCandidate();
+        this._radialArrowDirs.clear();
+        if (this._radialArrowTimer) {
+            clearTimeout(this._radialArrowTimer);
+            this._radialArrowTimer = null;
+        }
+        if (wasTab) {
+            this.setCursorHidden(false);
+            if (this._tabOriginDot) {
+                this._tabOriginDot.remove();
+                this._tabOriginDot = null;
+            }
+            this._tabRadialOrigin = null;
+        }
     }
 
     handleRadialStick(gamepad) {
@@ -922,31 +1067,14 @@ class Controller {
         const rMag = Math.sqrt(rx * rx + ry * ry);
 
         if (!this._radialWheel) return;
-        const itemEls = this._radialWheel.querySelectorAll('.radial-item');
 
         const active = rMag > this.NAV_DZ;
 
         if (active) {
             this._wasStickActive = true;
-            const N = this.radialItems.length;
-            let bestIdx = 0, bestDot = -Infinity;
-            for (let i = 0; i < N; i++) {
-                const a = (i / N) * 2 * Math.PI - Math.PI / 2;
-                const dot = rx * Math.cos(a) + ry * Math.sin(a);
-                if (dot > bestDot) { bestDot = dot; bestIdx = i; }
-            }
-
-            const action = this.radialItems[bestIdx].action;
-            this.radialSelected = action;
-
-            itemEls.forEach((el, i) => {
-                const on = i === bestIdx;
-                el.style.transform = 'scale(' + (on ? 1.35 : 1) + ')';
-                el.style.color = on ? '#fff' : 'rgba(255,255,255,0.6)';
-                el.style.textShadow = on
-                    ? '0 0 16px rgba(255,255,255,0.5),0 1px 4px rgba(0,0,0,0.3)'
-                    : '0 1px 4px rgba(0,0,0,0.2)';
-            });
+            const bestIdx = this.bestRadialIndex(rx, ry);
+            this.radialSelected = this.radialItems[bestIdx].action;
+            this.highlightRadialItem(bestIdx);
         } else if (this._wasStickActive && !this._radialReleaseFired) {
             this._wasStickActive = false;
             this._radialReleaseFired = true;
@@ -954,6 +1082,148 @@ class Controller {
                 this.doRadialAction(this.radialSelected);
                 this.hideRadialMenu();
             }
+        }
+    }
+
+    highlightRadialItem(idx) {
+        if (!this._radialWheel) return;
+        const itemEls = this._radialWheel.querySelectorAll('.radial-item');
+        itemEls.forEach((el, i) => {
+            const on = i === idx;
+            el.style.transform = 'scale(' + (on ? 1.35 : 1) + ')';
+            el.style.color = on ? '#fff' : 'rgba(255,255,255,0.6)';
+            el.style.textShadow = on
+                ? '0 0 16px rgba(255,255,255,0.5),0 1px 4px rgba(0,0,0,0.3)'
+                : '0 1px 4px rgba(0,0,0,0.2)';
+        });
+    }
+
+    handleRadialMouseMove(dispX, dispY) {
+        if (!this._radialWheel || !this._tabRadialOrigin) return;
+        // dispX/dispY 为指针相对呼出点的位移，虚拟指针 = 圆心 + 位移
+        this._virtX = Math.max(0, Math.min(window.innerWidth, this._tabRadialOrigin.x + dispX));
+        this._virtY = Math.max(0, Math.min(window.innerHeight, this._tabRadialOrigin.y + dispY));
+        if (this._tabOriginDot) {
+            this._tabOriginDot.style.left = this._virtX + 'px';
+            this._tabOriginDot.style.top = this._virtY + 'px';
+        }
+
+        const dx = this._virtX - this._tabRadialOrigin.x;
+        const dy = this._virtY - this._tabRadialOrigin.y;
+        const mag = Math.sqrt(dx * dx + dy * dy);
+
+        if (mag > this.tabRadialThreshold) {
+            const idx = this.bestRadialIndex(dx, dy);
+            if (this._radialSelectedIdx === idx) return;
+            // 同方向持续超过确认时间才选中，过滤晃动时的瞬时越界
+            if (this._radialCandidateIdx === idx) {
+                if (Date.now() - this._radialCandidateTime >= this.tabRadialConfirmDelay) {
+                    this._radialSelectedIdx = idx;
+                    this.radialSelected = this.radialItems[idx].action;
+                    this.highlightRadialItem(idx);
+                }
+            } else {
+                this._radialCandidateIdx = idx;
+                this._radialCandidateTime = Date.now();
+            }
+        } else if (this._radialSelectedIdx >= 0) {
+            // 迟滞：确认后拉回内圈才算取消，边界抖动不会反复触发
+            if (mag <= this.tabRadialInnerRadius) {
+                this._resetRadialCandidate();
+                this._radialSelectedIdx = -1;
+                this.radialSelected = null;
+                this.highlightRadialItem(-1);
+            }
+        } else {
+            this._resetRadialCandidate();
+        }
+    }
+
+    bestRadialIndex(dx, dy) {
+        const N = this.radialItems.length;
+        let bestIdx = 0, bestDot = -Infinity;
+        for (let i = 0; i < N; i++) {
+            const a = (i / N) * 2 * Math.PI - Math.PI / 2;
+            const dot = dx * Math.cos(a) + dy * Math.sin(a);
+            if (dot > bestDot) { bestDot = dot; bestIdx = i; }
+        }
+        return bestIdx;
+    }
+
+    _resetRadialCandidate() {
+        this._radialCandidateIdx = -1;
+        this._radialCandidateTime = 0;
+    }
+
+    arrowKeyDir(key) {
+        switch (key) {
+            case 'ArrowUp': return 'up';
+            case 'ArrowDown': return 'down';
+            case 'ArrowLeft': return 'left';
+            case 'ArrowRight': return 'right';
+            default: return null;
+        }
+    }
+
+    radialIndexForDirs(dirs) {
+        const key = dirs.slice().sort().join('|');
+        const map = {
+            'up': 0,
+            'up|right': 1,
+            'right': 2,
+            'down|right': 3,
+            'down': 4,
+            'down|left': 5,
+            'left': 6,
+            'left|up': 7
+        };
+        return (key in map) ? map[key] : -1;
+    }
+
+    resolveRadialArrowCombo() {
+        clearTimeout(this._radialArrowTimer);
+        this._radialArrowTimer = null;
+        const dirs = Array.from(this._radialArrowDirs);
+        if (dirs.length === 2) {
+            // 两键组合（斜向）立即触发
+            const idx = this.radialIndexForDirs(dirs);
+            if (idx >= 0) this.fireRadialIndex(idx);
+        } else if (dirs.length === 1) {
+            // 单键稍作等待，若期间按下相邻键则构成斜向组合
+            this._radialArrowTimer = setTimeout(() => {
+                this._radialArrowTimer = null;
+                this._radialArrowDirs.clear();
+                if (this.radialActive) this.fireRadialIndex(this.radialIndexForDirs(dirs));
+            }, this.radialArrowComboDelay);
+        }
+    }
+
+    fireRadialIndex(idx) {
+        if (!this.radialActive || idx < 0 || idx >= this.radialItems.length) return;
+        this.highlightRadialItem(idx);
+        const action = this.radialItems[idx].action;
+        this.hideRadialMenu();
+        this.doRadialAction(action);
+    }
+
+    canTriggerTabRadial() {
+        const modal = document.getElementById('settings-modal');
+        if (modal && modal.classList.contains('show')) return false;
+        if (this.ooo && this.ooo.settings && this.ooo.settings.shortcutsEnabled === false) return false;
+        return true;
+    }
+
+    setCursorHidden(hidden) {
+        let style = document.getElementById('ooo-hide-cursor-style');
+        if (hidden) {
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'ooo-hide-cursor-style';
+                style.textContent = '* { cursor: none !important; }';
+                document.head.appendChild(style);
+            }
+        } else if (style) {
+            style.remove();
         }
     }
 

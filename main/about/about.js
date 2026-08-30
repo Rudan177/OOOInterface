@@ -41,6 +41,8 @@ let isScrolled = false;
 let isThemeMode = false;
 let isLocked = localStorage.getItem('themeLocked') === 'true';
 let currentTheme = localStorage.getItem('currentTheme');
+/** 记录 OUA 后端是否已成功连接（activeBase 非空时置 true） */
+var backendConnected = false;
 
 function applyTheme(theme) {
     if (theme === 'dark') {
@@ -167,11 +169,9 @@ function getOperatingSystem() {
 }
 
 function getMemoryUsage(type) {
-    // 浏览器环境下无法直接获取内存信息，这里模拟返回
-    if (type === 'pss') {
-        return '~50MB';
-    } else if (type === 'rss') {
-        return '~100MB';
+    // 不再返回假数据，改为实时检测 OUA 后端连接状态
+    if (type === 'uac') {
+        return String(backendConnected);
     }
     return 'N/A';
 }
@@ -243,22 +243,11 @@ function showInfoPopup() {
         word-wrap: break-word;
     `;
 
-    // 实际使用内存
-    const pss = document.createElement('p');
-    const pssValue = getMemoryUsage('pss');
-    pss.textContent = `[pss]${pssValue}`;
-    pss.style.cssText = `
-        font-size: 14px;
-        color: #000000;
-        margin: 0;
-        word-wrap: break-word;
-    `;
-
-    // 常驻内存大小
-    const rss = document.createElement('p');
-    const rssValue = getMemoryUsage('rss');
-    rss.textContent = `[rss]${rssValue}`;
-    rss.style.cssText = `
+    // 后端连接状态（UA Connection）
+    const uac = document.createElement('p');
+    const uacValue = getMemoryUsage('uac');
+    uac.textContent = `[UAC]${uacValue}`;
+    uac.style.cssText = `
         font-size: 14px;
         color: #000000;
         margin: 0;
@@ -270,8 +259,7 @@ function showInfoPopup() {
     content.appendChild(os);
     content.appendChild(beta);
     content.appendChild(packageId);
-    content.appendChild(pss);
-    content.appendChild(rss);
+    content.appendChild(uac);
     popup.appendChild(content);
 
     // 添加到页面
@@ -426,3 +414,408 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('copyright-text').textContent = COPYRIGHT;
     document.getElementById('about-footer').textContent = `许可证：${LICENSE_ID} · ${COPYRIGHT}`;
 });
+
+// =============================================
+// OUA 联动：点击版本徽章检查更新 / 从云端更新
+// 通过 OUA 可访问性 HTTP 服务（127.0.0.1:8964）调用后端
+// =============================================
+(function () {
+    var API_BASES = ['http://127.0.0.1:8964', 'http://localhost:8964'];
+
+    var overlay = null;
+    var dialog = null;
+    var footer = null;
+    var checkingEl = null;
+    var infoEl = null;
+    var infoGrid = null;
+    var progressEl = null;
+    var progressFill = null;
+    var tipEl = null;
+    var closeBtn = null;
+    var titleEl = null;
+    var badge = null;
+    var badgeText = null;
+
+    var busy = false;      // 检查 / 更新进行中
+    var updating = false;  // 更新进行中（禁止关闭弹窗）
+    var activeBase = null; // 检查成功后记录的可用后端地址，用于 SSE 进度订阅
+    var isEnhancedDisplay = false; // 是否开启高级视觉效果
+
+    function YuanJian(id) {
+        return document.getElementById(id);
+    }
+
+    function applyDialogScale() {
+        if (!dialog || !isEnhancedDisplay) return;
+        // 根据窗口宽度计算缩放比例，保持弹窗不超过视口
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var baseW = 460; // max-width from CSS
+        var pct = Math.min(1, (vw * 0.92) / baseW);
+        var targetScale = Math.max(0.7, Math.min(1, pct));
+        // 缩放中心偏上，让弹窗从下方“舒展”出来
+        dialog.style.transformOrigin = 'center 30%';
+        dialog.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        dialog.style.transform = 'scale(' + targetScale + ') translateY(' + (1 - targetScale) * 20 + 'px)';
+    }
+
+    function init() {
+        overlay = YuanJian('updateOverlay');
+        if (!overlay) return;
+        dialog = overlay.querySelector('.update-dialog');
+        footer = YuanJian('updateDialogFooter');
+        checkingEl = YuanJian('updateChecking');
+        infoEl = YuanJian('updateInfo');
+        infoGrid = infoEl ? infoEl.querySelector('.info-grid') : null;
+        progressEl = YuanJian('updateProgress');
+        progressFill = YuanJian('updateProgressFill');
+        tipEl = YuanJian('updateTip');
+        closeBtn = YuanJian('updateDialogClose');
+        titleEl = YuanJian('updateDialogTitle');
+        badge = YuanJian('versionBadge');
+        badgeText = YuanJian('version-text');
+
+        try {
+            var s = JSON.parse(localStorage.getItem('oooInterfaceSettings') || '{}');
+            isEnhancedDisplay = s.dynamicBlur === true && s.enhancedDisplay === true;
+        } catch (_) {}
+
+        if (isEnhancedDisplay) {
+            applyDialogScale();
+            var resizeTimer = null;
+            window.addEventListener('resize', function () {
+                if (resizeTimer) cancelAnimationFrame(resizeTimer);
+                resizeTimer = requestAnimationFrame(function () { applyDialogScale(); });
+            });
+        }
+
+        if (badge) {
+            badge.addEventListener('click', function (e) {
+                e.preventDefault();
+                checkUpdate();
+            });
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                if (!updating) hideOverlay();
+            });
+        }
+        if (overlay) {
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay && !updating) hideOverlay();
+            });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && overlay && overlay.classList.contains('show') && !updating) {
+                hideOverlay();
+            }
+        });
+
+        // 安装目录复制按钮
+        var copyBtn = YuanJian('copyInstallDirBtn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var dir = YuanJian('updateInstallDir') ? YuanJian('updateInstallDir').textContent : '';
+                if (!dir || dir === '未设置') return;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(dir).then(function () {
+                        flashCopied(copyBtn);
+                    });
+                } else {
+                    // 降级方案
+                    var ta = document.createElement('textarea');
+                    ta.value = dir;
+                    ta.style.cssText = 'position:fixed;opacity:0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    flashCopied(copyBtn);
+                }
+            });
+        }
+        function flashCopied(btn) {
+            btn.classList.add('copied');
+            var icon = btn.querySelector('.material-icons');
+            var origIcon = icon ? icon.textContent : '';
+            if (icon) icon.textContent = 'check';
+            setTimeout(function () {
+                btn.classList.remove('copied');
+                if (icon) icon.textContent = origIcon;
+            }, 1200);
+        }
+    }
+
+    /**
+     * 调用 OUA 后端接口：依次尝试各 base 地址，连接类错误时自动回退
+     * 成功后记录可用的 base，供后续 SSE 进度订阅复用
+     */
+    function apiFetch(path, options) {
+        var lastError = null;
+        var succeeded = false;
+
+        function attempt(base) {
+            return fetch(base + path, options).then(function (res) {
+                return res.json().then(function (payload) {
+                    if (!res.ok || !payload.ok) {
+                        throw new Error(payload.error || ('HTTP ' + res.status));
+                    }
+                    if (!succeeded) {
+                        succeeded = true;
+                        activeBase = base;
+                        backendConnected = true;
+                        try { localStorage.setItem('oooBackendConnected', 'true'); } catch (_) {}
+                    }
+                    return payload.data;
+                });
+            });
+        }
+
+        var chain = Promise.reject(new Error('未连接 OUA'));
+        for (var i = 0; i < API_BASES.length; i++) {
+            (function (base) {
+                chain = chain.catch(function (err) {
+                    lastError = err;
+                    return attempt(base);
+                });
+            })(API_BASES[i]);
+        }
+        return chain.catch(function (err) {
+            throw (lastError || err);
+        });
+    }
+
+    function showOverlay() {
+        if (isEnhancedDisplay) {
+            dialog.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+            dialog.style.transformOrigin = 'center 30%';
+            dialog.style.transform = '';       // 清除 resize 缩放，让 CSS 类接管弹窗动画
+        }
+        overlay.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideOverlay() {
+        if (updating) return;
+        overlay.classList.remove('show');
+        document.body.style.overflow = '';
+        if (isEnhancedDisplay) {
+            dialog.style.transform = '';
+            requestAnimationFrame(function () { applyDialogScale(); });
+        }
+    }
+
+    function setBadgeBusy(isBusy) {
+        if (!badge) return;
+        if (isBusy) {
+            badge.style.pointerEvents = 'none';
+            badge.style.opacity = '0.75';
+            if (badgeText) badgeText.textContent = '检查中…';
+        } else {
+            badge.style.pointerEvents = '';
+            badge.style.opacity = '';
+            if (badgeText) badgeText.textContent = VERSION;
+        }
+    }
+
+    function renderButtons(buttons) {
+        footer.innerHTML = '';
+        buttons.forEach(function (cfg, i) {
+            var cls = 'update-btn';
+            if (buttons.length === 1) {
+                cls += ' update-btn-full';
+            } else if (!cfg.primary) {
+                cls += ' update-btn-cancel';
+            }
+            if (cfg.primary) cls += ' update-btn-primary';
+            else cls += ' update-btn-secondary';
+            var btn = document.createElement('button');
+            btn.className = cls;
+            btn.textContent = cfg.text;
+            btn.addEventListener('click', cfg.onClick);
+            footer.appendChild(btn);
+        });
+    }
+
+    function showChecking() {
+        titleEl.textContent = '检查更新';
+        checkingEl.style.display = '';
+        infoEl.style.display = 'none';
+        progressEl.style.display = 'none';
+        footer.innerHTML = '';
+        closeBtn.style.visibility = 'hidden';
+    }
+
+    function setProgress(percent, message) {
+        var p = Math.max(0, Math.min(100, percent || 0));
+        progressFill.style.transform = 'scaleX(' + (p / 100) + ')';
+    }
+
+    function renderCheckResult(data) {
+        checkingEl.style.display = 'none';
+        infoEl.style.display = '';
+        if (infoGrid) infoGrid.style.display = '';
+        tipEl.style.display = '';
+        progressEl.style.display = 'none';
+        closeBtn.style.visibility = '';
+
+        YuanJian('updateInstallDir').textContent = data.installDir || '未设置';
+        YuanJian('updateBranch').textContent = data.branchLabel || data.branch || '未知';
+        YuanJian('updateUpdateData').textContent = data.dataSource || '—';
+        YuanJian('updateLocalVersion').textContent = data.localVersion || '未检测到';
+        YuanJian('updateRemoteVersion').textContent =
+            data.remoteVersion || (data.localMode ? '本地模式' : '获取失败');
+
+        var buttons = [];
+        if (data.localMode) {
+            tipEl.textContent = '当前为本地导入模式，无法从云端更新。如需更新，请在 OUA 中切换到远程模式。';
+            buttons.push({ text: '确定', primary: true, onClick: hideOverlay });
+        } else if (!data.installDir) {
+            tipEl.textContent = '尚未设置安装目录，请先在 OUA 主界面中设置安装目录。';
+            buttons.push({ text: '确定', primary: true, onClick: hideOverlay });
+        } else if (!data.remoteVersion) {
+            tipEl.textContent = '无法获取云端版本，请检查网络连接后重试。';
+            buttons.push({ text: '确定', primary: true, onClick: hideOverlay });
+        } else if (data.isNewer) {
+            tipEl.textContent = '我操，有挂！';
+            buttons.push({ text: '确定', primary: true, onClick: hideOverlay });
+        } else if (data.hasUpdate) {
+            tipEl.textContent = '检测到新版本，点击「更新」将从云端拉取并覆盖安装。';
+            buttons.push({ text: '取消', primary: false, onClick: hideOverlay });
+            buttons.push({ text: '更新', primary: true, onClick: startUpdate });
+        } else {
+            tipEl.textContent = '当前已是最新版本。';
+            buttons.push({ text: '确定', primary: true, onClick: hideOverlay });
+        }
+        renderButtons(buttons);
+    }
+
+    function renderError(message) {
+        checkingEl.style.display = 'none';
+        infoEl.style.display = '';
+        if (infoGrid) infoGrid.style.display = 'none';
+        tipEl.style.display = '';
+        progressEl.style.display = 'none';
+        closeBtn.style.visibility = '';
+        tipEl.textContent = message;
+        renderButtons([{ text: '确定', primary: true, onClick: hideOverlay }]);
+    }
+
+    function checkUpdate() {
+        if (busy) return;
+        busy = true;
+        backendConnected = false; // 每次检查前重置连接状态
+        try { localStorage.setItem('oooBackendConnected', 'false'); } catch (_) {}
+        setBadgeBusy(true);
+        showOverlay();
+        showChecking();
+
+        apiFetch('/api/interface/check-update')
+            .then(function (data) {
+                renderCheckResult(data);
+            })
+            .catch(function (err) {
+                var msg = err.message || '';
+                if (!msg || msg === 'Failed to fetch' || msg.includes('fetch')) {
+                    msg = '连接失败，请尝试启动升级工具或打开外部访问接口。';
+                }
+                renderError(msg);
+            })
+            .then(function () {
+                busy = false;
+                setBadgeBusy(false);
+            });
+    }
+
+    function startUpdate() {
+        if (updating || busy) return;
+        updating = true;
+        busy = true;
+
+        titleEl.textContent = '正在更新';
+        tipEl.style.display = 'none';
+        footer.innerHTML = '';
+        closeBtn.style.visibility = 'hidden';
+        progressEl.style.display = '';
+        setProgress(0, '正在连接 OUA 后端…');
+
+        // 伪进度：0~80% 匀速平滑动画，SSE 真实进度到达后接管
+        var fakeDone = false;
+        var fakeStart = performance.now();
+        var fakeTimer = requestAnimationFrame(function tick() {
+            if (fakeDone) return;
+            var elapsed = performance.now() - fakeStart;
+            var shown = Math.min(78, (elapsed / 4000) * 78);
+            progressFill.style.transform = 'scaleX(' + (shown / 100) + ')';
+            if (!fakeDone) fakeTimer = requestAnimationFrame(tick);
+        });
+        function stopFake() {
+            fakeDone = true;
+            cancelAnimationFrame(fakeTimer);
+        }
+
+        // 通过 SSE 订阅更新进度（优先使用检查成功时确认可用的后端地址）
+        var es = null;
+        try {
+            es = new EventSource((activeBase || API_BASES[0]) + '/api/events');
+        } catch (e) {
+            es = null;
+        }
+        if (es) {
+            es.addEventListener('progress', function (e) {
+                var data;
+                try {
+                    data = JSON.parse(e.data);
+                } catch (_) {
+                    return;
+                }
+                if (data.channel === 'update-progress') {
+                    stopFake();
+                    // 真实进度 0~100 映射到 80~100 区间
+                    var mapped = 80 + (data.percent / 100) * 20;
+                    setProgress(mapped, data.message || '');
+                }
+            });
+        }
+
+        apiFetch('/api/interface/update', { method: 'POST' })
+            .then(function () {
+                stopFake();
+                if (es) es.close();
+                updating = false;
+                busy = false;
+                setProgress(100, '更新完成');
+                titleEl.textContent = '更新完成';
+                tipEl.style.display = '';
+                tipEl.textContent = '更新已完成，点击「确定」刷新页面。';
+                progressEl.style.display = 'none';
+                renderButtons([{
+                    text: '确定',
+                    primary: true,
+                    onClick: function () {
+                        hideOverlay();
+                        location.reload();
+                    }
+                }]);
+            })
+            .catch(function (err) {
+                stopFake();
+                if (es) es.close();
+                updating = false;
+                busy = false;
+                setProgress(100, '');
+                titleEl.textContent = '更新失败';
+                tipEl.style.display = '';
+                var msg = err.message || '';
+                if (!msg || msg === 'Failed to fetch' || msg.includes('fetch')) {
+                    msg = '连接失败，请尝试启动升级工具或打开外部访问接口。';
+                }
+                tipEl.textContent = msg;
+                progressEl.style.display = 'none';
+                renderButtons([{ text: '确定', primary: true, onClick: hideOverlay }]);
+            });
+    }
+
+    init();
+})();

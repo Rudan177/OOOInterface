@@ -50,9 +50,20 @@ class OOOInterface {
             bingRefreshInterval: 0,
             quickAccessSidebar: true,
             showQuickLinkIcons: true,
+            // 固定侧边栏：主开关（false = 恢复 hover 控制）；开启主开关时子开关自动跟随
+            fixSidebarEnabled: false,
+            fixSidebarHomepage: false,
+            fixSidebarWallpaper: false,
+            widgetPanel: {
+                enabled: true,
+                widgets: []
+            },
             statusBarEnabled: false,
             showStatusBarSeconds: false,
             hideNotifications: false,
+            // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）
+            simpleVisualMode: false,
+            hiddenBadge: false,
             contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle'],
             shortcutsEnabled: true,
             theme: 'default',           // 当前主题 key（文件 basename 去扩展名）
@@ -73,6 +84,7 @@ class OOOInterface {
         this.isFirstRun = true;
         this.userChangedLogo = false; // 标记用户是否手动更改过Logo
         this.modalScrollHandler = null;
+        this.backendConnected = false; // OUA 后端连接状态，通过 localStorage 与 about.js 同步
         this.currentVersion = VERSION; // 使用 version.js 中的版本号
         this._sidebarPushing = false; // 侧边栏壁纸推入状态
         this.statusBarTimer = null;
@@ -80,6 +92,13 @@ class OOOInterface {
         this.wallpaperAnalysisImage = null;
         this.wallpaperAnalysisUrl = null;
         this.wallpaperAnalysisPromise = null;
+
+        // “/” 命令列表状态
+        this.commandListState = { visible: false, items: [], highlight: -1 };
+
+        // 搜索框组件模式：null | 'web' | 'translate'；translate 下已锁定的语言对
+        this.searchCommandMode = null;
+        this.translateSelectedPair = null;
 
         // 壁纸填充层
         this.wallpaperBlur = null;
@@ -127,6 +146,8 @@ class OOOInterface {
 
         this.initQuickAccessSidebar();
 
+        this.initWidgetPanel();
+
         // 先加载主题列表（含用户导入的自定义主题），再应用外观设置，
         // 确保页面刷新后主题在首屏渲染前即恢复，避免出现默认外观闪动
         await this.loadThemes();
@@ -160,6 +181,7 @@ class OOOInterface {
 
         window.addEventListener('resize', () => {
             this.updateStatusBarTextContrast();
+            this.syncWidgetCardHeights();
             if (document.getElementById('settings-modal').style.display === 'flex') {
                 this.updateSettingsButtonsPosition();
             }
@@ -209,7 +231,16 @@ class OOOInterface {
         });
     }
 
+    // 简洁视觉效果主开关状态由三个子开关派生：任一开启即视为开启，保证任何路径修改子项后状态一致
+    syncSimpleVisualMode() {
+        this.settings.simpleVisualMode = !!(this.settings.hideNotifications
+            || (this.settings.hideInfoPopup && this.settings.hideInfoPopup.enabled)
+            || this.settings.hiddenBadge);
+    }
+
     syncSettingsPageToggles() {
+        // 主开关状态派生后再同步 UI
+        this.syncSimpleVisualMode();
         const dyn = document.getElementById('dynamic-blur-toggle');
         if (dyn) dyn.checked = this.settings.dynamicBlur;
         const enh = document.getElementById('enhanced-display-toggle');
@@ -222,14 +253,39 @@ class OOOInterface {
         if (wp) wp.checked = this.settings.persistentWallpaper;
         const sh = document.getElementById('search-history-toggle');
         if (sh) sh.checked = this.settings.searchHistory;
+        // 固定侧边栏主开关与两个子开关
+        const fs = document.getElementById('fix-sidebar-toggle');
+        if (fs) fs.checked = this.settings.fixSidebarEnabled;
+        const fh = document.getElementById('fix-sidebar-homepage-toggle');
+        if (fh) { fh.checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage; }
+        const fw = document.getElementById('fix-sidebar-wallpaper-toggle');
+        if (fw) { fw.checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarWallpaper; }
+        const fsHomepageGroup = document.getElementById('fix-homepage-group');
+        if (fsHomepageGroup) fsHomepageGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
+        const fsWallpaperGroup = document.getElementById('fix-wallpaper-group');
+        if (fsWallpaperGroup) fsWallpaperGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
         const el = document.getElementById('engine-lock-toggle');
         if (el) el.checked = this.settings.engineLocked;
         const hn = document.getElementById('hide-notifications-toggle');
         if (hn) hn.checked = this.settings.hideNotifications;
         const hip = document.getElementById('hide-info-popup-toggle');
         if (hip) hip.checked = this.settings.hideInfoPopup.enabled;
+        // 简洁视觉效果主开关与三个子开关（主开关开启时才显示子开关）
+        const sv = document.getElementById('simple-visual-toggle');
+        if (sv) sv.checked = this.settings.simpleVisualMode;
+        const svSubGroups = [
+            document.getElementById('simple-notifications-group'),
+            document.getElementById('simple-infopopup-group'),
+            document.getElementById('simple-badge-group')
+        ];
+        svSubGroups.forEach(group => {
+            if (group) group.style.display = this.settings.simpleVisualMode ? 'block' : 'none';
+        });
+        const hb = document.getElementById('hidden-badge-toggle');
+        if (hb) hb.checked = this.settings.hiddenBadge;
         this.updateHideInfoPopupLabel();
         this.syncStatusBarUI();
+        this.syncWidgetPanelUI();
     }
 
     syncStatusBarUI() {
@@ -951,6 +1007,23 @@ class OOOInterface {
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
         if (savedSettings.quickAccessSidebar !== undefined) result.quickAccessSidebar = savedSettings.quickAccessSidebar;
         if (savedSettings.showQuickLinkIcons !== undefined) result.showQuickLinkIcons = savedSettings.showQuickLinkIcons;
+        if (savedSettings.fixSidebarEnabled !== undefined) result.fixSidebarEnabled = savedSettings.fixSidebarEnabled;
+        if (savedSettings.fixSidebarHomepage !== undefined) result.fixSidebarHomepage = savedSettings.fixSidebarHomepage;
+        if (savedSettings.fixSidebarWallpaper !== undefined) result.fixSidebarWallpaper = savedSettings.fixSidebarWallpaper;
+        if (savedSettings.hiddenBadge !== undefined) result.hiddenBadge = savedSettings.hiddenBadge;
+
+        // 合并小组件面板配置
+        // enabled 字段已废弃（开关已移除，面板显示完全由列表是否为空决定），固定为 true
+        if (savedSettings.widgetPanel && typeof savedSettings.widgetPanel === 'object') {
+            result.widgetPanel = {
+                enabled: true,
+                widgets: Array.isArray(savedSettings.widgetPanel.widgets)
+                    ? savedSettings.widgetPanel.widgets.filter(w =>
+                        w && typeof w === 'object' && w.type && w.id
+                      )
+                    : []
+            };
+        }
         if (savedSettings.statusBarEnabled !== undefined) result.statusBarEnabled = savedSettings.statusBarEnabled;
         if (savedSettings.showStatusBarSeconds !== undefined) result.showStatusBarSeconds = savedSettings.showStatusBarSeconds;
         if (savedSettings.hideNotifications !== undefined) result.hideNotifications = savedSettings.hideNotifications;
@@ -1007,7 +1080,10 @@ class OOOInterface {
             this.userChangedLogo = savedSettings.userChangedLogo;
         }
 
-
+        // 简洁视觉效果主开关由子开关状态派生（所有恢复完成后计算，兼容旧版本数据）
+        result.simpleVisualMode = !!(result.hideNotifications
+            || (result.hideInfoPopup && result.hideInfoPopup.enabled)
+            || result.hiddenBadge);
 
         return result;
     }
@@ -1395,6 +1471,11 @@ class OOOInterface {
 
     // 显示信息弹窗
     showInfoPopup() {
+        // 禁止提示开启时不弹出
+        if (this.isHideInfoPopupActive()) return;
+
+        // 同步 UAC 连接状态
+        try { this.backendConnected = localStorage.getItem('oooBackendConnected') === 'true'; } catch (_) {}
         if (this.infoPopupOpen) return;
         this.infoPopupOpen = true;
 
@@ -1461,22 +1542,10 @@ class OOOInterface {
             word-wrap: break-word;
         `;
 
-        // 实际使用内存
-        const pss = document.createElement('p');
-        const pssValue = this.getMemoryUsage('pss');
-        pss.textContent = `[pss]${pssValue}`;
-        pss.style.cssText = `
-            font-size: 14px;
-            color: #000000;
-            margin: 0;
-            word-wrap: break-word;
-        `;
-
-        // 常驻内存大小
-        const rss = document.createElement('p');
-        const rssValue = this.getMemoryUsage('rss');
-        rss.textContent = `[rss]${rssValue}`;
-        rss.style.cssText = `
+        // 后端连接状态
+        const uac = document.createElement('p');
+        uac.textContent = `[UAC]${this.getMemoryUsage('uac')}`;
+        uac.style.cssText = `
             font-size: 14px;
             color: #000000;
             margin: 0;
@@ -1488,8 +1557,7 @@ class OOOInterface {
         content.appendChild(os);
         content.appendChild(beta);
         content.appendChild(packageId);
-        content.appendChild(pss);
-        content.appendChild(rss);
+        content.appendChild(uac);
         popup.appendChild(content);
 
         // 添加到页面
@@ -1554,6 +1622,7 @@ class OOOInterface {
 
         const items = [
             { key: 'Tab', desc: '快速聚焦到搜索框' },
+            { key: 'Tab（长按）', desc: '打开快捷轮盘，移动鼠标或方向键选择（斜向按两键）' },
             { key: 'Ctrl + ,', desc: '打开设置页面' },
             { key: 'Ctrl + H', desc: '展开 / 收起搜索历史框' },
             { key: 'Ctrl + S（设置页面内）', desc: '应用当前设置' }
@@ -1666,11 +1735,8 @@ class OOOInterface {
 
     // 获取内存使用信息
     getMemoryUsage(type) {
-        // 浏览器环境下无法直接获取内存信息，这里模拟返回
-        if (type === 'pss') {
-            return '~50MB';
-        } else if (type === 'rss') {
-            return '~100MB';
+        if (type === 'uac') {
+            return String(this.backendConnected);
         }
         return 'N/A';
     }
@@ -1700,12 +1766,23 @@ class OOOInterface {
             const result = chrome.storage.local.set({ oooInterfaceSettings: settingsToSave });
             if (result && typeof result.catch === 'function') {
                 result.catch(error => {
-                    console.error('保存设置异步失败:', error);
+                    console.warn('chrome.storage 保存失败，尝试 localStorage:', error);
+                    try {
+                        localStorage.setItem('oooInterfaceSettings', JSON.stringify(settingsToSave));
+                    } catch (e) {
+                        console.error('localStorage 保存也失败:', e);
+                        this.showNotification('保存设置失败');
+                    }
                 });
             }
         } catch (error) {
-            console.error('保存设置失败:', error);
-            this.showNotification('保存设置失败');
+            console.warn('chrome.storage 保存失败，尝试 localStorage:', error);
+            try {
+                localStorage.setItem('oooInterfaceSettings', JSON.stringify(settingsToSave));
+            } catch (e) {
+                console.error('localStorage 保存也失败:', e);
+                this.showNotification('保存设置失败');
+            }
         }
     }
 
@@ -2030,14 +2107,54 @@ class OOOInterface {
             }
         });
 
+        // “/” 命令列表键盘导航（ArrowUp/Down 选择、Enter 插入命令、Esc/Backspace 删除模式 chip）
+        // 注意：在拦截 Enter 时必须 preventDefault，否则随后的 keypress 仍会触发 performSearch
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const chipActive = !!this.searchCommandMode;
+                if ((this.commandListState && this.commandListState.visible) || chipActive) {
+                    e.preventDefault();
+                    if (this.searchCommandMode) {
+                        this.exitSearchCommandMode();
+                    } else {
+                        this.hideSearchCommandList();
+                        searchInput.value = '';
+                        this.syncSearchAssistantUI('');
+                    }
+                }
+                return;
+            }
+            // 组件模式下按退格删除椭圆：输入为空时才生效；
+            // translate 已锁定语言对时先解锁语言对，再退格彻底退出
+            if (e.key === 'Backspace' && this.searchCommandMode && searchInput.value === '') {
+                e.preventDefault();
+                if (this.searchCommandMode === 'translate' && this.translateSelectedPair) {
+                    this.translateSelectedPair = null;
+                    this.updateSearchModeChip();
+                    this.refreshSearchDropdownPanels();
+                } else {
+                    this.exitSearchCommandMode();
+                }
+                return;
+            }
+            if (!this.commandListState || !this.commandListState.visible) return;
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.moveSearchCommandHighlight(e.key === 'ArrowDown' ? 1 : -1);
+                return;
+            }
+            if (e.key === 'Enter' && this.commandListState.highlight >= 0) {
+                e.preventDefault();
+                this.applySearchCommand(this.commandListState.items[this.commandListState.highlight]);
+            }
+        });
+
         // 搜索历史相关事件
         const searchHistoryContainer = document.getElementById('search-history-container');
         const searchHistoryList = document.querySelector('.search-history-list');
 
         searchInput.addEventListener('focus', () => {
-            if (this.settings.searchHistory && this.settings.searchHistoryItems.length > 0) {
-                this.showSearchHistory();
-            }
+            this.syncSearchAssistantUI(searchInput.value);
             const clearBtn = document.querySelector('.search-clear-btn');
             if (clearBtn) {
                 clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
@@ -2045,9 +2162,7 @@ class OOOInterface {
         });
 
         searchInput.addEventListener('input', () => {
-            if (this.settings.searchHistory && this.settings.searchHistoryItems.length > 0) {
-                this.showSearchHistory(searchInput.value);
-            }
+            this.syncSearchAssistantUI(searchInput.value);
             const clearBtn = document.querySelector('.search-clear-btn');
             if (clearBtn) {
                 clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
@@ -2057,16 +2172,24 @@ class OOOInterface {
         const searchClearBtn = document.querySelector('.search-clear-btn');
         if (searchClearBtn) {
             searchClearBtn.addEventListener('click', () => {
-                searchInput.value = '';
-                searchClearBtn.style.display = 'none';
+                if (this.searchCommandMode) {
+                    this.exitSearchCommandMode();
+                } else {
+                    searchInput.value = '';
+                    searchClearBtn.style.display = 'none';
+                    this.syncSearchAssistantUI('');
+                }
                 searchInput.focus();
-                this.hideSearchHistory();
             });
         }
 
         document.addEventListener('click', (e) => {
             if (!searchHistoryContainer.contains(e.target) && !searchInput.contains(e.target)) {
                 this.hideSearchHistory();
+            }
+            const commandContainer = document.getElementById('search-command-container');
+            if (commandContainer && !commandContainer.contains(e.target) && !searchInput.contains(e.target)) {
+                this.hideSearchCommandList();
             }
         });
 
@@ -2096,10 +2219,82 @@ class OOOInterface {
             e.stopPropagation();
         });
 
+        // “/” 命令列表 / 翻译语言历史 点击事件
+        const searchCommandList = document.querySelector('.search-command-list');
+        if (searchCommandList) {
+            searchCommandList.addEventListener('click', (e) => {
+                const item = e.target.closest('.search-command-item');
+                if (!item) return;
+                const index = parseInt(item.dataset.index, 10);
+                if (this.commandListState && this.commandListState.items[index]) {
+                    this.applySearchCommand(this.commandListState.items[index]);
+                }
+            });
+
+            document.getElementById('search-command-container').addEventListener('wheel', (e) => {
+                e.stopPropagation();
+            });
+        }
+
+        const translateHistoryList = document.querySelector('.translate-history-list');
+        if (translateHistoryList) {
+            translateHistoryList.addEventListener('click', (e) => {
+                // 删除按钮：按 kind 分流清理对应存储，然后刷新面板
+                const deleteBtn = e.target.closest('.search-history-delete');
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    if (deleteBtn.dataset.kind === 'web') {
+                        this.setWebHistory(this.getWebHistory().filter(x => x && x.key !== deleteBtn.dataset.key));
+                    } else if (deleteBtn.dataset.kind === 'translate') {
+                        this.setTranslateHistory(this.getTranslateHistory().filter(x => x && x.pair !== deleteBtn.dataset.pair));
+                    }
+                    this.refreshSearchDropdownPanels();
+                    return;
+                }
+
+                // 行点击：web 按 key 回填网址；translate 套用语言对
+                const item = e.target.closest('.search-history-item');
+                if (!item) return;
+
+                if (item.dataset.key !== undefined) {
+                    const entry = this.getWebHistory().find(x => x && x.key === item.dataset.key);
+                    if (entry) {
+                        this.applyWebHistoryEntry(entry);
+                    }
+                } else {
+                    this.applyTranslateHistoryPair(item.dataset.pair || '');
+                }
+            });
+        }
+
+        // 模式 chip 点击退出当前模式
+        const modeChip = document.getElementById('search-mode-chip');
+        if (modeChip) {
+            modeChip.addEventListener('click', () => {
+                if (this.searchCommandMode) {
+                    this.exitSearchCommandMode();
+                    this.showNotification('已退出模式');
+                }
+                searchInput.focus();
+            });
+        }
+
         // 铭牌点击事件 - 已在 setupBadgeOpenMethod() 中处理
 
         // 设置弹窗事件
         document.getElementById('close-modal').addEventListener('click', () => this.closeSettings());
+        document.getElementById('export-settings-btn').addEventListener('click', () => this.exportSettingsAsMarkdown());
+        document.getElementById('import-settings-btn').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.md,text/markdown';
+            input.addEventListener('change', () => {
+                const file = input.files && input.files[0];
+                if (!file) return;
+                this.importSettingsFromMarkdown(file);
+            });
+            input.click();
+        });
         document.getElementById('back-right-panel').addEventListener('click', () => {
             const rpu = document.getElementById('right-panel-upper');
             if (rpu && rpu.dataset.subView === 'customize-items') {
@@ -2130,6 +2325,15 @@ class OOOInterface {
                             const container = rpu.querySelector('.settings-menu-container');
                             if (container && container._qlinput) {
                                 this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
+                            }
+                        } else if (rpu && (rpu.dataset.subView === 'widget-config' || rpu.dataset.subView === 'widget-type-picker')) {
+                            // 小组件编辑/添加表单：ESC 返回列表（带滑出动画）
+                            const listContainer = rpu.querySelector('.widget-panel-list-container');
+                            if (listContainer) {
+                                this.exitWidgetFormView(listContainer, () => {
+                                    this.restoreWidgetPanelButtons();
+                                    this.updateWidgetPanelListInMenu(listContainer);
+                                });
                             }
                         } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
                             this.backToCustomColorView(rpu);
@@ -2246,6 +2450,73 @@ class OOOInterface {
             }
         });
 
+        // 固定侧边栏主开关改变时，显示/隐藏两个子开关并同步状态
+        document.getElementById('fix-sidebar-toggle').addEventListener('change', (e) => {
+            const homepageGroup = document.getElementById('fix-homepage-group');
+            const wallpaperGroup = document.getElementById('fix-wallpaper-group');
+            const homepageToggle = document.getElementById('fix-sidebar-homepage-toggle');
+            const wallpaperToggle = document.getElementById('fix-sidebar-wallpaper-toggle');
+            if (e.target.checked) {
+                if (homepageGroup) homepageGroup.style.display = 'block';
+                if (wallpaperGroup) wallpaperGroup.style.display = 'block';
+                // 开启主开关时，子开关一并开启
+                if (homepageToggle) homepageToggle.checked = true;
+                if (wallpaperToggle) wallpaperToggle.checked = true;
+            } else {
+                if (homepageGroup) homepageGroup.style.display = 'none';
+                if (wallpaperGroup) wallpaperGroup.style.display = 'none';
+                // 关闭主开关时，子开关一并关闭
+                if (homepageToggle) homepageToggle.checked = false;
+                if (wallpaperToggle) wallpaperToggle.checked = false;
+            }
+        });
+
+        // 简洁视觉效果主开关改变时，联动全部子开关并即时生效
+        // （禁止提示按默认临时7天开启，设置页内双击该子开关才为永久；程序设置 checked 不触发子开关的 change 事件）
+        document.getElementById('simple-visual-toggle').addEventListener('change', (e) => {
+            const checked = e.target.checked;
+
+            this.settings.hideNotifications = checked;
+            this.settings.hideInfoPopup = checked
+                ? { enabled: true, type: 'temporary', timestamp: Date.now() }
+                : { enabled: false, type: null, timestamp: null };
+            this.settings.hiddenBadge = checked;
+
+            this.applySettings();
+            this.saveSettings();
+            this.syncSettingsPageToggles();
+            this.updateContextMenuIcons();
+            this.showNotification(checked ? '简洁视觉效果：开启' : '简洁视觉效果：关闭');
+        });
+
+        // 隐藏弹窗子开关：立即生效
+        document.getElementById('hide-notifications-toggle').addEventListener('change', (e) => {
+            this.settings.hideNotifications = e.target.checked;
+            this.applySettings();
+            this.saveSettings();
+            this.syncSettingsPageToggles();
+            this.updateContextMenuIcons();
+            this.showNotification(e.target.checked ? '隐藏弹窗：开启' : '隐藏弹窗：关闭');
+        });
+
+        // 隐藏铭牌子开关：立即生效
+        document.getElementById('hidden-badge-toggle').addEventListener('change', (e) => {
+            this.settings.hiddenBadge = e.target.checked;
+            this.applySettings();
+            this.saveSettings();
+            this.syncSettingsPageToggles();
+            this.showNotification(e.target.checked ? '隐藏铭牌：开启' : '隐藏铭牌：关闭');
+        });
+
+        // 小组件列表下拉点击 → 右面板管理界面
+        const widgetPanelSelectSelected = document.getElementById('widget-panel-select-selected');
+        if (widgetPanelSelectSelected) {
+            widgetPanelSelectSelected.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showWidgetPanelMenuInRightPanel();
+            });
+        }
+
         // 状态栏主开关改变时，显示/隐藏子开关并保留上次保存的秒钟偏好
         document.getElementById('status-bar-toggle').addEventListener('change', (e) => {
             const showSecondsGroup = document.getElementById('show-seconds-group');
@@ -2298,6 +2569,19 @@ class OOOInterface {
                 if (panelFillToggle) {
                     this.settings.wallpaperFill = panelFillToggle.checked;
                 }
+                // 读取固定侧边栏主开关与子开关
+                const fixSidebarToggle = document.getElementById('fix-sidebar-toggle');
+                if (fixSidebarToggle) {
+                    this.settings.fixSidebarEnabled = fixSidebarToggle.checked;
+                }
+                const fixHomepageToggle = document.getElementById('fix-sidebar-homepage-toggle');
+                if (fixHomepageToggle) {
+                    this.settings.fixSidebarHomepage = fixHomepageToggle.checked;
+                }
+                const fixWallpaperToggle = document.getElementById('fix-sidebar-wallpaper-toggle');
+                if (fixWallpaperToggle) {
+                    this.settings.fixSidebarWallpaper = fixWallpaperToggle.checked;
+                }
                 this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
                 this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
                 this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
@@ -2338,6 +2622,12 @@ class OOOInterface {
                         type: hideInfoToggle.checked ? 'permanent' : null,
                         timestamp: hideInfoToggle.checked ? Date.now() : null
                     };
+                }
+
+                // 读取隐藏铭牌开关（简洁视觉效果主开关由子开关状态派生，无需读取）
+                const hiddenBadgeToggle = document.getElementById('hidden-badge-toggle');
+                if (hiddenBadgeToggle) {
+                    this.settings.hiddenBadge = hiddenBadgeToggle.checked;
                 }
 
                 // 保存设置打开方式
@@ -2563,6 +2853,7 @@ class OOOInterface {
         let touchActive = false;
 
         window.addEventListener('touchstart', (e) => {
+            if (document.body.classList.contains('widget-panel-open')) return;
             if (e.target.closest('.modal') ||
                 e.target.closest('.search-section') ||
                 e.target.closest('.engine-buttons') ||
@@ -2572,6 +2863,7 @@ class OOOInterface {
         }, { passive: true });
 
         window.addEventListener('touchmove', (e) => {
+            if (document.body.classList.contains('widget-panel-open')) return;
             if (!touchActive || this.isAnimating) return;
             const deltaY = touchStartY - e.touches[0].pageY;
             if (Math.abs(deltaY) > 15) {
@@ -2627,8 +2919,9 @@ class OOOInterface {
                 return;
             }
 
-            // Tab - 聚焦搜索框（不在设置页面时）
-            if (e.key === 'Tab' && !inSettings && !e.shiftKey) {
+            // Tab - 聚焦搜索框（不在设置页面时；快捷轮盘打开时跳过，避免打断选择）
+            if (e.key === 'Tab' && !inSettings && !e.shiftKey &&
+                !(window.oooController && window.oooController.radialActive)) {
                 const searchInput = document.getElementById('search-input');
                 if (searchInput && document.activeElement !== searchInput) {
                     e.preventDefault();
@@ -2756,8 +3049,10 @@ class OOOInterface {
         const toggle = document.getElementById('hide-info-popup-toggle');
         if (!toggle) return;
 
-        let clickTimer = null;
-        let clickCount = 0;
+        // 监听必须绑在外层label上:checkbox本身宽高为0不可见,双击的dblclick是物理事件,
+        // 只会派发在slider/label上,浏览器不会向input转发合成的dblclick
+        const switchLabel = toggle.closest('label');
+        if (!switchLabel) return;
 
         const updateToggleState = () => {
             const isEnabled = this.settings.hideInfoPopup.enabled;
@@ -2768,40 +3063,34 @@ class OOOInterface {
             });
         };
 
-        // 完全控制开关行为
-        toggle.addEventListener('click', (e) => {
+        const applyHideInfoPopup = (value) => {
+            this.settings.hideInfoPopup = value;
+            this.applySettings();
+            this.saveSettings();
+            this.updateContextMenuIcons();
+            // 同步主开关派生状态与子开关组显隐
+            this.syncSettingsPageToggles();
+            // 立即更新状态
+            updateToggleState();
+        };
+
+        // 单击:立即切换临时禁止(7天)。preventDefault阻止label向input转发合成click,避免一次点击触发两次。
+        // 双击时前两次click先开临时再切回,最终由dblclick设为永久
+        switchLabel.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
 
-            clickCount++;
+            applyHideInfoPopup(this.settings.hideInfoPopup.enabled
+                ? { enabled: false, type: null, timestamp: null }
+                : { enabled: true, type: 'temporary', timestamp: Date.now() });
+        });
 
-            if (clickCount === 1) {
-                clickTimer = setTimeout(() => {
-                    if (clickCount === 1) {
-                        if (this.settings.hideInfoPopup.enabled) {
-                            this.settings.hideInfoPopup = { enabled: false, type: null, timestamp: null };
-                        } else {
-                            this.settings.hideInfoPopup = { enabled: true, type: 'temporary', timestamp: Date.now() };
-                        }
-                        this.applySettings();
-                        this.saveSettings();
-                        this.updateContextMenuIcons();
-                        // 立即更新状态
-                        updateToggleState();
-                    }
-                    clickCount = 0;
-                }, 100);
-            } else if (clickCount === 2) {
-                clearTimeout(clickTimer);
-                clickCount = 0;
+        // 双击:浏览器原生双击判定,设为永久禁止(覆盖click产生的中间状态)
+        switchLabel.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
 
-                this.settings.hideInfoPopup = { enabled: true, type: 'permanent', timestamp: Date.now() };
-                this.applySettings();
-                this.saveSettings();
-                this.updateContextMenuIcons();
-                // 立即更新状态
-                updateToggleState();
-            }
+            applyHideInfoPopup({ enabled: true, type: 'permanent', timestamp: Date.now() });
         });
 
         // 初始化状态
@@ -3022,6 +3311,7 @@ class OOOInterface {
                 if (clearBtn) {
                     clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
                 }
+                this.syncSearchAssistantUI(searchInput.value);
                 this.showNotification('粘贴');
             })
             .catch(err => {
@@ -4887,13 +5177,21 @@ class OOOInterface {
             sidebar.classList.add('active');
         } else {
             sidebar.classList.remove('active');
-            // 同时隐藏容器
+            // 侧边栏功能关闭时始终隐藏容器（固定侧边栏不生效）
             const container = document.getElementById('quick-access-sidebar-container');
             if (container) {
                 container.classList.remove('visible');
                 container.classList.add('hiding');
             }
         }
+    }
+
+    // 当前视图下侧边栏是否固定显示（壁纸模式固定独立生效，不受主开关限制）
+    isSidebarFixed() {
+        if (!this.settings.quickAccessSidebar) return false;
+        return this.isScrolled
+            ? this.settings.fixSidebarWallpaper
+            : (this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage);
     }
 
     // 初始化快速访问侧边栏交互
@@ -4918,8 +5216,8 @@ class OOOInterface {
 
         let hideTimeout = null;
         let isVisible = false;
-        const TRIGGER_ZONE_WIDTH = 100;  // 右侧触发区域宽度（像素）
-        const HIDE_DELAY = 0;
+        const TRIGGER_ZONE_WIDTH = 100;   // 右侧触发区域宽度（像素）
+        const HIDE_DELAY = 0;            // 鼠标离开立即关闭
 
         const pushWallpaper = (pushIn) => {
             this._sidebarPushing = pushIn && window.innerWidth >= 750;
@@ -4932,6 +5230,8 @@ class OOOInterface {
 
         const showSidebar = () => {
             if (!this.settings.quickAccessSidebar) return;
+            const modal = document.getElementById('settings-modal');
+            if (modal && modal.classList.contains('show')) return;
             if (hideTimeout) {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
@@ -4950,6 +5250,8 @@ class OOOInterface {
         const scheduleHide = () => {
             if (hideTimeout) clearTimeout(hideTimeout);
             hideTimeout = setTimeout(() => {
+                // 当前视图处于固定模式时，不被 hover 隐藏
+                if (this.isSidebarFixed()) return;
                 if (isVisible) {
                     isVisible = false;
                     container.classList.remove('visible');
@@ -4961,16 +5263,20 @@ class OOOInterface {
             }, HIDE_DELAY);
         };
 
-        // 全局鼠标移动检测：在右侧边缘触发区域显示容器
+        // 全局鼠标移动检测：在右侧边缘触发区域显示容器（与小组件一致）
         document.addEventListener('mousemove', (e) => {
             if (!this.settings.quickAccessSidebar) return;
+            const modal = document.getElementById('settings-modal');
+            if (modal && modal.classList.contains('show')) return;
             const viewportWidth = window.innerWidth;
             const mouseX = e.clientX;
 
             if (mouseX >= viewportWidth - TRIGGER_ZONE_WIDTH) {
+                // 当前视图处于固定模式时，无需 hover 触发
+                if (this.isSidebarFixed()) return;
                 showSidebar();
-            } else if (isVisible) {
-                // 仅在容器可见时检查是否需要隐藏
+            } else if (isVisible && !this.isSidebarFixed()) {
+                // 仅在容器可见且未固定时检查是否需要隐藏
                 const containerRect = container.getBoundingClientRect();
                 const isOverContainer = (
                     mouseX >= containerRect.left &&
@@ -4984,9 +5290,10 @@ class OOOInterface {
             }
         });
 
-        // 容器悬停维持显示
+        // 容器悬停维持显示（与小组件一致）
         container.addEventListener('mouseenter', () => {
             if (!this.settings.quickAccessSidebar) return;
+            if (this.isSidebarFixed()) return;
             if (hideTimeout) {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
@@ -4995,20 +5302,28 @@ class OOOInterface {
                 isVisible = true;
                 container.classList.remove('hiding');
                 container.classList.add('visible');
+                document.body.classList.add('sidebar-visible');
+                pushWallpaper(true);
             }
         });
 
         container.addEventListener('mouseleave', () => {
+            // 当前视图固定时鼠标移开不隐藏
+            if (this.isSidebarFixed()) return;
             scheduleHide();
         });
 
-        // 禁用快速访问侧边栏内的滚轮事件触发壁纸模式
-        sidebar.addEventListener('wheel', (e) => {
-            e.stopPropagation();
-        }, { passive: true });
-        container.addEventListener('wheel', (e) => {
-            e.stopPropagation();
-        }, { passive: true });
+        // 侧边栏滚轮：内容溢出时拦截（只滚动侧边栏内容，不触发壁纸模式进退）；
+        // 内容不溢出时放行（交给页面滚动处理）
+        const sidebarLinks = document.getElementById('quick-access-sidebar-links');
+        const sidebarWheelHandler = (e) => {
+            if (!sidebarLinks) return;
+            const maxScroll = sidebarLinks.scrollHeight - sidebarLinks.clientHeight;
+            if (maxScroll <= 0) return; // 内容不溢出，放行
+            e.stopPropagation();        // 内容溢出：拦截，只滚动侧边栏内容
+        };
+        sidebar.addEventListener('wheel', sidebarWheelHandler, { passive: true });
+        container.addEventListener('wheel', sidebarWheelHandler, { passive: true });
     }
 
     // 设置文字Logo
@@ -5189,6 +5504,10 @@ class OOOInterface {
                 document.body.classList.add('user-scrolled');
             }
 
+            // 壁纸模式下常显示侧边栏与小组件面板（清除 hiding 残留状态）
+            // isScrolled 已在进入壁纸模式时置为 true，固定侧边栏按"壁纸模式固定"生效
+            this.syncWidgetPanelsForWallpaper(true);
+
             // 动画完成后移除退出动画类（350ms + 缓冲）
             setTimeout(() => {
                 document.body.classList.remove('exit-animation');
@@ -5283,6 +5602,9 @@ class OOOInterface {
         }
 
         document.body.classList.remove('scrolled');
+
+        // 退出壁纸模式：恢复侧边栏与小组件面板由 hover 控制
+        this.syncWidgetPanelsForWallpaper(false);
         document.body.classList.remove('user-scrolled');
 
         if (this.settings.persistentWallpaper) {
@@ -5386,9 +5708,32 @@ class OOOInterface {
     performSearch(query) {
         if (!query.trim()) return;
 
+        const trimmedQuery = query.trim();
+
+        // 组件模式激活时（chip 在左，输入内容为纯参数），按模式执行
+        if (this.searchCommandMode === 'web') {
+            if (!trimmedQuery) {
+                this.showNotification('请输入网址，例如：google.com');
+                return;
+            }
+            this.openExternalUrl(trimmedQuery);
+            this.searchCommandMode = null;
+            return;
+        }
+        if (this.searchCommandMode === 'translate') {
+            this.executeTranslateModeQuery(trimmedQuery);
+            return;
+        }
+
+        // “/” 命令语法兜底路径（正常流程中前缀在输入空格时已被替换）：不进入搜索历史
+        if (trimmedQuery.startsWith('/')) {
+            this.executeSlashCommand(trimmedQuery);
+            this.hideSearchCommandList();
+            return;
+        }
+
         this.addToSearchHistory(query);
 
-        const trimmedQuery = query.trim();
         const lowerQuery = trimmedQuery.toLowerCase();
 
         if (lowerQuery.startsWith('网址/') || lowerQuery.startsWith('web/')) {
@@ -5396,16 +5741,7 @@ class OOOInterface {
 
             if (!url) return;
 
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = 'https://' + url;
-            }
-
-            try {
-                new URL(url);
-                window.location.href = url;
-            } catch (e) {
-                this.showNotification('无效的URL地址');
-            }
+            this.openExternalUrl(url);
             return;
         }
 
@@ -5417,6 +5753,700 @@ class OOOInterface {
         }
 
         window.location.href = searchUrl;
+    }
+
+    openExternalUrl(urlText) {
+        let url = (urlText || '').trim();
+        if (!url) return;
+
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+        }
+
+        try {
+            new URL(url);
+            this.recordWebHistory(url);
+            window.location.href = url;
+        } catch (e) {
+            this.showNotification('无效的URL地址');
+        }
+    }
+
+    // ===================== “/” 命令系统（网址 / 翻译） =====================
+
+    getSlashCommands() {
+        return [
+            { name: 'web', icon: 'language', desc: '打开网页' },
+            { name: 'translate', icon: 'translate', desc: '翻译文本' }
+        ];
+    }
+
+    isWebCommand(word) {
+        return ['web', 'w', '网址'].includes((word || '').toLowerCase());
+    }
+
+    isTranslateCommand(word) {
+        return ['translate', 't', '翻译'].includes((word || '').toLowerCase());
+    }
+
+    // 统一同步搜索框辅助 UI：
+    // - 组件模式（web/translate）激活时：左侧 chip 替代命令文字，下方展示翻译语言历史
+    // - 未进入模式且以“/”开头：显示命令工作列表，“/别名+空格”立即进入对应模式
+    // - 其他情况：回到搜索历史逻辑
+    syncSearchAssistantUI(value) {
+        if (typeof value !== 'string') value = '';
+
+        if (this.searchCommandMode === 'web') {
+            this.hideSearchCommandList();
+            this.updateSearchModeChip();
+            this.refreshSearchDropdownPanels();
+            return;
+        }
+
+        if (this.searchCommandMode === 'translate') {
+            this.hideSearchCommandList();
+            this.lockTranslatePairFromInput(value);
+            this.updateSearchModeChip();
+            this.refreshSearchDropdownPanels();
+            return;
+        }
+
+        if (value.startsWith('/')) {
+            this.hideSearchHistory();
+
+            // “/别名 + 空格”：把前缀替换为左侧 chip，剩余文本作为参数继续输入
+            const entered = value.match(/^\/(\S+)\s([\s\S]*)$/);
+            if (entered && (this.isWebCommand(entered[1]) || this.isTranslateCommand(entered[1]))) {
+                const mode = this.isWebCommand(entered[1]) ? 'web' : 'translate';
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) {
+                    searchInput.value = entered[2] || '';
+                    const clearBtn = document.querySelector('.search-clear-btn');
+                    if (clearBtn) {
+                        clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
+                    }
+                }
+                this.enterSearchCommandMode(mode);
+                if (mode === 'translate') {
+                    const restValue = searchInput ? searchInput.value : '';
+                    this.lockTranslatePairFromInput(restValue);
+                    this.updateSearchModeChip();
+                    this.refreshSearchDropdownPanels();
+                }
+                return;
+            }
+
+            this.updateSearchModeChip();
+            this.showSearchCommandList(value);
+            return;
+        }
+
+        this.hideSearchCommandList();
+        this.updateSearchModeChip();
+        if (this.settings.searchHistory && this.settings.searchHistoryItems.length > 0) {
+            this.showSearchHistory(value);
+        }
+    }
+
+    showSearchCommandList(currentInput = '') {
+        if (!currentInput.startsWith('/')) {
+            this.hideSearchCommandList();
+            return;
+        }
+
+        // 只在第一个空格之前提供候选；出现空格说明已进入对应组件模式
+        const partial = currentInput.slice(1);
+        if (/\s/.test(partial)) {
+            this.hideSearchCommandList();
+            return;
+        }
+
+        const filter = partial.toLowerCase();
+        const items = this.getSlashCommands().filter(cmd => {
+            if (!filter) return true;
+            if (cmd.name.toLowerCase().startsWith(filter)) return true;
+            const extraAliases = this.isWebCommand(cmd.name)
+                ? ['w', '网址']
+                : (this.isTranslateCommand(cmd.name) ? ['t', '翻译'] : []);
+            return extraAliases.some(alias => alias.toLowerCase().startsWith(filter));
+        });
+
+        if (items.length === 0) {
+            this.hideSearchCommandList();
+            return;
+        }
+
+        this.commandListState = { visible: true, items: items, highlight: -1 };
+        this.renderSearchCommandItems();
+        this.refreshSearchDropdownPanels();
+    }
+
+    hideSearchCommandList() {
+        const container = document.getElementById('search-command-container');
+        if (container) {
+            container.classList.remove('show');
+        }
+        if (this.commandListState) {
+            this.commandListState.visible = false;
+            this.commandListState.highlight = -1;
+        }
+    }
+
+    renderSearchCommandItems() {
+        const list = document.querySelector('.search-command-list');
+        if (!list || !this.commandListState) return;
+
+        list.innerHTML = '';
+
+        this.commandListState.items.forEach((cmd, index) => {
+            const item = document.createElement('div');
+            item.className = 'search-command-item' + (index === this.commandListState.highlight ? ' selected' : '');
+            item.dataset.index = index;
+            item.innerHTML = `
+                <span class="search-command-icon material-icons">${cmd.icon}</span>
+                <div class="search-command-info">
+                    <span class="search-command-name">/${cmd.name}</span>
+                    <span class="search-command-desc">${this.escapeHtml(cmd.desc)}</span>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    moveSearchCommandHighlight(delta) {
+        const state = this.commandListState;
+        if (!state || !state.visible || state.items.length === 0) return;
+
+        const max = state.items.length - 1;
+        state.highlight += delta;
+        if (state.highlight > max) state.highlight = 0;
+        if (state.highlight < 0) state.highlight = max;
+
+        this.renderSearchCommandItems();
+    }
+
+    applySearchCommand(cmd) {
+        if (!cmd) return;
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+        }
+        const clearBtn = document.querySelector('.search-clear-btn');
+        if (clearBtn) {
+            clearBtn.style.display = 'none';
+        }
+
+        this.enterSearchCommandMode(this.isWebCommand(cmd.name) ? 'web' : 'translate');
+    }
+
+    enterSearchCommandMode(mode) {
+        this.searchCommandMode = mode;
+        this.translateSelectedPair = null;
+        this.hideSearchCommandList();
+        this.updateSearchModeChip();
+        this.refreshSearchDropdownPanels();
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.focus();
+        }
+        this.showNotification('已进入' + (mode === 'web' ? '网址' : '翻译') + '模式');
+    }
+
+    // 退出组件模式；clearInput=false 时保留输入框现有内容（如翻译结果）
+    exitSearchCommandMode(clearInput = true) {
+        this.searchCommandMode = null;
+        this.translateSelectedPair = null;
+
+        const searchInput = document.getElementById('search-input');
+        if (clearInput && searchInput) {
+            searchInput.value = '';
+        }
+        const clearBtn = document.querySelector('.search-clear-btn');
+        if (clearBtn && searchInput) {
+            clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
+        }
+        this.updateSearchModeChip();
+        this.hideSearchCommandList();
+    }
+
+    // 模式 chip：由组件模式状态驱动（替代原命令前缀文字，位于输入框左侧）。
+    // 进入模式时放大镜图标收缩隐去、椭圆展开顶入（CSS 过渡联动），退出时反向还原
+    updateSearchModeChip() {
+        const chip = document.getElementById('search-mode-chip');
+        if (!chip) return;
+
+        const searchContainer = document.querySelector('.search-container');
+        if (searchContainer) {
+            searchContainer.classList.toggle('mode-active', !!this.searchCommandMode);
+        }
+
+        const iconEl = chip.querySelector('.search-mode-chip-icon');
+        const textEl = chip.querySelector('.search-mode-chip-text');
+
+        if (this.searchCommandMode === 'web') {
+            iconEl.textContent = 'language';
+            textEl.textContent = '网址';
+            chip.classList.add('expanded');
+        } else if (this.searchCommandMode === 'translate') {
+            iconEl.textContent = 'translate';
+            textEl.textContent = this.translateSelectedPair
+                ? this.translateSelectedPair.from.label + '→' + this.translateSelectedPair.to.label
+                : '翻译';
+            chip.classList.add('expanded');
+        } else {
+            chip.classList.remove('expanded');
+        }
+    }
+
+    // translate 模式下从输入中锁定语言对：首个空白之前的部分若可解析则锁定，并把它从输入中移除
+    lockTranslatePairFromInput(value) {
+        if (this.translateSelectedPair || !value) return;
+
+        const spIndex = value.search(/\s/);
+        if (spIndex === -1) return; // 尚未出现空格，等待继续输入
+
+        const pair = this.resolveLanguagePair(value.slice(0, spIndex));
+        if (!pair) return; // 无法解析时保留原样，交由 Enter 时提示
+
+        this.translateSelectedPair = pair;
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = value.slice(spIndex).replace(/^\s+/, '');
+            const clearBtn = document.querySelector('.search-clear-btn');
+            if (clearBtn) {
+                clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
+            }
+        }
+    }
+
+    // 解析语言对文本：'sc-jp' 或省略源语言的 'jp'
+    resolveLanguagePair(pairText) {
+        const parts = (pairText || '').toLowerCase().split('-').filter(Boolean);
+        if (parts.length === 0) return null;
+
+        let fromEntry;
+        let toEntry;
+        if (parts.length >= 2) {
+            fromEntry = this.resolveTranslateLanguage(parts[0]);
+            toEntry = this.resolveTranslateLanguage(parts[1]);
+        } else {
+            fromEntry = this.resolveTranslateLanguage('auto');
+            toEntry = this.resolveTranslateLanguage(parts[0]);
+        }
+        if (!fromEntry || !toEntry) return null;
+
+        return { raw: fromEntry.key + '-' + toEntry.key, from: fromEntry, to: toEntry };
+    }
+
+    getTranslateHistory() {
+        try {
+            return JSON.parse(localStorage.getItem('oooTranslateHistory') || '[]') || [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    setTranslateHistory(list) {
+        localStorage.setItem('oooTranslateHistory', JSON.stringify(list || []));
+    }
+
+    recordTranslateHistory(fromEntry, toEntry) {
+        if (!fromEntry || !toEntry) return;
+
+        let list = this.getTranslateHistory();
+        const raw = fromEntry.key + '-' + toEntry.key;
+        list = list.filter(item => item && item.pair !== raw);
+        list.unshift({ pair: raw });
+        if (list.length > 12) {
+            list.length = 12;
+        }
+        this.setTranslateHistory(list);
+    }
+
+    // 下方共享下拉面板：命令列表可见时优先；否则按当前组件模式展示使用历史
+    // （web → 最近网址，translate → 最近语言对）。隐藏的一方内容在此统一清空
+    refreshSearchDropdownPanels() {
+        const container = document.getElementById('search-command-container');
+        if (!container) return;
+
+        const commandVisible = !!(this.commandListState && this.commandListState.visible);
+
+        const commandList = container.querySelector('.search-command-list');
+        if (commandList && !commandVisible) {
+            commandList.innerHTML = '';
+        }
+
+        // 组装历史内容（仅 translate / web 模式且命令列表不可见时）
+        const historyEntries = [];
+        let historyKind = '';
+        if (!commandVisible) {
+            if (this.searchCommandMode === 'translate') {
+                historyEntries.push(...this.getTranslateHistory());
+                historyKind = 'translate';
+            } else if (this.searchCommandMode === 'web') {
+                historyEntries.push(...this.getWebHistory());
+                historyKind = 'web';
+            }
+        }
+
+        const historyList = container.querySelector('.translate-history-list');
+        if (historyList) {
+            historyList.innerHTML = '';
+
+            // 行结构与原生搜索历史一致（search-history-item），含悬停出现的删除按钮
+            if (historyKind === 'translate' && historyEntries.length > 0) {
+                historyEntries.forEach(entry => {
+                    if (!entry || !entry.pair) return;
+                    const sides = String(entry.pair).split('-');
+                    const fromE = this.resolveTranslateLanguage(sides[0]);
+                    const toE = this.resolveTranslateLanguage(sides[1]);
+                    const labels = (fromE ? fromE.label : sides[0]) + '→' + (toE ? toE.label : sides[1]);
+                    const display = entry.pair + ' · ' + labels;
+
+                    const row = document.createElement('div');
+                    row.className = 'search-history-item';
+                    row.dataset.pair = entry.pair;
+                    row.innerHTML = `
+                        <span class="search-history-text">${this.escapeHtml(display)}</span>
+                        <button class="search-history-delete" data-kind="translate" data-pair="${this.escapeHtml(entry.pair)}">
+                            ×
+                        </button>
+                    `;
+                    historyList.appendChild(row);
+                });
+            } else if (historyKind === 'web' && historyEntries.length > 0) {
+                historyEntries.forEach(entry => {
+                    if (!entry || !entry.host) return;
+
+                    const row = document.createElement('div');
+                    row.className = 'search-history-item';
+                    row.dataset.key = entry.key || '';
+                    row.innerHTML = `
+                        <span class="search-history-text">${this.escapeHtml(entry.host + (entry.rest || ''))}</span>
+                        <button class="search-history-delete" data-kind="web" data-key="${this.escapeHtml(entry.key || '')}">
+                            ×
+                        </button>
+                    `;
+                    historyList.appendChild(row);
+                });
+            }
+        }
+
+        if (commandVisible || (historyList && historyList.children.length > 0)) {
+            container.classList.add('show');
+        } else {
+            container.classList.remove('show');
+        }
+    }
+
+    applyTranslateHistoryPair(pairRaw) {
+        if (this.searchCommandMode !== 'translate') {
+            this.enterSearchCommandMode('translate');
+        }
+
+        const pair = this.resolveLanguagePair((pairRaw || '').replace(/→/g, '-'));
+        if (!pair) {
+            this.showNotification('语言对不可用：' + pairRaw);
+            return;
+        }
+
+        this.translateSelectedPair = pair;
+        this.updateSearchModeChip();
+        this.refreshSearchDropdownPanels();
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.focus();
+        }
+        this.showNotification('已选择 ' + pair.from.label + '→' + pair.to.label);
+    }
+
+    getWebHistory() {
+        try {
+            return JSON.parse(localStorage.getItem('oooWebCommandHistory') || '[]') || [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    setWebHistory(list) {
+        localStorage.setItem('oooWebCommandHistory', JSON.stringify(list || []));
+    }
+
+    // 记录通过命令打开的网址（存主机名用于展示，key 用于去重）
+    recordWebHistory(urlText) {
+        let parsed;
+        try {
+            parsed = new URL(urlText);
+        } catch (e) {
+            return;
+        }
+
+        let list = this.getWebHistory();
+        const rest = (parsed.pathname === '/' && !parsed.search) ? '' : parsed.pathname + parsed.search;
+        const key = parsed.origin + (rest || '/');
+
+        list = list.filter(item => item && item.key !== key);
+        list.unshift({
+            key: key,
+            host: parsed.host.replace(/^www\./, ''),
+            rest: rest
+        });
+        if (list.length > 12) {
+            list.length = 12;
+        }
+        this.setWebHistory(list);
+    }
+
+    applyWebHistoryEntry(entry) {
+        if (!entry || !entry.host) return;
+
+        if (this.searchCommandMode !== 'web') {
+            this.enterSearchCommandMode('web');
+        }
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = entry.host + (entry.rest || '');
+            const clearBtn = document.querySelector('.search-clear-btn');
+            if (clearBtn) {
+                clearBtn.style.display = 'flex';
+            }
+            searchInput.focus();
+        }
+    }
+
+    // 翻译模式的回车执行：未锁定语言对时把首词作为语言对兜底解析
+    async executeTranslateModeQuery(rawText) {
+        const text = (rawText || '').trim();
+
+        if (!text) return;
+
+        if (!this.translateSelectedPair) {
+            const inlineMatch = text.match(/^(\S+)\s+([\s\S]+)$/);
+            if (inlineMatch) {
+                const inlinePair = this.resolveLanguagePair(inlineMatch[1]);
+                if (inlinePair) {
+                    this.translateSelectedPair = inlinePair;
+                    this.updateSearchModeChip();
+                    await this.runTranslateFlow(inlineMatch[2], inlinePair);
+                    return;
+                }
+            }
+            this.showNotification('请输入语言对和文本，例如：sc-jp 你好');
+            return;
+        }
+
+        await this.runTranslateFlow(text, this.translateSelectedPair);
+    }
+
+    // 统一翻译执行：调用引擎 → 结果输出到搜索框 → 复制 → 记录历史 → 退出模式（保留结果）
+    async runTranslateFlow(text, pair) {
+        try {
+            const result = await this.translateText(text, pair.from, pair.to);
+            if (!result) {
+                throw new Error('未获得翻译结果');
+            }
+
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.value = result;
+                const clearBtn = document.querySelector('.search-clear-btn');
+                if (clearBtn) {
+                    clearBtn.style.display = 'flex';
+                }
+            }
+            this.recordTranslateHistory(pair.from, pair.to);
+            this.exitSearchCommandMode(false);
+
+            navigator.clipboard.writeText(result).then(() => {
+                this.showNotification('翻译完成，结果已输出并复制');
+            }).catch(() => {
+                this.showNotification('翻译完成，但复制到剪贴板失败');
+            });
+        } catch (err) {
+            this.showNotification('翻译失败：' + err.message);
+        }
+    }
+
+    async executeSlashCommand(trimmedQuery) {
+        const match = trimmedQuery.slice(1).match(/^(\S*)(?:\s+([\s\S]*))?$/);
+        if (!match) return;
+
+        const word = match[1] || '';
+
+        if (this.isWebCommand(word)) {
+            const url = (match[2] || '').replace(/\s+/g, '');
+            if (!url) {
+                this.showNotification('请输入网址，例如：/w google.com');
+                return;
+            }
+            this.openExternalUrl(url);
+            return;
+        }
+
+        if (this.isTranslateCommand(word)) {
+            const rest = (match[2] || '').trim();
+            if (!rest) {
+                this.showNotification('请输入语言对和文本，例如：/t sc-jp 你好');
+                return;
+            }
+
+            const parts = rest.match(/^(\S+)\s+([\s\S]+)$/);
+            if (!parts) {
+                if (/^[^\s]+-[^\s]+$/.test(rest)) {
+                    this.showNotification('请输入要翻译的文本');
+                } else {
+                    this.showNotification('格式：/t 源语言-目标语言 文本，例如：/t sc-jp 你好');
+                }
+                return;
+            }
+
+            const pair = this.resolveLanguagePair(parts[1]);
+            if (!pair) {
+                const sides = parts[1].toLowerCase().split('-');
+                this.showNotification('不支持的语言：' + sides.join(' / '));
+                return;
+            }
+
+            await this.runTranslateFlow(parts[2], pair);
+            return;
+        }
+
+        this.showNotification('未知命令：“/' + word + '”，可用命令：web(w)、translate(t)');
+    }
+
+    // 语言别名表：sc/jp/en 等缩写映射到两家引擎各自的语言代码；key 为历史记录使用的规范键
+    resolveTranslateLanguage(rawCode) {
+        const code = (rawCode || '').toLowerCase().trim();
+        if (!code) return null;
+
+        const table = [
+            { key: 'auto', label: '自动检测', aliases: ['auto', 'a', '自动'], g: 'auto', m: 'auto-detect' },
+            { key: 'sc', label: '简体中文', aliases: ['sc', 'zh-cn', 'zh', 'cn', '简体', '中文'], g: 'zh-CN', m: 'zh-Hans' },
+            { key: 'tc', label: '繁体中文', aliases: ['tc', 'zh-tw', 'tw', '繁体'], g: 'zh-TW', m: 'zh-Hant' },
+            { key: 'en', label: '英语', aliases: ['en', 'english', '英'], g: 'en', m: 'en' },
+            { key: 'ja', label: '日语', aliases: ['jp', 'jpn', 'ja', '日'], g: 'ja', m: 'ja' },
+            { key: 'ko', label: '韩语', aliases: ['kr', 'kor', 'ko', '韩'], g: 'ko', m: 'ko' },
+            { key: 'fr', label: '法语', aliases: ['fr', '法'], g: 'fr', m: 'fr' },
+            { key: 'de', label: '德语', aliases: ['de', '德'], g: 'de', m: 'de' },
+            { key: 'es', label: '西班牙语', aliases: ['es', '西'], g: 'es', m: 'es' },
+            { key: 'ru', label: '俄语', aliases: ['ru', '俄'], g: 'ru', m: 'ru' },
+            { key: 'pt', label: '葡萄牙语', aliases: ['pt', '葡'], g: 'pt', m: 'pt' },
+            { key: 'it', label: '意大利语', aliases: ['it', '意'], g: 'it', m: 'it' },
+            { key: 'th', label: '泰语', aliases: ['th', '泰'], g: 'th', m: 'th' },
+            { key: 'vi', label: '越南语', aliases: ['vi', '越'], g: 'vi', m: 'vi' },
+            { key: 'ar', label: '阿拉伯语', aliases: ['ar', '阿'], g: 'ar', m: 'ar' }
+        ];
+
+        // 允许直接用规范键匹配
+        return table.find(entry => entry.key === code || entry.aliases.includes(code)) || null;
+    }
+
+    async translateText(text, fromEntry, toEntry) {
+        if (this.currentEngine === 'bing') {
+            try {
+                return await this.fetchBingTranslate(text, fromEntry.m, toEntry.m, false);
+            } catch (err) {
+                console.warn('[搜索框翻译] Microsoft 翻译失败，回退到 Google 翻译:', err.message);
+                this.showNotification('Microsoft 翻译不可用，已改用 Google 翻译');
+            }
+        }
+        return await this.fetchGoogleTranslate(text, fromEntry.g, toEntry.g);
+    }
+
+    // 直连优先，用户配置了本地代理且直连抛错时走代理重试
+    async slashFetch(url, options) {
+        try {
+            return await fetch(url, options);
+        } catch (err) {
+            if (typeof ProxyManager !== 'undefined' && ProxyManager.isProxyEnabled()) {
+                return await ProxyManager.proxiedFetch(url, options);
+            }
+            throw err;
+        }
+    }
+
+    async fetchGoogleTranslate(text, sl, tl) {
+        const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' +
+            encodeURIComponent(sl) + '&tl=' + encodeURIComponent(tl) + '&dt=t&q=' + encodeURIComponent(text);
+
+        const response = await this.slashFetch(url);
+        if (!response.ok) {
+            throw new Error('Google 翻译服务响应异常 (HTTP ' + response.status + ')');
+        }
+
+        const data = await response.json();
+        if (!Array.isArray(data) || !Array.isArray(data[0])) {
+            throw new Error('Google 翻译结果解析失败');
+        }
+
+        return data[0].map(segment => (segment && segment[0]) ? segment[0] : '').join('');
+    }
+
+    // Microsoft(Bing) 免费接口：需先从 bing 首页抓取 IG 与防滥用 token
+    async getBingTranslateAuth(forceRefresh = false) {
+        if (!forceRefresh) {
+            try {
+                const cached = JSON.parse(localStorage.getItem('oooBingTranslateAuth') || 'null');
+                if (cached && cached.token && cached.ig && Date.now() - cached.ts < 20 * 60 * 1000) {
+                    return cached;
+                }
+            } catch (e) { /* 缓存损坏则重新获取 */ }
+        }
+
+        const response = await this.slashFetch('https://www.bing.com/');
+        const html = await response.text();
+
+        const igMatch = html.match(/IG:"([^"]+)"/);
+        const tokenMatch = html.match(/params_AbusePreventionHelper\s*=\s*\[\s*\d+\s*,\s*"([^"]+)"/);
+
+        if (!igMatch || !tokenMatch) {
+            throw new Error('无法获取 Microsoft 翻译凭证');
+        }
+
+        const auth = { ig: igMatch[1], token: tokenMatch[1], ts: Date.now() };
+        localStorage.setItem('oooBingTranslateAuth', JSON.stringify(auth));
+        return auth;
+    }
+
+    async fetchBingTranslate(text, fromCode, toCode, forceNewAuth) {
+        try {
+            const auth = await this.getBingTranslateAuth(!!forceNewAuth);
+
+            const body = new URLSearchParams({
+                from: fromCode,
+                to: toCode,
+                text: text,
+                token: auth.token,
+                key: auth.ig
+            }).toString();
+
+            const response = await this.slashFetch('https://www.bing.com/ttranslatev3?isTanslateReq=true', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            });
+
+            if (!response.ok) {
+                throw new Error('Microsoft 翻译服务响应异常 (HTTP ' + response.status + ')');
+            }
+
+            const data = await response.json();
+            if (Array.isArray(data) && data[0] && Array.isArray(data[0].translations)) {
+                return data[0].translations.map(item => item.text || '').join('');
+            }
+            throw new Error('Microsoft 翻译结果解析失败');
+        } catch (err) {
+            // 凭证失效等情况：强制刷新一次后重试
+            if (!forceNewAuth) {
+                return await this.fetchBingTranslate(text, fromCode, toCode, true);
+            }
+            throw err;
+        }
     }
 
     performGoogleLucky() {
@@ -5799,6 +6829,14 @@ class OOOInterface {
         document.getElementById('hide-info-popup-toggle').checked = this.settings.hideInfoPopup.enabled;
         document.getElementById('quick-access-sidebar-toggle').checked = this.settings.quickAccessSidebar;
         document.getElementById('hide-notifications-toggle').checked = this.settings.hideNotifications;
+        // 简洁视觉效果主开关与子开关（主开关开启时才显示子开关）
+        this.syncSimpleVisualMode();
+        document.getElementById('simple-visual-toggle').checked = this.settings.simpleVisualMode;
+        document.getElementById('hidden-badge-toggle').checked = this.settings.hiddenBadge;
+        // 固定侧边栏主开关与两个子开关
+        document.getElementById('fix-sidebar-toggle').checked = this.settings.fixSidebarEnabled;
+        document.getElementById('fix-sidebar-homepage-toggle').checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage;
+        document.getElementById('fix-sidebar-wallpaper-toggle').checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarWallpaper;
         this.updateHideInfoPopupLabel();
 
         // 根据动态模糊的状态显示/隐藏增强显示开关
@@ -5820,6 +6858,28 @@ class OOOInterface {
             iconsGroup.style.display = this.settings.quickAccessSidebar ? 'block' : 'none';
             showIconsToggle.checked = this.settings.quickAccessSidebar ? this.settings.showQuickLinkIcons : false;
         }
+
+        // 根据固定侧边栏主开关状态显示/隐藏子开关
+        const fsHomepageGroup = document.getElementById('fix-homepage-group');
+        const fsWallpaperGroup = document.getElementById('fix-wallpaper-group');
+        if (fsHomepageGroup) {
+            fsHomepageGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
+        }
+        if (fsWallpaperGroup) {
+            fsWallpaperGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
+        }
+
+        // 根据简洁视觉效果主开关状态显示/隐藏子开关
+        const simpleVisualGroups = [
+            document.getElementById('simple-notifications-group'),
+            document.getElementById('simple-infopopup-group'),
+            document.getElementById('simple-badge-group')
+        ];
+        simpleVisualGroups.forEach(group => {
+            if (group) group.style.display = this.settings.simpleVisualMode ? 'block' : 'none';
+        });
+
+        this.syncWidgetPanelUI();
 
         // 更新设置打开方式
         const badgeOpenMethodValue = this.settings.badgeOpenMethod || 'both';
@@ -6015,6 +7075,11 @@ class OOOInterface {
         if (contextFeedbackItem) {
             contextFeedbackItem.style.display = this.settings.developerMode ? '' : 'none';
         }
+
+        // 仅开发者模式可见的导出/导入按钮
+        document.querySelectorAll('.dev-only').forEach(btn => {
+            btn.style.display = this.settings.developerMode ? '' : 'none';
+        });
 
         if (this.settings.developerMode) {
             document.getElementById('font-size-slider').value = this.settings.fontSize;
@@ -6299,6 +7364,7 @@ class OOOInterface {
         this.applyWallpaper();
         this.applyDeveloperSettings();
         this.applyContextMenuStyle();
+        this.renderWidgetPanel();
 
         if (this.infoManager) {
             this.infoManager.applyHideInfoPopup();
@@ -6325,6 +7391,15 @@ class OOOInterface {
         this.handlePersistentWallpaperToggle();
         this.applyStatusBarSettings();
         this.applyColorScheme();
+
+        // 隐藏铭牌（简洁视觉效果子项）：隐藏主页面底部铭牌
+        const badge = document.getElementById('ooo-badge');
+        if (badge) {
+            badge.style.display = this.settings.hiddenBadge ? 'none' : '';
+        }
+
+        // 同步固定侧边栏状态（关闭时内部负责移除 sidebar-fixed 标记并恢复 hover 控制）
+        this.syncSidebarFixedState();
     }
 
     // ========== 主题应用 ==========
@@ -9620,7 +10695,8 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
-    document.getElementById('settings-modal').classList.add('right-panel-open');
+    const settingsModal = document.getElementById('settings-modal');
+    if (settingsModal) settingsModal.classList.add('right-panel-open');
 
     rightPanelUpper.innerHTML = '';
 
@@ -10454,3 +11530,1503 @@ OOOInterface.prototype.importBookmarksFromChrome = function (mode, folderId, dro
         self.showNotification('无法访问Chrome书签数据');
     }
 };
+
+// ============================================
+// 小组件面板（Widget Panel）
+// ============================================
+
+// 小组件类型元信息
+// allowSquare: 是否允许小尺寸（square）；allowSuper: 是否允许超大尺寸（super）
+// 内容密集型小组件（任务/AI Agent/邮箱）不允许小尺寸，否则显示错乱
+OOOInterface.prototype.WIDGET_TYPES = {
+    'clock':    { name: '大时钟', icon: 'schedule',        defaultSize: 'square', allowSquare: true,  allowSuper: false },
+    'calendar': { name: '日历',   icon: 'calendar_month',  defaultSize: 'square', allowSquare: true,  allowSuper: true  },
+    'weather':  { name: '天气',   icon: 'wb_sunny',        defaultSize: 'square', allowSquare: true,  allowSuper: false },
+    'tasks':    { name: '任务',   icon: 'checklist',       defaultSize: 'super',   allowSquare: false, allowSuper: true  },
+    'ai-agent': { name: 'AI Agent', icon: 'smart_toy',     defaultSize: 'super',   allowSquare: false, allowSuper: true  },
+    'email':    { name: '邮箱',   icon: 'mail',            defaultSize: 'super',   allowSquare: false, allowSuper: true  },
+    'upgrade-tool': { name: '升级工具', icon: 'system_update', defaultSize: 'square', allowSquare: true,  allowSuper: true  },
+};
+
+// 获取某类型允许的尺寸列表（按 小→大→超大 顺序）
+OOOInterface.prototype.getWidgetAllowedSizes = function (type) {
+    const meta = this.WIDGET_TYPES[type];
+    if (!meta) return ['square', 'rectangle', 'super'];
+    const sizes = [];
+    if (meta.allowSquare !== false) sizes.push('square');
+    sizes.push('rectangle');
+    if (meta.allowSuper === true) sizes.push('super');
+    return sizes;
+};
+
+// 纠正非法尺寸：不在允许列表内时回退到 defaultSize（再兜底到允许的最大尺寸）
+OOOInterface.prototype.normalizeWidgetSize = function (type, size) {
+    const allowed = this.getWidgetAllowedSizes(type);
+    if (allowed.indexOf(size) >= 0) return size;
+    const meta = this.WIDGET_TYPES[type];
+    if (meta && allowed.indexOf(meta.defaultSize) >= 0) return meta.defaultSize;
+    return allowed[allowed.length - 1] || 'rectangle';
+};
+
+// 尺寸显示文字
+OOOInterface.prototype.getWidgetSizeLabel = function (type, size) {
+    const s = this.normalizeWidgetSize(type, size);
+    return s === 'rectangle' ? '大' : s === 'super' ? '超大' : '小';
+};
+
+// 小组件实例化
+OOOInterface.prototype.createWidgetInstance = function (config) {
+    const baseConfig = {
+        id: config.id,
+        type: config.type,
+        size: this.normalizeWidgetSize(config.type, config.size),
+        data: config.data || {},
+        ooo: this
+    };
+    switch (config.type) {
+        case 'clock': return new ClockWidget(baseConfig);
+        case 'calendar': return new CalendarWidget(baseConfig);
+        case 'weather': return new WeatherWidget(baseConfig);
+        case 'tasks': return new TasksWidget(baseConfig);
+        case 'ai-agent': return new AiAgentWidget(baseConfig);
+        case 'email': return new EmailWidget(baseConfig);
+        case 'upgrade-tool': return new UpgradeToolWidget(baseConfig);
+        default: return null;
+    }
+};
+
+// 渲染小组件网格
+OOOInterface.prototype.renderWidgetPanel = function () {
+    const grid = document.getElementById('widget-panel-grid');
+    if (!grid) return;
+
+    // 销毁旧实例
+    if (this.widgetInstances) {
+        this.widgetInstances.forEach(w => {
+            try { w.destroy(); } catch (e) { /* 忽略 */ }
+        });
+    }
+    this.widgetInstances = [];
+    grid.innerHTML = '';
+
+    const widgets = (this.settings.widgetPanel && Array.isArray(this.settings.widgetPanel.widgets))
+        ? this.settings.widgetPanel.widgets : [];
+
+    if (widgets.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'widget-panel-empty';
+        empty.textContent = '暂无小组件，可在设置中添加';
+        grid.appendChild(empty);
+    } else {
+        widgets.forEach(config => {
+            const widget = this.createWidgetInstance(config);
+            if (widget) {
+                try {
+                    widget.render(grid);
+                    this.widgetInstances.push(widget);
+                } catch (e) {
+                    console.warn('[WidgetPanel] 渲染小组件失败:', config.type, e);
+                }
+            }
+        });
+    }
+
+    this.updateWidgetPanelVisibility();
+
+    // 长方形高度 = 正方形宽度（列宽），通过 JS 计算确保与正方形完全一致
+    this.syncWidgetCardHeights();
+};
+
+// 同步小组件网格行高：行高 = 列宽（正方形宽度），所有卡片自动填满行高
+OOOInterface.prototype.syncWidgetCardHeights = function () {
+    const grid = document.getElementById('widget-panel-grid');
+    if (!grid) return;
+
+    // 等待布局完成后再测量
+    requestAnimationFrame(() => {
+        if (!grid.isConnected) return;
+        const gap = 8; // grid gap（与 CSS 一致）
+        const colWidth = (grid.clientWidth - gap) / 2;
+        if (!(colWidth > 0)) return;
+
+        // 设置 grid 行高 = 正方形宽度（列宽）
+        // 正方形（1列）与长方形（2列）均被 stretch 填满行高，两者高度完全一致
+        grid.style.gridAutoRows = colWidth + 'px';
+    });
+};
+
+// 面板是否可用：无开关（开关已移除），完全由列表是否为空决定
+OOOInterface.prototype.isWidgetPanelActive = function () {
+    return !!(this.settings.widgetPanel
+        && Array.isArray(this.settings.widgetPanel.widgets)
+        && this.settings.widgetPanel.widgets.length > 0);
+};
+
+// 根据设置更新面板可见性
+OOOInterface.prototype.updateWidgetPanelVisibility = function () {
+    const panel = document.getElementById('widget-panel');
+    const container = document.getElementById('widget-panel-container');
+    if (!panel) return;
+    const enabled = this.isWidgetPanelActive();
+    if (enabled) {
+        panel.classList.add('active');
+        // 重新初始化交互（处理"先禁用再启用"的情况，确保 mousemove 监听器已绑定）
+        if (!this._widgetPanelMouseMoveHandler) {
+            this.initWidgetPanel();
+            return;
+        }
+        // 当前视图处于固定状态时，面板显隐由固定配置接管
+        const fixed = this.isScrolled
+            ? this.settings.fixSidebarWallpaper
+            : (this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage);
+        if (fixed) {
+            this.syncSidebarFixedState();
+            return;
+        }
+        // 确保容器初始为隐藏状态（与侧边栏保持一致）
+        if (container) {
+            container.classList.remove('visible');
+            container.classList.add('hiding');
+        }
+    } else {
+        panel.classList.remove('active');
+        // 无小组件时始终隐藏面板容器（不显示空面板）
+        if (container) {
+            container.classList.remove('visible');
+            container.classList.add('hiding');
+        }
+        document.body.classList.remove('widget-panel-open');
+        this.cleanupWidgetPanel();
+    }
+};
+
+// 壁纸模式切换时同步侧边栏与小组件面板的显示状态
+// wallpaperMode=true：进入壁纸模式，由"壁纸模式固定"（独立于主开关）决定是否常显示
+// wallpaperMode=false：退出壁纸模式，主开关开启时由"主页面固定"接管，否则恢复 hover 控制
+OOOInterface.prototype.syncWidgetPanelsForWallpaper = function (wallpaperMode) {
+    // 进入壁纸模式：壁纸模式固定独立生效，一律由固定配置接管
+    if (wallpaperMode) {
+        this.syncSidebarFixedState();
+        return;
+    }
+
+    // 退出壁纸模式：主开关开启时由固定配置接管（主页面固定）
+    if (this.settings.fixSidebarEnabled) {
+        this.syncSidebarFixedState();
+        return;
+    }
+
+    // 恢复 hover 控制：清除 visible 与推动残留（widget-panel-open / sidebar-visible）
+    const sidebarContainer = document.getElementById('quick-access-sidebar-container');
+    const widgetContainer = document.getElementById('widget-panel-container');
+    document.body.classList.remove('widget-panel-open');
+    document.body.classList.remove('sidebar-visible');
+    document.body.classList.remove('sidebar-fixed');
+    [sidebarContainer, widgetContainer].forEach(container => {
+        if (!container) return;
+        container.classList.remove('visible');
+        container.classList.add('hiding');
+    });
+};
+
+// 根据固定侧边栏配置同步侧边栏与小组件面板的显示状态
+// 壁纸模式下：常显示由"壁纸模式固定"独立控制（不受主开关限制）
+// 主页面下：固定由"主开关 + 主页面固定"控制
+OOOInterface.prototype.syncSidebarFixedState = function () {
+    const sidebarContainer = document.getElementById('quick-access-sidebar-container');
+    const widgetContainer = document.getElementById('widget-panel-container');
+    // sidebar-fixed 标记：主开关开启或壁纸模式固定关闭时需要（后者用于 CSS 覆盖 body.scrolled 的常显示规则）
+    document.body.classList.toggle('sidebar-fixed', !!this.settings.fixSidebarEnabled || !this.settings.fixSidebarWallpaper);
+
+    // 当前视图是否固定显示（壁纸模式固定独立生效）
+    const fixed = this.isScrolled
+        ? this.settings.fixSidebarWallpaper
+        : (this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage);
+    // 侧边栏固定还需快速访问侧边栏功能开启；小组件面板固定还需面板有内容
+    const sidebarFixed = fixed && this.settings.quickAccessSidebar;
+    const widgetFixed = fixed && this.isWidgetPanelActive();
+
+    if (sidebarFixed) {
+        // 固定显示：清除 hiding 残留，确保可见
+        sidebarContainer.classList.remove('hiding');
+        if (!sidebarContainer.classList.contains('visible')) {
+            sidebarContainer.classList.add('visible');
+        }
+    } else {
+        sidebarContainer.classList.remove('visible');
+        sidebarContainer.classList.add('hiding');
+    }
+
+    if (widgetFixed) {
+        // 固定显示：清除 hiding 残留，确保可见
+        widgetContainer.classList.remove('hiding');
+        if (!widgetContainer.classList.contains('visible')) {
+            widgetContainer.classList.add('visible');
+        }
+    } else {
+        widgetContainer.classList.remove('visible');
+        widgetContainer.classList.add('hiding');
+    }
+
+    // 清除推动残留（widget-panel-open / sidebar-visible），避免固定状态误触发推挤
+    document.body.classList.remove('widget-panel-open');
+    document.body.classList.remove('sidebar-visible');
+};
+
+// 初始化左侧小组件面板交互
+OOOInterface.prototype.initWidgetPanel = function () {
+    // 幂等：若 mousemove 监听器已绑定（非首次调用），跳过
+    if (this._widgetPanelMouseMoveHandler) return;
+    const container = document.getElementById('widget-panel-container');
+    const panel = document.getElementById('widget-panel');
+
+    if (!container || !panel) return;
+
+    let hideTimeout = null;
+    let isVisible = false;
+    const TRIGGER_ZONE_WIDTH = 100;   // 左侧触发区域宽度（像素）
+    const HIDE_DELAY = 0;            // 鼠标离开后延一帧隐藏（防抖窗口：快速移回则 clearTimeout 先于回调执行）
+
+    const showPanel = () => {
+        if (!this.isWidgetPanelActive()) return;
+        const modal = document.getElementById('settings-modal');
+        if (modal && modal.classList.contains('show')) return;
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+        }
+        if (!isVisible) {
+            isVisible = true;
+            container.classList.remove('hiding');
+            container.classList.add('visible');
+            document.body.classList.add('widget-panel-open');
+            // 面板可见后重新同步卡片高度（隐藏时无法测量宽度）
+            this.syncWidgetCardHeights();
+        }
+    };
+
+    const scheduleHide = () => {
+        if (hideTimeout) clearTimeout(hideTimeout);
+        hideTimeout = setTimeout(() => {
+            if (!isVisible) return;
+            // 当前视图处于固定模式时，不被 hover 隐藏
+            if (this.isSidebarFixed()) return;
+            // HIDE_DELAY=0 提供一帧窗口：若鼠标仍在面板上，下一帧 mousemove 会触发 showPanel 清除此回调
+            isVisible = false;
+            container.classList.remove('visible');
+            container.classList.add('hiding');
+            document.body.classList.remove('widget-panel-open');
+            hideTimeout = null;
+        }, HIDE_DELAY);
+    };
+
+    // 全局鼠标移动检测：触发区显示面板，鼠标进入面板范围维持显示，离开则关闭
+    const widgetPanelMouseMoveHandler = (e) => {
+        if (!this.isWidgetPanelActive()) return;
+        const modal = document.getElementById('settings-modal');
+        if (modal && modal.classList.contains('show')) return;
+        const mouseX = e.clientX;
+
+        if (mouseX <= TRIGGER_ZONE_WIDTH) {
+            // 当前视图处于固定模式时，无需 hover 触发
+            if (this.isSidebarFixed()) return;
+            showPanel();
+        } else if (!this.isSidebarFixed()) {
+            const containerRect = container.getBoundingClientRect();
+            const isOverContainer = (
+                mouseX >= containerRect.left &&
+                mouseX <= containerRect.right &&
+                e.clientY >= containerRect.top &&
+                e.clientY <= containerRect.bottom
+            );
+            if (isOverContainer) {
+                showPanel();
+            } else if (isVisible) {
+                scheduleHide();
+            }
+        }
+    };
+    this._widgetPanelMouseMoveHandler = widgetPanelMouseMoveHandler;
+    document.addEventListener('mousemove', widgetPanelMouseMoveHandler);
+
+    // 面板滚轮：内容溢出时拦截（只滚动面板内容，不触发壁纸模式进退）；
+    // 内容不溢出时放行（交给页面滚动处理）
+    const panelWheelHandler = (e) => {
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        if (maxScroll <= 0) return; // 内容不溢出，放行
+        e.stopPropagation();        // 内容溢出：拦截，只滚动面板内容
+    };
+    this._widgetPanelEl = panel;
+    this._widgetPanelContainer = container;
+    this._widgetPanelWheelHandler = panelWheelHandler;
+    panel.addEventListener('wheel', panelWheelHandler, { passive: true });
+    container.addEventListener('wheel', panelWheelHandler, { passive: true });
+};
+
+OOOInterface.prototype.cleanupWidgetPanel = function () {
+    if (this._widgetPanelMouseMoveHandler) {
+        document.removeEventListener('mousemove', this._widgetPanelMouseMoveHandler);
+        this._widgetPanelMouseMoveHandler = null;
+    }
+    if (this._widgetPanelWheelHandler) {
+        if (this._widgetPanelEl) this._widgetPanelEl.removeEventListener('wheel', this._widgetPanelWheelHandler);
+        if (this._widgetPanelContainer) this._widgetPanelContainer.removeEventListener('wheel', this._widgetPanelWheelHandler);
+        this._widgetPanelWheelHandler = null;
+    }
+};
+
+// 同步设置页 UI
+OOOInterface.prototype.syncWidgetPanelUI = function () {
+    const manageGroup = document.getElementById('widget-panel-manage-group');
+    if (!manageGroup) return;
+    // 始终显示，列表为空时由管理界面提示"暂无小组件"
+    manageGroup.style.display = 'block';
+};
+
+// 保存小组件设置（所有 widget 数据持久化）
+OOOInterface.prototype.saveWidgetSettings = function () {
+    this.saveSettings();
+};
+
+// 保存单个小组件数据（由 WidgetBase.persist 调用）
+OOOInterface.prototype.saveWidgetData = function (widgetId, data) {
+    const widgets = this.settings.widgetPanel && this.settings.widgetPanel.widgets;
+    if (!Array.isArray(widgets)) return;
+    const idx = widgets.findIndex(w => w.id === widgetId);
+    if (idx >= 0) {
+        widgets[idx].data = data;
+        this.saveSettings();
+    }
+};
+
+// 打开设置并定位到小组件管理
+OOOInterface.prototype.openWidgetSettings = function (widgetId) {
+    this.openSettings('badge');
+    setTimeout(() => {
+        this.showWidgetPanelMenuInRightPanel();
+        // 尝试滚动到指定小组件
+        if (widgetId) {
+            setTimeout(() => {
+                const item = document.querySelector(`.widget-menu-item[data-widget-id="${widgetId}"]`);
+                if (item) item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 150);
+        }
+    }, 100);
+};
+
+// 设置右面板：小组件管理界面
+OOOInterface.prototype.showWidgetPanelMenuInRightPanel = function () {
+    const self = this;
+    const rightPanelUpper = document.getElementById('right-panel-upper');
+    if (!rightPanelUpper) return;
+    const settingsModal = document.getElementById('settings-modal');
+    if (settingsModal) settingsModal.classList.add('right-panel-open');
+
+    rightPanelUpper.innerHTML = '';
+
+    const container = document.createElement('div');
+    container.className = 'settings-menu-container slide-in-right';
+
+    const listContainer = document.createElement('div');
+    listContainer.className = 'widget-panel-list-container';
+    container.appendChild(listContainer);
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'settings-menu-button-container';
+
+    const plusBtn = document.createElement('button');
+    plusBtn.className = 'upload-btn settings-plus-btn';
+    plusBtn.textContent = '+';
+    plusBtn.title = '添加小组件';
+
+    // 导出按钮
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'settings-import-btn settings-export-btn';
+    exportBtn.title = '导出小组件配置为 JSON';
+    exportBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+
+    // 导入按钮
+    const importBtn = document.createElement('button');
+    importBtn.className = 'settings-import-btn';
+    importBtn.title = '导入小组件配置';
+    importBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+    const ioRow = document.createElement('div');
+    ioRow.className = 'quick-links-io-row';
+    ioRow.appendChild(exportBtn);
+    ioRow.appendChild(importBtn);
+
+    buttonContainer.appendChild(ioRow);
+    buttonContainer.appendChild(plusBtn);
+    container.appendChild(buttonContainer);
+
+    rightPanelUpper.appendChild(container);
+
+    this.updateWidgetPanelListInMenu(listContainer);
+
+    // "+" 按钮：显示类型选择器
+    plusBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        self.showWidgetTypePicker(container, listContainer, buttonContainer);
+    });
+
+    // 导出
+    exportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        self.exportWidgets();
+    });
+
+    // 导入
+    importBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.addEventListener('change', () => {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => self.importWidgets(reader.result, listContainer);
+            reader.readAsText(file);
+        });
+        input.click();
+    });
+};
+
+// 右面板：小组件列表（支持拖拽排序 + 点击编辑，参考快速访问链接）
+OOOInterface.prototype.updateWidgetPanelListInMenu = function (listContainer) {
+    const self = this;
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    const widgets = (this.settings.widgetPanel && Array.isArray(this.settings.widgetPanel.widgets))
+        ? this.settings.widgetPanel.widgets : [];
+
+    if (widgets.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'quick-links-empty';
+        empty.textContent = '暂无小组件，可在设置中添加';
+        listContainer.appendChild(empty);
+        return;
+    }
+
+    // 使用 DocumentFragment 批量构建条目
+    const fragment = document.createDocumentFragment();
+
+    widgets.forEach((widget, index) => {
+        const meta = this.WIDGET_TYPES[widget.type] || { name: widget.type, icon: 'widgets' };
+
+        const item = document.createElement('div');
+        item.className = 'widget-menu-item';
+        item.setAttribute('data-index', index);
+        item.setAttribute('data-widget-id', widget.id);
+        item.draggable = true;
+
+        // 拖拽手柄（复用快速访问链接样式）
+        const dragHandle = document.createElement('div');
+        dragHandle.className = 'quick-link-drag-handle';
+        dragHandle.innerHTML = '<span></span><span></span>';
+        dragHandle.title = '拖拽排序';
+
+        const typeIcon = document.createElement('span');
+        typeIcon.className = 'material-icons';
+        typeIcon.style.cssText = 'font-size:20px;color:var(--scheme-accent);flex-shrink:0;';
+        typeIcon.textContent = meta.icon;
+
+        const info = document.createElement('div');
+        info.className = 'widget-menu-info';
+
+        const nameRow = document.createElement('div');
+        nameRow.className = 'widget-menu-name';
+
+        const name = document.createElement('span');
+        name.textContent = meta.name;
+        nameRow.appendChild(name);
+
+        const typeLabel = document.createElement('span');
+        typeLabel.className = 'widget-type-label';
+        typeLabel.textContent = self.getWidgetSizeLabel(widget.type, widget.size);
+        nameRow.appendChild(typeLabel);
+
+        const sub = document.createElement('div');
+        sub.className = 'widget-menu-sub';
+        sub.textContent = self.getWidgetSubtitle(widget);
+
+        info.appendChild(nameRow);
+        info.appendChild(sub);
+
+        // 点击条目编辑（参考快速访问链接）
+        info.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const container = listContainer.closest('.settings-menu-container');
+            const currentIndex = parseInt(item.getAttribute('data-index'), 10);
+            const currentWidget = self.settings.widgetPanel.widgets[currentIndex];
+            if (currentWidget) {
+                self.showWidgetConfigForm(listContainer, currentWidget);
+            }
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-link-menu-btn';
+        deleteBtn.textContent = '×';
+        deleteBtn.title = '删除小组件';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const currentIndex = parseInt(item.getAttribute('data-index'), 10);
+            if (isNaN(currentIndex) || currentIndex < 0 || currentIndex >= self.settings.widgetPanel.widgets.length) return;
+            const removed = self.settings.widgetPanel.widgets[currentIndex];
+            const removedName = self.WIDGET_TYPES[removed.type] ? self.WIDGET_TYPES[removed.type].name : '小组件';
+            self.settings.widgetPanel.widgets.splice(currentIndex, 1);
+            self.saveWidgetSettings();
+            self.renderWidgetPanel();
+            self.updateWidgetPanelListInMenu(listContainer);
+            self.showNotification('"' + removedName + '" 已删除');
+        });
+
+        item.appendChild(dragHandle);
+        item.appendChild(typeIcon);
+        item.appendChild(info);
+        item.appendChild(deleteBtn);
+        fragment.appendChild(item);
+
+        // ===== 拖拽排序（参考快速访问链接） =====
+
+        item.addEventListener('dragstart', (e) => {
+            item.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', 'move');
+            e.dataTransfer.effectAllowed = 'move';
+            // 清除默认拖拽半透明预览
+            const blankImg = new Image();
+            blankImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            e.dataTransfer.setDragImage(blankImg, 0, 0);
+        });
+
+        item.addEventListener('dragend', () => {
+            item.classList.remove('dragging');
+            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
+            listContainer.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        });
+
+        item.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const dragged = listContainer.querySelector('.dragging');
+            if (!dragged || dragged === item) return;
+
+            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
+
+            const rect = item.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const insertBefore = e.clientY < midY;
+
+            const indicator = document.createElement('div');
+            indicator.className = 'drag-indicator';
+            if (insertBefore) {
+                item.parentNode.insertBefore(indicator, item);
+            } else {
+                item.parentNode.insertBefore(indicator, item.nextSibling);
+            }
+        });
+
+        item.addEventListener('dragleave', (e) => {
+            if (e.target === item) {
+                const indicator = item.parentNode.querySelector('.drag-indicator');
+                if (indicator) indicator.remove();
+            }
+        });
+
+        item.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const dragged = listContainer.querySelector('.dragging');
+            if (!dragged) return;
+
+            const indicator = listContainer.querySelector('.drag-indicator');
+            if (!indicator) return;
+
+            const referenceNode = indicator.nextSibling;
+            indicator.remove();
+
+            if (referenceNode) {
+                listContainer.insertBefore(dragged, referenceNode);
+            } else {
+                listContainer.appendChild(dragged);
+            }
+
+            // 更新所有项的 data-index
+            const allItems = listContainer.querySelectorAll('.widget-menu-item');
+            allItems.forEach((el, i) => {
+                el.setAttribute('data-index', i);
+            });
+
+            // 根据 DOM 顺序重建设置数组（按 widget id 重新排列，保留原对象引用）
+            const newWidgets = [];
+            allItems.forEach(el => {
+                const wid = el.getAttribute('data-widget-id');
+                const w = self.settings.widgetPanel.widgets.find(x => x.id === wid);
+                if (w) newWidgets.push(w);
+            });
+
+            self.settings.widgetPanel.widgets = newWidgets;
+            self.saveWidgetSettings();
+            self.renderWidgetPanel();
+            self.showNotification('顺序已调整');
+        });
+    });
+
+    listContainer.appendChild(fragment);
+};
+
+// 小组件副标题（显示配置摘要）
+OOOInterface.prototype.getWidgetSubtitle = function (widget) {
+    const data = widget.data || {};
+    switch (widget.type) {
+        case 'weather': return data.city ? '城市：' + data.city : '默认城市：南昌';
+        case 'ai-agent': return data.port ? '端口：' + data.port : '未配置端口';
+        case 'email': return data.apiUrl ? 'API：' + data.apiUrl : (data.provider || 'gmail');
+        case 'tasks': {
+            const n = Array.isArray(data.items) ? data.items.length : 0;
+            return '任务' + (n ? ' · ' + n + ' 个' : '');
+        }
+        case 'clock': return '本地时间';
+        case 'calendar': return '本地日期与农历';
+        default: return '';
+    }
+};
+
+// 右面板：类型选择器
+OOOInterface.prototype.showWidgetTypePicker = function (container, listContainer, buttonContainer) {
+    const self = this;
+
+    // 标记当前子视图（ESC 返回列表用）
+    const rpu = document.getElementById('right-panel-upper');
+    if (rpu) rpu.dataset.subView = 'widget-type-picker';
+
+    // 添加流程中隐藏底部导出/导入/+ 按钮
+    if (buttonContainer) {
+        const ioRow = buttonContainer.querySelector('.quick-links-io-row');
+        const plusBtn = buttonContainer.querySelector('.settings-plus-btn');
+        if (ioRow) ioRow.style.display = 'none';
+        if (plusBtn) plusBtn.style.display = 'none';
+    }
+
+    const exitTo = (fn) => {
+        self.exitWidgetFormView(listContainer, () => {
+            self.restoreWidgetPanelButtons();
+            fn && fn();
+        });
+    };
+
+    this.showWidgetFormView(listContainer, (view) => {
+        const title = document.createElement('div');
+        title.className = 'widget-add-form';
+        title.style.cssText = 'padding-bottom:0;';
+        const tRow = document.createElement('div');
+        tRow.className = 'widget-add-form-row';
+        const tLabel = document.createElement('label');
+        tLabel.textContent = '选择小组件类型';
+        tRow.appendChild(tLabel);
+        title.appendChild(tRow);
+        view.appendChild(title);
+
+        const picker = document.createElement('div');
+        picker.className = 'widget-type-picker';
+
+        Object.keys(self.WIDGET_TYPES).forEach(type => {
+            const meta = self.WIDGET_TYPES[type];
+            const item = document.createElement('button');
+            item.className = 'widget-type-picker-item';
+            item.innerHTML = '<span class="material-icons">' + meta.icon + '</span><span>' + meta.name + '</span>';
+            item.addEventListener('click', () => {
+                // 先滑出类型选择器，再进入配置表单
+                self.exitWidgetFormView(listContainer, () => {
+                    self.showWidgetConfigForm(listContainer, null, type);
+                });
+            });
+            picker.appendChild(item);
+        });
+
+        view.appendChild(picker);
+
+        // 返回按钮
+        const backRow = document.createElement('div');
+        backRow.className = 'widget-add-form';
+        backRow.style.cssText = 'padding-top:0;';
+        const backBtn = document.createElement('button');
+        backBtn.className = 'widget-add-form-btn cancel';
+        backBtn.textContent = '← 返回列表';
+        backBtn.addEventListener('click', () => {
+            exitTo(() => self.updateWidgetPanelListInMenu(listContainer));
+        });
+        backRow.appendChild(backBtn);
+        view.appendChild(backRow);
+    });
+};
+
+// 在列表容器中显示表单视图（带滑入动画）
+OOOInterface.prototype.showWidgetFormView = function (listContainer, buildContentFn) {
+    listContainer.innerHTML = '';
+    const view = document.createElement('div');
+    view.className = 'widget-form-view';
+    buildContentFn(view);
+    listContainer.appendChild(view);
+    requestAnimationFrame(() => {
+        view.classList.add('slide-in-right');
+    });
+    return view;
+};
+
+// 退出表单视图（表单内容 + 底部按钮同步滑出，动画结束后执行回调）
+OOOInterface.prototype.exitWidgetFormView = function (listContainer, callback) {
+    const view = listContainer.querySelector('.widget-form-view');
+
+    // 底部表单按钮（确定/取消）同步滑出
+    const rpu = document.getElementById('right-panel-upper');
+    const buttonContainer = rpu ? rpu.querySelector('.settings-menu-button-container') : null;
+    const btnRow = buttonContainer ? buttonContainer.querySelector('.widget-form-bottom-buttons') : null;
+
+    const targets = [];
+    if (view) targets.push(view);
+    if (btnRow) targets.push(btnRow);
+
+    if (targets.length === 0) {
+        if (callback) callback();
+        return;
+    }
+
+    let pending = targets.length;
+    const onDone = () => {
+        pending--;
+        if (pending > 0) return;
+        targets.forEach(t => {
+            if (t.parentNode) t.parentNode.removeChild(t);
+        });
+        if (callback) callback();
+    };
+
+    targets.forEach(t => {
+        t.classList.remove('slide-in-right');
+        t.classList.add('slide-out-right');
+        t.addEventListener('animationend', onDone, { once: true });
+        // 兜底：动画异常时 300ms 后强制完成
+        setTimeout(() => {
+            if (t.parentNode) {
+                t.dispatchEvent(new Event('animationend'));
+            }
+        }, 300);
+    });
+};
+
+// 恢复小组件面板底部按钮（导出/导入/+），移除表单底部按钮并清除 subView
+OOOInterface.prototype.restoreWidgetPanelButtons = function () {
+    const rpu = document.getElementById('right-panel-upper');
+    if (!rpu) return;
+    const container = rpu.querySelector('.settings-menu-container');
+    const buttonContainer = container ? container.querySelector('.settings-menu-button-container') : null;
+    if (buttonContainer) {
+        const ioRow = buttonContainer.querySelector('.quick-links-io-row');
+        const plusBtn = buttonContainer.querySelector('.settings-plus-btn');
+        const formBtns = buttonContainer.querySelector('.widget-form-bottom-buttons');
+        if (ioRow) ioRow.style.display = '';
+        if (plusBtn) plusBtn.style.display = '';
+        if (formBtns && formBtns.parentNode) formBtns.parentNode.removeChild(formBtns);
+
+        // 恢复的按钮滑入（避免闪现）
+        requestAnimationFrame(() => {
+            if (ioRow) {
+                ioRow.classList.remove('slide-in-right');
+                void ioRow.offsetWidth; // 强制回流以重启动画
+                ioRow.classList.add('slide-in-right');
+            }
+            if (plusBtn) {
+                plusBtn.classList.remove('slide-in-right');
+                void plusBtn.offsetWidth;
+                plusBtn.classList.add('slide-in-right');
+            }
+        });
+    }
+    delete rpu.dataset.subView;
+};
+
+// 右面板：小组件配置/添加表单
+// widget 为 null 时是添加新小组件；否则是编辑现有配置
+OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, presetType) {
+    const self = this;
+    const type = widget ? widget.type : presetType;
+    if (!type || !this.WIDGET_TYPES[type]) return;
+
+    const meta = this.WIDGET_TYPES[type];
+    const data = widget ? (widget.data || {}) : {};
+    const currentSize = this.normalizeWidgetSize(type, widget ? widget.size : meta.defaultSize);
+
+    // 找到底部按钮容器（导出/导入/+ 所在位置）
+    const container = listContainer.closest('.settings-menu-container');
+    const buttonContainer = container ? container.querySelector('.settings-menu-button-container') : null;
+
+    // 标记当前子视图（ESC 返回列表用）
+    const rpu = document.getElementById('right-panel-upper');
+    if (rpu) rpu.dataset.subView = 'widget-config';
+
+    // 进入表单模式：隐藏导出/导入/+ 按钮
+    let ioRow = null, plusBtn = null;
+    if (buttonContainer) {
+        ioRow = buttonContainer.querySelector('.quick-links-io-row');
+        plusBtn = buttonContainer.querySelector('.settings-plus-btn');
+        if (ioRow) ioRow.style.display = 'none';
+        if (plusBtn) plusBtn.style.display = 'none';
+    }
+
+    listContainer.innerHTML = '';
+
+    // 表单视图容器（带滑入动画）
+    const formView = document.createElement('div');
+    formView.className = 'widget-form-view';
+    listContainer.appendChild(formView);
+
+    const form = document.createElement('div');
+    form.className = 'widget-add-form';
+
+    // 类型（只读展示）
+    const typeRow = document.createElement('div');
+    typeRow.className = 'widget-add-form-row';
+    const typeLabel = document.createElement('label');
+    typeLabel.textContent = '类型';
+    const typeVal = document.createElement('div');
+    typeVal.textContent = meta.name;
+    typeVal.style.cssText = 'font-size:13px;color:var(--text-color);';
+    typeRow.appendChild(typeLabel);
+    typeRow.appendChild(typeVal);
+    form.appendChild(typeRow);
+
+    // 尺寸分段滑块（iOS 26 分段切换器风格：小 / 大 / 超大）
+    // 允许尺寸由类型元信息决定：不允许小尺寸的类型（任务/AI Agent/邮箱）只显示 大/超大
+    const allowedSizes = this.getWidgetAllowedSizes(type);
+    const currentIdx = allowedSizes.indexOf(currentSize);
+    const hasSuper = allowedSizes.indexOf('super') >= 0;
+    const hasSquare = allowedSizes.indexOf('square') >= 0;
+
+    const sizeRow = document.createElement('div');
+    sizeRow.className = 'widget-size-row';
+    const sizeLabel = document.createElement('label');
+    sizeLabel.textContent = '尺寸';
+
+    const seg = document.createElement('div');
+    seg.className = 'widget-size-segmented ' + (allowedSizes.length === 3 ? 'seg-3' : 'seg-2')
+        + (hasSquare ? '' : ' no-square');
+
+    const segThumb = document.createElement('div');
+    segThumb.className = 'widget-size-seg-thumb';
+
+    let squareLbl = null;
+    if (hasSquare) {
+        squareLbl = document.createElement('span');
+        squareLbl.className = 'widget-size-seg-label widget-size-seg-label-square';
+        squareLbl.textContent = '小';
+    }
+
+    const rectLbl = document.createElement('span');
+    rectLbl.className = 'widget-size-seg-label widget-size-seg-label-rect';
+    rectLbl.textContent = '大';
+
+    let superLbl = null;
+    if (hasSuper) {
+        superLbl = document.createElement('span');
+        superLbl.className = 'widget-size-seg-label widget-size-seg-label-super';
+        superLbl.textContent = '超大';
+    }
+
+    // 透明 range 覆盖层：负责拖动与点击切换（视觉由下方分段控件呈现）
+    const sizeSlider = document.createElement('input');
+    sizeSlider.type = 'range';
+    sizeSlider.min = '0';
+    sizeSlider.max = String(allowedSizes.length - 1);
+    sizeSlider.step = '1';
+    sizeSlider.className = 'widget-size-seg-input';
+    sizeSlider.value = String(currentIdx >= 0 ? currentIdx : 0);
+
+    seg.appendChild(segThumb);
+    if (squareLbl) seg.appendChild(squareLbl);
+    seg.appendChild(rectLbl);
+    if (superLbl) seg.appendChild(superLbl);
+    seg.appendChild(sizeSlider);
+
+    const updateSeg = () => {
+        const v = sizeSlider.value;
+        const idx = parseInt(v, 10);
+        const size = allowedSizes[idx] || allowedSizes[allowedSizes.length - 1];
+        seg.classList.toggle('rect', size === 'rectangle');
+        seg.classList.toggle('super', size === 'super');
+        if (squareLbl) squareLbl.classList.toggle('active', size === 'square');
+        rectLbl.classList.toggle('active', size === 'rectangle');
+        if (superLbl) superLbl.classList.toggle('active', size === 'super');
+    };
+    sizeSlider.addEventListener('input', updateSeg);
+    updateSeg();
+
+    sizeRow.appendChild(sizeLabel);
+    sizeRow.appendChild(seg);
+    form.appendChild(sizeRow);
+
+    // 类型专属配置
+    const extraFields = {};
+
+    if (type === 'weather') {
+        const cityRow = document.createElement('div');
+        cityRow.className = 'widget-add-form-row';
+        const cityLabel = document.createElement('label');
+        cityLabel.textContent = '城市（默认南昌，留空自动定位）';
+        cityRow.appendChild(cityLabel);
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'widget-input-row';
+        const cityInput = document.createElement('input');
+        cityInput.type = 'text';
+        cityInput.placeholder = '城市';
+        cityInput.value = data.city && data.city !== '当前位置' ? data.city : '';
+        inputWrap.appendChild(cityInput);
+        const geoBtn = document.createElement('button');
+        geoBtn.className = 'widget-input-btn';
+        geoBtn.innerHTML = '<span class="material-icons" style="font-size:15px">my_location</span>定位';
+        geoBtn.addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    pos => { cityInput.value = '当前位置'; },
+                    () => { cityInput.value = '定位失败，请手动输入'; }
+                );
+            } else {
+                cityInput.value = '浏览器不支持定位';
+            }
+        });
+        inputWrap.appendChild(geoBtn);
+        cityRow.appendChild(inputWrap);
+        form.appendChild(cityRow);
+        extraFields.city = cityInput;
+    }
+
+    if (type === 'ai-agent') {
+        const portRow = document.createElement('div');
+        portRow.className = 'widget-add-form-row';
+        const portLabel = document.createElement('label');
+        portLabel.textContent = '端口号';
+        portRow.appendChild(portLabel);
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'widget-input-row';
+        const portInput = document.createElement('input');
+        portInput.type = 'number';
+        portInput.min = '1';
+        portInput.max = '65535';
+        portInput.placeholder = '如：8899';
+        portInput.value = data.port || '';
+        inputWrap.appendChild(portInput);
+        const testBtn = document.createElement('button');
+        testBtn.className = 'widget-input-btn';
+        testBtn.innerHTML = '<span class="material-icons" style="font-size:15px">speed</span>测试';
+        testBtn.addEventListener('click', () => {
+            const port = portInput.value.trim();
+            if (!port) { portInput.value = '端口号'; return; }
+            self.showNotification('正在测试 127.0.0.1:' + port + '…');
+        });
+        inputWrap.appendChild(testBtn);
+        portRow.appendChild(inputWrap);
+        const hint = document.createElement('div');
+        hint.className = 'widget-add-form-hint';
+        hint.textContent = 'AI Agent 服务地址为 127.0.0.1:' + (data.port || '端口号') + '，需本地已运行对应服务';
+        portRow.appendChild(hint);
+        form.appendChild(portRow);
+        extraFields.port = portInput;
+    }
+
+    if (type === 'email') {
+        // 服务商选择
+        const providerRow = document.createElement('div');
+        providerRow.className = 'widget-add-form-row';
+        const providerLabel = document.createElement('label');
+        providerLabel.textContent = '邮箱服务商';
+        const providerSelect = document.createElement('select');
+        const providers = [
+            { v: 'gmail', t: 'Gmail' },
+            { v: 'outlook', t: 'Outlook' },
+            { v: 'qq', t: 'QQ邮箱' },
+            { v: 'custom', t: '自定义' }
+        ];
+        providers.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.v;
+            opt.textContent = p.t;
+            providerSelect.appendChild(opt);
+        });
+        providerSelect.value = data.provider || 'gmail';
+        providerRow.appendChild(providerLabel);
+        providerRow.appendChild(providerSelect);
+        form.appendChild(providerRow);
+
+        extraFields.provider = providerSelect;
+
+        // Gmail Google 连接面板
+        const gmailPanel = document.createElement('div');
+        gmailPanel.className = 'widget-add-form-row widget-google-tasks-panel';
+        gmailPanel.style.display = (providerSelect.value === 'gmail') ? '' : 'none';
+
+        const gmailIsConnected = !!(data && data.googleConnected);
+
+        const topRow = document.createElement('div');
+        topRow.className = 'gtasks-top';
+        const statusDot = document.createElement('span');
+        statusDot.className = 'gtasks-dot' + (gmailIsConnected ? ' on' : '');
+        const statusLabel = document.createElement('span');
+        statusLabel.className = 'gtasks-top-label';
+        statusLabel.textContent = gmailIsConnected ? 'Gmail 已连接' : 'Gmail 未连接';
+        const infoBtn = document.createElement('button');
+        infoBtn.className = 'gtasks-info-btn';
+        infoBtn.innerHTML = '<span class="material-icons">info_outline</span>';
+        infoBtn.title = '查看连接教程';
+        infoBtn.addEventListener('click', () => this.showGmailTutorial());
+        topRow.appendChild(statusDot);
+        topRow.appendChild(statusLabel);
+        topRow.appendChild(infoBtn);
+        gmailPanel.appendChild(topRow);
+
+        if (gmailIsConnected) {
+            const emailEl = document.createElement('div');
+            emailEl.className = 'gtasks-email';
+            emailEl.textContent = data.googleEmail || '';
+            gmailPanel.appendChild(emailEl);
+
+            const disconnectBtn = document.createElement('button');
+            disconnectBtn.className = 'gtasks-btn gtasks-btn-disconnect';
+            disconnectBtn.textContent = '断开连接';
+            disconnectBtn.addEventListener('click', () => {
+                const wi = (self.widgetInstances || []).find(w => w.id === widget.id);
+                if (wi && typeof wi.disconnectGoogle === 'function') {
+                    wi.disconnectGoogle();
+                } else {
+                    data.googleConnected = false;
+                    data.googleEmail = '';
+                    data.googleToken = '';
+                    self.saveWidgetSettings();
+                }
+                self.showNotification('已断开 Gmail');
+                self.showWidgetConfigForm(listContainer, widget, presetType);
+            });
+            gmailPanel.appendChild(disconnectBtn);
+        } else {
+            const inputRow = document.createElement('div');
+            inputRow.className = 'gtasks-input-row';
+
+            const clientIdInput = document.createElement('input');
+            clientIdInput.type = 'text';
+            clientIdInput.className = 'gtasks-clientid-input';
+            clientIdInput.placeholder = 'Client ID';
+            clientIdInput.value = data.googleClientId || '';
+            clientIdInput.maxLength = 200;
+
+            const connectBtn = document.createElement('button');
+            connectBtn.className = 'gtasks-btn gtasks-btn-connect';
+            connectBtn.innerHTML = '<span class="material-icons">link</span>连接';
+            connectBtn.addEventListener('click', async () => {
+                const clientId = clientIdInput.value.trim();
+                if (!clientId || !clientId.endsWith('.apps.googleusercontent.com')) {
+                    self.showNotification('请输入有效的 Client ID');
+                    clientIdInput.focus();
+                    return;
+                }
+                if (!widget) {
+                    self.showNotification('请先点击"确定"保存小组件，再连接 Google');
+                    return;
+                }
+                connectBtn.disabled = true;
+                connectBtn.innerHTML = '<span class="material-icons">hourglass_top</span>';
+                try {
+                    const wi = (self.widgetInstances || []).find(w => w.id === widget.id);
+                    if (wi && typeof wi.connectGoogle === 'function') {
+                        await wi.connectGoogle(clientId);
+                    } else {
+                        throw new Error('小组件实例未就绪');
+                    }
+                    self.showNotification('Gmail 已连接');
+                    self.showWidgetConfigForm(listContainer, widget, presetType);
+                } catch (e) {
+                    self.showNotification('连接失败：' + (e.message || '请检查 Client ID'));
+                    connectBtn.disabled = false;
+                    connectBtn.innerHTML = '<span class="material-icons">link</span>连接';
+                }
+            });
+
+            inputRow.appendChild(clientIdInput);
+            inputRow.appendChild(connectBtn);
+            gmailPanel.appendChild(inputRow);
+        }
+
+        form.appendChild(gmailPanel);
+
+        // 切换服务商时显示/隐藏 Gmail 面板
+        providerSelect.addEventListener('change', () => {
+            gmailPanel.style.display = providerSelect.value === 'gmail' ? '' : 'none';
+        });
+
+        // 其他服务商：API 地址（非 Gmail 时显示）
+        const apiRow = document.createElement('div');
+        apiRow.className = 'widget-add-form-row';
+        apiRow.style.display = (providerSelect.value === 'gmail') ? 'none' : '';
+        const apiLabel = document.createElement('label');
+        apiLabel.textContent = '邮件 API 地址（可选）';
+        apiRow.appendChild(apiLabel);
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'widget-input-row';
+        const apiInput = document.createElement('input');
+        apiInput.type = 'text';
+        apiInput.placeholder = '如：http://127.0.0.1:8899/api/emails';
+        apiInput.value = data.apiUrl || '';
+        inputWrap.appendChild(apiInput);
+        const testBtn = document.createElement('button');
+        testBtn.className = 'widget-input-btn';
+        testBtn.innerHTML = '<span class="material-icons" style="font-size:15px">test_activity</span>测试';
+        testBtn.addEventListener('click', () => {
+            const url = apiInput.value.trim();
+            if (!url) { apiInput.value = '请输入 API 地址'; return; }
+            self.showNotification('正在测试 ' + url + '…');
+        });
+        inputWrap.appendChild(testBtn);
+        apiRow.appendChild(inputWrap);
+        const apiHint = document.createElement('div');
+        apiHint.className = 'widget-add-form-hint';
+        apiHint.textContent = '留空则仅提供网页版入口；配置后返回 { emails: [{from, subject, time}] }';
+        apiRow.appendChild(apiHint);
+        form.appendChild(apiRow);
+        extraFields.apiUrl = apiInput;
+
+        // 切换时同步显示/隐藏 API 行
+        providerSelect.addEventListener('change', () => {
+            apiRow.style.display = providerSelect.value === 'gmail' ? 'none' : '';
+        });
+    }
+
+    formView.appendChild(form);
+
+    // 滑入动画
+    requestAnimationFrame(() => {
+        formView.classList.add('slide-in-right');
+    });
+
+    // 底部按钮：确定/取消（放入底部按钮容器，替代导出/导入/+）
+    const btnRow = document.createElement('div');
+    btnRow.className = 'widget-form-bottom-buttons';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'widget-add-form-btn cancel';
+    cancelBtn.textContent = '取消';
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'widget-add-form-btn confirm';
+    confirmBtn.textContent = '确定';
+
+    btnRow.appendChild(cancelBtn);
+    btnRow.appendChild(confirmBtn);
+
+    if (buttonContainer) {
+        buttonContainer.appendChild(btnRow);
+        // 底部按钮与表单内容同步滑入
+        requestAnimationFrame(() => {
+            btnRow.classList.add('slide-in-right');
+        });
+    } else {
+        form.appendChild(btnRow); // 兜底：找不到容器时直接放表单底部
+    }
+
+    // 退出表单：滑出动画后恢复导出/导入/+ 按钮，回到列表
+    const exitForm = (backToList) => {
+        self.exitWidgetFormView(listContainer, () => {
+            self.restoreWidgetPanelButtons();
+            if (backToList) self.updateWidgetPanelListInMenu(listContainer);
+        });
+    };
+
+    cancelBtn.addEventListener('click', () => {
+        exitForm(true);
+    });
+
+    confirmBtn.addEventListener('click', () => {
+        // 尺寸映射：按当前类型允许的尺寸列表取索引对应的尺寸
+        const size = allowedSizes[parseInt(sizeSlider.value, 10)] || allowedSizes[allowedSizes.length - 1];
+        const newData = {};
+
+        if (extraFields.city) {
+            newData.city = extraFields.city.value.trim() || '南昌';
+        }
+        if (extraFields.port) {
+            const port = extraFields.port.value.trim();
+            if (port && (!/^\d+$/.test(port) || +port < 1 || +port > 65535)) {
+                self.showNotification('端口号无效（1-65535）');
+                return;
+            }
+            newData.port = port;
+        }
+        if (extraFields.provider) {
+            newData.provider = extraFields.provider.value;
+            newData.url = self.getEmailProviderUrl(extraFields.provider.value);
+        }
+        if (extraFields.apiUrl) {
+            newData.apiUrl = extraFields.apiUrl.value.trim();
+        }
+
+        if (widget) {
+            // 编辑：更新配置并重渲染
+            widget.size = size;
+            widget.data = Object.assign({}, widget.data, newData);
+            const idx = self.settings.widgetPanel.widgets.findIndex(w => w.id === widget.id);
+            if (idx >= 0) {
+                self.settings.widgetPanel.widgets[idx] = {
+                    id: widget.id,
+                    type: widget.type,
+                    size: size,
+                    data: Object.assign({}, widget.data, newData)
+                };
+            }
+            self.saveWidgetSettings();
+            self.renderWidgetPanel();
+            self.showNotification('小组件已更新');
+        } else {
+            // 添加
+            const newWidget = {
+                id: self.genWidgetId(),
+                type: type,
+                size: size,
+                data: newData
+            };
+            self.settings.widgetPanel.widgets.push(newWidget);
+            self.saveWidgetSettings();
+            self.renderWidgetPanel();
+            self.showNotification('小组件已添加');
+        }
+        exitForm(true);
+    });
+};
+
+// 邮箱服务商默认 URL
+OOOInterface.prototype.getEmailProviderUrl = function (provider) {
+    const urls = {
+        gmail: 'https://mail.google.com',
+        outlook: 'https://outlook.live.com/mail/',
+        qq: 'https://mail.qq.com',
+        custom: ''
+    };
+    return urls[provider] || '';
+};
+
+// Gmail 连接教程弹窗
+OOOInterface.prototype.showGmailTutorial = function () {
+    const overlay = document.createElement('div');
+    overlay.className = 'gtasks-tutorial-overlay';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const card = document.createElement('div');
+    card.className = 'gtasks-tutorial-card';
+
+    card.innerHTML = [
+        '<div class="gtasks-tutorial-header">',
+        '  <span class="material-icons">school</span>',
+        '  <span>连接 Gmail 教程</span>',
+        '</div>',
+        '<div class="gtasks-tutorial-steps">',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">1</span><div><b>打开</b> <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a>，登录你的 Google 账号</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">2</span><div><b>创建项目</b>（或选择已有项目），点击顶部项目选择器 → 新建项目</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">3</span><div><b>启用 API</b>：左侧菜单 → API 和服务 → 库 → 搜索 "Gmail API" → 点击启用</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">4</span><div><b>配置 OAuth 同意屏幕</b>：API 和服务 → OAuth 同意屏幕 → 选"外部" → 填写应用名称 → 保存</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">5</span><div><b>添加测试用户</b>：OAuth 同意屏幕 → 测试用户 → 添加你的 Gmail 地址（测试阶段必须添加）</div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">6</span><div><b>创建凭据</b>：API 和服务 → 凭据 → 创建 OAuth 客户端 ID → 应用类型选 <b>Chrome 扩展</b></div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">7</span><div><b>填写扩展 ID</b>：打开 <code>chrome://extensions</code> → 复制本扩展的 ID → 粘贴到"已授权的重定向 URI"中，格式为 <code>https://&lt;扩展ID&gt;.chromiumapp.org/</code></div></div>',
+        '  <div class="gtasks-step"><span class="gtasks-step-num">8</span><div><b>复制 Client ID</b>：创建完成后复制 Client ID（以 <code>.apps.googleusercontent.com</code> 结尾），粘贴到上方输入框</div></div>',
+        '</div>',
+        '<div class="gtasks-tutorial-footer">',
+        '  <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="gtasks-btn gtasks-btn-connect" style="text-decoration:none">',
+        '    <span class="material-icons">open_in_new</span>打开 Google Cloud Console',
+        '  </a>',
+        '</div>'
+    ].join('');
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+};
+
+// 生成小组件 ID
+OOOInterface.prototype.genWidgetId = function () {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+    }
+    return 'w-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+};
+
+// 删除小组件
+OOOInterface.prototype.deleteWidget = function (id) {
+    const widgets = this.settings.widgetPanel && this.settings.widgetPanel.widgets;
+    if (!Array.isArray(widgets)) return;
+    const idx = widgets.findIndex(w => w.id === id);
+    if (idx >= 0) {
+        const name = this.WIDGET_TYPES[widgets[idx].type] ? this.WIDGET_TYPES[widgets[idx].type].name : '小组件';
+        widgets.splice(idx, 1);
+        this.saveWidgetSettings();
+        this.renderWidgetPanel();
+        this.showNotification('"' + name + '" 已删除');
+    }
+};
+
+// 导出小组件配置
+OOOInterface.prototype.exportWidgets = function () {
+    const widgets = (this.settings.widgetPanel && Array.isArray(this.settings.widgetPanel.widgets))
+        ? this.settings.widgetPanel.widgets : [];
+    if (widgets.length === 0) {
+        this.showNotification('没有可导出的小组件');
+        return;
+    }
+    const data = {
+        app: 'OOOInterface',
+        type: 'widgets',
+        version: (typeof VERSION !== 'undefined') ? VERSION : '',
+        exportedAt: new Date().toISOString(),
+        widgets: widgets.map(w => ({
+            id: w.id,
+            type: w.type,
+            size: this.normalizeWidgetSize(w.type, w.size),
+            data: w.data || {}
+        }))
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'OOOInterface-Widgets-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+        if (a.parentNode) a.parentNode.removeChild(a);
+    }, 0);
+    this.showNotification('已导出 ' + widgets.length + ' 个小组件');
+};
+
+// 导入小组件配置
+OOOInterface.prototype.importWidgets = function (text, listContainer) {
+    const self = this;
+    try {
+        const data = JSON.parse(text);
+        let incoming = [];
+        if (Array.isArray(data)) {
+            incoming = data;
+        } else if (data && Array.isArray(data.widgets)) {
+            incoming = data.widgets;
+        } else {
+            throw new Error('JSON 结构不正确');
+        }
+
+        let added = 0;
+        incoming.forEach(w => {
+            if (!w || !w.type || !this.WIDGET_TYPES[w.type]) return;
+            const size = this.normalizeWidgetSize(w.type, w.size);
+            const newWidget = {
+                id: this.genWidgetId(),
+                type: w.type,
+                size: size,
+                data: w.data || {}
+            };
+            this.settings.widgetPanel.widgets.push(newWidget);
+            added++;
+        });
+
+        if (added === 0) {
+            this.showNotification('文件中没有有效的小组件');
+            return;
+        }
+        this.saveWidgetSettings();
+        this.renderWidgetPanel();
+        if (listContainer) this.updateWidgetPanelListInMenu(listContainer);
+        this.showNotification('已导入 ' + added + ' 个小组件');
+    } catch (e) {
+        this.showNotification('导入失败：' + e.message);
+    }
+};
+
+// ─── 导出 / 导入完整配置（Markdown） ───────────────────────────────
+
+/**
+ * 将当前全部 settings 序列化为 Markdown 并下载。
+ * 格式：
+ *   # OOOInterface 配置备份
+ *   - 导出时间：...
+ *   - 版本：...
+ *
+ *   ```json
+ *   { ... }
+ *   ```
+ */
+OOOInterface.prototype.exportSettingsAsMarkdown = function () {
+    const version = (typeof VERSION !== 'undefined') ? VERSION : 'unknown';
+    const now = new Date();
+    const timeStr = now.toLocaleString('zh-CN', { hour12: false });
+    const timestamp = now.toISOString();
+
+    const json = JSON.stringify(this.settings, null, 2);
+    const md = [
+        '# OOOInterface 配置备份',
+        '',
+        '- 导出时间：' + timeStr,
+        '- ISO 时间戳：' + timestamp,
+        '- 版本：' + version,
+        '',
+        '```json',
+        json,
+        '```'
+    ].join('\n');
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'OOOInterface-Settings-' + timestamp.replace(/[:T]/g, '-').slice(0, 19) + '.md';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+        if (a.parentNode) a.parentNode.removeChild(a);
+    }, 0);
+    this.showNotification('配置已导出为 Markdown');
+};
+
+/**
+ * 从上传的 Markdown 文件读取并恢复完整 settings。
+ * 支持格式：
+ *   # OOOInterface 配置备份   （可选，容错）
+ *   ```json\n{...}\n```
+ */
+OOOInterface.prototype.importSettingsFromMarkdown = function (file) {
+    const self = this;
+    if (!file || !file.name.toLowerCase().endsWith('.md')) {
+        this.showNotification('请选择 .md 文件');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function () {
+        try {
+            const text = reader.result;
+            // 提取 ```json ... ``` 块
+            const match = text.match(/```(?:json)?\s*\n([\s\S]*?)\n\s*```/);
+            if (!match) throw new Error('未找到 ```json 代码块，文件格式不正确');
+            const settings = JSON.parse(match[1].trim());
+            if (!settings || typeof settings !== 'object') throw new Error('JSON 解析失败，根节点不是对象');
+
+            // 写入并立即保存
+            self.settings = settings;
+            self.saveSettings();
+            self.applySettings();
+            self.showNotification('配置导入成功，已刷新页面');
+        } catch (e) {
+            self.showNotification('导入失败：' + (e.message || '未知错误'));
+            console.error('[importSettingsFromMarkdown]', e);
+        }
+    };
+    reader.onerror = function () {
+        self.showNotification('文件读取失败');
+    };
+    reader.readAsText(file);
+}
