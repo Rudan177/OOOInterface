@@ -166,16 +166,6 @@ function getOperatingSystem() {
     return 'Unknown';
 }
 
-function getMemoryUsage(type) {
-    // 浏览器环境下无法直接获取内存信息，这里模拟返回
-    if (type === 'pss') {
-        return '~50MB';
-    } else if (type === 'rss') {
-        return '~100MB';
-    }
-    return 'N/A';
-}
-
 function showInfoPopup() {
     if (infoPopupOpen) return;
     infoPopupOpen = true;
@@ -242,23 +232,9 @@ function showInfoPopup() {
         margin: 0;
         word-wrap: break-word;
     `;
-
-    // 实际使用内存
-    const pss = document.createElement('p');
-    const pssValue = getMemoryUsage('pss');
-    pss.textContent = `[pss]${pssValue}`;
-    pss.style.cssText = `
-        font-size: 14px;
-        color: #000000;
-        margin: 0;
-        word-wrap: break-word;
-    `;
-
-    // 常驻内存大小
-    const rss = document.createElement('p');
-    const rssValue = getMemoryUsage('rss');
-    rss.textContent = `[rss]${rssValue}`;
-    rss.style.cssText = `
+    const uac = document.createElement('p');
+    uac.textContent = `[UAC]NOT supported`;
+    uac.style.cssText = `
         font-size: 14px;
         color: #000000;
         margin: 0;
@@ -270,8 +246,7 @@ function showInfoPopup() {
     content.appendChild(os);
     content.appendChild(beta);
     content.appendChild(packageId);
-    content.appendChild(pss);
-    content.appendChild(rss);
+    content.appendChild(uac);
     popup.appendChild(content);
 
     // 添加到页面
