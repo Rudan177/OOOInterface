@@ -11,6 +11,18 @@ var WELC_CONTENT = {
     // 更新日志章节
     changelog: [
         {
+            header: '重要提醒',
+            items: [
+                'OOOInterface 部分新增功能可能涉及manifest.json文件修改，若遇到异常，请尝试手动重载插件'
+            ]
+        },
+        {
+            header: '新增功能',
+            items: [
+                '新增全新热搜词功能（该功能需在手动开启且输入字符大于4时触发）'
+            ]
+        },
+        {
             header: '体验优化',
             items: [
                 '融入OOOInterface9月安全补丁更新',

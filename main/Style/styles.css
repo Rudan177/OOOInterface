@@ -4032,6 +4032,43 @@ body.scrolled .search-history-container {
 
 
 
+/* 热搜词建议行：趋势图标 + “热搜”角标，配色复用 CSS 变量以适配三套主题与暗色模式 */
+
+.search-suggestion-item {
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+.search-suggestion-item .search-history-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-suggestion-trend.material-icons,
+.search-suggestion-trend.md3-icon {
+    font-size: 16px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.search-suggestion-badge {
+    font-size: 11px;
+    line-height: 1;
+    padding: 3px 7px;
+    border-radius: 999px;
+    color: var(--text-secondary);
+    background: var(--surface-variant);
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+
+
 /* 搜索历史滚动条 */
 
 .search-history-container::-webkit-scrollbar {
@@ -4856,6 +4893,7 @@ body.color-scheme-black-white .context-menu-grid.compact .context-menu-item:hove
 }
 
 .context-menu-grid.minimal .context-menu-item[data-action="search-history-toggle"],
+.context-menu-grid.minimal .context-menu-item[data-action="search-suggestions-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="wallpaper-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="enhanced-display-toggle"],
 .context-menu-grid.minimal .context-menu-item[data-action="engine-lock-toggle"],

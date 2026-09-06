@@ -25,6 +25,7 @@ class OOOInterface {
             dynamicBlur: false,
             persistentWallpaper: false,
             searchHistory: true,
+            searchSuggestions: true,
             searchHistoryItems: [],
             engineLocked: false,
             developerMode: false,
@@ -64,7 +65,7 @@ class OOOInterface {
             // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）
             simpleVisualMode: false,
             hiddenBadge: false,
-            contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle'],
+            contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle', 'search-suggestions-toggle'],
             shortcutsEnabled: true,
             theme: 'default',           // 当前主题 key（文件 basename 去扩展名）
             themeEnabled: false,        // 主题功能是否开启
@@ -88,6 +89,10 @@ class OOOInterface {
         this.currentVersion = VERSION; // 使用 version.js 中的版本号
         this._sidebarPushing = false; // 侧边栏壁纸推入状态
         this.statusBarTimer = null;
+        // 热搜词建议：防抖计时器 + 请求序号 + 结果缓存
+        this.suggestDebounceTimer = null;
+        this._suggestSeq = 0;
+        this._suggestCache = null;
         this.statusBarContrastMode = 'dark';
         this.wallpaperAnalysisImage = null;
         this.wallpaperAnalysisUrl = null;
@@ -219,6 +224,7 @@ class OOOInterface {
         // 更新所有可切换菜单项的图标
         const toggleMap = {
             'search-history-toggle': () => this.settings.searchHistory ? 'check_box' : 'check_box_outline_blank',
+            'search-suggestions-toggle': () => this.settings.searchSuggestions ? 'check_box' : 'check_box_outline_blank',
             'wallpaper-toggle': () => this.settings.persistentWallpaper ? 'check_box' : 'check_box_outline_blank',
             'enhanced-display-toggle': () => this.settings.enhancedDisplay ? 'check_box' : 'check_box_outline_blank',
             'engine-lock-toggle': () => this.settings.engineLocked ? 'check_box' : 'check_box_outline_blank',
@@ -253,6 +259,8 @@ class OOOInterface {
         if (wp) wp.checked = this.settings.persistentWallpaper;
         const sh = document.getElementById('search-history-toggle');
         if (sh) sh.checked = this.settings.searchHistory;
+        const ss = document.getElementById('search-suggestions-toggle');
+        if (ss) ss.checked = this.settings.searchSuggestions;
         // 固定侧边栏主开关与两个子开关
         const fs = document.getElementById('fix-sidebar-toggle');
         if (fs) fs.checked = this.settings.fixSidebarEnabled;
@@ -387,6 +395,7 @@ class OOOInterface {
     applyContextMenuCustomItems() {
         const toggleActions = [
             'search-history-toggle',
+            'search-suggestions-toggle',
             'wallpaper-toggle',
             'enhanced-display-toggle',
             'engine-lock-toggle',
@@ -957,6 +966,7 @@ class OOOInterface {
         if (savedSettings.dynamicBlur !== undefined) result.dynamicBlur = savedSettings.dynamicBlur;
         if (savedSettings.persistentWallpaper !== undefined) result.persistentWallpaper = savedSettings.persistentWallpaper;
         if (savedSettings.searchHistory !== undefined) result.searchHistory = savedSettings.searchHistory;
+        if (savedSettings.searchSuggestions !== undefined) result.searchSuggestions = savedSettings.searchSuggestions;
         if (savedSettings.contextMenuStyle !== undefined) result.contextMenuStyle = savedSettings.contextMenuStyle;
         if (savedSettings.hideInfoPopup !== undefined) {
             if (typeof savedSettings.hideInfoPopup === 'boolean') {
@@ -1030,7 +1040,7 @@ class OOOInterface {
         if (savedSettings.shortcutsEnabled !== undefined) result.shortcutsEnabled = savedSettings.shortcutsEnabled;
         if (savedSettings.contextMenuCustomItems && Array.isArray(savedSettings.contextMenuCustomItems)) {
             result.contextMenuCustomItems = savedSettings.contextMenuCustomItems.filter(
-                item => ['enhanced-display-toggle', 'wallpaper-toggle', 'search-history-toggle', 'engine-lock-toggle', 'hide-notifications-toggle', 'hide-info-popup-toggle'].includes(item)
+                item => ['enhanced-display-toggle', 'wallpaper-toggle', 'search-history-toggle', 'search-suggestions-toggle', 'engine-lock-toggle', 'hide-notifications-toggle', 'hide-info-popup-toggle'].includes(item)
             );
         }
 
@@ -2194,22 +2204,24 @@ class OOOInterface {
         });
 
         searchHistoryList.addEventListener('click', (e) => {
-            const target = e.target;
-
-            if (target.classList.contains('search-history-item')) {
-                const searchQuery = target.dataset.query;
-                if (searchQuery) {
-                    searchInput.value = searchQuery;
-                    this.performSearch(searchQuery);
-                }
-            }
-
-            if (target.classList.contains('search-history-delete') || target.closest('.search-history-delete')) {
+            // 删除按钮优先处理,避免命中同一行时误触发搜索
+            const deleteBtn = e.target.closest('.search-history-delete');
+            if (deleteBtn) {
                 e.stopPropagation();
-                const deleteBtn = target.classList.contains('search-history-delete') ? target : target.closest('.search-history-delete');
                 const searchQuery = deleteBtn.dataset.query;
                 if (searchQuery) {
                     this.removeFromSearchHistory(searchQuery);
+                }
+                return;
+            }
+
+            // 历史行与热搜行均保留 search-history-item + data-query,统一回填搜索框并搜索
+            const item = e.target.closest('.search-history-item');
+            if (item) {
+                const searchQuery = item.dataset.query;
+                if (searchQuery) {
+                    searchInput.value = searchQuery;
+                    this.performSearch(searchQuery);
                 }
             }
         });
@@ -2583,6 +2595,7 @@ class OOOInterface {
                     this.settings.fixSidebarWallpaper = fixWallpaperToggle.checked;
                 }
                 this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
+                this.settings.searchSuggestions = document.getElementById('search-suggestions-toggle').checked;
                 this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
                 this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
@@ -3260,6 +3273,9 @@ class OOOInterface {
             case 'search-history-toggle':
                 this.toggleSearchHistorySetting();
                 break;
+            case 'search-suggestions-toggle':
+                this.toggleSearchSuggestionsSetting();
+                break;
             case 'wallpaper-toggle':
                 this.toggleWallpaperSetting();
                 break;
@@ -3327,6 +3343,15 @@ class OOOInterface {
         this.updateContextMenuIcons();
         this.syncSettingsPageToggles();
         this.showNotification(this.settings.searchHistory ? '搜索历史：开启' : '搜索历史：关闭');
+    }
+
+    // 切换热搜词建议设置
+    toggleSearchSuggestionsSetting() {
+        this.settings.searchSuggestions = !this.settings.searchSuggestions;
+        this.saveSettings();
+        this.updateContextMenuIcons();
+        this.syncSettingsPageToggles();
+        this.showNotification(this.settings.searchSuggestions ? '热搜词建议：开启' : '热搜词建议：关闭');
     }
 
     // 切换引擎锁定设置
@@ -5666,6 +5691,8 @@ class OOOInterface {
 
     switchEngine(engine) {
         this.currentEngine = engine;
+        // 引擎切换后建议来源改变,作废旧缓存
+        this._suggestCache = null;
 
         // 更新按钮状态
         document.getElementById('google-engine').classList.toggle('active', engine === 'google');
@@ -5843,8 +5870,21 @@ class OOOInterface {
 
         this.hideSearchCommandList();
         this.updateSearchModeChip();
+
+        // 输入有效长度超过 4 且开启"热搜词建议":先同步展示历史作即时反馈,再调度拉取热搜
+        // 中文每个字算 2 个有效字符(3-4 字即可触发),英文每字母算 1(5-6 字母触发)
+        // 其余情况(≤4 字符或开关关闭)维持原有搜索历史逻辑
+        const trimmedValue = value.trim();
+        if (this.settings.searchSuggestions && this._effectiveLength(trimmedValue) > 4) {
+            this.renderSearchSuggestions(trimmedValue, null);
+            this.scheduleSearchSuggestions(trimmedValue);
+            return;
+        }
+        this.cancelSearchSuggestions();
         if (this.settings.searchHistory && this.settings.searchHistoryItems.length > 0) {
             this.showSearchHistory(value);
+        } else {
+            this.hideSearchHistory();
         }
     }
 
@@ -6549,7 +6589,8 @@ class OOOInterface {
     removeFromSearchHistory(query) {
         this.settings.searchHistoryItems = this.settings.searchHistoryItems.filter(item => item !== query);
         this.saveSettings();
-        this.showSearchHistory(document.getElementById('search-input').value);
+        // 走统一入口重渲染,使"历史 + 热搜"合并列表保持一致
+        this.syncSearchAssistantUI(document.getElementById('search-input').value);
     }
 
     calculateRelevance(text, query) {
@@ -6575,7 +6616,227 @@ class OOOInterface {
         return score;
     }
 
-    escapeHtml(text) {
+    // 计算有效字符长度:CJK/Hiragana/Katakana/CJK Symbols 算 2,其他算 1
+    // 这样中文输入 3-4 字就能触发建议(有效长度 >=5),英文需要 5-6 字母,阈值统一
+    _effectiveLength(str) {
+        const s = str || '';
+        let len = 0;
+        for (let i = 0; i < s.length; i++) {
+            const c = s.charCodeAt(i);
+            // CJK Unified Ideographs U+4E00-U+9FFF
+            // Hiragana & Katakana U+3040-U+30FF
+            // CJK Symbols & Punctuation U+3000-U+303F
+            if ((c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3000 && c <= 0x30FF)) {
+                len += 2;
+            } else {
+                len += 1;
+            }
+        }
+        return len;
+    }
+
+    // 综合排序分:历史 + 热搜合并列表使用,基础分复用 calculateRelevance;
+    // 历史项与输入完全相同(忽略大小写)额外 +100 置顶,其余历史恒 +1,保证同分时历史略高于热搜
+    calculateCombinedScore(text, query, kind) {
+        const a = String(text).toLowerCase();
+        const b = String(query).toLowerCase();
+        let score = this.calculateRelevance(a, b);
+        if (kind === 'history') {
+            if (a === b) score += 100;
+            score += 1;
+        }
+        return score;
+    }
+
+    // 取消待执行的热搜建议请求(输入缩短/清空等路径调用)
+    cancelSearchSuggestions() {
+        if (this.suggestDebounceTimer) {
+            clearTimeout(this.suggestDebounceTimer);
+            this.suggestDebounceTimer = null;
+        }
+        this._suggestSeq += 1;
+    }
+
+    // 防抖(250ms)后拉取当前引擎热搜词建议;结果返回时若下拉已被关闭/输入变化则丢弃
+    scheduleSearchSuggestions(query) {
+        if (this.suggestDebounceTimer) {
+            clearTimeout(this.suggestDebounceTimer);
+            this.suggestDebounceTimer = null;
+        }
+        const seq = ++this._suggestSeq;
+
+        this.suggestDebounceTimer = setTimeout(async () => {
+            this.suggestDebounceTimer = null;
+            if (seq !== this._suggestSeq) return;
+
+            const input = document.getElementById('search-input');
+            if (document.body.classList.contains('scrolled') || !input || input.value.trim() !== query) {
+                return;
+            }
+
+            // 同引擎同查询 60 秒内直接复用缓存,避免聚焦/重复输入造成无谓请求
+            let suggestions = null;
+            const cache = this._suggestCache;
+            if (cache && cache.engine === this.currentEngine && cache.query === query && (Date.now() - cache.ts < 60000)) {
+                suggestions = cache.items;
+            } else {
+                try {
+                    suggestions = await this.fetchSearchSuggestions(query);
+                    this._suggestCache = { engine: this.currentEngine, query: query, items: suggestions, ts: Date.now() };
+                } catch (err) {
+                    suggestions = [];
+                }
+            }
+
+            if (seq !== this._suggestSeq) return;
+            const container = document.getElementById('search-history-container');
+            if (document.body.classList.contains('scrolled') || !container) {
+                return;
+            }
+            // 用户已点击外部关闭或移开焦点:本次下拉不应被异步结果重新打开
+            const stillOpen = container.classList.contains('show');
+            const inputFocused = document.activeElement === document.getElementById('search-input');
+            if (!stillOpen && !inputFocused) {
+                return;
+            }
+            this.renderSearchSuggestions(query, suggestions);
+        }, 250);
+    }
+
+    // 按当前引擎拉取关联词/热搜词建议:
+    // 先尝试 Bing(osjson),再回退 Google(suggestqueries)。
+    // 不传 mkt/hl/locale 参数,让接口自动按 query 语种推断(与官网行为一致)。
+    // 直连失败由 slashFetch 自动回退本地代理;最多取前 10 条
+    async fetchSearchSuggestions(query) {
+        const trimmed = String(query || '').trim();
+        if (!trimmed) return [];
+
+        // 最简 URL,不传 locale 参数,避免 mkt/hl 对结果的干扰
+        const params = 'query=' + encodeURIComponent(trimmed);
+        const bingUrl = 'https://www.bing.com/osjson.aspx?' + params;
+        const googleUrl = 'https://suggestqueries.google.com/complete/search?client=firefox&q=' + params;
+
+        // 先试 Bing
+        let response;
+        try {
+            response = await this.slashFetch(bingUrl);
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data) && Array.isArray(data[1]) && data[1].length > 0) {
+                    return data[1]
+                        .map(item => (Array.isArray(item) ? (item[0] || '') : item))
+                        .map(item => String(item).trim())
+                        .filter(item => item)
+                        .slice(0, 10);
+                }
+                console.warn('[热搜建议] Bing 未返回建议,回退 Google');
+            } else {
+                console.warn('[热搜建议] Bing HTTP', response.status, '| 回退 Google');
+            }
+        } catch (err) {
+            console.warn('[热搜建议] Bing 不可用,回退 Google:', err.message);
+        }
+
+        // 回退 Google
+        try {
+            response = await this.slashFetch(googleUrl);
+            if (!response.ok) {
+                console.warn('[热搜建议] Google HTTP', response.status, '|', googleUrl);
+                throw new Error('热搜建议接口响应异常 (HTTP ' + response.status + ')');
+            }
+            const data = await response.json();
+            if (!Array.isArray(data) || !Array.isArray(data[1])) {
+                console.warn('[热搜建议] 非预期响应格式', typeof data, Object.keys(data || {}));
+                throw new Error('热搜建议接口解析失败');
+            }
+            return data[1]
+                .map(item => (Array.isArray(item) ? (item[0] || '') : item))
+                .map(item => String(item).trim())
+                .filter(item => item)
+                .slice(0, 10);
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    // 渲染"搜索历史 + 热搜建议"合并下拉;suggestions 传 null 表示仅先渲染历史
+    renderSearchSuggestions(query, suggestions) {
+        if (document.body.classList.contains('scrolled')) return;
+
+        const searchHistoryContainer = document.getElementById('search-history-container');
+        const searchHistoryList = document.querySelector('.search-history-list');
+        const quickAccessLinks = document.getElementById('quick-access-links');
+
+        if (!searchHistoryContainer || !searchHistoryList) return;
+
+        const q = String(query || '').trim();
+        const rows = [];
+
+        // 历史项:仅搜索历史开关开启时混入(搜索历史本身已保证去重,无需额外检查)
+        if (this.settings.searchHistory && Array.isArray(this.settings.searchHistoryItems)) {
+            this.settings.searchHistoryItems.forEach(raw => {
+                const text = String(raw || '').trim();
+                if (!text) return;
+                rows.push({ text: text, kind: 'history' });
+            });
+        }
+
+        // 热搜建议项:与历史同词的项也保留,由排序规则决定先后(同词历史 +100 分必排最上)
+        if (Array.isArray(suggestions) && this.settings.searchSuggestions) {
+            suggestions.forEach(raw => {
+                const text = String(raw || '').trim();
+                if (!text) return;
+                rows.push({ text: text, kind: 'suggestion' });
+            });
+        }
+
+        if (rows.length === 0) {
+            this.hideSearchHistory();
+            return;
+        }
+
+        if (q) {
+            rows.sort((a, b) => {
+                const scoreA = this.calculateCombinedScore(a.text, q, a.kind);
+                const scoreB = this.calculateCombinedScore(b.text, q, b.kind);
+                return scoreB - scoreA;
+            });
+        }
+
+        searchHistoryList.innerHTML = '';
+
+        rows.forEach(row => {
+            const item = document.createElement('div');
+            item.className = 'search-history-item' + (row.kind === 'suggestion' ? ' search-suggestion-item' : '');
+            item.dataset.query = row.text;
+
+            if (row.kind === 'history') {
+                item.innerHTML = `
+                    <span class="search-history-text">${this.escapeHtml(row.text)}</span>
+                    <button class="search-history-delete" data-query="${this.escapeHtml(row.text)}">
+                        ×
+                    </button>
+                `;
+            } else {
+                item.innerHTML = `
+                    <span class="material-icons md3-icon search-suggestion-trend">trending_up</span>
+                    <span class="search-history-text">${this.escapeHtml(row.text)}</span>
+                    <span class="search-suggestion-badge">热搜</span>
+                `;
+            }
+            searchHistoryList.appendChild(item);
+        });
+
+        searchHistoryContainer.classList.add('show');
+
+        if (quickAccessLinks) {
+            quickAccessLinks.style.transform = 'translateY(1000px)';
+            quickAccessLinks.style.opacity = '0';
+            quickAccessLinks.style.pointerEvents = 'none';
+        }
+    }
+
+        escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
@@ -6825,6 +7086,7 @@ class OOOInterface {
         document.getElementById('persistent-wallpaper-toggle').checked = this.settings.persistentWallpaper;
         document.getElementById('wallpaper-scale-toggle').checked = this.settings.wallpaperScale;
         document.getElementById('search-history-toggle').checked = this.settings.searchHistory;
+        document.getElementById('search-suggestions-toggle').checked = this.settings.searchSuggestions;
         document.getElementById('engine-lock-toggle').checked = this.settings.engineLocked;
         document.getElementById('hide-info-popup-toggle').checked = this.settings.hideInfoPopup.enabled;
         document.getElementById('quick-access-sidebar-toggle').checked = this.settings.quickAccessSidebar;
@@ -10040,6 +10302,7 @@ OOOInterface.prototype.renderContextMenuCustomizeView = function (rightPanelUppe
 
     const allItems = [
         { key: 'search-history-toggle', label: '搜索历史' },
+        { key: 'search-suggestions-toggle', label: '热搜词建议' },
         { key: 'wallpaper-toggle', label: '壁纸常显示' },
         { key: 'enhanced-display-toggle', label: '高级视觉效果' },
         { key: 'engine-lock-toggle', label: '引擎锁定' },
