@@ -949,7 +949,8 @@ body.color-scheme-black-white .engine-btn.active:hover {
 body.color-scheme-tianyi-blue .engine-btn.active,
 body.color-scheme-vibrant-red .engine-btn.active,
 body.color-scheme-classic-gold .engine-btn.active,
-body.color-scheme-isolation .engine-btn.active {
+body.color-scheme-isolation .engine-btn.active,
+body.color-scheme-earth .engine-btn.active {
     background-image: var(--scheme-gradient) !important;
     color: #ffffff !important;
     border: none !important;
@@ -959,7 +960,8 @@ body.color-scheme-isolation .engine-btn.active {
 body.color-scheme-tianyi-blue .engine-btn.active:hover,
 body.color-scheme-vibrant-red .engine-btn.active:hover,
 body.color-scheme-classic-gold .engine-btn.active:hover,
-body.color-scheme-isolation .engine-btn.active:hover {
+body.color-scheme-isolation .engine-btn.active:hover,
+body.color-scheme-earth .engine-btn.active:hover {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
 }
 
@@ -1011,7 +1013,8 @@ body.color-scheme-custom .engine-btn.active:hover {
     body.color-scheme-tianyi-blue .engine-btn.active,
     body.color-scheme-vibrant-red .engine-btn.active,
     body.color-scheme-classic-gold .engine-btn.active,
-    body.color-scheme-isolation .engine-btn.active {
+    body.color-scheme-isolation .engine-btn.active,
+    body.color-scheme-earth .engine-btn.active {
         background-image: var(--scheme-gradient) !important;
         border: none !important;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
@@ -1027,6 +1030,7 @@ body.color-scheme-custom .engine-btn.active:hover {
     body.color-scheme-vibrant-red .engine-btn.active:hover,
     body.color-scheme-classic-gold .engine-btn.active:hover,
     body.color-scheme-isolation .engine-btn.active:hover,
+    body.color-scheme-earth .engine-btn.active:hover,
     body.color-scheme-custom .engine-btn.active:hover {
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
     }

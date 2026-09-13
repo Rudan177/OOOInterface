@@ -1536,10 +1536,19 @@ class OOOInterface {
         const colorConfig = this.getColorConfig();
         const scheme = this.settings.colorScheme || 'green';
 
+        function rgbaEffectiveLuminance(rgbaStr, pageBgLum) {
+            var m = rgbaStr.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+            if (!m) return null;
+            var r = parseFloat(m[1]) / 255, g = parseFloat(m[2]) / 255, b = parseFloat(m[3]) / 255, a = parseFloat(m[4]);
+            function lin(v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+            var cLum = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+            return cLum * a + pageBgLum * (1 - a);
+        }
+
         if (this.settings.dynamicBlur) {
             if (scheme === 'green') {
                 const bgColor = this.isDarkMode ? 'rgba(48, 49, 52, 0.85)' : 'rgba(241, 243, 244, 0.85)';
-                const textColor = this.isDarkMode ? '#d0d0d0' : '#1a1a1a';
+                const textColor = this.isDarkMode ? colorConfig.notificationTextDark : colorConfig.notificationText;
                 const borderColor = this.isDarkMode ? 'rgba(95, 99, 104, 0.5)' : 'rgba(223, 225, 229, 0.6)';
                 return { bg: bgColor, text: textColor, border: borderColor, blur: true };
             }
@@ -1552,11 +1561,20 @@ class OOOInterface {
             }
             if (scheme === 'custom') {
                 const bgColor = this.isDarkMode ? colorConfig.notificationBgDark : colorConfig.notificationBg;
-                return { bg: bgColor, text: colorConfig.notificationText, border: colorConfig.notificationBorder, blur: true };
+                const textColor = this.isDarkMode ? colorConfig.notificationTextDark : colorConfig.notificationText;
+                return { bg: bgColor, text: textColor, border: colorConfig.notificationBorder, blur: true };
             }
-            // 蓝色主题
+            // 蓝色主题及其他
             const bgColor = this.isDarkMode ? colorConfig.notificationBgDark : colorConfig.notificationBg;
-            return { bg: bgColor, text: colorConfig.notificationText, border: colorConfig.notificationBorder, blur: true };
+            const textColorDark = colorConfig.notificationTextDark || '#ffffff';
+            const textColorLight = colorConfig.notificationText || '#ffffff';
+            // 浅色模式下，若背景有效亮度较高（偏亮），自动切换为深色文字确保对比度
+            let textColor = textColorDark;
+            if (!this.isDarkMode) {
+                var effLum = rgbaEffectiveLuminance(bgColor, 1.0);
+                textColor = effLum !== null && effLum > 0.45 ? textColorLight : textColorDark;
+            }
+            return { bg: bgColor, text: textColor, border: colorConfig.notificationBorder, blur: true };
         }
 
         // 非高级视觉效果：使用表面色
@@ -8220,13 +8238,17 @@ class OOOInterface {
         const menuItems = document.querySelectorAll('.context-menu-item');
         const colorConfig = this.getColorConfig();
         const isDark = this.isDarkMode;
-        const accent = isDark ? colorConfig.accentDark : colorConfig.accent;
-        const accentRgb = isDark ? colorConfig.accentDarkRgb : colorConfig.accentRgb;
 
         let hoverColor, textColor;
         if (this.settings.dynamicBlur) {
-            hoverColor = accent;
-            textColor = isDark ? colorConfig.contextMenuTextColorDark : colorConfig.contextMenuTextColor;
+            hoverColor = isDark ? colorConfig.accentDark : colorConfig.accent;
+            // 黑白色在深色模式下：白色背景（accentDark=#ffffff）+ #d0d0d0 灰色文字 = 对比度 1.54:1 不可读
+            // 改为黑色文字，对比度 21:1；其他配色保持原来的 contextMenuTextColorDark 不变
+            if (this.settings.colorScheme === 'black-white' && isDark) {
+                textColor = '#000000';
+            } else {
+                textColor = isDark ? colorConfig.contextMenuTextColorDark : colorConfig.contextMenuTextColor;
+            }
         } else {
             hoverColor = isDark ? colorConfig.contextMenuHoverDark : colorConfig.contextMenuHover;
             textColor = isDark ? colorConfig.contextMenuTextColorDark : colorConfig.contextMenuTextColor;

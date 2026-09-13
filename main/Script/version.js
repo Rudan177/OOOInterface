@@ -1,4 +1,4 @@
-const VERSION = "5.3:32-BS232";
+const VERSION = "5.3:32-BS233";
 const PACKAGE_ID = "0xB9c4E5DCAC4201bf";
 const PACKAGE_FLAG = "Beta";
 const PRODUCT_NAME = "OOOInterface 32";
