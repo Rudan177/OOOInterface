@@ -1092,6 +1092,96 @@ body.color-scheme-custom .engine-btn.active:hover {
 
 
 
+/* 播放音效时：底部铭牌外圈的主题色律动光线
+   光线“长度”由播放进度驱动（--badge-audio-progress：0~1，由 JS 更新）：
+   从顶部顺时针点亮一圈，走过的弧长 = 播放进度。
+   用独立伪元素承载，避免与铭牌自身 transform/悬停阴影及 badge-bounce 动画冲突。
+   ::after = 清晰圆弧；::before = 其外侧更宽更淡的柔光，共同形成“光线” */
+.ooo-badge::after,
+.ooo-badge::before {
+    content: '';
+    position: absolute;
+    border-radius: 19px;
+    pointer-events: none;
+    opacity: 0;
+    /* conic 弧段：点亮 [0, 进度] 区间，其余透明 */
+    background: conic-gradient(from -90deg,
+            rgba(var(--scheme-accent-rgb), 1) 0deg,
+            rgba(var(--scheme-accent-rgb), 1) calc(var(--badge-audio-progress, 0) * 360deg),
+            rgba(var(--scheme-accent-rgb), 0) calc(var(--badge-audio-progress, 0) * 360deg),
+            rgba(var(--scheme-accent-rgb), 0) 360deg);
+    /* 用 mask 掏空中心，只留下描边圆环 */
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+}
+
+.ooo-badge::after {
+    inset: -3px;
+    padding: 2px;
+}
+
+/* 外圈柔光：半径 = 铭牌 16px + 外扩 6px，保持同心 */
+.ooo-badge::before {
+    inset: -6px;
+    padding: 3px;
+    border-radius: 22px;
+    filter: blur(2px);
+}
+
+.ooo-badge.badge-audio-playing::after {
+    opacity: 1;
+    animation: badgeAudioRing 1.1s ease-in-out infinite;
+}
+
+.ooo-badge.badge-audio-playing::before {
+    animation: badgeAudioRingSoft 1.1s ease-in-out infinite;
+}
+
+/* 律动：保持弧长不变（仍由进度决定），只做明暗呼吸 */
+@keyframes badgeAudioRing {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes badgeAudioRingSoft {
+
+    0%,
+    100% {
+        opacity: 0.12;
+    }
+
+    50% {
+        opacity: 0.42;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .ooo-badge.badge-audio-playing::after,
+    .ooo-badge.badge-audio-playing::before {
+        animation: none;
+    }
+
+    .ooo-badge.badge-audio-playing::after {
+        opacity: 0.9;
+    }
+
+    .ooo-badge.badge-audio-playing::before {
+        opacity: 0.35;
+    }
+}
+
+
+
 /* 高级视觉效果 - 底部动画 */
 
 body.dynamic-blur .ooo-badge {
@@ -1845,6 +1935,103 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
 
 
 
+/* 底部铭牌功能面板（双击 / 右键 各一个三段式滑动选择器，样式对齐小组件尺寸选择器） */
+.badge-action-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.badge-action-row label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* 胶囊容器（背景透明，与小组件尺寸选择器一致；全圆角 999px 收敛为高度的一半） */
+.badge-action-segmented {
+    position: relative;
+    height: 36px;
+    border-radius: 999px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* 选中胶囊块（扁平，无阴影；全圆角同样收敛为自身高度的一半，15px，
+   与容器内缘保持同心）
+   容器透明后不可再用 --surface-color（与面板同色会看不见），
+   改用半透明叠加：浅色模式深色叠加、深色模式浅色叠加。
+   每段槽宽 33.3333%，滑块左右各内缩 3px，故宽度减去 2×3px，
+   位移按“槽宽 = 自身宽 + 2×3px”推进，保证首末段左右间隙对称、不贴边 */
+.badge-action-thumb {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc(33.3333% - 6px);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.07);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+}
+
+/* 高级视觉效果（浅色）：毛玻璃面板上适当加深叠加 */
+body.dynamic-blur .badge-action-thumb {
+    background: rgba(0, 0, 0, 0.09) !important;
+}
+
+/* 深色模式：与小组件尺寸选择器的选中块取同一半透明值 */
+@media (prefers-color-scheme: dark) {
+    .badge-action-thumb {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* 高级视觉效果（深色）：与小组件尺寸选择器一致 */
+    body.dynamic-blur .badge-action-thumb {
+        background: rgba(255, 255, 255, 0.12) !important;
+    }
+}
+
+.badge-action-segmented.pos-1 .badge-action-thumb {
+    transform: translateX(calc(100% + 6px));
+}
+
+.badge-action-segmented.pos-2 .badge-action-thumb {
+    transform: translateX(calc(200% + 12px));
+}
+
+/* 分段文字标签 */
+.badge-action-label {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 33.3333%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+    z-index: 2;
+    cursor: pointer;
+    transition: color 0.2s ease, font-weight 0.2s ease;
+    white-space: nowrap;
+}
+
+.badge-action-label.l0 { left: 0; }
+.badge-action-label.l1 { left: 33.3333%; }
+.badge-action-label.l2 { left: 66.6667%; }
+
+.badge-action-label.active {
+    color: var(--scheme-accent) !important;
+    font-weight: 600;
+}
+
+
+
 /* 自定义配色删除按钮 */
 .custom-color-delete-btn {
     flex-shrink: 0;
@@ -1993,7 +2180,7 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background: var(--surface-color) !important;
+    background: transparent !important;
     border: 1px solid var(--border-color) !important;
     color: var(--text-color) !important;
     border-radius: 12px !important;
@@ -2001,13 +2188,13 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
 }
 
 .settings-plus-btn:hover {
-    background: rgba(var(--surface-color-rgb), 0.8) !important;
+    background: rgba(var(--surface-color-rgb), 0.9) !important;
     border-color: var(--text-secondary) !important;
     transform: scale(1.1);
 }
 
 .settings-plus-btn:active {
-    background: rgba(var(--surface-color-rgb), 0.7) !important;
+    background: rgba(var(--surface-color-rgb), 0.75) !important;
     transform: scale(0.95);
 }
 
@@ -2023,7 +2210,7 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background: var(--surface-color) !important;
+    background: transparent !important;
     border: 1px solid var(--border-color) !important;
     color: var(--text-color) !important;
     border-radius: 12px !important;
@@ -2033,13 +2220,13 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
 }
 
 .settings-import-btn:hover {
-    background: rgba(var(--surface-color-rgb), 0.8) !important;
+    background: rgba(var(--surface-color-rgb), 0.9) !important;
     border-color: var(--text-secondary) !important;
     transform: scale(1.1);
 }
 
 .settings-import-btn:active {
-    background: rgba(var(--surface-color-rgb), 0.7) !important;
+    background: rgba(var(--surface-color-rgb), 0.75) !important;
     transform: scale(0.95) !important;
 }
 
@@ -2063,25 +2250,25 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
 
 @media (prefers-color-scheme: dark) {
     .settings-plus-btn {
-        background: var(--surface-color) !important;
+        background: transparent !important;
         border-color: var(--border-color) !important;
     }
 
     .settings-plus-btn:hover {
-        background: rgba(var(--surface-color-rgb), 0.8) !important;
+        background: rgba(var(--surface-color-rgb), 0.9) !important;
     }
 
     .settings-import-btn {
-        background: var(--surface-color) !important;
+        background: transparent !important;
         border-color: var(--border-color) !important;
     }
 
     .settings-import-btn:hover {
-        background: rgba(var(--surface-color-rgb), 0.8) !important;
+        background: rgba(var(--surface-color-rgb), 0.9) !important;
     }
 
     .wallpaper-fill-toggle-wrapper {
-        background: var(--surface-color);
+        background: transparent;
         border-color: var(--border-color);
     }
 
@@ -2090,23 +2277,23 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
     }
 
     body.dynamic-blur .settings-plus-btn {
-        background: rgba(var(--surface-color-rgb), 0.85) !important;
+        background: transparent !important;
     }
 
     body.dynamic-blur .settings-plus-btn:hover {
-        background: rgba(var(--surface-color-rgb), 0.92) !important;
+        background: rgba(var(--surface-color-rgb), 0.35) !important;
     }
 
     body.dynamic-blur .settings-import-btn {
-        background: rgba(var(--surface-color-rgb), 0.85) !important;
+        background: transparent !important;
     }
 
     body.dynamic-blur .settings-import-btn:hover {
-        background: rgba(var(--surface-color-rgb), 0.92) !important;
+        background: rgba(var(--surface-color-rgb), 0.35) !important;
     }
 
     body.dynamic-blur .wallpaper-fill-toggle-wrapper {
-        background: rgba(var(--surface-color-rgb), 0.85) !important;
+        background: transparent !important;
     }
 
     body.dynamic-blur .wallpaper-fill-toggle-wrapper:hover {
@@ -2487,14 +2674,14 @@ body.dynamic-blur .bookmark-folder-submenu {
     transform: translateY(0);
 }
 
-/* 主题色确认按钮 */
+/* 主题色确认按钮：透明底 + 主题色描边，保留主操作层级 */
 .settings-menu-confirm-primary {
     padding: 8px 20px;
     font-size: 13px;
-    background-color: var(--primary-color) !important;
-    background-image: var(--scheme-gradient) !important;
-    color: white !important;
-    border: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    color: var(--scheme-accent) !important;
+    border: 1px solid var(--scheme-accent) !important;
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -2506,12 +2693,12 @@ body.dynamic-blur .bookmark-folder-submenu {
 }
 
 .settings-menu-confirm-primary:hover {
-    background-color: var(--scheme-accent-hover) !important;
+    background-color: rgba(var(--scheme-accent-rgb), 0.12) !important;
     background-image: none !important;
 }
 
 .settings-menu-confirm-primary:active {
-    background-color: var(--scheme-accent-active) !important;
+    background-color: rgba(var(--scheme-accent-rgb), 0.18) !important;
     background-image: none !important;
     transform: translateY(0);
 }
@@ -6389,38 +6576,38 @@ body.dynamic-blur .setting-group {
 /* 高级视觉 - 设置菜单操作按钮 */
 
 body.dynamic-blur .settings-plus-btn {
-    background: rgba(var(--surface-color-rgb), 0.85) !important;
-    border: none !important;
+    background: transparent !important;
+    border: 1px solid var(--border-color) !important;
     color: var(--text-color) !important;
     border-radius: 12px !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 body.dynamic-blur .settings-plus-btn:hover {
-    background: rgba(var(--surface-color-rgb), 0.92) !important;
+    background: rgba(var(--surface-color-rgb), 0.35) !important;
     transform: scale(1.1);
 }
 
 body.dynamic-blur .settings-plus-btn:active {
-    background: rgba(var(--surface-color-rgb), 0.78) !important;
+    background: rgba(var(--surface-color-rgb), 0.25) !important;
     transform: scale(0.95);
 }
 
 body.dynamic-blur .settings-import-btn {
-    background: rgba(var(--surface-color-rgb), 0.85) !important;
-    border: none !important;
+    background: transparent !important;
+    border: 1px solid var(--border-color) !important;
     color: var(--text-color) !important;
     border-radius: 12px !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 body.dynamic-blur .settings-import-btn:hover {
-    background: rgba(var(--surface-color-rgb), 0.92) !important;
+    background: rgba(var(--surface-color-rgb), 0.35) !important;
     transform: scale(1.1);
 }
 
 body.dynamic-blur .settings-import-btn:active {
-    background: rgba(var(--surface-color-rgb), 0.78) !important;
+    background: rgba(var(--surface-color-rgb), 0.25) !important;
     transform: scale(0.95);
 }
 
@@ -6910,7 +7097,7 @@ body.wallpaper-layers-ready {
     gap: 8px;
     height: 40px;
     padding: 0 12px 0 14px;
-    background: var(--surface-color);
+    background: transparent;
     border: 1px solid var(--border-color);
     color: var(--text-color);
     border-radius: 12px;
@@ -6921,13 +7108,13 @@ body.wallpaper-layers-ready {
 }
 
 .wallpaper-fill-toggle-wrapper:hover {
-    background: rgba(var(--surface-color-rgb), 0.8);
+    background: rgba(var(--surface-color-rgb), 0.9);
     border-color: var(--text-secondary);
     transform: scale(1.05);
 }
 
 .wallpaper-fill-toggle-wrapper:active {
-    background: rgba(var(--surface-color-rgb), 0.7);
+    background: rgba(var(--surface-color-rgb), 0.75);
     transform: scale(0.95);
 }
 
@@ -7939,15 +8126,12 @@ body.dynamic-blur .series-preview-item {
     }
 }
 
-/* 黑白配色 - 暀色模式：白色按钮上黑色文字 */
+/* 黑白配色 - 深色模式：填充底色按钮使用黑色文字
+   （右侧面板底部图标按钮已改为透明底 + 描边，沿用正文色，不在此列） */
 @media (prefers-color-scheme: dark) {
     body.color-scheme-black-white .apply-btn,
-    body.color-scheme-black-white .settings-plus-btn,
-    body.color-scheme-black-white .upload-btn,
-    body.color-scheme-black-white .settings-import-btn,
     body.color-scheme-black-white .settings-menu-confirm,
     body.color-scheme-black-white .confirm-quick-link-btn,
-    body.color-scheme-black-white .wallpaper-fill-toggle-wrapper,
     body.color-scheme-black-white .series-preview-import-btn,
     body.color-scheme-black-white .quick-link-edit-save-btn,
     body.color-scheme-black-white .quick-link-edit-cancel-btn {

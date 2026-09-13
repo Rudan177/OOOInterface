@@ -25,6 +25,7 @@ needs/
 .trae/
 .dsh-vision-toolkit/
 test/
+.trae-aicc/
 
 
 Open-in-trae.sh

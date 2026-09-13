@@ -1559,11 +1559,11 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     color: var(--text-color);
 }
 
-/* 胶囊容器 */
+/* 胶囊容器（全圆角：999px 收敛为高度的一半） */
 .widget-size-segmented {
     position: relative;
     height: 36px;
-    border-radius: 14px;
+    border-radius: 999px;
     background: var(--background-color);
     border: 1px solid var(--border-color);
     overflow: hidden;
@@ -1571,14 +1571,15 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     -webkit-user-select: none;
 }
 
-/* 选中胶囊块（扁平，无阴影） */
+/* 选中胶囊块（扁平，无阴影；全圆角收敛为自身高度的一半，与容器内缘同心） */
 .widget-size-seg-thumb {
     position: absolute;
     top: 3px;
     bottom: 3px;
     left: 3px;
-    width: calc(33.33% - 3px);
-    border-radius: 14px;
+    /* 槽宽的三分之一再减去两侧各 3px 内缩（共 6px），避免末段贴边 */
+    width: calc(33.3333% - 6px);
+    border-radius: 999px;
     background: var(--surface-color);
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
@@ -1586,17 +1587,17 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 
 /* 两段式（小/大）：thumb 占半宽 */
 .widget-size-segmented.seg-2 .widget-size-seg-thumb {
-    width: calc(50% - 3px);
+    width: calc(50% - 6px);
 }
 
 /* 大：滑到第 2 段 */
 .widget-size-segmented.rect .widget-size-seg-thumb {
-    transform: translateX(calc(100% + 3px));
+    transform: translateX(calc(100% + 6px));
 }
 
 /* 超大：滑到第 3 段 */
 .widget-size-segmented.super .widget-size-seg-thumb {
-    transform: translateX(calc(200% + 6px));
+    transform: translateX(calc(200% + 12px));
 }
 
 /* 分段文字标签 */
@@ -1604,7 +1605,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 33.33%;
+    width: 33.3333%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1622,8 +1623,8 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 }
 
 .widget-size-seg-label-square { left: 0; }
-.widget-size-seg-label-rect { left: 33.33%; }
-.widget-size-seg-label-super { left: 66.66%; }
+.widget-size-seg-label-rect { left: 33.3333%; }
+.widget-size-seg-label-super { left: 66.6667%; }
 .widget-size-segmented.seg-2 .widget-size-seg-label-rect { left: 50%; }
 
 /* 无小尺寸（no-square：仅 大/超大）：标签改从左侧起排 */
@@ -1632,7 +1633,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 
 /* 无小尺寸时：大=第1段（thumb 不移动），超大=第2段 */
 .widget-size-segmented.no-square.rect .widget-size-seg-thumb { transform: none; }
-.widget-size-segmented.no-square.super .widget-size-seg-thumb { transform: translateX(calc(100% + 3px)); }
+.widget-size-segmented.no-square.super .widget-size-seg-thumb { transform: translateX(calc(100% + 6px)); }
 
 .widget-size-segmented .widget-size-seg-label.active {
     color: var(--scheme-accent) !important;
@@ -2016,7 +2017,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 .widget-size-segmented {
     position: relative;
     height: 34px;
-    border-radius: 14px;
+    border-radius: 999px;
     background: transparent;
     overflow: hidden;
     user-select: none;
@@ -2028,8 +2029,9 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     top: 2px;
     bottom: 2px;
     left: 2px;
-    width: calc(33.33% - 2px);
-    border-radius: 12px;
+    /* 槽宽的三分之一再减去两侧各 2px 内缩（共 4px），避免末段贴边 */
+    width: calc(33.3333% - 4px);
+    border-radius: 999px;
     background: var(--surface-color);
     transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
@@ -2037,22 +2039,22 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 
 /* 两段式（小/大）：thumb 占半宽 */
 .widget-size-segmented.seg-2 .widget-size-seg-thumb {
-    width: calc(50% - 2px);
+    width: calc(50% - 4px);
 }
 
 .widget-size-segmented.rect .widget-size-seg-thumb {
-    transform: translateX(calc(100% + 2px));
+    transform: translateX(calc(100% + 4px));
 }
 
 .widget-size-segmented.super .widget-size-seg-thumb {
-    transform: translateX(calc(200% + 4px));
+    transform: translateX(calc(200% + 8px));
 }
 
 .widget-size-seg-label {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 33.33%;
+    width: 33.3333%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2071,8 +2073,8 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 }
 
 .widget-size-seg-label-square { left: 0; }
-.widget-size-seg-label-rect { left: 33.33%; }
-.widget-size-seg-label-super { left: 66.66%; }
+.widget-size-seg-label-rect { left: 33.3333%; }
+.widget-size-seg-label-super { left: 66.6667%; }
 .widget-size-segmented.seg-2 .widget-size-seg-label-rect { left: 50%; }
 
 /* 无小尺寸（no-square：仅 大/超大）：标签改从左侧起排 */
@@ -2081,7 +2083,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 
 /* 无小尺寸时：大=第1段（thumb 不移动），超大=第2段 */
 .widget-size-segmented.no-square.rect .widget-size-seg-thumb { transform: none; }
-.widget-size-segmented.no-square.super .widget-size-seg-thumb { transform: translateX(calc(100% + 2px)); }
+.widget-size-segmented.no-square.super .widget-size-seg-thumb { transform: translateX(calc(100% + 4px)); }
 
 .widget-size-segmented .widget-size-seg-label.active {
     color: var(--scheme-accent) !important;
@@ -2145,16 +2147,18 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 }
 
 .widget-add-form-btn.confirm {
-    background: var(--scheme-accent);
-    color: #fff;
+    background: transparent;
+    color: var(--scheme-accent);
+    border: 1px solid var(--scheme-accent);
 }
 
 .widget-add-form-btn.confirm:hover {
-    background: var(--scheme-accent-hover);
+    background: rgba(var(--scheme-accent-rgb), 0.12);
     transform: translateY(-1px);
 }
 
 .widget-add-form-btn.confirm:active {
+    background: rgba(var(--scheme-accent-rgb), 0.18);
     transform: translateY(0);
 }
 
@@ -2165,7 +2169,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 }
 
 .widget-add-form-btn.cancel:hover {
-    background: var(--surface-color);
+    background: rgba(var(--surface-color-rgb), 0.9);
 }
 
 /* ========== Google Tasks 连接面板 ========== */

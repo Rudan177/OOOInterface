@@ -484,15 +484,17 @@ body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .apply-btn {
     border: none !important;
 }
 
+/* 新星调配色方案 - 其余底部图标按钮为透明底 + 描边 */
 body.dynamic-blur.color-scheme-tianyi-blue .settings-plus-btn,
 body.dynamic-blur.color-scheme-vibrant-red .settings-plus-btn,
 body.dynamic-blur.color-scheme-classic-gold .settings-plus-btn,
 body.dynamic-blur.color-scheme-isolation .settings-plus-btn,
 body.dynamic-blur.color-scheme-custom .settings-plus-btn,
 body.dynamic-blur.color-scheme-theme-add .settings-plus-btn {
-    background: var(--scheme-gradient) !important;
-    border: none !important;
-    color: white !important;
+    background: transparent !important;
+    background-image: none !important;
+    border: 1px solid var(--scheme-accent) !important;
+    color: var(--scheme-accent) !important;
 }
 
 body.dynamic-blur.color-scheme-tianyi-blue .settings-import-btn,
@@ -501,9 +503,10 @@ body.dynamic-blur.color-scheme-classic-gold .settings-import-btn,
 body.dynamic-blur.color-scheme-isolation .settings-import-btn,
 body.dynamic-blur.color-scheme-custom .settings-import-btn,
 body.dynamic-blur.color-scheme-theme-add .settings-import-btn {
-    background: var(--scheme-gradient) !important;
-    border: none !important;
-    color: white !important;
+    background: transparent !important;
+    background-image: none !important;
+    border: 1px solid var(--scheme-accent) !important;
+    color: var(--scheme-accent) !important;
 }
 
 body.dynamic-blur.color-scheme-tianyi-blue .wallpaper-fill-toggle-wrapper,
@@ -512,9 +515,10 @@ body.dynamic-blur.color-scheme-classic-gold .wallpaper-fill-toggle-wrapper,
 body.dynamic-blur.color-scheme-isolation .wallpaper-fill-toggle-wrapper,
 body.dynamic-blur.color-scheme-custom .wallpaper-fill-toggle-wrapper,
 body.dynamic-blur.color-scheme-theme-add .wallpaper-fill-toggle-wrapper {
-    background: var(--scheme-gradient) !important;
-    border: none !important;
-    color: white !important;
+    background: transparent !important;
+    background-image: none !important;
+    border: 1px solid var(--scheme-accent) !important;
+    color: var(--scheme-accent) !important;
 }
 
 body.dynamic-blur.color-scheme-tianyi-blue .context-menu.show .context-menu-item:hover,
@@ -894,55 +898,58 @@ body.dynamic-blur .switch .slider:before {
     }
 }
 
-/* 高级视觉 - 设置菜单操作按钮 */
+ /* 高级视觉 - 设置菜单操作按钮（透明底 + 描边，毛玻璃下仅悬停时轻微叠加） */
 body.dynamic-blur .settings-plus-btn {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    background: transparent !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     color: var(--text-color) !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
 body.dynamic-blur .settings-plus-btn:hover {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    background: rgba(var(--surface-color-rgb), 0.35) !important;
     transform: scale(1.1);
 }
 
 body.dynamic-blur .settings-plus-btn:active {
+    background: rgba(var(--surface-color-rgb), 0.25) !important;
     transform: scale(0.95);
 }
 
 body.dynamic-blur .settings-import-btn {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    background: transparent !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     color: var(--text-color) !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
 body.dynamic-blur .settings-import-btn:hover {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    background: rgba(var(--surface-color-rgb), 0.35) !important;
     transform: scale(1.1);
 }
 
 body.dynamic-blur .settings-import-btn:active {
+    background: rgba(var(--surface-color-rgb), 0.25) !important;
     transform: scale(0.95);
 }
 
 body.dynamic-blur .wallpaper-fill-toggle-wrapper {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    background: transparent !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     color: var(--text-color) !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
 body.dynamic-blur .wallpaper-fill-toggle-wrapper:hover {
-    background: rgba(var(--surface-color-rgb), 0.95) !important;
+    background: rgba(var(--surface-color-rgb), 0.35) !important;
     transform: scale(1.05);
 }
 
 body.dynamic-blur .wallpaper-fill-toggle-wrapper:active {
+    background: rgba(var(--surface-color-rgb), 0.25) !important;
     transform: scale(0.95);
 }
 
@@ -1123,14 +1130,11 @@ body.scrolled.dynamic-blur .search-input::placeholder {
     }
 }
 
-/* 黑白配色 - 暀色模式 + 高级视觉：引擎按钮黑色文字 */
+/* 黑白配色 - 深色模式 + 高级视觉：填充底色按钮使用黑色文字
+   （右侧面板底部图标按钮已改为透明底 + 描边，沿用正文色，不在此列） */
 @media (prefers-color-scheme: dark) {
     body.color-scheme-black-white.dynamic-blur .engine-btn.active,
-    body.color-scheme-black-white.dynamic-blur .apply-btn,
-    body.color-scheme-black-white.dynamic-blur .settings-plus-btn,
-    body.color-scheme-black-white.dynamic-blur .upload-btn,
-    body.color-scheme-black-white.dynamic-blur .settings-import-btn,
-    body.color-scheme-black-white.dynamic-blur .wallpaper-fill-toggle-wrapper {
+    body.color-scheme-black-white.dynamic-blur .apply-btn {
         color: #000000 !important;
     }
 }

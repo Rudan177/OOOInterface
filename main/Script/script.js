@@ -46,7 +46,9 @@ class OOOInterface {
             activeCustomColorIndex: -1,
             contextMenuStyle: 'default',
             hideInfoPopup: { enabled: false, type: null, timestamp: null },
-            badgeOpenMethod: 'both',
+            // 底部铭牌功能：双击 / 右键分别对应的动作（settings 打开设置 / audio 播放音效 / none 无）
+            badgeDblClickAction: 'settings',
+            badgeContextMenuAction: 'settings',
             bingRefreshEveryTime: true,
             bingRefreshInterval: 0,
             quickAccessSidebar: true,
@@ -294,6 +296,7 @@ class OOOInterface {
         this.updateHideInfoPopupLabel();
         this.syncStatusBarUI();
         this.syncWidgetPanelUI();
+        this.syncBadgeOpenMethodUI();
     }
 
     syncStatusBarUI() {
@@ -906,11 +909,145 @@ class OOOInterface {
         // 初始化高级视觉效果自动启用标志
         this._dynamicBlurAutoEnabled = this.settings.enhancedDisplay && this.settings.dynamicBlur;
 
-        // 添加底部铭牌打开设置页面的功能（根据设置决定）
+        // 绑定底部铭牌的双击/右键动作（依设置决定，幂等）
         this.setupBadgeOpenMethod();
     }
 
-    // 设置底部铭牌打开方式
+    // 归一化底部铭牌动作值，非法值回退为默认
+    normalizeBadgeAction(value) {
+        return (value === 'settings' || value === 'audio' || value === 'none') ? value : 'settings';
+    }
+
+    // 底部铭牌动作的中文展示名
+    getBadgeActionLabel(value) {
+        const action = this.normalizeBadgeAction(value);
+        return action === 'audio' ? 'Audio' : action === 'settings' ? '打开设置' : '无';
+    }
+
+    // 底部铭牌功能设置项的摘要文本（依次为双击 / 右键的动作）
+    getBadgeActionSummary() {
+        return this.getBadgeActionLabel(this.settings.badgeDblClickAction)
+            + ' · ' + this.getBadgeActionLabel(this.settings.badgeContextMenuAction);
+    }
+
+    // 同步底部铭牌功能设置项：隐藏铭牌开关开启时隐藏该项，同时更新摘要文本
+    syncBadgeOpenMethodUI() {
+        const group = document.getElementById('badge-open-method-group');
+        if (group) {
+            group.style.display = this.settings.hiddenBadge ? 'none' : '';
+        }
+        const selectedDisplay = document.getElementById('badge-open-method-selected');
+        if (selectedDisplay) {
+            selectedDisplay.textContent = this.getBadgeActionSummary();
+        }
+        // 铭牌已隐藏时，若右面板仍停留在该设置视图则退回占位内容，避免展示失效设置
+        const rpu = document.getElementById('right-panel-upper');
+        if (this.settings.hiddenBadge && rpu && rpu.dataset.menuType === 'badge-open-method') {
+            this.closeSettingsMenuInRightPanel();
+        }
+        // 铭牌隐藏后停止音效与光效，避免在不可见元素上继续播放
+        if (this.settings.hiddenBadge) {
+            this.stopBadgeAudio();
+        }
+    }
+
+    // 执行底部铭牌动作（双击 / 右键共用）
+    runBadgeAction(action) {
+        if (action === 'settings') {
+            this.openSettings('badge');
+        } else if (action === 'audio') {
+            this.toggleBadgeAudio();
+        }
+    }
+
+    // 获取（惰性创建）铭牌音效实例：单实例复用，光效跟随真实播放状态
+    getBadgeAudio() {
+        if (!this._badgeAudio) {
+            const audio = new Audio('https://rudan177.github.io/OOOInterface/images/wow.mp3');
+            audio.addEventListener('play', () => {
+                this.setBadgeAudioGlow(true);
+                this.updateBadgeAudioProgress();
+            });
+            audio.addEventListener('pause', () => this.setBadgeAudioGlow(false));
+            audio.addEventListener('ended', () => {
+                this.updateBadgeAudioProgress();
+                this.setBadgeAudioGlow(false);
+            });
+            audio.addEventListener('error', () => this.setBadgeAudioGlow(false));
+            // 进度光带长度跟随播放进度
+            audio.addEventListener('timeupdate', () => this.updateBadgeAudioProgress());
+            audio.addEventListener('loadedmetadata', () => this.updateBadgeAudioProgress());
+            this._badgeAudio = audio;
+        }
+        return this._badgeAudio;
+    }
+
+    // 依据真实播放进度更新铭牌光带长度（存为 0~1 的 CSS 变量）
+    updateBadgeAudioProgress() {
+        const badge = document.getElementById('ooo-badge');
+        const audio = this._badgeAudio;
+        if (!badge || !audio) return;
+
+        let ratio = 0;
+        const duration = audio.duration;
+        if (audio.ended) {
+            ratio = 1;
+        } else if (isFinite(duration) && duration > 0) {
+            ratio = Math.min(1, Math.max(0, audio.currentTime / duration));
+        }
+        badge.style.setProperty('--badge-audio-progress', ratio.toFixed(4));
+    }
+
+    // 切换铭牌音效：播放中再次触发为暂停，暂停/播完后触发为播放
+    toggleBadgeAudio() {
+        try {
+            const audio = this.getBadgeAudio();
+            if (!audio.paused && !audio.ended) {
+                audio.pause();
+                return;
+            }
+            // 播完后再次触发：从头播放
+            if (audio.ended) audio.currentTime = 0;
+            audio.play().catch(err => {
+                this.setBadgeAudioGlow(false);
+                console.error('播放音频失败:', err);
+            });
+        } catch (err) {
+            this.setBadgeAudioGlow(false);
+            console.error('播放音频失败:', err);
+        }
+    }
+
+    // 播放铭牌音效（反馈按钮等场景：始终从头播放，不切换）
+    playBadgeAudio() {
+        try {
+            const audio = this.getBadgeAudio();
+            audio.currentTime = 0;
+            audio.play().catch(err => {
+                this.setBadgeAudioGlow(false);
+                console.error('播放音频失败:', err);
+            });
+        } catch (err) {
+            this.setBadgeAudioGlow(false);
+            console.error('播放音频失败:', err);
+        }
+    }
+
+    // 停止铭牌音效并收起光效
+    stopBadgeAudio() {
+        if (this._badgeAudio && !this._badgeAudio.paused) {
+            this._badgeAudio.pause();
+        }
+        this.setBadgeAudioGlow(false);
+    }
+
+    // 设置铭牌播放光效的显隐
+    setBadgeAudioGlow(on) {
+        const badge = document.getElementById('ooo-badge');
+        if (badge) badge.classList.toggle('badge-audio-playing', !!on);
+    }
+
+    // 设置底部铭牌打开方式（双击 / 右键各自独立配置：打开设置 / Audio / 无）
     setupBadgeOpenMethod() {
         const badge = document.getElementById('ooo-badge');
         if (!badge) return;
@@ -931,24 +1068,25 @@ class OOOInterface {
         this._badgeToggleHandler = () => this.toggleBadgeText();
         badge.addEventListener('click', this._badgeToggleHandler);
 
-        const method = this.settings.badgeOpenMethod || 'both';
+        const dblAction = this.normalizeBadgeAction(this.settings.badgeDblClickAction);
+        const ctxAction = this.normalizeBadgeAction(this.settings.badgeContextMenuAction);
 
-        // 根据设置添加相应的事件监听器
-        if (method !== 'none') {
-            if (method === 'both' || method === 'dblclick') {
-                this._badgeDblClickHandler = () => {
-                    this.openSettings('badge');
-                };
-                badge.addEventListener('dblclick', this._badgeDblClickHandler);
-            }
+        // 当前配置已不再需要音效时，停掉可能在播的音频并收起光效
+        if (dblAction !== 'audio' && ctxAction !== 'audio') {
+            this.stopBadgeAudio();
+        }
 
-            if (method === 'both' || method === 'contextmenu') {
-                this._badgeContextMenuHandler = (e) => {
-                    e.preventDefault();
-                    this.openSettings('badge');
-                };
-                badge.addEventListener('contextmenu', this._badgeContextMenuHandler);
-            }
+        if (dblAction !== 'none') {
+            this._badgeDblClickHandler = () => this.runBadgeAction(dblAction);
+            badge.addEventListener('dblclick', this._badgeDblClickHandler);
+        }
+
+        if (ctxAction !== 'none') {
+            this._badgeContextMenuHandler = (e) => {
+                e.preventDefault();
+                this.runBadgeAction(ctxAction);
+            };
+            badge.addEventListener('contextmenu', this._badgeContextMenuHandler);
         }
     }
 
@@ -1012,7 +1150,19 @@ class OOOInterface {
                 result.activeCustomColorIndex = 0;
             }
         }
-        if (savedSettings.badgeOpenMethod !== undefined) result.badgeOpenMethod = savedSettings.badgeOpenMethod;
+        if (savedSettings.badgeDblClickAction !== undefined) {
+            result.badgeDblClickAction = this.normalizeBadgeAction(savedSettings.badgeDblClickAction);
+        }
+        if (savedSettings.badgeContextMenuAction !== undefined) {
+            result.badgeContextMenuAction = this.normalizeBadgeAction(savedSettings.badgeContextMenuAction);
+        }
+        // 旧版 badgeOpenMethod 迁移：both / dblclick / contextmenu / none
+        if (savedSettings.badgeDblClickAction === undefined && savedSettings.badgeContextMenuAction === undefined
+            && savedSettings.badgeOpenMethod !== undefined) {
+            const legacy = savedSettings.badgeOpenMethod;
+            result.badgeDblClickAction = (legacy === 'none' || legacy === 'contextmenu') ? 'none' : 'settings';
+            result.badgeContextMenuAction = (legacy === 'none' || legacy === 'dblclick') ? 'none' : 'settings';
+        }
         if (savedSettings.bingRefreshEveryTime !== undefined) result.bingRefreshEveryTime = savedSettings.bingRefreshEveryTime;
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
         if (savedSettings.quickAccessSidebar !== undefined) result.quickAccessSidebar = savedSettings.quickAccessSidebar;
@@ -2643,19 +2793,13 @@ class OOOInterface {
                     this.settings.hiddenBadge = hiddenBadgeToggle.checked;
                 }
 
-                // 保存设置打开方式
-                const badgeMethodSelect = document.getElementById('badge-open-method-select');
-                if (badgeMethodSelect) {
-                    this.settings.badgeOpenMethod = badgeMethodSelect.value;
-                }
+                // 底部铭牌功能（双击/右键动作）在右面板选择时已即时保存，此处无需再读取
 
                 if (oldPersistentWallpaper !== this.settings.persistentWallpaper) {
                     this.handlePersistentWallpaperToggle();
                 }
 
                 this.applySettings();
-                // 重新绑定底部铭牌打开方式（该设置不在 applySettings 中处理）
-                this.setupBadgeOpenMethod();
                 this.saveSettings();
                 this.updateContextMenuIcons();
                 this.closeSettings();
@@ -2698,10 +2842,7 @@ class OOOInterface {
         document.getElementById('feedback-btn').addEventListener('contextmenu', (e) => {
             e.preventDefault();
             // 播放音频
-            const audio = new Audio('https://rudan177.github.io/OOOInterface/images/wow.mp3');
-            audio.play().catch(err => {
-                console.error('播放音频失败:', err);
-            });
+            this.playBadgeAudio();
         });
         document.getElementById('feedback-btn').addEventListener('click', () => {
             window.location.href = 'FB/fb.html';
@@ -7143,19 +7284,8 @@ class OOOInterface {
 
         this.syncWidgetPanelUI();
 
-        // 更新设置打开方式
-        const badgeOpenMethodValue = this.settings.badgeOpenMethod || 'both';
-        const badgeMethodSelect = document.getElementById('badge-open-method-select');
-        if (badgeMethodSelect) {
-            badgeMethodSelect.value = badgeOpenMethodValue;
-            const selectedDisplay = document.getElementById('badge-open-method-selected');
-            if (selectedDisplay) {
-                const selectedOption = badgeMethodSelect.querySelector(`option[value="${badgeOpenMethodValue}"]`);
-                if (selectedOption) {
-                    selectedDisplay.textContent = selectedOption.textContent;
-                }
-            }
-        }
+        // 更新底部铭牌功能（摘要文本 + 隐藏铭牌时隐藏该项）
+        this.syncBadgeOpenMethodUI();
 
         // 更新自定义下拉菜单的显示文本
         const updateCustomSelectDisplay = (selectId, selectedValue) => {
@@ -7659,6 +7789,10 @@ class OOOInterface {
         if (badge) {
             badge.style.display = this.settings.hiddenBadge ? 'none' : '';
         }
+
+        // 底部铭牌功能：动作绑定幂等；同步子项显隐与摘要，覆盖导入设置等整体替换路径
+        this.setupBadgeOpenMethod();
+        this.syncBadgeOpenMethodUI();
 
         // 同步固定侧边栏状态（关闭时内部负责移除 sidebar-fixed 标记并恢复 hover 控制）
         this.syncSidebarFixedState();
@@ -8541,6 +8675,91 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 // 右侧面板设置菜单方法
+OOOInterface.prototype.renderBadgeConfigView = function (rightPanelUpper) {
+    const self = this;
+    if (!rightPanelUpper) return;
+
+    rightPanelUpper.dataset.menuType = 'badge-open-method';
+
+    const container = document.createElement('div');
+    container.className = 'settings-menu-container slide-in-right';
+
+    const actions = [
+        { key: 'badgeDblClickAction', label: '双击' },
+        { key: 'badgeContextMenuAction', label: '右键' }
+    ];
+
+    actions.forEach(({ key, label }) => {
+        const row = document.createElement('div');
+        row.className = 'badge-action-row';
+
+        const rowLabel = document.createElement('label');
+        rowLabel.textContent = label;
+        row.appendChild(rowLabel);
+
+        const options = [
+            { value: 'settings', text: '打开设置' },
+            { value: 'audio', text: 'Audio' },
+            { value: 'none', text: '无' }
+        ];
+        const current = self.normalizeBadgeAction(self.settings[key]);
+        const currentIdx = Math.max(0, options.findIndex(o => o.value === current));
+
+        const seg = document.createElement('div');
+        seg.className = 'badge-action-segmented pos-' + currentIdx;
+
+        const thumb = document.createElement('div');
+        thumb.className = 'badge-action-thumb';
+        seg.appendChild(thumb);
+
+        options.forEach((opt, idx) => {
+            const span = document.createElement('span');
+            span.className = 'badge-action-label l' + idx + (idx === currentIdx ? ' active' : '');
+            span.textContent = opt.text;
+            span.setAttribute('role', 'button');
+            span.setAttribute('tabindex', '0');
+            span.setAttribute('title', opt.text);
+
+            const select = () => {
+                if (self.settings[key] === opt.value) return;
+                const value = self.normalizeBadgeAction(opt.value);
+                self.settings[key] = value;
+                // 移动滑块并更新高亮
+                seg.classList.remove('pos-0', 'pos-1', 'pos-2');
+                seg.classList.add('pos-' + idx);
+                seg.querySelectorAll('.badge-action-label').forEach((el, i) => {
+                    el.classList.toggle('active', i === idx);
+                });
+                // 立即生效并持久化（与其他右面板选择器一致，不弹提示）
+                self.setupBadgeOpenMethod();
+                self.syncBadgeOpenMethodUI();
+                self.saveSettings();
+            };
+
+            span.addEventListener('click', (e) => {
+                e.stopPropagation();
+                select();
+            });
+            span.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    select();
+                }
+            });
+
+            seg.appendChild(span);
+        });
+
+        row.appendChild(seg);
+        container.appendChild(row);
+    });
+
+    rightPanelUpper.appendChild(container);
+    const modal = document.getElementById('settings-modal');
+    if (modal) modal.classList.add('right-panel-open');
+};
+
 OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected, hiddenSelect, skipAnimation) {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
@@ -8561,11 +8780,19 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         menuType = 'color-scheme';
     } else if (selected.id === 'theme-select-selected' || selected.parentElement.querySelector('#theme-select')) {
         menuType = 'theme';
+    } else if (selected.id === 'badge-open-method-selected' || selected.parentElement.querySelector('#badge-open-method-select')) {
+        menuType = 'badge-open-method';
     }
 
     rightPanelUpper.innerHTML = '';
     delete rightPanelUpper.dataset.subView;
     rightPanelUpper.dataset.menuType = menuType;
+
+    // 底部铭牌功能：独立的三段式双选项视图，不走通用列表渲染
+    if (menuType === 'badge-open-method') {
+        this.renderBadgeConfigView(rightPanelUpper);
+        return;
+    }
 
     const container = document.createElement('div');
     container.className = 'settings-menu-container' + (skipAnimation ? '' : ' slide-in-right');
