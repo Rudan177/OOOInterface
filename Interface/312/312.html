@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="format-detection" content="telephone=no">
+    <title>共鸣不息 - OOOInterface 31</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../core/style.css">
+    <style>
+        .hero-section {
+            margin-top: 20px;
+            padding: 24px 20px 6px;
+        }
+
+        .hero-section .hero-logo {
+            margin-bottom: 10px;
+            border-radius: 30px;
+        }
+
+        .intro-title {
+            font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+            font-weight: 900;
+            font-size: 58px;
+            line-height: 1.1;
+            letter-spacing: 16px;
+            text-indent: 16px;
+            margin: 0;
+        }
+
+        .intro-sub {
+            font-family: 'Noto Serif SC', Georgia, 'Times New Roman', serif;
+            font-weight: 900;
+            font-size: 26px;
+            letter-spacing: 1px;
+            margin: 0;
+            background: linear-gradient(90deg, #0aa3a3 0%, #10bf90 60%, #35c26a 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: #10bf90;
+        }
+
+        body.dark-theme .intro-sub,
+        body:not(.light-theme) .intro-sub {
+            background: linear-gradient(90deg, #4dd8d8 0%, #2ee2a8 60%, #6ee38f 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .intro-card {
+            border-radius: 16px;
+            padding: 30px 34px;
+        }
+
+        body.enhanced-display .version-container .section-card,
+        body.enhanced-display .version-container .section-card:hover,
+        body.enhanced-display .intro-announce .download-btn,
+        body.enhanced-display .intro-announce .download-btn:hover {
+            box-shadow: none;
+        }
+
+        .intro-card p {
+            font-size: 17.5px;
+            font-weight: 550;
+            line-height: 2.05;
+            text-align: justify;
+            text-justify: inter-ideograph;
+            color: var(--text-paragraph);
+            margin: 0 0 14px;
+        }
+
+        .intro-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        .intro-announce {
+            border-radius: 16px;
+            text-align: center;
+            padding: 26px 24px 32px;
+        }
+
+        .announce-label {
+            margin: 0 0 6px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            text-indent: 4px;
+            color: var(--text-muted);
+        }
+
+        .announce-date {
+            font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+            font-weight: 900;
+            font-size: 38px;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+            margin: 0 0 20px;
+        }
+
+        .intro-announce .download-btn {
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .intro-title {
+                font-size: 36px;
+                letter-spacing: 8px;
+                text-indent: 8px;
+            }
+
+            .intro-sub {
+                font-size: 18px;
+            }
+
+            .intro-card {
+                border-radius: 16px;
+                padding: 22px 22px;
+            }
+
+            .intro-card p {
+                font-size: 15.5px;
+            }
+
+            .announce-date {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+
+<body class="enhanced-display">
+    <div class="version-container">
+        <div class="decoration">ByRUDAN OOOInterface</div>
+
+        <div class="hero-section">
+            <h1 class="hero-title intro-title">共鸣不息</h1>
+            <p class="intro-sub">Converge and Flow</p>
+        </div>
+
+        <div class="section-card intro-card" style="--i:0">
+            <p>OOOInterface 致力于通过不断的更新为用户带来更好的体验。但受限于时间和精力，在可见的未来几个月里，OOOInterface 都无法以 7月 8 月的的速度更新。但请不必悲哀，这并不意味着 OOOInterface 将彻底消失。在团结协作下，OOOInterface 承诺，仍能在每周提供 尝鲜版 渠道更新，每个月提供 正式版 渠道更新。除此之外，我们还策划了另一项活动——OCP（OOOInterface Concert Play）。OOOInterface 将公开征集用户的音乐喜好或需求，每日在 OOOInterface 和 CHAPTER 为用户提供一首或多首音乐。</p>
+            <p>您可以在 OOOInterface 5.1.2 及后续版本设置页面底部右键反馈按钮 或 OOOInterface 26 及后续版本设置页面右键应用按钮打开开发者模式后右键顶部 Bug_report 图标按钮 或 OOOInterface 32-BS232 及后续待发布的版本设置页面下滑找到“底部名牌功能”设置并将右键或双击底部名牌功能设为“Audio”（临时名称）后在底部名牌执行对应操作聆听。</p>
+            <p>不久后，CHAPTER会上线专题播放页面。敬请期待。</p>
+            <p>ps：今天已经可以用了哦！</p>
+            <p>若您想提供自己的喜好内容，欢迎向 <a href="mailto:wyjcrtu@proton.me">wyjcrtu@proton.me</a> 投稿（您可以直接投稿文件或曲名）；OOOInterface 也会不定期开展征集活动。</p>
+            <p>OOOInterface 希望通过这些活动，能够为给为用户带来数分钟的欢愉和休憩。为更棒的 OOOInterface 预备好！</p>
+        </div>
+
+        <nav class="nav-links">
+            <a href="../../index.html">返回首页</a>
+            <a href="../31/31.html">OOOInterface 31</a>
+            <a href="../../about/about.html">历史版本</a>
+        </nav>
+    </div>
+
+    <footer class="footer">
+        <p>© 2026 ByRUDAN 保留所有权利。</p>
+        <p>许可证：ABCD-26W08A</p>
+    </footer>
+
+    <button class="float-btn" id="floatBtn">
+        <svg class="icon-back-top" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+            width="24px" fill="currentColor">
+            <path d="M160-760v-80h640v80H160Zm280 640v-408L336-424l-56-56 200-200 200 200-56 56-104-104v408h-80Z" />
+        </svg>
+        <span class="theme-icons">
+            <svg class="icon-theme-logo" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                width="24px" fill="currentColor">
+                <path
+                    d="M324-111.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM520-163q119-15 199.5-104.5T800-480q0-123-80.5-212.5T520-797v634Z" />
+            </svg>
+            <svg class="icon-lock" xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960"
+                width="12px" fill="#ff4444" style="display: none;">
+                <path
+                    d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z" />
+            </svg>
+        </span>
+    </button>
+
+    <script src="../core/script.js"></script>
+</body>
+
+</html>
