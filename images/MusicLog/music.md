@@ -4,3 +4,4 @@
 | 20260914   | 我的梦 (聚力新生版) | 中国交响乐团 & 中国交响乐团合唱团   | 236s   | 1    | Contribute |
 | 20260915   | 相思若循            | 洛天依、乐正绫                      | 225s   | 1    | Contribute |
 | 20260916   | Da Capo             | HOYO-MiX                            | 134s   | 1    | Contribute |
+| 20260917   | Moon Halo           | 茶理理理子、TetraCalyx、hanser、HOYO-MiX | 204s | 1    | Contribute |
