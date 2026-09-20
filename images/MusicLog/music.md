@@ -7,3 +7,4 @@
 | 20260917   | Moon Halo           | 茶理理理子、TetraCalyx、hanser、HOYO-MiX | 204s | 1    | Contribute |
 | 20260918   | 奥黛塔，快陪我去堆个雪人吧 Dear Odette, Come and Build a Snowman With Me | HOYO-MiX | 82s | 1 | Official |
 | 20260919   | 唯有追赶风的方向 (Only By Chasing the Wind) | 知更鸟、HOYO-MiX、Chevy | 123s | 1 | Official |
+| 20260920   | 闭眼，我触碰幻想的边界 | 苏逸_Suyi、洛天依 | 218s | 1 | Contribute |
