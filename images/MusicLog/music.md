@@ -9,3 +9,4 @@
 | 20260919   | 唯有追赶风的方向 (Only By Chasing the Wind) | 知更鸟、HOYO-MiX、Chevy | 123s | 1 | Official |
 | 20260920   | 闭眼，我触碰幻想的边界 | 苏逸_Suyi、洛天依 | 218s | 1 | Contribute |
 | 20260921   | 异样的风暴中心 | 洛天依 | 330s | 1 | Contribute |
+| 20260921   | 希望有羽毛和翅膀 | 知更鸟、HOYO-MiX、Chevy | 229s | 1 | Contribute |
