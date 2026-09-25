@@ -1186,6 +1186,329 @@ body.color-scheme-custom .engine-btn.active:hover {
 
 
 
+/* ============================================================
+   OCP 播控：hover 底部铭牌时显示的媒体播控卡片
+   整卡为胶囊形（完全圆角），封面与播放键同样完全圆角（正圆），
+   动效与配色对齐 info 提示条（见 info.css）：
+   0.3s ease 的淡入 + 上浮入场（毛玻璃模式下附 0.8→1 缩放）、
+   --info-bg-color / --info-text-color 表面与文字、
+   高级视觉效果下同款毛玻璃（blur(80px) saturate(1.5)）且不加投影。
+   - 外层 .ocp-player-popover 只做定位（横向居中、悬于铭牌上方），
+     常驻文档流外层且 pointer-events: none，不干扰页面交互；
+   - 内层 .ocp-player-card 是唯一交互面，显隐由 .show 类驱动：
+     隐藏时 visibility:hidden，避免透明卡片挡住上方点击；
+   - 仅当“OCP播控”开启且 OCP 已开始播放后由 JS 控制显示。
+   ============================================================ */
+.ocp-player-popover {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 12px);
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.ocp-player-card {
+    pointer-events: none;
+    visibility: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    /* 细胶囊：38px 元素 + 7px 内边距（含 1px 边框）→ 高 54px、端帽半径 27px；
+       四向同为 7px，使封面/播放键圆心正好落在端帽圆心上 */
+    padding: 7px;
+    background-color: var(--info-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    box-shadow: none;
+    opacity: 0;
+    transform: translateY(20px);
+    transform-origin: bottom center;
+    /* 与 info 提示条一致的入场/退场节奏 */
+    transition: opacity 0.3s ease, visibility 0.3s, transform 0.3s ease;
+}
+
+.ocp-player-popover.show .ocp-player-card {
+    pointer-events: auto;
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 封面：正圆，与播放键同为 38px；默认主题色渐变压底，
+   读到音源封面图后铺满，暂停时显示音符，播放时切换为居中律动均衡条 */
+.ocp-player-cover {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    /* 封面是可点按钮（打开在线播放器）：清掉按钮默认外观，只保留圆形图块 */
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: rgba(var(--scheme-accent-rgb), 1);
+    background-image: linear-gradient(140deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 62%);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+/* 悬停/按下反馈：轻微提亮，与播放键的交互语言一致 */
+.ocp-player-cover:hover {
+    filter: brightness(1.08);
+}
+
+.ocp-player-cover:active {
+    transform: scale(0.94);
+}
+
+.ocp-player-cover:focus-visible {
+    outline: 2px solid rgba(var(--scheme-accent-rgb), 1);
+    outline-offset: 2px;
+}
+
+.ocp-player-cover.has-art .ocp-cover-note {
+    display: none;
+}
+
+/* 封面图读到后淡入一次（与卡片同为 0.3s 级节奏），避免整块图突然出现 */
+.ocp-player-cover.has-art {
+    animation: ocpCoverIn 0.34s ease;
+}
+
+@keyframes ocpCoverIn {
+    from {
+        opacity: 0.2;
+        transform: scale(0.92);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* 有封面图且播放中时压一层柔和暗纱，保证白色律动条始终可读 */
+.ocp-player-cover.has-art::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.2));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.ocp-player-card.playing .ocp-player-cover.has-art::before {
+    opacity: 1;
+}
+
+.ocp-cover-note {
+    color: #ffffff;
+    font-size: 20px;
+    opacity: 1;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.ocp-player-card.playing .ocp-cover-note {
+    opacity: 0;
+    transform: scale(0.6);
+}
+
+/* 播放态：封面圆内居中律动条 */
+.ocp-eq {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.ocp-player-card.playing .ocp-eq {
+    opacity: 1;
+}
+
+.ocp-eq i {
+    width: 2.5px;
+    height: 20%;
+    border-radius: 999px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.ocp-player-card.playing .ocp-eq i {
+    animation: ocpEqBounce 0.95s ease-in-out infinite;
+}
+
+.ocp-player-card.playing .ocp-eq i:nth-child(1) {
+    animation-delay: -0.2s;
+}
+
+.ocp-player-card.playing .ocp-eq i:nth-child(2) {
+    animation-delay: -0.5s;
+}
+
+.ocp-player-card.playing .ocp-eq i:nth-child(3) {
+    animation-delay: -0.35s;
+}
+
+.ocp-player-card.playing .ocp-eq i:nth-child(4) {
+    animation-delay: -0.65s;
+}
+
+@keyframes ocpEqBounce {
+
+    0%,
+    100% {
+        height: 20%;
+    }
+
+    50% {
+        height: 38%;
+    }
+}
+
+/* 曲名与艺术家（均读取自音源标签）：超长省略，避免破坏卡片布局。
+   给定最小宽度让胶囊保持细长形状（短曲名也不回缩），上限仍做截断 */
+.ocp-player-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 132px;
+    max-width: 210px;
+}
+
+.ocp-player-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--info-text-color);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ocp-player-artist {
+    font-size: 11px;
+    color: var(--info-close-color);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 播放/暂停按钮：完全圆角，与封面同为 38px */
+.ocp-play-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    border: none;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(var(--scheme-accent-rgb), 1);
+    color: #ffffff;
+    box-shadow: none;
+    transition: filter 0.3s ease, color 0.3s ease, transform 0.2s ease;
+}
+
+.ocp-play-btn:hover {
+    filter: brightness(1.06);
+}
+
+.ocp-play-btn:active {
+    transform: scale(0.92);
+}
+
+.ocp-play-btn:focus-visible {
+    outline: 2px solid rgba(var(--scheme-accent-rgb), 1);
+    outline-offset: 2px;
+}
+
+.ocp-play-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .ocp-player-card,
+    .ocp-player-popover.show .ocp-player-card,
+    .ocp-cover-note,
+    .ocp-eq,
+    .ocp-play-btn,
+    .ocp-player-cover {
+        transition-duration: 0.01s;
+    }
+
+    .ocp-player-cover.has-art {
+        animation: none;
+    }
+
+    .ocp-player-card.playing .ocp-eq i {
+        animation: none;
+        height: 28%;
+    }
+}
+
+/* 高级视觉效果：与 info 提示条同款毛玻璃表面（主页模式，无投影） */
+body.dynamic-blur:not(.scrolled) .ocp-player-card {
+    background: rgba(255, 255, 255, 0.12);
+    -webkit-backdrop-filter: blur(80px) saturate(1.5);
+    backdrop-filter: blur(80px) saturate(1.5);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: none;
+}
+
+body.dynamic-blur .ocp-player-card {
+    transform: scale(0.8) translateY(20px);
+}
+
+body.dynamic-blur .ocp-player-popover.show .ocp-player-card {
+    transform: scale(1) translateY(0);
+}
+
+body.dynamic-blur .ocp-player-title {
+    color: #1a1a1a;
+}
+
+body.dynamic-blur .ocp-player-artist {
+    color: #5f6368;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.dynamic-blur:not(.scrolled) .ocp-player-card {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    body.dynamic-blur .ocp-player-title {
+        color: #ffffff;
+    }
+
+    body.dynamic-blur .ocp-player-artist {
+        color: rgba(255, 255, 255, 0.7);
+    }
+}
+
+
+
 /* 高级视觉效果 - 底部动画 */
 
 body.dynamic-blur .ooo-badge {

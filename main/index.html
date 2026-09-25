@@ -77,6 +77,28 @@
                 <div id="info-indicator" class="info-indicator"></div>
             </div>
 
+            <!-- OCP 播控：hover 底部铭牌时显示的媒体播控（需在设置开启“OCP播控”，且 OCP 已开始播放）。
+                 定位壳常驻不拦截指针，卡片显隐由 .show 类驱动；不可放进铭牌内部（铭牌文本切换会重建 innerHTML）。
+                 封面 / 曲名 / 艺术家均取自音源文件（见 loadOcpTrackMeta），此处文案只是读取完成前的占位。 -->
+            <div id="ocp-player-popover" class="ocp-player-popover" aria-hidden="true">
+                <div class="ocp-player-card" role="group" aria-label="OCP 播控">
+                    <!-- 封面本身是按钮：点击在新标签页打开在线播放器 -->
+                    <button type="button" id="ocp-cover-btn" class="ocp-player-cover" aria-label="打开 OCP 在线播放器">
+                        <span class="material-icons ocp-cover-note">music_note</span>
+                        <div class="ocp-eq">
+                            <i></i><i></i><i></i><i></i>
+                        </div>
+                    </button>
+                    <div class="ocp-player-meta">
+                        <div class="ocp-player-title">OCP</div>
+                        <div class="ocp-player-artist">ByRUDAN</div>
+                    </div>
+                    <button type="button" id="ocp-play-btn" class="ocp-play-btn" aria-label="播放 / 暂停">
+                        <span class="material-icons ocp-play-icon">play_arrow</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- 信息容器 -->
             <div id="infoContainer" class="info-iframe-container">
                 <div class="info-container">
@@ -106,10 +128,10 @@
                 </div>
                 <div class="modal-header-buttons">
                     <button id="export-settings-btn" class="header-action-btn dev-only" title="导出配置为 Markdown">
-                        <span class="material-icons">download</span>
+                        <span class="material-icons">upload</span>
                     </button>
                     <button id="import-settings-btn" class="header-action-btn dev-only" title="从 Markdown 导入配置">
-                        <span class="material-icons">upload</span>
+                        <span class="material-icons">download</span>
                     </button>
                     <button id="about-btn" class="close-btn"><svg viewBox="0 0 24 24" width="20" height="20">
                             <path fill="currentColor"
@@ -422,6 +444,16 @@
                                 <span class="setting-label">搜索历史</span>
                                 <label class="switch">
                                     <input type="checkbox" id="search-history-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group" id="ocp-player-group">
+                            <div class="switch-label">
+                                <span class="setting-label">OCP播控</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="ocp-player-toggle">
                                     <span class="slider"></span>
                                 </label>
                             </div>

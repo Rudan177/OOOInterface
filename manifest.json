@@ -17,6 +17,7 @@
     "https://geocoding-api.open-meteo.com/*",
     "https://www.googleapis.com/*",
     "https://accounts.google.com/*",
+    "https://rudan177.github.io/*",
     "http://127.0.0.1/*",
     "http://localhost/*"
   ],
