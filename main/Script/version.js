@@ -1,8 +1,8 @@
-const VERSION = "5.3:30.1-RS200.1";
+const VERSION = "5.3:30.2-RS200.2";
 const PACKAGE_ID = "0x4B8d2aF7c9E1b3D6";
 const PACKAGE_FLAG = "LTS";
 const PRODUCT_NAME = "OOOInterface LTS 5.3";
-const RELEASE_DATE = "2026年9月6日（SUA31）";
+const RELEASE_DATE = "2026年9月25日";
 const LICENSE_ID = "ABCD-26W08A";
 const COPYRIGHT = "© 2026 ByRUDAN 保留所有权利";
 

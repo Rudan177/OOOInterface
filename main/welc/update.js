@@ -13,9 +13,7 @@ var WELC_CONTENT = {
         {
             header: '体验优化',
             items: [
-                '信息接口优化',
-                '关于页面开发者信息更新',
-                '融入OOOInterface9月安全补丁更新'
+                '优化显示效果',
             ]
         }
     ],
