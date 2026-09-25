@@ -958,6 +958,22 @@
       ]
     },
     {
+      "version": "5.3:30.2",
+      "title":"体验优化",
+      "content": [
+        {
+          "type": "heading",
+          "text": "体验优化"
+        },
+        {
+          "type": "list",
+          "items": [
+            "优化显示效果"
+          ]
+        }
+      ]
+    },
+    {
       "version": "5.3:31",
       "title": "版本更新",
       "content": [
@@ -1006,6 +1022,22 @@
           "type": "list",
           "items": [
             "融入OOOInterface 9月安全补丁更新"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "5.3:31.2",
+      "title":"体验优化",
+      "content": [
+        {
+          "type": "heading",
+          "text": "体验优化"
+        },
+        {
+          "type": "list",
+          "items": [
+            "修复了一些已知问题"
           ]
         }
       ]
