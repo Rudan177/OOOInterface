@@ -92,9 +92,17 @@
       "date": "20260924",
       "name": "光辉岁月",
       "artist": "BEYOND",
-      "duration": "302",
+      "duration": "302s",
       "times": 1,
       "type": "Contribute"
+    },
+    {
+      "date": "20260925",
+      "name": "歌声与微笑",
+      "artist": "新月合唱团",
+      "duration": "161s",
+      "times": 1,
+      "type": "Official"
     }
   ]
 }

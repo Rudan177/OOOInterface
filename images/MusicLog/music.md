@@ -11,3 +11,5 @@
 | 20260921   | 异样的风暴中心 | 洛天依 | 330s | 1 | Contribute |
 | 20260922   | 希望有羽毛和翅膀 | 知更鸟、HOYO-MiX、Chevy | 229s | 1 | Contribute |
 | 20260923   | 秋 | 洛天依、乐正绫 | 231s | 1 | Contribute |
+| 20260924   | 光辉岁月 | BEYOND | 302s | 1 | Contribute |
+| 20260925   | 歌声与微笑 | 新月合唱团 | 161s | 1 | Official |
