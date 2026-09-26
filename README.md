@@ -14,7 +14,7 @@
 
 - **团队名称**: ByRUDAN
 - **主要开发者**: RUDAN、ZSCC
-- **贡献者**: ZLCjjlr、饷频灰カラ、lsa、卷卷卷
+- **贡献者**: ZLCjjlr、lsa、DeepSeek、GLM、Agnes、XIAOMI Mimo
 
 ## 功能描述
 
