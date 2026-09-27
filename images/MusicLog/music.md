@@ -14,3 +14,4 @@
 | 20260924   | 光辉岁月 | BEYOND | 302s | 1 | Contribute |
 | 20260925   | 歌声与微笑 | 新月合唱团 | 161s | 1 | Official |
 | 20260926   | 在银河中孤独摇摆 | 知更鸟、HOYO-MiX、Chevy | 165s | 1 | Official |
+| 20260927   | 乐鸣东方 | 洛天依 | 243s | 1 | Official |
