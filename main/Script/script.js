@@ -7,6 +7,10 @@ class OOOInterface {
         };
         this.onlineBackgroundUrl = 'https://rudan177.github.io/OOOInterface/images/back.png';
         this.localBackgroundUrl = 'images/back.png';
+        // OCP 音源：铭牌音效与播控共用，播控的封面/曲名/艺术家也读取自该文件
+        this.ocpAudioUrl = 'https://rudan177.github.io/OOOInterface/images/wow.mp3';
+        // 点击播控封面后打开的在线播放器
+        this.ocpPlayerUrl = 'https://rudan177.github.io/CHAPTER/player.html';
         this.iconLoadStatus = {};
 
         // 出厂预设配置
@@ -25,6 +29,7 @@ class OOOInterface {
             dynamicBlur: false,
             persistentWallpaper: false,
             searchHistory: true,
+            searchSuggestions: true,
             searchHistoryItems: [],
             engineLocked: false,
             developerMode: false,
@@ -45,7 +50,11 @@ class OOOInterface {
             activeCustomColorIndex: -1,
             contextMenuStyle: 'default',
             hideInfoPopup: { enabled: false, type: null, timestamp: null },
-            badgeOpenMethod: 'both',
+            // 底部铭牌功能：双击 / 右键分别对应的动作（settings 打开设置 / audio 播放音效 / none 无）
+            badgeDblClickAction: 'settings',
+            badgeContextMenuAction: 'settings',
+            // OCP 播控：开启后，OCP 开始播放过一次即可 hover 底部铭牌呼出媒体播控
+            ocpPlayerEnabled: false,
             bingRefreshEveryTime: true,
             bingRefreshInterval: 0,
             quickAccessSidebar: true,
@@ -64,7 +73,7 @@ class OOOInterface {
             // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）
             simpleVisualMode: false,
             hiddenBadge: false,
-            contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle'],
+            contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle', 'search-suggestions-toggle'],
             shortcutsEnabled: true,
             theme: 'default',           // 当前主题 key（文件 basename 去扩展名）
             themeEnabled: false,        // 主题功能是否开启
@@ -88,6 +97,10 @@ class OOOInterface {
         this.currentVersion = VERSION; // 使用 version.js 中的版本号
         this._sidebarPushing = false; // 侧边栏壁纸推入状态
         this.statusBarTimer = null;
+        // 热搜词建议：防抖计时器 + 请求序号 + 结果缓存
+        this.suggestDebounceTimer = null;
+        this._suggestSeq = 0;
+        this._suggestCache = null;
         this.statusBarContrastMode = 'dark';
         this.wallpaperAnalysisImage = null;
         this.wallpaperAnalysisUrl = null;
@@ -219,6 +232,7 @@ class OOOInterface {
         // 更新所有可切换菜单项的图标
         const toggleMap = {
             'search-history-toggle': () => this.settings.searchHistory ? 'check_box' : 'check_box_outline_blank',
+            'search-suggestions-toggle': () => this.settings.searchSuggestions ? 'check_box' : 'check_box_outline_blank',
             'wallpaper-toggle': () => this.settings.persistentWallpaper ? 'check_box' : 'check_box_outline_blank',
             'enhanced-display-toggle': () => this.settings.enhancedDisplay ? 'check_box' : 'check_box_outline_blank',
             'engine-lock-toggle': () => this.settings.engineLocked ? 'check_box' : 'check_box_outline_blank',
@@ -253,6 +267,8 @@ class OOOInterface {
         if (wp) wp.checked = this.settings.persistentWallpaper;
         const sh = document.getElementById('search-history-toggle');
         if (sh) sh.checked = this.settings.searchHistory;
+        const ss = document.getElementById('search-suggestions-toggle');
+        if (ss) ss.checked = this.settings.searchSuggestions;
         // 固定侧边栏主开关与两个子开关
         const fs = document.getElementById('fix-sidebar-toggle');
         if (fs) fs.checked = this.settings.fixSidebarEnabled;
@@ -283,9 +299,12 @@ class OOOInterface {
         });
         const hb = document.getElementById('hidden-badge-toggle');
         if (hb) hb.checked = this.settings.hiddenBadge;
+        const op = document.getElementById('ocp-player-toggle');
+        if (op) op.checked = this.settings.ocpPlayerEnabled;
         this.updateHideInfoPopupLabel();
         this.syncStatusBarUI();
         this.syncWidgetPanelUI();
+        this.syncBadgeOpenMethodUI();
     }
 
     syncStatusBarUI() {
@@ -387,6 +406,7 @@ class OOOInterface {
     applyContextMenuCustomItems() {
         const toggleActions = [
             'search-history-toggle',
+            'search-suggestions-toggle',
             'wallpaper-toggle',
             'enhanced-display-toggle',
             'engine-lock-toggle',
@@ -897,11 +917,622 @@ class OOOInterface {
         // 初始化高级视觉效果自动启用标志
         this._dynamicBlurAutoEnabled = this.settings.enhancedDisplay && this.settings.dynamicBlur;
 
-        // 添加底部铭牌打开设置页面的功能（根据设置决定）
+        // 绑定底部铭牌的双击/右键动作（依设置决定，幂等）
         this.setupBadgeOpenMethod();
+
+        // 绑定 OCP 播控的 hover 显隐与播放按钮（幂等）
+        this.setupOcpPlayer();
     }
 
-    // 设置底部铭牌打开方式
+    // 归一化底部铭牌动作值，非法值回退为默认
+    normalizeBadgeAction(value) {
+        return (value === 'settings' || value === 'audio' || value === 'none') ? value : 'settings';
+    }
+
+    // 底部铭牌动作的中文展示名
+    getBadgeActionLabel(value) {
+        const action = this.normalizeBadgeAction(value);
+        return action === 'audio' ? '播放OCP' : action === 'settings' ? '打开设置' : '无';
+    }
+
+    // 底部铭牌功能设置项的摘要文本（依次为双击 / 右键的动作）
+    getBadgeActionSummary() {
+        return this.getBadgeActionLabel(this.settings.badgeDblClickAction)
+            + ' · ' + this.getBadgeActionLabel(this.settings.badgeContextMenuAction);
+    }
+
+    // 同步底部铭牌功能设置项：隐藏铭牌开关开启时隐藏该项，同时更新摘要文本
+    syncBadgeOpenMethodUI() {
+        const group = document.getElementById('badge-open-method-group');
+        if (group) {
+            group.style.display = this.settings.hiddenBadge ? 'none' : '';
+        }
+        // OCP 播控依附于铭牌 hover，铭牌隐藏时一并隐藏设置项与已展开的播控
+        const ocpGroup = document.getElementById('ocp-player-group');
+        if (ocpGroup) {
+            ocpGroup.style.display = this.settings.hiddenBadge ? 'none' : '';
+        }
+        if (this.settings.hiddenBadge) {
+            this.hideOcpPlayer();
+        }
+        const selectedDisplay = document.getElementById('badge-open-method-selected');
+        if (selectedDisplay) {
+            selectedDisplay.textContent = this.getBadgeActionSummary();
+        }
+        // 铭牌已隐藏时，若右面板仍停留在该设置视图则退回占位内容，避免展示失效设置
+        const rpu = document.getElementById('right-panel-upper');
+        if (this.settings.hiddenBadge && rpu && rpu.dataset.menuType === 'badge-open-method') {
+            this.closeSettingsMenuInRightPanel();
+        }
+        // 铭牌隐藏后停止音效与光效，避免在不可见元素上继续播放
+        if (this.settings.hiddenBadge) {
+            this.stopBadgeAudio();
+        }
+    }
+
+    // 执行底部铭牌动作（双击 / 右键共用）
+    runBadgeAction(action) {
+        if (action === 'settings') {
+            this.openSettings('badge');
+        } else if (action === 'audio') {
+            this.toggleBadgeAudio();
+        }
+    }
+
+    // 获取（惰性创建）铭牌音效实例：单实例复用，光效跟随真实播放状态
+    getBadgeAudio() {
+        if (!this._badgeAudio) {
+            const audio = new Audio(this.ocpAudioUrl);
+            audio.addEventListener('play', () => {
+                // OCP 已开始播放：此后 hover 铭牌才允许呼出播控；同时惰性读取曲目元数据
+                this._ocpHasStarted = true;
+                this.loadOcpTrackMeta();
+                this.setBadgeAudioGlow(true);
+                this.syncOcpPlayerState();
+                this.updateBadgeAudioProgress();
+                // 先用占位文案顶上，读到音源标签后再刷新为真实曲目信息
+                this.updateOcpMediaSessionMeta();
+                this.updateOcpMediaSessionState();
+            });
+            audio.addEventListener('pause', () => {
+                this.setBadgeAudioGlow(false);
+                this.syncOcpPlayerState();
+                this.updateOcpMediaSessionState();
+            });
+            audio.addEventListener('ended', () => {
+                this.updateBadgeAudioProgress();
+                this.setBadgeAudioGlow(false);
+                this.syncOcpPlayerState();
+                this.updateOcpMediaSessionState();
+            });
+            audio.addEventListener('error', () => {
+                this.setBadgeAudioGlow(false);
+                this.syncOcpPlayerState();
+                this.updateOcpMediaSessionState();
+            });
+            // 进度光带长度跟随播放进度
+            audio.addEventListener('timeupdate', () => this.updateBadgeAudioProgress());
+            audio.addEventListener('loadedmetadata', () => this.updateBadgeAudioProgress());
+            this._badgeAudio = audio;
+            // 交给浏览器媒体播控（系统媒体面板 / 媒体键）接管
+            this.setupOcpMediaSession();
+            this.updateOcpMediaSessionState();
+        }
+        return this._badgeAudio;
+    }
+
+    // 依据真实播放进度更新铭牌光带长度（存为 0~1 的 CSS 变量）
+    updateBadgeAudioProgress() {
+        const badge = document.getElementById('ooo-badge');
+        const audio = this._badgeAudio;
+        if (!badge || !audio) return;
+
+        let ratio = 0;
+        const duration = audio.duration;
+        if (audio.ended) {
+            ratio = 1;
+        } else if (isFinite(duration) && duration > 0) {
+            ratio = Math.min(1, Math.max(0, audio.currentTime / duration));
+        }
+        badge.style.setProperty('--badge-audio-progress', ratio.toFixed(4));
+    }
+
+    // 切换铭牌音效：播放中再次触发为暂停，暂停/播完后触发为播放
+    toggleBadgeAudio() {
+        try {
+            const audio = this.getBadgeAudio();
+            if (!audio.paused && !audio.ended) {
+                audio.pause();
+                return;
+            }
+            // 播完后再次触发：从头播放
+            if (audio.ended) audio.currentTime = 0;
+            audio.play().catch(err => {
+                this.setBadgeAudioGlow(false);
+                console.error('播放音频失败:', err);
+            });
+        } catch (err) {
+            this.setBadgeAudioGlow(false);
+            console.error('播放音频失败:', err);
+        }
+    }
+
+    // 播放铭牌音效（反馈按钮等场景：始终从头播放，不切换）
+    playBadgeAudio() {
+        try {
+            const audio = this.getBadgeAudio();
+            audio.currentTime = 0;
+            audio.play().catch(err => {
+                this.setBadgeAudioGlow(false);
+                console.error('播放音频失败:', err);
+            });
+        } catch (err) {
+            this.setBadgeAudioGlow(false);
+            console.error('播放音频失败:', err);
+        }
+    }
+
+    // 停止铭牌音效并收起光效
+    stopBadgeAudio() {
+        if (this._badgeAudio && !this._badgeAudio.paused) {
+            this._badgeAudio.pause();
+        }
+        this.setBadgeAudioGlow(false);
+    }
+
+    // 设置铭牌播放光效的显隐
+    setBadgeAudioGlow(on) {
+        const badge = document.getElementById('ooo-badge');
+        if (badge) badge.classList.toggle('badge-audio-playing', !!on);
+    }
+
+    // ========== OCP 播控（hover 底部铭牌显示的媒体播控） ==========
+
+    // 绑定播控的 hover 显隐与播放按钮（幂等；元素缺失时静默跳过）
+    setupOcpPlayer() {
+        if (this._ocpPlayerBound) return;
+        const badge = document.getElementById('ooo-badge');
+        const popover = document.getElementById('ocp-player-popover');
+        if (!badge || !popover) return;
+        this._ocpPlayerBound = true;
+
+        // 播放按钮与铭牌双击/右键共用同一切换逻辑（播放中→暂停，暂停/播完→播放）
+        const playBtn = document.getElementById('ocp-play-btn');
+        if (playBtn) {
+            playBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleBadgeAudio();
+            });
+        }
+
+        // 点击封面：新标签页打开在线播放器（保留当前新标签页）
+        const coverBtn = document.getElementById('ocp-cover-btn');
+        if (coverBtn) {
+            coverBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.open(this.ocpPlayerUrl, '_blank');
+            });
+        }
+
+        // hover 铭牌显示；移出铭牌/播控延迟隐藏，跨越两者间隙时取消隐藏
+        badge.addEventListener('mouseenter', () => this.showOcpPlayer());
+        badge.addEventListener('mouseleave', () => this.scheduleHideOcpPlayer());
+        popover.addEventListener('mouseenter', () => this.cancelHideOcpPlayer());
+        popover.addEventListener('mouseleave', () => this.scheduleHideOcpPlayer());
+
+        // 兜底：点击页面其他位置（含滚动进入壁纸模式前的点击）时收起播控
+        document.addEventListener('click', (e) => {
+            if (!popover.classList.contains('show')) return;
+            if (popover.contains(e.target) || badge.contains(e.target)) return;
+            this.hideOcpPlayer();
+        });
+    }
+
+    // 播控是否可用：设置开关开启、OCP 在本次会话中已开始播放过，且铭牌当前可见
+    isOcpPlayerAvailable() {
+        if (!this.settings.ocpPlayerEnabled || !this._ocpHasStarted) return false;
+        // 铭牌被隐藏（隐藏铭牌开关等）时不可呼出；壁纸模式由 pointer-events:none 天然拦截
+        const badge = document.getElementById('ooo-badge');
+        return !!(badge && badge.offsetParent !== null);
+    }
+
+    // 显示播控（不满足条件时静默忽略）
+    showOcpPlayer() {
+        if (!this.isOcpPlayerAvailable()) return;
+        const popover = document.getElementById('ocp-player-popover');
+        if (!popover) return;
+        this.cancelHideOcpPlayer();
+        this.syncOcpPlayerState();
+        popover.classList.add('show');
+        popover.setAttribute('aria-hidden', 'false');
+    }
+
+    // 延迟收起播控：给指针从铭牌移入播控的间隙留出时间
+    scheduleHideOcpPlayer() {
+        this.cancelHideOcpPlayer();
+        this._ocpHideTimer = setTimeout(() => {
+            this._ocpHideTimer = null;
+            this.hideOcpPlayer();
+        }, 240);
+    }
+
+    // 取消已计划的收起
+    cancelHideOcpPlayer() {
+        if (this._ocpHideTimer) {
+            clearTimeout(this._ocpHideTimer);
+            this._ocpHideTimer = null;
+        }
+    }
+
+    // 立即收起播控（幂等）
+    hideOcpPlayer() {
+        this.cancelHideOcpPlayer();
+        const popover = document.getElementById('ocp-player-popover');
+        if (!popover) return;
+        popover.classList.remove('show');
+        popover.setAttribute('aria-hidden', 'true');
+    }
+
+    // 同步播控的播放按钮图标与封面律动（各播放事件及 hover 时调用，元素缺失时静默跳过）
+    syncOcpPlayerState() {
+        const card = document.querySelector('.ocp-player-card');
+        const icon = document.querySelector('#ocp-play-btn .material-icons');
+        const audio = this._badgeAudio;
+        const playing = !!(audio && !audio.paused && !audio.ended);
+        if (card) card.classList.toggle('playing', playing);
+        if (icon) icon.textContent = playing ? 'pause' : 'play_arrow';
+    }
+
+    // ========== 浏览器媒体播控（Media Session：系统媒体面板 / 键盘媒体键） ==========
+
+    // 绑定媒体播控的动作，幂等；与页面内按钮共用同一音频实例，
+    // 保证系统媒体键、系统面板与播控卡片三处状态始终一致
+    setupOcpMediaSession() {
+        if (this._ocpMediaSessionBound) return;
+        if (!('mediaSession' in navigator)) return;
+        this._ocpMediaSessionBound = true;
+
+        // 单个动作不被当前浏览器支持时 setActionHandler 会抛错，逐个静默跳过
+        const bind = (action, handler) => {
+            try {
+                navigator.mediaSession.setActionHandler(action, handler);
+            } catch (err) {
+                /* 该动作在当前浏览器不受支持，忽略 */
+            }
+        };
+        bind('play', () => this.resumeBadgeAudio());
+        bind('pause', () => this.pauseBadgeAudio());
+        // 系统面板的进度拖拽（单曲场景只做 seek，不提供上一首/下一首）
+        bind('seekto', (details) => this.seekBadgeAudio(details && details.seekTime));
+    }
+
+    // 把当前曲目信息交给媒体播控：封面 / 标题 / 作者
+    // 标题与作者优先用音源标签，未读到标签时退回播控卡片上的占位文案
+    updateOcpMediaSessionMeta() {
+        if (!('mediaSession' in navigator) || typeof MediaMetadata === 'undefined') return;
+        const titleEl = document.querySelector('.ocp-player-title');
+        const artistEl = document.querySelector('.ocp-player-artist');
+        const track = this.getOcpTrackMeta();
+        const title = (track.title || (titleEl && titleEl.textContent) || 'OCP').trim();
+        const artist = (track.artist || (artistEl && artistEl.textContent) || 'ByRUDAN').trim();
+
+        const artwork = [];
+        if (this._ocpCoverUrl) {
+            artwork.push({
+                src: this._ocpCoverUrl,
+                sizes: track.coverSizes || '512x512',
+                type: track.coverType || 'image/jpeg'
+            });
+        }
+        try {
+            navigator.mediaSession.metadata = new MediaMetadata({ title, artist, artwork });
+        } catch (err) {
+            console.warn('设置媒体播控元数据失败:', err);
+        }
+    }
+
+    // 同步媒体播控的播放状态（决定系统面板显示播放还是暂停）
+    updateOcpMediaSessionState() {
+        if (!('mediaSession' in navigator)) return;
+        const audio = this._badgeAudio;
+        const state = !audio ? 'none' : (audio.paused || audio.ended ? 'paused' : 'playing');
+        try {
+            navigator.mediaSession.playbackState = state;
+        } catch (err) {
+            /* 状态同步失败不影响播放 */
+        }
+    }
+
+    // 曲目信息缓存：播控卡片 DOM 与媒体播控共用同一份数据
+    getOcpTrackMeta() {
+        if (!this._ocpTrackMeta) {
+            this._ocpTrackMeta = { title: null, artist: null, coverSizes: null, coverType: null };
+        }
+        return this._ocpTrackMeta;
+    }
+
+    // 从当前位置继续播放（媒体播控的「播放」键；不重置进度）
+    resumeBadgeAudio() {
+        try {
+            const audio = this.getBadgeAudio();
+            if (!audio.paused) return;
+            audio.play().catch(err => {
+                this.setBadgeAudioGlow(false);
+                console.error('播放音频失败:', err);
+            });
+        } catch (err) {
+            this.setBadgeAudioGlow(false);
+            console.error('播放音频失败:', err);
+        }
+    }
+
+    // 暂停播放（媒体播控的「暂停」键）
+    pauseBadgeAudio() {
+        if (this._badgeAudio && !this._badgeAudio.paused) {
+            this._badgeAudio.pause();
+        }
+    }
+
+    // 跳转到指定秒数（媒体播控的进度拖拽）；元数据未就绪等异常静默忽略
+    seekBadgeAudio(seekTime) {
+        const audio = this._badgeAudio;
+        if (!audio || typeof seekTime !== 'number' || !isFinite(seekTime)) return;
+        try {
+            const duration = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : seekTime;
+            audio.currentTime = Math.max(0, Math.min(seekTime, duration));
+        } catch (err) {
+            /* 时长未知时无法定位，忽略 */
+        }
+    }
+
+    // ========== OCP 曲目元数据（封面 / 曲名 / 艺术家均读取自音源文件） ==========
+
+    // 惰性读取 OCP 音源的曲目信息（整会话仅一次）；离线/CORS/无标签等任何失败
+    // 都静默回退到内置默认信息（OCP / ByRUDAN / 主题色渐变封面）。
+    // 只按需取 ID3 标签所在的分段字节（文件头的 ID3v2 + 文件尾的 ID3v1），
+    // 不为了读标签而整首下载音频。
+    loadOcpTrackMeta() {
+        if (this._ocpMetaPromise) return this._ocpMetaPromise;
+        this._ocpMetaPromise = (async () => {
+            try {
+                // 1) ID3v2：先取 10 字节标签头拿到标签长度，再按长度取标签本体
+                let meta = null;
+                const head = await this.readOcpSourceRange('0-9');
+                if (head && this.isId3v2Tag(head)) {
+                    const tagSize = this.readId3Size(head, 6);
+                    const tag = tagSize > 0 ? await this.readOcpSourceRange(this.ocpHeadRange(tagSize + 9)) : null;
+                    if (tag) meta = this.parseId3v2(tag);
+                }
+                // 2) 头部信息不全时，再读文件尾部 ID3v1 兜底
+                if (!meta || !meta.title || !meta.artist) {
+                    const tail = await this.readOcpSourceRange(this.ocpTailRange(128));
+                    if (tail) {
+                        const v1 = this.parseId3v1(tail);
+                        if (v1) meta = Object.assign({ coverBlob: null }, v1, meta || {});
+                    }
+                }
+                this.applyOcpTrackMeta(meta);
+            } catch (err) {
+                console.warn('读取 OCP 元数据失败，使用默认信息:', err);
+            }
+        })();
+        return this._ocpMetaPromise;
+    }
+
+    // 构造“从文件头取 n 字节”的 Range；已知文件长度时按长度收敛，避免越界请求被拒
+    ocpHeadRange(n) {
+        const size = this._ocpSourceSize;
+        const end = size ? Math.min(n, size - 1) : n;
+        return `0-${end}`;
+    }
+
+    // 构造“从文件尾取 n 字节”的 Range：已知文件长度时用显式区间（简单区间无需预检），
+    // 否则退回后缀区间写法
+    ocpTailRange(n) {
+        const size = this._ocpSourceSize;
+        return size && size > n ? `${size - n}-${size - 1}` : `-${n}`;
+    }
+
+    // 按 HTTP Range 读取音源字节（range 形如 '0-9' / '-128'；传 null 取整文件），
+    // 返回请求区间对应的字节数组，并记录文件总长供后续分段换算。
+    // 服务器不支持 Range（用 200 回整文件）时缓存整文件，后续分段直接从缓存截取，不重复下载。
+    // 失败/超时返回 null。
+    async readOcpSourceRange(range) {
+        if (!this._ocpWholeSource) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 10000);
+            try {
+                const res = await fetch(this.ocpAudioUrl, {
+                    signal: controller.signal,
+                    headers: range ? { Range: `bytes=${range}` } : undefined
+                });
+                if (!res.ok) return null;
+                // 206 的 Content-Range（bytes 0-9/12375550）顺带给出文件总长，
+                // 省掉一次 HEAD 请求；跨域未暴露该响应头时退化为「拿到多少算多少」
+                const contentRange = res.headers.get('Content-Range');
+                if (contentRange) {
+                    const total = /\/(\d+)\s*$/.exec(contentRange);
+                    if (total) this._ocpSourceSize = parseInt(total[1], 10) || 0;
+                }
+                const bytes = new Uint8Array(await res.arrayBuffer());
+                if (res.status === 206 || !range) {
+                    if (!range) this._ocpSourceSize = bytes.length;
+                    return bytes;
+                }
+                // 服务器忽略了 Range：把整文件留作后续复用的缓存
+                this._ocpWholeSource = bytes;
+                this._ocpSourceSize = bytes.length;
+            } catch (err) {
+                return null;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+        return this.sliceOcpRange(this._ocpWholeSource, range);
+    }
+
+    // 从整文件字节里截取 Range 区间（只处理 '0-9' / '0-' / '-128' 三种写法）
+    sliceOcpRange(bytes, range) {
+        if (!range || !bytes) return bytes;
+        const match = /^(\d*)-(\d*)$/.exec(range);
+        if (!match) return bytes;
+        const [, from, to] = match;
+        if (from === '') {
+            const n = parseInt(to, 10) || 0;
+            return bytes.subarray(Math.max(0, bytes.length - n));
+        }
+        const start = parseInt(from, 10) || 0;
+        const end = to === '' ? bytes.length - 1 : Math.min(parseInt(to, 10), bytes.length - 1);
+        return bytes.subarray(start, end + 1);
+    }
+
+    // 是否为 ID3v2 标签头（"ID3" + 版本号）
+    isId3v2Tag(bytes) {
+        return !!(bytes && bytes.length >= 10 && bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33);
+    }
+
+    // 读取 ID3 的 syncsafe 整数（每字节 7 位有效）
+    readId3Size(bytes, offset) {
+        return ((bytes[offset] & 0x7f) << 21) | ((bytes[offset + 1] & 0x7f) << 14) |
+            ((bytes[offset + 2] & 0x7f) << 7) | (bytes[offset + 3] & 0x7f);
+    }
+
+    // 解析 ID3v2.3/2.4 标签区：TIT2（标题）、TPE1（歌手）、APIC（封面图）
+    parseId3v2(bytes) {
+        if (!this.isId3v2Tag(bytes)) return null;
+        const major = bytes[3];
+        if (major !== 3 && major !== 4) return null;
+        const flags = bytes[5];
+        // v2.4 帧长为 syncsafe（每字节 7 位），v2.3 为普通大端 uint32
+        const syncsafe = (b, o) => this.readId3Size(b, o);
+        const uint32 = (b, o) => (b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3];
+        const tagSize = syncsafe(bytes, 6);
+        let pos = 10;
+        if (flags & 0x40) { // 扩展头：v2.4 长度含自身且 syncsafe，v2.3 不含自身
+            if (major === 4) pos += syncsafe(bytes, pos);
+            else pos += 4 + uint32(bytes, pos);
+        }
+        const end = Math.min(10 + tagSize, bytes.length);
+        const result = {};
+        const textFrames = { TIT2: 'title', TPE1: 'artist' };
+        while (pos + 10 <= end) {
+            const id = String.fromCharCode(bytes[pos], bytes[pos + 1], bytes[pos + 2], bytes[pos + 3]);
+            if (!/^[A-Z0-9]{4}$/.test(id)) break; // 进入填充区
+            const size = major === 4 ? syncsafe(bytes, pos + 4) : uint32(bytes, pos + 4);
+            if (size <= 0 || pos + 10 + size > end) break;
+            const body = bytes.subarray(pos + 10, pos + 10 + size);
+            if (textFrames[id]) {
+                const s = this.readId3String(body, 1, body[0]);
+                if (s.text) result[textFrames[id]] = s.text;
+            } else if (id === 'APIC' && !result.coverBlob) {
+                const enc = body[0];
+                let p = 1;
+                while (p < body.length && body[p] !== 0) p++; // MIME（latin1，0x00 结尾）
+                const mime = new TextDecoder('windows-1252').decode(body.subarray(1, p)) || 'image/jpeg';
+                p += 2; // 跳过 MIME 终止符 + 图片类型字节
+                const desc = this.readId3String(body, p, enc);
+                p = desc.next;
+                if (p < body.length) {
+                    result.coverBlob = new Blob([body.subarray(p)], { type: mime });
+                }
+            }
+            pos += 10 + size;
+        }
+        return result;
+    }
+
+    // 按编码读取 ID3 定界字符串：0=latin1、1=UTF-16(BOM)、2=UTF-16BE、3=UTF-8；
+    // 返回 { text, next }（next 指向终止符之后）
+    readId3String(bytes, start, encoding) {
+        if (encoding === 1 || encoding === 2) {
+            let i = start;
+            while (i + 1 < bytes.length) {
+                if (bytes[i] === 0 && bytes[i + 1] === 0) break;
+                i += 2;
+            }
+            const raw = bytes.subarray(start, i);
+            return {
+                text: new TextDecoder(encoding === 2 ? 'utf-16be' : 'utf-16').decode(raw),
+                next: i + 2
+            };
+        }
+        let i = start;
+        while (i < bytes.length && bytes[i] !== 0) i++;
+        return {
+            text: new TextDecoder(encoding === 3 ? 'utf-8' : 'windows-1252').decode(bytes.subarray(start, i)),
+            next: i + 1
+        };
+    }
+
+    // 解析 ID3v1（文件尾部 128 字节定长结构，作为 v2 缺失时的兜底）
+    parseId3v1(bytes) {
+        if (bytes.length < 128) return null;
+        const tail = bytes.subarray(bytes.length - 128);
+        if (String.fromCharCode(tail[0], tail[1], tail[2]) !== 'TAG') return null;
+        const field = (start, len) => new TextDecoder('windows-1252')
+            .decode(tail.subarray(start, start + len))
+            .replace(/\0[\s\S]*$/, '')
+            .trim();
+        return { title: field(3, 30) || null, artist: field(33, 30) || null };
+    }
+
+    // 将读取到的曲目信息写入播控 DOM 与媒体播控；各字段为空时保留原值（内置默认信息）
+    applyOcpTrackMeta(meta) {
+        if (!meta) return;
+        const track = this.getOcpTrackMeta();
+        const titleEl = document.querySelector('.ocp-player-title');
+        const artistEl = document.querySelector('.ocp-player-artist');
+        if (meta.title) {
+            track.title = meta.title;
+            if (titleEl) titleEl.textContent = meta.title;
+        }
+        if (meta.artist) {
+            track.artist = meta.artist;
+            if (artistEl) artistEl.textContent = meta.artist;
+        }
+        if (meta.coverBlob) {
+            track.coverType = meta.coverBlob.type || null;
+            this.applyOcpCover(meta.coverBlob);
+        }
+        // 曲目信息变了就刷新媒体播控（封面尺寸要等图片解码后才拿得到）
+        this.updateOcpMediaSessionMeta();
+    }
+
+    // 应用音源内嵌封面：先确认这份数据真能解码成图片，再切到 has-art 版式
+    // （否则标签里的残缺/伪装图片会让封面变成一块空图块）；
+    // 解码失败时保留主题色渐变占位与音符图标
+    applyOcpCover(blob) {
+        const cover = document.querySelector('.ocp-player-cover');
+        if (!cover) return;
+        let url = null;
+        try {
+            url = URL.createObjectURL(blob);
+        } catch (err) {
+            console.warn('应用 OCP 封面失败:', err);
+            return;
+        }
+        const probe = new Image();
+        probe.onload = () => {
+            // 期间可能已换成更新的封面：此时旧 URL 直接释放
+            if (this._ocpCoverUrl) URL.revokeObjectURL(this._ocpCoverUrl);
+            this._ocpCoverUrl = url;
+            cover.classList.add('has-art');
+            cover.style.backgroundImage = `url("${url}")`;
+            // 图片解码后才有真实尺寸，媒体播控的 artwork 尺寸声明在此补上
+            const track = this.getOcpTrackMeta();
+            if (probe.naturalWidth && probe.naturalHeight) {
+                track.coverSizes = `${probe.naturalWidth}x${probe.naturalHeight}`;
+            }
+            this.updateOcpMediaSessionMeta();
+        };
+        probe.onerror = () => {
+            URL.revokeObjectURL(url);
+            console.warn('音源封面无法解码，保留默认封面');
+        };
+        probe.src = url;
+    }
+
+    // 设置底部铭牌打开方式（双击 / 右键各自独立配置：打开设置 / Audio / 无）
     setupBadgeOpenMethod() {
         const badge = document.getElementById('ooo-badge');
         if (!badge) return;
@@ -922,24 +1553,25 @@ class OOOInterface {
         this._badgeToggleHandler = () => this.toggleBadgeText();
         badge.addEventListener('click', this._badgeToggleHandler);
 
-        const method = this.settings.badgeOpenMethod || 'both';
+        const dblAction = this.normalizeBadgeAction(this.settings.badgeDblClickAction);
+        const ctxAction = this.normalizeBadgeAction(this.settings.badgeContextMenuAction);
 
-        // 根据设置添加相应的事件监听器
-        if (method !== 'none') {
-            if (method === 'both' || method === 'dblclick') {
-                this._badgeDblClickHandler = () => {
-                    this.openSettings('badge');
-                };
-                badge.addEventListener('dblclick', this._badgeDblClickHandler);
-            }
+        // 当前配置已不再需要音效时，停掉可能在播的音频并收起光效
+        if (dblAction !== 'audio' && ctxAction !== 'audio') {
+            this.stopBadgeAudio();
+        }
 
-            if (method === 'both' || method === 'contextmenu') {
-                this._badgeContextMenuHandler = (e) => {
-                    e.preventDefault();
-                    this.openSettings('badge');
-                };
-                badge.addEventListener('contextmenu', this._badgeContextMenuHandler);
-            }
+        if (dblAction !== 'none') {
+            this._badgeDblClickHandler = () => this.runBadgeAction(dblAction);
+            badge.addEventListener('dblclick', this._badgeDblClickHandler);
+        }
+
+        if (ctxAction !== 'none') {
+            this._badgeContextMenuHandler = (e) => {
+                e.preventDefault();
+                this.runBadgeAction(ctxAction);
+            };
+            badge.addEventListener('contextmenu', this._badgeContextMenuHandler);
         }
     }
 
@@ -957,6 +1589,7 @@ class OOOInterface {
         if (savedSettings.dynamicBlur !== undefined) result.dynamicBlur = savedSettings.dynamicBlur;
         if (savedSettings.persistentWallpaper !== undefined) result.persistentWallpaper = savedSettings.persistentWallpaper;
         if (savedSettings.searchHistory !== undefined) result.searchHistory = savedSettings.searchHistory;
+        if (savedSettings.searchSuggestions !== undefined) result.searchSuggestions = savedSettings.searchSuggestions;
         if (savedSettings.contextMenuStyle !== undefined) result.contextMenuStyle = savedSettings.contextMenuStyle;
         if (savedSettings.hideInfoPopup !== undefined) {
             if (typeof savedSettings.hideInfoPopup === 'boolean') {
@@ -1002,7 +1635,19 @@ class OOOInterface {
                 result.activeCustomColorIndex = 0;
             }
         }
-        if (savedSettings.badgeOpenMethod !== undefined) result.badgeOpenMethod = savedSettings.badgeOpenMethod;
+        if (savedSettings.badgeDblClickAction !== undefined) {
+            result.badgeDblClickAction = this.normalizeBadgeAction(savedSettings.badgeDblClickAction);
+        }
+        if (savedSettings.badgeContextMenuAction !== undefined) {
+            result.badgeContextMenuAction = this.normalizeBadgeAction(savedSettings.badgeContextMenuAction);
+        }
+        // 旧版 badgeOpenMethod 迁移：both / dblclick / contextmenu / none
+        if (savedSettings.badgeDblClickAction === undefined && savedSettings.badgeContextMenuAction === undefined
+            && savedSettings.badgeOpenMethod !== undefined) {
+            const legacy = savedSettings.badgeOpenMethod;
+            result.badgeDblClickAction = (legacy === 'none' || legacy === 'contextmenu') ? 'none' : 'settings';
+            result.badgeContextMenuAction = (legacy === 'none' || legacy === 'dblclick') ? 'none' : 'settings';
+        }
         if (savedSettings.bingRefreshEveryTime !== undefined) result.bingRefreshEveryTime = savedSettings.bingRefreshEveryTime;
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
         if (savedSettings.quickAccessSidebar !== undefined) result.quickAccessSidebar = savedSettings.quickAccessSidebar;
@@ -1011,6 +1656,7 @@ class OOOInterface {
         if (savedSettings.fixSidebarHomepage !== undefined) result.fixSidebarHomepage = savedSettings.fixSidebarHomepage;
         if (savedSettings.fixSidebarWallpaper !== undefined) result.fixSidebarWallpaper = savedSettings.fixSidebarWallpaper;
         if (savedSettings.hiddenBadge !== undefined) result.hiddenBadge = savedSettings.hiddenBadge;
+        if (savedSettings.ocpPlayerEnabled !== undefined) result.ocpPlayerEnabled = savedSettings.ocpPlayerEnabled;
 
         // 合并小组件面板配置
         // enabled 字段已废弃（开关已移除，面板显示完全由列表是否为空决定），固定为 true
@@ -1030,7 +1676,7 @@ class OOOInterface {
         if (savedSettings.shortcutsEnabled !== undefined) result.shortcutsEnabled = savedSettings.shortcutsEnabled;
         if (savedSettings.contextMenuCustomItems && Array.isArray(savedSettings.contextMenuCustomItems)) {
             result.contextMenuCustomItems = savedSettings.contextMenuCustomItems.filter(
-                item => ['enhanced-display-toggle', 'wallpaper-toggle', 'search-history-toggle', 'engine-lock-toggle', 'hide-notifications-toggle', 'hide-info-popup-toggle'].includes(item)
+                item => ['enhanced-display-toggle', 'wallpaper-toggle', 'search-history-toggle', 'search-suggestions-toggle', 'engine-lock-toggle', 'hide-notifications-toggle', 'hide-info-popup-toggle'].includes(item)
             );
         }
 
@@ -1376,10 +2022,19 @@ class OOOInterface {
         const colorConfig = this.getColorConfig();
         const scheme = this.settings.colorScheme || 'green';
 
+        function rgbaEffectiveLuminance(rgbaStr, pageBgLum) {
+            var m = rgbaStr.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+            if (!m) return null;
+            var r = parseFloat(m[1]) / 255, g = parseFloat(m[2]) / 255, b = parseFloat(m[3]) / 255, a = parseFloat(m[4]);
+            function lin(v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+            var cLum = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+            return cLum * a + pageBgLum * (1 - a);
+        }
+
         if (this.settings.dynamicBlur) {
             if (scheme === 'green') {
                 const bgColor = this.isDarkMode ? 'rgba(48, 49, 52, 0.85)' : 'rgba(241, 243, 244, 0.85)';
-                const textColor = this.isDarkMode ? '#d0d0d0' : '#1a1a1a';
+                const textColor = this.isDarkMode ? colorConfig.notificationTextDark : colorConfig.notificationText;
                 const borderColor = this.isDarkMode ? 'rgba(95, 99, 104, 0.5)' : 'rgba(223, 225, 229, 0.6)';
                 return { bg: bgColor, text: textColor, border: borderColor, blur: true };
             }
@@ -1392,11 +2047,20 @@ class OOOInterface {
             }
             if (scheme === 'custom') {
                 const bgColor = this.isDarkMode ? colorConfig.notificationBgDark : colorConfig.notificationBg;
-                return { bg: bgColor, text: colorConfig.notificationText, border: colorConfig.notificationBorder, blur: true };
+                const textColor = this.isDarkMode ? colorConfig.notificationTextDark : colorConfig.notificationText;
+                return { bg: bgColor, text: textColor, border: colorConfig.notificationBorder, blur: true };
             }
-            // 蓝色主题
+            // 蓝色主题及其他
             const bgColor = this.isDarkMode ? colorConfig.notificationBgDark : colorConfig.notificationBg;
-            return { bg: bgColor, text: colorConfig.notificationText, border: colorConfig.notificationBorder, blur: true };
+            const textColorDark = colorConfig.notificationTextDark || '#ffffff';
+            const textColorLight = colorConfig.notificationText || '#ffffff';
+            // 浅色模式下，若背景有效亮度较高（偏亮），自动切换为深色文字确保对比度
+            let textColor = textColorDark;
+            if (!this.isDarkMode) {
+                var effLum = rgbaEffectiveLuminance(bgColor, 1.0);
+                textColor = effLum !== null && effLum > 0.45 ? textColorLight : textColorDark;
+            }
+            return { bg: bgColor, text: textColor, border: colorConfig.notificationBorder, blur: true };
         }
 
         // 非高级视觉效果：使用表面色
@@ -2194,22 +2858,24 @@ class OOOInterface {
         });
 
         searchHistoryList.addEventListener('click', (e) => {
-            const target = e.target;
-
-            if (target.classList.contains('search-history-item')) {
-                const searchQuery = target.dataset.query;
-                if (searchQuery) {
-                    searchInput.value = searchQuery;
-                    this.performSearch(searchQuery);
-                }
-            }
-
-            if (target.classList.contains('search-history-delete') || target.closest('.search-history-delete')) {
+            // 删除按钮优先处理,避免命中同一行时误触发搜索
+            const deleteBtn = e.target.closest('.search-history-delete');
+            if (deleteBtn) {
                 e.stopPropagation();
-                const deleteBtn = target.classList.contains('search-history-delete') ? target : target.closest('.search-history-delete');
                 const searchQuery = deleteBtn.dataset.query;
                 if (searchQuery) {
                     this.removeFromSearchHistory(searchQuery);
+                }
+                return;
+            }
+
+            // 历史行与热搜行均保留 search-history-item + data-query,统一回填搜索框并搜索
+            const item = e.target.closest('.search-history-item');
+            if (item) {
+                const searchQuery = item.dataset.query;
+                if (searchQuery) {
+                    searchInput.value = searchQuery;
+                    this.performSearch(searchQuery);
                 }
             }
         });
@@ -2508,6 +3174,16 @@ class OOOInterface {
             this.showNotification(e.target.checked ? '隐藏铭牌：开启' : '隐藏铭牌：关闭');
         });
 
+        // OCP 播控开关：开启后 OCP 播放过一次即可 hover 铭牌呼出播控；关闭时立即收起
+        document.getElementById('ocp-player-toggle').addEventListener('change', (e) => {
+            this.settings.ocpPlayerEnabled = e.target.checked;
+            if (!e.target.checked) {
+                this.hideOcpPlayer();
+            }
+            this.saveSettings();
+            this.showNotification(e.target.checked ? 'OCP播控：开启' : 'OCP播控：关闭');
+        });
+
         // 小组件列表下拉点击 → 右面板管理界面
         const widgetPanelSelectSelected = document.getElementById('widget-panel-select-selected');
         if (widgetPanelSelectSelected) {
@@ -2583,6 +3259,7 @@ class OOOInterface {
                     this.settings.fixSidebarWallpaper = fixWallpaperToggle.checked;
                 }
                 this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
+                this.settings.searchSuggestions = document.getElementById('search-suggestions-toggle').checked;
                 this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
                 this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
@@ -2630,19 +3307,13 @@ class OOOInterface {
                     this.settings.hiddenBadge = hiddenBadgeToggle.checked;
                 }
 
-                // 保存设置打开方式
-                const badgeMethodSelect = document.getElementById('badge-open-method-select');
-                if (badgeMethodSelect) {
-                    this.settings.badgeOpenMethod = badgeMethodSelect.value;
-                }
+                // 底部铭牌功能（双击/右键动作）在右面板选择时已即时保存，此处无需再读取
 
                 if (oldPersistentWallpaper !== this.settings.persistentWallpaper) {
                     this.handlePersistentWallpaperToggle();
                 }
 
                 this.applySettings();
-                // 重新绑定底部铭牌打开方式（该设置不在 applySettings 中处理）
-                this.setupBadgeOpenMethod();
                 this.saveSettings();
                 this.updateContextMenuIcons();
                 this.closeSettings();
@@ -2685,10 +3356,7 @@ class OOOInterface {
         document.getElementById('feedback-btn').addEventListener('contextmenu', (e) => {
             e.preventDefault();
             // 播放音频
-            const audio = new Audio('https://rudan177.github.io/OOOInterface/images/wow.mp3');
-            audio.play().catch(err => {
-                console.error('播放音频失败:', err);
-            });
+            this.playBadgeAudio();
         });
         document.getElementById('feedback-btn').addEventListener('click', () => {
             window.location.href = 'FB/fb.html';
@@ -3260,6 +3928,9 @@ class OOOInterface {
             case 'search-history-toggle':
                 this.toggleSearchHistorySetting();
                 break;
+            case 'search-suggestions-toggle':
+                this.toggleSearchSuggestionsSetting();
+                break;
             case 'wallpaper-toggle':
                 this.toggleWallpaperSetting();
                 break;
@@ -3327,6 +3998,15 @@ class OOOInterface {
         this.updateContextMenuIcons();
         this.syncSettingsPageToggles();
         this.showNotification(this.settings.searchHistory ? '搜索历史：开启' : '搜索历史：关闭');
+    }
+
+    // 切换热搜词建议设置
+    toggleSearchSuggestionsSetting() {
+        this.settings.searchSuggestions = !this.settings.searchSuggestions;
+        this.saveSettings();
+        this.updateContextMenuIcons();
+        this.syncSettingsPageToggles();
+        this.showNotification(this.settings.searchSuggestions ? '热搜词建议：开启' : '热搜词建议：关闭');
     }
 
     // 切换引擎锁定设置
@@ -5491,6 +6171,9 @@ class OOOInterface {
 
         this.isScrolled = true;
 
+        // 进入壁纸模式后铭牌不可交互，立即收起 OCP 播控，避免残留悬空
+        this.hideOcpPlayer();
+
         // 先添加退出动画类（确保从当前状态开始动画）
         document.body.classList.add('exit-animation');
 
@@ -5666,6 +6349,8 @@ class OOOInterface {
 
     switchEngine(engine) {
         this.currentEngine = engine;
+        // 引擎切换后建议来源改变,作废旧缓存
+        this._suggestCache = null;
 
         // 更新按钮状态
         document.getElementById('google-engine').classList.toggle('active', engine === 'google');
@@ -5843,8 +6528,21 @@ class OOOInterface {
 
         this.hideSearchCommandList();
         this.updateSearchModeChip();
+
+        // 输入有效长度超过 4 且开启"热搜词建议":先同步展示历史作即时反馈,再调度拉取热搜
+        // 中文每个字算 2 个有效字符(3-4 字即可触发),英文每字母算 1(5-6 字母触发)
+        // 其余情况(≤4 字符或开关关闭)维持原有搜索历史逻辑
+        const trimmedValue = value.trim();
+        if (this.settings.searchSuggestions && this._effectiveLength(trimmedValue) > 4) {
+            this.renderSearchSuggestions(trimmedValue, null);
+            this.scheduleSearchSuggestions(trimmedValue);
+            return;
+        }
+        this.cancelSearchSuggestions();
         if (this.settings.searchHistory && this.settings.searchHistoryItems.length > 0) {
             this.showSearchHistory(value);
+        } else {
+            this.hideSearchHistory();
         }
     }
 
@@ -6549,7 +7247,8 @@ class OOOInterface {
     removeFromSearchHistory(query) {
         this.settings.searchHistoryItems = this.settings.searchHistoryItems.filter(item => item !== query);
         this.saveSettings();
-        this.showSearchHistory(document.getElementById('search-input').value);
+        // 走统一入口重渲染,使"历史 + 热搜"合并列表保持一致
+        this.syncSearchAssistantUI(document.getElementById('search-input').value);
     }
 
     calculateRelevance(text, query) {
@@ -6575,7 +7274,227 @@ class OOOInterface {
         return score;
     }
 
-    escapeHtml(text) {
+    // 计算有效字符长度:CJK/Hiragana/Katakana/CJK Symbols 算 2,其他算 1
+    // 这样中文输入 3-4 字就能触发建议(有效长度 >=5),英文需要 5-6 字母,阈值统一
+    _effectiveLength(str) {
+        const s = str || '';
+        let len = 0;
+        for (let i = 0; i < s.length; i++) {
+            const c = s.charCodeAt(i);
+            // CJK Unified Ideographs U+4E00-U+9FFF
+            // Hiragana & Katakana U+3040-U+30FF
+            // CJK Symbols & Punctuation U+3000-U+303F
+            if ((c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3000 && c <= 0x30FF)) {
+                len += 2;
+            } else {
+                len += 1;
+            }
+        }
+        return len;
+    }
+
+    // 综合排序分:历史 + 热搜合并列表使用,基础分复用 calculateRelevance;
+    // 历史项与输入完全相同(忽略大小写)额外 +100 置顶,其余历史恒 +1,保证同分时历史略高于热搜
+    calculateCombinedScore(text, query, kind) {
+        const a = String(text).toLowerCase();
+        const b = String(query).toLowerCase();
+        let score = this.calculateRelevance(a, b);
+        if (kind === 'history') {
+            if (a === b) score += 100;
+            score += 1;
+        }
+        return score;
+    }
+
+    // 取消待执行的热搜建议请求(输入缩短/清空等路径调用)
+    cancelSearchSuggestions() {
+        if (this.suggestDebounceTimer) {
+            clearTimeout(this.suggestDebounceTimer);
+            this.suggestDebounceTimer = null;
+        }
+        this._suggestSeq += 1;
+    }
+
+    // 防抖(250ms)后拉取当前引擎热搜词建议;结果返回时若下拉已被关闭/输入变化则丢弃
+    scheduleSearchSuggestions(query) {
+        if (this.suggestDebounceTimer) {
+            clearTimeout(this.suggestDebounceTimer);
+            this.suggestDebounceTimer = null;
+        }
+        const seq = ++this._suggestSeq;
+
+        this.suggestDebounceTimer = setTimeout(async () => {
+            this.suggestDebounceTimer = null;
+            if (seq !== this._suggestSeq) return;
+
+            const input = document.getElementById('search-input');
+            if (document.body.classList.contains('scrolled') || !input || input.value.trim() !== query) {
+                return;
+            }
+
+            // 同引擎同查询 60 秒内直接复用缓存,避免聚焦/重复输入造成无谓请求
+            let suggestions = null;
+            const cache = this._suggestCache;
+            if (cache && cache.engine === this.currentEngine && cache.query === query && (Date.now() - cache.ts < 60000)) {
+                suggestions = cache.items;
+            } else {
+                try {
+                    suggestions = await this.fetchSearchSuggestions(query);
+                    this._suggestCache = { engine: this.currentEngine, query: query, items: suggestions, ts: Date.now() };
+                } catch (err) {
+                    suggestions = [];
+                }
+            }
+
+            if (seq !== this._suggestSeq) return;
+            const container = document.getElementById('search-history-container');
+            if (document.body.classList.contains('scrolled') || !container) {
+                return;
+            }
+            // 用户已点击外部关闭或移开焦点:本次下拉不应被异步结果重新打开
+            const stillOpen = container.classList.contains('show');
+            const inputFocused = document.activeElement === document.getElementById('search-input');
+            if (!stillOpen && !inputFocused) {
+                return;
+            }
+            this.renderSearchSuggestions(query, suggestions);
+        }, 250);
+    }
+
+    // 按当前引擎拉取关联词/热搜词建议:
+    // 先尝试 Bing(osjson),再回退 Google(suggestqueries)。
+    // 不传 mkt/hl/locale 参数,让接口自动按 query 语种推断(与官网行为一致)。
+    // 直连失败由 slashFetch 自动回退本地代理;最多取前 10 条
+    async fetchSearchSuggestions(query) {
+        const trimmed = String(query || '').trim();
+        if (!trimmed) return [];
+
+        // 最简 URL,不传 locale 参数,避免 mkt/hl 对结果的干扰
+        const params = 'query=' + encodeURIComponent(trimmed);
+        const bingUrl = 'https://www.bing.com/osjson.aspx?' + params;
+        const googleUrl = 'https://suggestqueries.google.com/complete/search?client=firefox&q=' + params;
+
+        // 先试 Bing
+        let response;
+        try {
+            response = await this.slashFetch(bingUrl);
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data) && Array.isArray(data[1]) && data[1].length > 0) {
+                    return data[1]
+                        .map(item => (Array.isArray(item) ? (item[0] || '') : item))
+                        .map(item => String(item).trim())
+                        .filter(item => item)
+                        .slice(0, 10);
+                }
+                console.warn('[热搜建议] Bing 未返回建议,回退 Google');
+            } else {
+                console.warn('[热搜建议] Bing HTTP', response.status, '| 回退 Google');
+            }
+        } catch (err) {
+            console.warn('[热搜建议] Bing 不可用,回退 Google:', err.message);
+        }
+
+        // 回退 Google
+        try {
+            response = await this.slashFetch(googleUrl);
+            if (!response.ok) {
+                console.warn('[热搜建议] Google HTTP', response.status, '|', googleUrl);
+                throw new Error('热搜建议接口响应异常 (HTTP ' + response.status + ')');
+            }
+            const data = await response.json();
+            if (!Array.isArray(data) || !Array.isArray(data[1])) {
+                console.warn('[热搜建议] 非预期响应格式', typeof data, Object.keys(data || {}));
+                throw new Error('热搜建议接口解析失败');
+            }
+            return data[1]
+                .map(item => (Array.isArray(item) ? (item[0] || '') : item))
+                .map(item => String(item).trim())
+                .filter(item => item)
+                .slice(0, 10);
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    // 渲染"搜索历史 + 热搜建议"合并下拉;suggestions 传 null 表示仅先渲染历史
+    renderSearchSuggestions(query, suggestions) {
+        if (document.body.classList.contains('scrolled')) return;
+
+        const searchHistoryContainer = document.getElementById('search-history-container');
+        const searchHistoryList = document.querySelector('.search-history-list');
+        const quickAccessLinks = document.getElementById('quick-access-links');
+
+        if (!searchHistoryContainer || !searchHistoryList) return;
+
+        const q = String(query || '').trim();
+        const rows = [];
+
+        // 历史项:仅搜索历史开关开启时混入(搜索历史本身已保证去重,无需额外检查)
+        if (this.settings.searchHistory && Array.isArray(this.settings.searchHistoryItems)) {
+            this.settings.searchHistoryItems.forEach(raw => {
+                const text = String(raw || '').trim();
+                if (!text) return;
+                rows.push({ text: text, kind: 'history' });
+            });
+        }
+
+        // 热搜建议项:与历史同词的项也保留,由排序规则决定先后(同词历史 +100 分必排最上)
+        if (Array.isArray(suggestions) && this.settings.searchSuggestions) {
+            suggestions.forEach(raw => {
+                const text = String(raw || '').trim();
+                if (!text) return;
+                rows.push({ text: text, kind: 'suggestion' });
+            });
+        }
+
+        if (rows.length === 0) {
+            this.hideSearchHistory();
+            return;
+        }
+
+        if (q) {
+            rows.sort((a, b) => {
+                const scoreA = this.calculateCombinedScore(a.text, q, a.kind);
+                const scoreB = this.calculateCombinedScore(b.text, q, b.kind);
+                return scoreB - scoreA;
+            });
+        }
+
+        searchHistoryList.innerHTML = '';
+
+        rows.forEach(row => {
+            const item = document.createElement('div');
+            item.className = 'search-history-item' + (row.kind === 'suggestion' ? ' search-suggestion-item' : '');
+            item.dataset.query = row.text;
+
+            if (row.kind === 'history') {
+                item.innerHTML = `
+                    <span class="search-history-text">${this.escapeHtml(row.text)}</span>
+                    <button class="search-history-delete" data-query="${this.escapeHtml(row.text)}">
+                        ×
+                    </button>
+                `;
+            } else {
+                item.innerHTML = `
+                    <span class="material-icons md3-icon search-suggestion-trend">trending_up</span>
+                    <span class="search-history-text">${this.escapeHtml(row.text)}</span>
+                    <span class="search-suggestion-badge">热搜</span>
+                `;
+            }
+            searchHistoryList.appendChild(item);
+        });
+
+        searchHistoryContainer.classList.add('show');
+
+        if (quickAccessLinks) {
+            quickAccessLinks.style.transform = 'translateY(1000px)';
+            quickAccessLinks.style.opacity = '0';
+            quickAccessLinks.style.pointerEvents = 'none';
+        }
+    }
+
+        escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
@@ -6825,6 +7744,7 @@ class OOOInterface {
         document.getElementById('persistent-wallpaper-toggle').checked = this.settings.persistentWallpaper;
         document.getElementById('wallpaper-scale-toggle').checked = this.settings.wallpaperScale;
         document.getElementById('search-history-toggle').checked = this.settings.searchHistory;
+        document.getElementById('search-suggestions-toggle').checked = this.settings.searchSuggestions;
         document.getElementById('engine-lock-toggle').checked = this.settings.engineLocked;
         document.getElementById('hide-info-popup-toggle').checked = this.settings.hideInfoPopup.enabled;
         document.getElementById('quick-access-sidebar-toggle').checked = this.settings.quickAccessSidebar;
@@ -6833,6 +7753,7 @@ class OOOInterface {
         this.syncSimpleVisualMode();
         document.getElementById('simple-visual-toggle').checked = this.settings.simpleVisualMode;
         document.getElementById('hidden-badge-toggle').checked = this.settings.hiddenBadge;
+        document.getElementById('ocp-player-toggle').checked = this.settings.ocpPlayerEnabled;
         // 固定侧边栏主开关与两个子开关
         document.getElementById('fix-sidebar-toggle').checked = this.settings.fixSidebarEnabled;
         document.getElementById('fix-sidebar-homepage-toggle').checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage;
@@ -6881,19 +7802,8 @@ class OOOInterface {
 
         this.syncWidgetPanelUI();
 
-        // 更新设置打开方式
-        const badgeOpenMethodValue = this.settings.badgeOpenMethod || 'both';
-        const badgeMethodSelect = document.getElementById('badge-open-method-select');
-        if (badgeMethodSelect) {
-            badgeMethodSelect.value = badgeOpenMethodValue;
-            const selectedDisplay = document.getElementById('badge-open-method-selected');
-            if (selectedDisplay) {
-                const selectedOption = badgeMethodSelect.querySelector(`option[value="${badgeOpenMethodValue}"]`);
-                if (selectedOption) {
-                    selectedDisplay.textContent = selectedOption.textContent;
-                }
-            }
-        }
+        // 更新底部铭牌功能（摘要文本 + 隐藏铭牌时隐藏该项）
+        this.syncBadgeOpenMethodUI();
 
         // 更新自定义下拉菜单的显示文本
         const updateCustomSelectDisplay = (selectId, selectedValue) => {
@@ -7398,6 +8308,16 @@ class OOOInterface {
             badge.style.display = this.settings.hiddenBadge ? 'none' : '';
         }
 
+        // 底部铭牌功能：动作绑定幂等；同步子项显隐与摘要，覆盖导入设置等整体替换路径
+        this.setupBadgeOpenMethod();
+        this.syncBadgeOpenMethodUI();
+
+        // OCP 播控：绑定幂等；整体替换设置（导入等）后如已关闭则立即收起
+        this.setupOcpPlayer();
+        if (!this.settings.ocpPlayerEnabled) {
+            this.hideOcpPlayer();
+        }
+
         // 同步固定侧边栏状态（关闭时内部负责移除 sidebar-fixed 标记并恢复 hover 控制）
         this.syncSidebarFixedState();
     }
@@ -7824,13 +8744,17 @@ class OOOInterface {
         const menuItems = document.querySelectorAll('.context-menu-item');
         const colorConfig = this.getColorConfig();
         const isDark = this.isDarkMode;
-        const accent = isDark ? colorConfig.accentDark : colorConfig.accent;
-        const accentRgb = isDark ? colorConfig.accentDarkRgb : colorConfig.accentRgb;
 
         let hoverColor, textColor;
         if (this.settings.dynamicBlur) {
-            hoverColor = accent;
-            textColor = isDark ? colorConfig.contextMenuTextColorDark : colorConfig.contextMenuTextColor;
+            hoverColor = isDark ? colorConfig.accentDark : colorConfig.accent;
+            // 黑白色在深色模式下：白色背景（accentDark=#ffffff）+ #d0d0d0 灰色文字 = 对比度 1.54:1 不可读
+            // 改为黑色文字，对比度 21:1；其他配色保持原来的 contextMenuTextColorDark 不变
+            if (this.settings.colorScheme === 'black-white' && isDark) {
+                textColor = '#000000';
+            } else {
+                textColor = isDark ? colorConfig.contextMenuTextColorDark : colorConfig.contextMenuTextColor;
+            }
         } else {
             hoverColor = isDark ? colorConfig.contextMenuHoverDark : colorConfig.contextMenuHover;
             textColor = isDark ? colorConfig.contextMenuTextColorDark : colorConfig.contextMenuTextColor;
@@ -8279,6 +9203,91 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 // 右侧面板设置菜单方法
+OOOInterface.prototype.renderBadgeConfigView = function (rightPanelUpper) {
+    const self = this;
+    if (!rightPanelUpper) return;
+
+    rightPanelUpper.dataset.menuType = 'badge-open-method';
+
+    const container = document.createElement('div');
+    container.className = 'settings-menu-container slide-in-right';
+
+    const actions = [
+        { key: 'badgeDblClickAction', label: '双击' },
+        { key: 'badgeContextMenuAction', label: '右键' }
+    ];
+
+    actions.forEach(({ key, label }) => {
+        const row = document.createElement('div');
+        row.className = 'badge-action-row';
+
+        const rowLabel = document.createElement('label');
+        rowLabel.textContent = label;
+        row.appendChild(rowLabel);
+
+        const options = [
+            { value: 'settings', text: '打开设置' },
+            { value: 'audio', text: '播放OCP' },
+            { value: 'none', text: '无' }
+        ];
+        const current = self.normalizeBadgeAction(self.settings[key]);
+        const currentIdx = Math.max(0, options.findIndex(o => o.value === current));
+
+        const seg = document.createElement('div');
+        seg.className = 'badge-action-segmented pos-' + currentIdx;
+
+        const thumb = document.createElement('div');
+        thumb.className = 'badge-action-thumb';
+        seg.appendChild(thumb);
+
+        options.forEach((opt, idx) => {
+            const span = document.createElement('span');
+            span.className = 'badge-action-label l' + idx + (idx === currentIdx ? ' active' : '');
+            span.textContent = opt.text;
+            span.setAttribute('role', 'button');
+            span.setAttribute('tabindex', '0');
+            span.setAttribute('title', opt.text);
+
+            const select = () => {
+                if (self.settings[key] === opt.value) return;
+                const value = self.normalizeBadgeAction(opt.value);
+                self.settings[key] = value;
+                // 移动滑块并更新高亮
+                seg.classList.remove('pos-0', 'pos-1', 'pos-2');
+                seg.classList.add('pos-' + idx);
+                seg.querySelectorAll('.badge-action-label').forEach((el, i) => {
+                    el.classList.toggle('active', i === idx);
+                });
+                // 立即生效并持久化（与其他右面板选择器一致，不弹提示）
+                self.setupBadgeOpenMethod();
+                self.syncBadgeOpenMethodUI();
+                self.saveSettings();
+            };
+
+            span.addEventListener('click', (e) => {
+                e.stopPropagation();
+                select();
+            });
+            span.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    select();
+                }
+            });
+
+            seg.appendChild(span);
+        });
+
+        row.appendChild(seg);
+        container.appendChild(row);
+    });
+
+    rightPanelUpper.appendChild(container);
+    const modal = document.getElementById('settings-modal');
+    if (modal) modal.classList.add('right-panel-open');
+};
+
 OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected, hiddenSelect, skipAnimation) {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
@@ -8299,11 +9308,19 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         menuType = 'color-scheme';
     } else if (selected.id === 'theme-select-selected' || selected.parentElement.querySelector('#theme-select')) {
         menuType = 'theme';
+    } else if (selected.id === 'badge-open-method-selected' || selected.parentElement.querySelector('#badge-open-method-select')) {
+        menuType = 'badge-open-method';
     }
 
     rightPanelUpper.innerHTML = '';
     delete rightPanelUpper.dataset.subView;
     rightPanelUpper.dataset.menuType = menuType;
+
+    // 底部铭牌功能：独立的三段式双选项视图，不走通用列表渲染
+    if (menuType === 'badge-open-method') {
+        this.renderBadgeConfigView(rightPanelUpper);
+        return;
+    }
 
     const container = document.createElement('div');
     container.className = 'settings-menu-container' + (skipAnimation ? '' : ' slide-in-right');
@@ -10040,6 +11057,7 @@ OOOInterface.prototype.renderContextMenuCustomizeView = function (rightPanelUppe
 
     const allItems = [
         { key: 'search-history-toggle', label: '搜索历史' },
+        { key: 'search-suggestions-toggle', label: '热搜词建议' },
         { key: 'wallpaper-toggle', label: '壁纸常显示' },
         { key: 'enhanced-display-toggle', label: '高级视觉效果' },
         { key: 'engine-lock-toggle', label: '引擎锁定' },

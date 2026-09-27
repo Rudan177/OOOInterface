@@ -77,6 +77,28 @@
                 <div id="info-indicator" class="info-indicator"></div>
             </div>
 
+            <!-- OCP 播控：hover 底部铭牌时显示的媒体播控（需在设置开启“OCP播控”，且 OCP 已开始播放）。
+                 定位壳常驻不拦截指针，卡片显隐由 .show 类驱动；不可放进铭牌内部（铭牌文本切换会重建 innerHTML）。
+                 封面 / 曲名 / 艺术家均取自音源文件（见 loadOcpTrackMeta），此处文案只是读取完成前的占位。 -->
+            <div id="ocp-player-popover" class="ocp-player-popover" aria-hidden="true">
+                <div class="ocp-player-card" role="group" aria-label="OCP 播控">
+                    <!-- 封面本身是按钮：点击在新标签页打开在线播放器 -->
+                    <button type="button" id="ocp-cover-btn" class="ocp-player-cover" aria-label="打开 OCP 在线播放器">
+                        <span class="material-icons ocp-cover-note">music_note</span>
+                        <div class="ocp-eq">
+                            <i></i><i></i><i></i><i></i>
+                        </div>
+                    </button>
+                    <div class="ocp-player-meta">
+                        <div class="ocp-player-title">OCP</div>
+                        <div class="ocp-player-artist">ByRUDAN</div>
+                    </div>
+                    <button type="button" id="ocp-play-btn" class="ocp-play-btn" aria-label="播放 / 暂停">
+                        <span class="material-icons ocp-play-icon">play_arrow</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- 信息容器 -->
             <div id="infoContainer" class="info-iframe-container">
                 <div class="info-container">
@@ -106,10 +128,10 @@
                 </div>
                 <div class="modal-header-buttons">
                     <button id="export-settings-btn" class="header-action-btn dev-only" title="导出配置为 Markdown">
-                        <span class="material-icons">download</span>
+                        <span class="material-icons">upload</span>
                     </button>
                     <button id="import-settings-btn" class="header-action-btn dev-only" title="从 Markdown 导入配置">
-                        <span class="material-icons">upload</span>
+                        <span class="material-icons">download</span>
                     </button>
                     <button id="about-btn" class="close-btn"><svg viewBox="0 0 24 24" width="20" height="20">
                             <path fill="currentColor"
@@ -258,6 +280,10 @@
                                         <span class="color-scheme-dot" style="background: linear-gradient(135deg, #FFD700, #6B238E);"></span>
                                         <span>隔离色</span>
                                     </div>
+                                    <div class="select-item color-scheme-item" data-value="earth" data-group="newstar">
+                                        <span class="color-scheme-dot" style="background: linear-gradient(135deg, #1e88a8, #2eaa6e);"></span>
+                                        <span>地球色</span>
+                                    </div>
                                 </div>
                                 <select id="color-scheme-select" style="display: none;">
                                     <option value="green">林绿色</option>
@@ -267,6 +293,7 @@
                                     <option value="vibrant-red">活力红</option>
                                     <option value="classic-gold">典藏金</option>
                                     <option value="isolation">隔离色</option>
+                                    <option value="earth">地球色</option>
                                     <option value="custom">自定义</option>
                                 </select>
                             </div>
@@ -310,21 +337,13 @@
                             </div>
                         </div>
 
-                        <div class="setting-group">
-                            <label for="badge-open-method-select">设置打开方式:</label>
+                        <div class="setting-group" id="badge-open-method-group">
+                            <label for="badge-open-method-select">底部铭牌功能:</label>
                             <div class="custom-select">
-                                <div class="select-selected" id="badge-open-method-selected">双击和右键</div>
-                                <div class="select-items select-hide" id="badge-open-method-items">
-                                    <div class="select-item" data-value="both">双击和右键</div>
-                                    <div class="select-item" data-value="dblclick">仅双击</div>
-                                    <div class="select-item" data-value="contextmenu">仅右键</div>
-                                    <div class="select-item" data-value="none">无</div>
-                                </div>
+                                <div class="select-selected" id="badge-open-method-selected">打开设置 · 打开设置</div>
+                                <div class="select-items select-hide" id="badge-open-method-items"></div>
                                 <select id="badge-open-method-select" style="display: none;">
-                                    <option value="both" selected>双击和右键</option>
-                                    <option value="dblclick">仅双击</option>
-                                    <option value="contextmenu">仅右键</option>
-                                    <option value="none">无</option>
+                                    <option value="manage" selected>管理</option>
                                 </select>
                             </div>
                         </div>
@@ -425,6 +444,26 @@
                                 <span class="setting-label">搜索历史</span>
                                 <label class="switch">
                                     <input type="checkbox" id="search-history-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group" id="ocp-player-group">
+                            <div class="switch-label">
+                                <span class="setting-label">OCP播控</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="ocp-player-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <div class="switch-label">
+                                <span class="setting-label">热搜词建议</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="search-suggestions-toggle">
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -701,6 +740,10 @@
             <div class="context-menu-item" data-action="search-history-toggle">
                 <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
                 <span class="context-menu-text">搜索历史</span>
+            </div>
+            <div class="context-menu-item" data-action="search-suggestions-toggle">
+                <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>
+                <span class="context-menu-text">热搜词建议</span>
             </div>
             <div class="context-menu-item" data-action="wallpaper-toggle">
                 <span class="material-icons md3-icon checkbox">check_box_outline_blank</span>

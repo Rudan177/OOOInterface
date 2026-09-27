@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>欢迎使用 OOOInterface</title>
     <style>
 
@@ -119,6 +119,7 @@
             padding: 0;
             overflow: hidden;
             height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -614,6 +615,7 @@
             .splash-logo {
                 width: 150px;
                 height: 150px;
+                top: calc(42dvh - 75px);
             }
 
             .splash-logo.exit {
@@ -624,26 +626,50 @@
 
             .splash-title {
                 font-size: 36px;
+                top: calc(42dvh + 79px);
             }
 
             .splash-title.exit {
                 font-size: 28px;
-                top: 80px;
+                top: 96px;
             }
 
             .splash-hint {
                 font-size: 13px;
                 padding: 12px 30px;
+                top: calc(42dvh + 135px);
             }
 
             .container {
                 width: 94%;
                 margin: 0 auto 30px;
                 gap: 16px;
+                padding-top: 112px;
             }
 
             .hero-section {
-                padding: 40px 16px 16px;
+                padding: 24px 16px 16px;
+            }
+
+            .version-badge {
+                margin-top: 16px;
+            }
+
+            body,
+            body.ready {
+                height: auto;
+                min-height: 100vh;
+                min-height: 100dvh;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+
+            .welcome-card {
+                flex: none;
+            }
+
+            .card-body {
+                overflow: visible;
             }
 
             .welcome-card {
@@ -680,7 +706,7 @@
             }
 
             .footer {
-                padding: 15px 15px;
+                padding: 15px 15px calc(15px + env(safe-area-inset-bottom, 0px));
                 font-size: 12px;
             }
         }
@@ -689,6 +715,7 @@
             .splash-logo {
                 width: 120px;
                 height: 120px;
+                top: calc(42dvh - 60px);
             }
 
             .splash-logo.exit {
@@ -699,26 +726,29 @@
 
             .splash-title {
                 font-size: 32px;
+                top: calc(42dvh + 64px);
             }
 
             .splash-title.exit {
                 font-size: 24px;
-                top: 60px;
+                top: 72px;
             }
 
             .splash-hint {
                 font-size: 12px;
                 padding: 10px 24px;
+                top: calc(42dvh + 118px);
             }
 
             .container {
                 width: 96%;
                 margin: 0 auto 20px;
                 gap: 12px;
+                padding-top: 88px;
             }
 
             .hero-section {
-                padding: 30px 12px 12px;
+                padding: 20px 12px 12px;
             }
 
             .welcome-card {
@@ -757,11 +787,95 @@
             .version-badge {
                 font-size: 11px;
                 padding: 4px 10px;
+                margin-top: 12px;
             }
 
             .footer {
                 padding: 12px 12px;
                 font-size: 11px;
+            }
+        }
+
+        /* ========== 移动端/矮屏：整页可滚动，避免内容被压扁裁切 ========== */
+
+        @media (max-width: 768px), (max-height: 520px) {
+            body.ready {
+                height: auto;
+                min-height: 100vh;
+                min-height: 100svh;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+
+            .container {
+                flex: 1 1 auto;
+            }
+
+            .welcome-card {
+                flex: 1 1 auto;
+            }
+
+            /* 主界面可滚动时，固定的迷你 logo/标题加磨砂底，避免滚上来的文字与其重叠 */
+
+            body.ready .splash-logo.exit {
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.72);
+                -webkit-backdrop-filter: blur(6px);
+                backdrop-filter: blur(6px);
+            }
+
+            body.ready .splash-title.exit {
+                border-radius: 999px;
+                padding: 2px 16px;
+                background: rgba(255, 255, 255, 0.72);
+                -webkit-backdrop-filter: blur(6px);
+                backdrop-filter: blur(6px);
+            }
+
+            @media (prefers-color-scheme: dark) {
+                body.ready .splash-logo.exit,
+                body.ready .splash-title.exit {
+                    background: rgba(24, 24, 24, 0.72);
+                }
+            }
+        }
+
+        /* ========== 矮屏（如手机横屏）：压缩闪屏与迷你标题布局 ========== */
+
+        @media (max-height: 520px) {
+            .splash-logo {
+                width: 120px;
+                height: 120px;
+                top: calc(34dvh - 60px);
+            }
+
+            .splash-title {
+                font-size: 26px;
+                top: calc(34dvh + 66px);
+            }
+
+            .splash-hint {
+                font-size: 12px;
+                top: calc(34dvh + 108px);
+            }
+
+            .splash-logo.exit {
+                width: 44px;
+                height: 44px;
+                top: 12px;
+            }
+
+            .splash-title.exit {
+                font-size: 20px;
+                top: 64px;
+            }
+
+            .container {
+                padding-top: 80px;
+            }
+
+            .hero-section {
+                padding-top: 16px;
             }
         }
     </style>
