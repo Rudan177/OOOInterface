@@ -17,3 +17,4 @@
 | 20260927   | 乐鸣东方 | 洛天依 | 243s | 1 | Official |
 | 20260928   | 让风告诉你 | 花玲、喵酱油、宴宁、Kinsen | 226s | 1 | Official |
 | 20260929   | 风的来信 A Letter From the Wind | HOYO-MiX & 孙晔 | 197s | 1 | Official |
+| 20261001   | 予明日的叶笺 | HOYO-MiX | 198s | 1 | Official |
