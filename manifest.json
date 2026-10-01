@@ -6,6 +6,12 @@
   "chrome_url_overrides": {
     "newtab": "main/index.html"
   },
+  "side_panel": {
+    "default_path": "main/sidepanel/sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; font-src 'self' https: data:; style-src 'self' https://fonts.googleapis.com 'unsafe-inline';"
   },
@@ -26,7 +32,8 @@
     "unlimitedStorage",
     "bookmarks",
     "geolocation",
-    "identity"
+    "identity",
+    "sidePanel"
   ],
 
   "icons": {

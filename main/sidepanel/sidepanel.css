@@ -1,0 +1,203 @@
+/* ============================================================
+   OOOInterface 侧边栏面板（Chrome Side Panel）
+   在复用主页面 styles.css / dynamic-blur.css / widget-panel.css 的基础上，
+   仅做面板容器形态的最小适配，保证视觉与主页面完全一致。
+   ============================================================ */
+
+/* 面板页面基础：与主页面一致的背景与字体 */
+body.qa-panel-page {
+    margin: 0;
+    background: var(--background-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 壁纸层（铺满面板，内容浮于其上） */
+.qa-panel-wallpaper {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    pointer-events: none;
+}
+
+/* 内容区：通栏纵向排布 小组件 / 快速链接 / 搜索区。
+   高度按比例动态分配：小组件区最多 50%（超出内部滚动），
+   快速链接+搜索区至少 50%（链接区弹性填充剩余高度） */
+.qa-panel-content {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 5;
+    overflow: hidden;
+    scrollbar-width: none;
+}
+
+.qa-panel-content::-webkit-scrollbar {
+    display: none;
+}
+
+/* 小组件区：高度随内容自适应，上限为面板一半（-10px 为链接卡底边距的互补）。
+   flex:0 0 不可收缩（防被长链接列表挤压变小）。外层只做尺寸与内边距，
+   实际滚动交给内层 qa-panel-widgets-scroll——裁切发生在内层边界，
+   即距区域底边恒定 10px 处，于是"下边距"在任何滚动位置都保留，
+   滚到底时最后一行卡片的下圆角也完整可见。
+   内容不满上限时保持实际高度，剩余空间由下方链接卡向上补充 */
+.qa-panel-widgets {
+    flex: 0 0 auto;
+    max-height: calc(50% - 10px);
+    min-height: 0;
+    padding: 10px 10px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 内层滚动容器：滚动条隐藏，边界留白由外层内边距提供 */
+.qa-panel-widgets-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.qa-panel-widgets-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* 链接区隐藏时，小组件可用全部剩余高度（不再受 50% 限制） */
+body.qa-hide-links .qa-panel-widgets {
+    flex: 1 1 auto;
+    max-height: none;
+}
+
+.qa-panel-widgets .widget-panel-grid {
+    max-height: none;
+    overflow: visible;
+}
+
+/* 快速访问侧边栏：改为内容流中的常驻卡片（主页面为右侧 hover 弹出，需覆盖定位）。
+   弹性填充剩余高度：与搜索区合计至少占面板 50% */
+body.qa-panel-page .quick-access-sidebar {
+    position: relative;
+    top: 0;
+    left: 0;
+    right: auto;
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    /* 与小组件区的间距由小组件区底部内边距提供（滚动到底时该间距一并可见，
+       下圆角不会被裁切）；小组件区隐藏时回退为自身 10px 上边距 */
+    margin-top: 0;
+    /* 主页面是右侧 hover 弹出的横向布局（align-items:flex-start，高度按内容收缩）；
+       面板内改为纵向延展，让链接卡撑满分配的高度 */
+    flex-direction: column;
+    align-items: stretch;
+}
+
+body.qa-hide-widgets .quick-access-sidebar {
+    margin-top: 10px;
+}
+
+/* 链接列表自身限高滚动，外层卡片圆角不受影响 */
+body.qa-panel-page .quick-access-sidebar-container {
+    height: auto;
+    flex: none;
+}
+
+body.qa-panel-page .quick-access-sidebar-links {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+body.qa-panel-page .quick-access-sidebar-links::-webkit-scrollbar {
+    display: none;
+}
+
+body.qa-panel-page .quick-access-sidebar-trigger {
+    display: none;
+}
+
+body.qa-panel-page .quick-access-sidebar-container {
+    flex: 1;
+    min-height: 0;
+    max-width: none;
+    width: auto;
+    /* 底部恢复 10px 外边距（卡片下圆角不贴住搜索区）；
+       小组件区上限 calc(50% - 10px) 与该边距互补，
+       "链接框 + 搜索框"可见高度仍不低于面板的一半 */
+    margin: 0 10px 10px 10px;
+    height: auto;
+}
+
+/* 面板中无壁纸时内容底部留白由容器 margin 提供 */
+
+/* 底部搜索区：固定在内容区底部；上方无填充时贴底 */
+.qa-panel-search {
+    flex: 0 0 auto;
+    margin-top: auto;
+    z-index: 6;
+    padding: 8px 10px 10px 10px;
+    background: var(--background-color);
+}
+
+/* 壁纸/毛玻璃模式下吸底区不铺独立背景与模糊：毛玻璃应落在搜索框、引擎按钮
+   各自组件上（与主页面一致），避免底部出现一条与组件不融合的模糊带 */
+body.qa-has-wallpaper .qa-panel-search,
+body.dynamic-blur .qa-panel-search {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.qa-panel-search .search-section {
+    margin-bottom: 0;
+}
+
+.qa-panel-search .search-container {
+    max-width: none;
+    height: var(--search-box-height);
+}
+
+.qa-panel-search .engine-buttons {
+    justify-content: center;
+    margin-top: 8px;
+}
+
+/* 面板提示浮层（小组件通知用，配色跟随方案） */
+.qa-panel-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%) translateY(8px);
+    max-width: calc(100% - 32px);
+    padding: 9px 16px;
+    border-radius: 12px;
+    background: var(--primary-color);
+    color: #ffffff;
+    font-size: 13px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 20;
+}
+
+.qa-panel-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+

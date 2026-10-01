@@ -63,6 +63,23 @@ class OOOInterface {
             fixSidebarEnabled: false,
             fixSidebarHomepage: false,
             fixSidebarWallpaper: false,
+            // 侧边栏面板功能：默认全部关闭（主开关与内部各开关均关闭，
+            // 由用户按需逐项开启；开启后点击工具栏图标打开侧边栏，关闭则新建标签页）
+            sidePanelEnabled: false,
+            sidePanelShowWidgets: false,
+            sidePanelShowQuickLinks: false,
+            sidePanelShowSearch: false,
+            sidePanelShowEngineButtons: false,
+            sidePanelWallpaperEnabled: false,
+            sidePanelWallpaperSync: false,
+            sidePanelWallpaperUrl: '',
+            // 侧边栏各区域独立配置（与主页面保持一致关闭时生效）
+            sidePanelWidgetsSync: false,
+            sidePanelWidgetPanel: { widgets: [] },
+            sidePanelQuickLinksSync: false,
+            sidePanelQuickLinks: [],
+            sidePanelSearchSync: false,
+            sidePanelSearchBoxHeight: 50,
             widgetPanel: {
                 enabled: true,
                 widgets: []
@@ -165,7 +182,11 @@ class OOOInterface {
         // 确保页面刷新后主题在首屏渲染前即恢复，避免出现默认外观闪动
         await this.loadThemes();
 
-        this.applySettings();
+        try {
+            this.applySettings();
+        } catch (error) {
+            console.error('初始化应用设置失败:', error);
+        }
 
         this.updateCustomSchemeDropdownDots();
 
@@ -176,6 +197,10 @@ class OOOInterface {
         }
 
         this.primeWallpaperEffects();
+
+        // 注册跨上下文设置同步（侧边栏面板 ⇄ 主页面），并处理面板跳转参数
+        this.setupSettingsSync();
+        this.handleOpenQuickLinksParam();
 
         // 自动聚焦搜索框，解决浏览器新标签页地址栏抢焦点的问题
         setTimeout(() => {
@@ -280,6 +305,8 @@ class OOOInterface {
         if (fsHomepageGroup) fsHomepageGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
         const fsWallpaperGroup = document.getElementById('fix-wallpaper-group');
         if (fsWallpaperGroup) fsWallpaperGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
+        // 侧边栏功能：摘要文字与（如打开的）右面板配置视图
+        this.syncSidePanelSelectDisplay();
         const el = document.getElementById('engine-lock-toggle');
         if (el) el.checked = this.settings.engineLocked;
         const hn = document.getElementById('hide-notifications-toggle');
@@ -1655,6 +1682,22 @@ class OOOInterface {
         if (savedSettings.fixSidebarEnabled !== undefined) result.fixSidebarEnabled = savedSettings.fixSidebarEnabled;
         if (savedSettings.fixSidebarHomepage !== undefined) result.fixSidebarHomepage = savedSettings.fixSidebarHomepage;
         if (savedSettings.fixSidebarWallpaper !== undefined) result.fixSidebarWallpaper = savedSettings.fixSidebarWallpaper;
+
+        // 侧边栏面板功能
+        if (savedSettings.sidePanelEnabled !== undefined) result.sidePanelEnabled = savedSettings.sidePanelEnabled;
+        if (savedSettings.sidePanelShowWidgets !== undefined) result.sidePanelShowWidgets = savedSettings.sidePanelShowWidgets;
+        if (savedSettings.sidePanelShowQuickLinks !== undefined) result.sidePanelShowQuickLinks = savedSettings.sidePanelShowQuickLinks;
+        if (savedSettings.sidePanelShowSearch !== undefined) result.sidePanelShowSearch = savedSettings.sidePanelShowSearch;
+        if (savedSettings.sidePanelShowEngineButtons !== undefined) result.sidePanelShowEngineButtons = savedSettings.sidePanelShowEngineButtons;
+        if (savedSettings.sidePanelWallpaperEnabled !== undefined) result.sidePanelWallpaperEnabled = savedSettings.sidePanelWallpaperEnabled;
+        if (savedSettings.sidePanelWallpaperSync !== undefined) result.sidePanelWallpaperSync = savedSettings.sidePanelWallpaperSync;
+        if (savedSettings.sidePanelWallpaperUrl !== undefined) result.sidePanelWallpaperUrl = savedSettings.sidePanelWallpaperUrl;
+        if (savedSettings.sidePanelWidgetsSync !== undefined) result.sidePanelWidgetsSync = savedSettings.sidePanelWidgetsSync;
+        if (savedSettings.sidePanelWidgetPanel !== undefined) result.sidePanelWidgetPanel = savedSettings.sidePanelWidgetPanel;
+        if (savedSettings.sidePanelQuickLinksSync !== undefined) result.sidePanelQuickLinksSync = savedSettings.sidePanelQuickLinksSync;
+        if (savedSettings.sidePanelQuickLinks !== undefined) result.sidePanelQuickLinks = savedSettings.sidePanelQuickLinks;
+        if (savedSettings.sidePanelSearchSync !== undefined) result.sidePanelSearchSync = savedSettings.sidePanelSearchSync;
+        if (savedSettings.sidePanelSearchBoxHeight !== undefined) result.sidePanelSearchBoxHeight = savedSettings.sidePanelSearchBoxHeight;
         if (savedSettings.hiddenBadge !== undefined) result.hiddenBadge = savedSettings.hiddenBadge;
         if (savedSettings.ocpPlayerEnabled !== undefined) result.ocpPlayerEnabled = savedSettings.ocpPlayerEnabled;
 
@@ -2426,6 +2469,12 @@ class OOOInterface {
             ...this.settings,
             userChangedLogo: this.userChangedLogo
         };
+        // 侧边栏子视图数据交换期间：快照里把交换出去的键还原为原始引用，
+        // 避免把独立数据序列化进主槽位（内存引用在退出交换时本就会恢复）
+        if (this._spSwap) {
+            if (this._spSwap.quickLinks !== undefined) settingsToSave.quickLinks = this._spSwap.quickLinks;
+            if (this._spSwap.widgetPanel !== undefined) settingsToSave.widgetPanel = this._spSwap.widgetPanel;
+        }
         try {
             const result = chrome.storage.local.set({ oooInterfaceSettings: settingsToSave });
             if (result && typeof result.catch === 'function') {
@@ -2447,6 +2496,81 @@ class OOOInterface {
                 console.error('localStorage 保存也失败:', e);
                 this.showNotification('保存设置失败');
             }
+        }
+    }
+
+    // 跨上下文设置同步：侧边栏面板修改设置后主页面实时应用
+    setupSettingsSync() {
+        try {
+            if (!chrome.storage || !chrome.storage.onChanged) return;
+        } catch (e) {
+            return;
+        }
+        // 面板可修改、且主页面需要跟着刷新的设置键；其余键（小组件数据、壁纸缓存等）
+        // 的变化不触发重应用，自身回写也因内容一致被跳过，避免两页面间同步风暴
+        const SYNC_KEYS = ['quickLinks', 'showQuickLinkIcons', 'enhancedDisplay', 'dynamicBlur', 'colorScheme',
+            'themeColorScheme', 'customColors', 'activeCustomColorIndex', 'customPrimaryColor', 'customSecondaryColor',
+            'customGradientEnabled', 'customGradientStart', 'customGradientEnd', 'font',
+            'sidePanelEnabled', 'sidePanelShowWidgets', 'sidePanelShowQuickLinks', 'sidePanelShowSearch',
+            'sidePanelShowEngineButtons', 'sidePanelWallpaperEnabled', 'sidePanelWallpaperSync', 'sidePanelWallpaperUrl',
+            'sidePanelWidgetsSync', 'sidePanelWidgetPanel', 'sidePanelQuickLinksSync', 'sidePanelQuickLinks',
+            'sidePanelSearchSync', 'sidePanelSearchBoxHeight',
+            'widgetPanel'];
+        let syncTimer = null;
+        let pendingValue = null;
+
+        chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName !== 'local' || !changes.oooInterfaceSettings) return;
+            const next = changes.oooInterfaceSettings.newValue;
+            if (!next) return;
+
+            const relevant = SYNC_KEYS.some(key => JSON.stringify(next[key]) !== JSON.stringify(this.settings[key]));
+            if (!relevant) return;
+
+            pendingValue = next;
+            clearTimeout(syncTimer);
+            syncTimer = setTimeout(() => {
+                // 完整回填：保留全部已存键（含壁纸/字体/小组件数据），仅用默认值补缺，避免丢设置
+                this.settings = Object.assign({}, this.defaultSettings, pendingValue);
+                // 侧边栏子视图交换期间：重挂交换，保证管理视图继续作用于独立数据
+                if (this._spSwap) {
+                    if (this._spSwap.quickLinks !== undefined) this.settings.quickLinks = this.settings.sidePanelQuickLinks;
+                    if (this._spSwap.widgetPanel !== undefined) this.settings.widgetPanel = this.settings.sidePanelWidgetPanel;
+                }
+                this._dynamicBlurAutoEnabled = this.settings.enhancedDisplay && this.settings.dynamicBlur;
+                this.applySettings();
+                this.updateContextMenuIcons();
+                this.syncSettingsPageToggles();
+            }, 150);
+        });
+    }
+
+    // 支持从快速访问面板跳转：?openQuickLinks=1 打开主页面快速链接管理；
+    // ?openSidePanel=<key> 打开侧边栏功能设置并直达对应子视图
+    handleOpenQuickLinksParam() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('openQuickLinks') === '1') {
+                this.openSettings('badge');
+                setTimeout(() => {
+                    this.showQuickLinksMenuInRightPanel();
+                }, 100);
+                return;
+            }
+            const spView = params.get('openSidePanel');
+            if (spView) {
+                this.openSettings('badge');
+                setTimeout(() => {
+                    const rpu = document.getElementById('right-panel-upper');
+                    if (!rpu) return;
+                    this.renderSidePanelConfigView(rpu);
+                    if (spView !== 'root') {
+                        this.renderSidePanelSubView(rpu, spView);
+                    }
+                }, 100);
+            }
+        } catch (e) {
+            console.warn('解析面板跳转参数失败:', e);
         }
     }
 
@@ -2972,6 +3096,11 @@ class OOOInterface {
                 }
             } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
                 this.backToCustomColorView(rpu);
+            } else if (rpu && rpu.dataset.menuType === 'side-panel'
+                && this._sidePanelView && this._sidePanelView !== 'root') {
+                // 侧边栏功能子视图：顶部返回按钮逐级返回（子视图 → 功能根视图 → 关闭右面板）
+                this.exitSidePanelScope();
+                this.renderSidePanelConfigView(rpu);
             } else {
                 this.confirmRightPanelChanges();
                 this.closeSettingsMenuInRightPanel();
@@ -3003,6 +3132,11 @@ class OOOInterface {
                             }
                         } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
                             this.backToCustomColorView(rpu);
+                        } else if (rpu && rpu.dataset.menuType === 'side-panel'
+                            && this._sidePanelView && this._sidePanelView !== 'root') {
+                            // 侧边栏功能子视图：逐级返回（子视图 → 功能根视图）
+                            this.exitSidePanelScope();
+                            this.renderSidePanelConfigView(rpu);
                         } else if (rpu) {
                             this.confirmRightPanelChanges();
                             this.closeSettingsMenuInRightPanel();
@@ -5657,6 +5791,8 @@ class OOOInterface {
 
     // 应用并显示快速访问链接按钮
     applyQuickLinks() {
+        // 侧边栏链接子视图交换期间挂起，避免主页面渲染侧边栏数据
+        if (this._spSwap && this._spSwap.quickLinks !== undefined) return;
         const quickAccessContainer = document.getElementById('quick-access-links');
         quickAccessContainer.innerHTML = '';
 
@@ -5726,8 +5862,8 @@ class OOOInterface {
                 let faviconUrl = null;
                 let tryFallback = false;
 
-                if (link._favicon) {
-                    // _favicon 为空字符串表示之前已检测为无图标
+                if (link._favicon !== undefined && link._favicon !== null) {
+                    // _favicon 为空字符串表示之前已检测为无图标，直接用字母占位，不再重试
                     if (link._favicon !== '') {
                         faviconUrl = link._favicon;
                     }
@@ -5752,7 +5888,8 @@ class OOOInterface {
                         this.style.display = 'none';
                         const letter = this.parentElement.querySelector('.quick-access-sidebar-link-letter');
                         if (letter) letter.style.display = 'flex';
-                        if (!link._favicon && domain) {
+                        // 仅在从未检测过时写入缓存，避免每次渲染重复回写设置
+                        if (link._favicon === undefined && domain) {
                             self.cacheFavicon(link, index, domain, null);
                         }
                     };
@@ -5761,7 +5898,7 @@ class OOOInterface {
                         // 检测是否为默认图标（如 Google 的默认地球图标大小为 16x16）
                         const isDefaultIcon = this.naturalWidth <= 20 || this.naturalHeight <= 20;
 
-                        if (isDefaultIcon && !link._favicon) {
+                        if (isDefaultIcon && link._favicon === undefined) {
                             // 无真实图标，回退到字母占位
                             this.style.display = 'none';
                             const letter = this.parentElement.querySelector('.quick-access-sidebar-link-letter');
@@ -5775,7 +5912,7 @@ class OOOInterface {
                         if (letter) letter.style.display = 'none';
                         this.style.display = 'block';
 
-                        if (!link._favicon && domain) {
+                        if (link._favicon === undefined && domain) {
                             self.cacheFavicon(link, index, domain, this.src);
                         }
                     };
@@ -7758,6 +7895,8 @@ class OOOInterface {
         document.getElementById('fix-sidebar-toggle').checked = this.settings.fixSidebarEnabled;
         document.getElementById('fix-sidebar-homepage-toggle').checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage;
         document.getElementById('fix-sidebar-wallpaper-toggle').checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarWallpaper;
+        // 侧边栏功能：左侧下拉摘要与右面板视图
+        this.syncSidePanelSelectDisplay();
         this.updateHideInfoPopupLabel();
 
         // 根据动态模糊的状态显示/隐藏增强显示开关
@@ -7864,6 +8003,8 @@ class OOOInterface {
     }
 
     closeSettings() {
+        // 侧边栏子视图的数据交换随设置关闭而恢复
+        this.exitSidePanelScope();
         const modal = document.getElementById('settings-modal');
         const modalContent = modal.querySelector('.modal-content');
 
@@ -8268,13 +8409,17 @@ class OOOInterface {
     }
 
     applySettings() {
-        this.applyFont();
-        this.applyLogo();
-        this.applyQuickLinks();
-        this.applyWallpaper();
-        this.applyDeveloperSettings();
-        this.applyContextMenuStyle();
-        this.renderWidgetPanel();
+        // 各应用分支独立容错：单个分支异常（如历史数据形态异常）不影响主页其余部分
+        const safe = (name, fn) => {
+            try { fn.call(this); } catch (error) { console.error('应用设置失败 [' + name + ']:', error); }
+        };
+        safe('applyFont', this.applyFont);
+        safe('applyLogo', this.applyLogo);
+        safe('applyQuickLinks', this.applyQuickLinks);
+        safe('applyWallpaper', this.applyWallpaper);
+        safe('applyDeveloperSettings', this.applyDeveloperSettings);
+        safe('applyContextMenuStyle', this.applyContextMenuStyle);
+        safe('renderWidgetPanel', this.renderWidgetPanel);
 
         if (this.infoManager) {
             this.infoManager.applyHideInfoPopup();
@@ -9288,10 +9433,430 @@ OOOInterface.prototype.renderBadgeConfigView = function (rightPanelUpper) {
     if (modal) modal.classList.add('right-panel-open');
 };
 
+// 侧边栏功能右面板配置视图：功能开关组 + 壁纸子项，改动立即生效并持久化（与铭牌配置视图一致）
+// ===== 侧边栏功能右面板配置：顶层菜单 + 可下钻子视图 =====
+// 每个子视图均有“与主页面保持一致”开关；关闭一致后使用侧边栏独立数据并提供管理界面。
+
+// 侧边栏独立数据源（确保结构存在并返回活引用）
+OOOInterface.prototype.getSidePanelQuickLinksSource = function () {
+    if (!Array.isArray(this.settings.sidePanelQuickLinks)) this.settings.sidePanelQuickLinks = [];
+    return this.settings.sidePanelQuickLinks;
+};
+OOOInterface.prototype.getSidePanelWidgetsSource = function () {
+    if (!this.settings.sidePanelWidgetPanel || typeof this.settings.sidePanelWidgetPanel !== 'object') {
+        this.settings.sidePanelWidgetPanel = { widgets: [] };
+    }
+    if (!Array.isArray(this.settings.sidePanelWidgetPanel.widgets)) this.settings.sidePanelWidgetPanel.widgets = [];
+    return this.settings.sidePanelWidgetPanel.widgets;
+};
+
+// 侧边栏子视图的数据交换：独立模式下让主页面现成管理视图直接操作侧边栏数据。
+// 交换期间 renderWidgetPanel/applyQuickLinks 挂起（_spSwap 守卫），退出时恢复并重渲染主页面。
+OOOInterface.prototype.enterSidePanelScope = function (needs) {
+    this.exitSidePanelScope();
+    const swap = {};
+    if (needs.quicklinks && this.settings.sidePanelQuickLinksSync === false) {
+        if (!Array.isArray(this.settings.sidePanelQuickLinks)) this.settings.sidePanelQuickLinks = [];
+        swap.quickLinks = this.settings.quickLinks;
+        this.settings.quickLinks = this.settings.sidePanelQuickLinks;
+    }
+    if (needs.widgets && this.settings.sidePanelWidgetsSync === false) {
+        this.getSidePanelWidgetsSource();
+        swap.widgetPanel = this.settings.widgetPanel;
+        this.settings.widgetPanel = this.settings.sidePanelWidgetPanel;
+    }
+    if (swap.quickLinks !== undefined || swap.widgetPanel !== undefined) {
+        this._spSwap = swap;
+    }
+};
+
+OOOInterface.prototype.exitSidePanelScope = function () {
+    if (!this._spSwap) return;
+    if (this._spSwap.quickLinks !== undefined) this.settings.quickLinks = this._spSwap.quickLinks;
+    if (this._spSwap.widgetPanel !== undefined) this.settings.widgetPanel = this._spSwap.widgetPanel;
+    this._spSwap = null;
+    this.applyQuickLinks();
+    this.renderWidgetPanel();
+};
+
+OOOInterface.prototype.getSidePanelSummary = function () {
+    if (!this.settings.sidePanelEnabled) return '关闭';
+    const parts = [];
+    if (this.settings.sidePanelShowWidgets) parts.push('小组件');
+    if (this.settings.sidePanelShowQuickLinks) parts.push('快速访问');
+    if (this.settings.sidePanelShowSearch) parts.push('搜索');
+    if (this.settings.sidePanelWallpaperEnabled) parts.push('壁纸');
+    return parts.length ? parts.join(' · ') : '开启';
+};
+
+// ===== 侧边栏功能设置视图：统一采用设置主页面的控件语言 =====
+// 开关行 = 设置主页面 .setting-group + .switch-label + .switch 同构
+OOOInterface.prototype.spBuildSwitchRow = function (labelText, checked, onChange) {
+    const group = document.createElement('div');
+    group.className = 'setting-group';
+
+    const row = document.createElement('div');
+    row.className = 'switch-label';
+    const label = document.createElement('span');
+    label.className = 'setting-label';
+    label.textContent = labelText;
+    row.appendChild(label);
+
+    const switchWrap = document.createElement('label');
+    switchWrap.className = 'switch';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = !!checked;
+    const slider = document.createElement('span');
+    slider.className = 'slider';
+    input.addEventListener('change', () => {
+        if (typeof onChange === 'function') onChange(input.checked);
+    });
+    switchWrap.appendChild(input);
+    switchWrap.appendChild(slider);
+    row.appendChild(switchWrap);
+
+    group.appendChild(row);
+    return group;
+};
+
+// 导航行 = 设置主页面「label + 下拉框」同构；点击进入子视图
+OOOInterface.prototype.spBuildNavRow = function (labelText, statusText, onClick) {
+    const group = document.createElement('div');
+    group.className = 'setting-group';
+
+    const label = document.createElement('label');
+    label.textContent = labelText + ':';
+    group.appendChild(label);
+
+    const box = document.createElement('div');
+    box.className = 'custom-select';
+    const selected = document.createElement('div');
+    selected.className = 'select-selected';
+    selected.textContent = statusText;
+    selected.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onClick();
+    });
+    box.appendChild(selected);
+    group.appendChild(box);
+    return group;
+};
+
+// 侧边栏功能的四个导航项（名称 + 显隐/一致性取值器），根视图与原地刷新共用
+OOOInterface.prototype.getSidePanelNavItems = function () {
+    const self = this;
+    return [
+        { key: 'widgets', label: '小组件', enabled: () => self.settings.sidePanelShowWidgets, sync: () => self.settings.sidePanelWidgetsSync },
+        { key: 'quicklinks', label: '快速访问链接', enabled: () => self.settings.sidePanelShowQuickLinks, sync: () => self.settings.sidePanelQuickLinksSync },
+        { key: 'search', label: '搜索框', enabled: () => self.settings.sidePanelShowSearch, sync: null },
+        { key: 'wallpaper', label: '壁纸', enabled: () => self.settings.sidePanelWallpaperEnabled, sync: () => self.settings.sidePanelWallpaperSync }
+    ];
+};
+
+OOOInterface.prototype.getSidePanelNavStatus = function (item) {
+    return item.enabled() ? (item.sync ? (item.sync() ? '与主页面一致' : '独立配置') : '显示') : '隐藏';
+};
+
+// 顶层视图：主开关 + 四个可下钻的导航项（与设置主页面控件同款）
+// skipAnimation：设置变更引起的重建不播放滑入动画，仅进入视图时播放
+OOOInterface.prototype.renderSidePanelConfigView = function (rightPanelUpper, skipAnimation) {
+    const self = this;
+    if (!rightPanelUpper) return;
+    rightPanelUpper.innerHTML = '';
+    delete rightPanelUpper.dataset.subView;
+    rightPanelUpper.dataset.menuType = 'side-panel';
+    this._sidePanelView = 'root';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'side-panel-config-view';
+    const container = document.createElement('div');
+    container.className = 'settings-menu-container' + (skipAnimation ? '' : ' slide-in-right');
+
+    // 主开关（设置主页面同款开关行）
+    container.appendChild(this.spBuildSwitchRow('侧边栏功能', !!this.settings.sidePanelEnabled, (checked) => {
+        self.settings.sidePanelEnabled = checked;
+        self.saveSettings();
+        self.syncSidePanelSelectDisplay();
+    }));
+
+    this.getSidePanelNavItems().forEach(item => {
+        container.appendChild(this.spBuildNavRow(item.label, this.getSidePanelNavStatus(item), () => {
+            self.renderSidePanelSubView(rightPanelUpper, item.key);
+        }));
+    });
+
+    wrapper.appendChild(container);
+    rightPanelUpper.appendChild(wrapper);
+    const modal = document.getElementById('settings-modal');
+    if (modal) modal.classList.add('right-panel-open');
+};
+
+// 子视图分发：小组件/快速访问链接复用主页面现成管理视图；搜索框/壁纸为开关+专属配置
+// skipAnimation：设置变更引起的重建不播放滑入动画
+OOOInterface.prototype.renderSidePanelSubView = function (rightPanelUpper, key, skipAnimation) {
+    if (!rightPanelUpper) return;
+    rightPanelUpper.dataset.menuType = 'side-panel';
+    this._sidePanelView = key;
+
+    if (key === 'widgets') {
+        this.renderSPWidgetsView(rightPanelUpper, skipAnimation);
+        return;
+    }
+    if (key === 'quicklinks') {
+        this.renderSPQuickLinksView(rightPanelUpper, skipAnimation);
+        return;
+    }
+    if (key === 'search' || key === 'wallpaper') {
+        this.exitSidePanelScope();
+        rightPanelUpper.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'settings-menu-container side-panel-config-view' + (skipAnimation ? '' : ' slide-in-right');
+        if (key === 'search') this.renderSPSearchView(container);
+        else this.renderSPWallpaperView(container);
+        rightPanelUpper.appendChild(container);
+        const modal = document.getElementById('settings-modal');
+        if (modal) modal.classList.add('right-panel-open');
+    }
+};
+
+// 设置变更后刷新当前停留的侧边栏视图。
+// 根视图原地更新（不重建、无动画）；子视图重建但不播放滑入动画，
+// 避免每次改动设置都重放"整块视图进退"的动效。
+OOOInterface.prototype.refreshSidePanelView = function (rightPanelUpper) {
+    if (!rightPanelUpper || rightPanelUpper.dataset.menuType !== 'side-panel') return;
+    if (this._sidePanelView && this._sidePanelView !== 'root') {
+        this.renderSidePanelSubView(rightPanelUpper, this._sidePanelView, true);
+        return;
+    }
+    // 根视图：原地同步主开关与四个导航项的状态文字
+    const master = rightPanelUpper.querySelector('.switch input');
+    if (master) master.checked = !!this.settings.sidePanelEnabled;
+    const navItems = this.getSidePanelNavItems();
+    rightPanelUpper.querySelectorAll('.setting-group').forEach(box => {
+        const label = box.querySelector('label');
+        const value = box.querySelector('.select-selected');
+        if (!label || !value) return;
+        const name = label.textContent.replace(':', '').trim();
+        const item = navItems.find(it => it.label === name);
+        if (item) value.textContent = this.getSidePanelNavStatus(item);
+    });
+};
+
+// 子视图头部：显示开关 + 与主页面保持一致开关（设置主页面同款开关行；
+// 返回统一走设置页顶部返回按钮，子视图内不再放置返回行）
+OOOInterface.prototype.spBuildSubViewHeader = function (rightPanelUpper, showKey, showLabel, syncKey) {
+    const self = this;
+    const header = document.createElement('div');
+
+    header.appendChild(this.spBuildSwitchRow(showLabel, !!this.settings[showKey], (checked) => {
+        self.settings[showKey] = checked;
+        // 开启显示时，默认同步开启"与主页面保持一致"，直接沿用主页面已有内容
+        if (checked && syncKey) {
+            self.settings[syncKey] = true;
+        }
+        self.saveSettings();
+        self.syncSidePanelSelectDisplay();
+    }));
+
+    if (syncKey) {
+        header.appendChild(this.spBuildSwitchRow('与主页面保持一致', !!self.settings[syncKey], (checked) => {
+            self.settings[syncKey] = checked;
+            // 切到独立配置时，独立列表为空则从主页面复制一份作为起点
+            if (!checked && syncKey === 'sidePanelWidgetsSync' && self.getSidePanelWidgetsSource().length === 0) {
+                const mainWidgets = (self.settings.widgetPanel && Array.isArray(self.settings.widgetPanel.widgets)) ? self.settings.widgetPanel.widgets : [];
+                self.settings.sidePanelWidgetPanel.widgets = JSON.parse(JSON.stringify(mainWidgets));
+            }
+            if (!checked && syncKey === 'sidePanelQuickLinksSync' && self.getSidePanelQuickLinksSource().length === 0) {
+                const mainLinks = Array.isArray(self.settings.quickLinks) ? self.settings.quickLinks : [];
+                self.settings.sidePanelQuickLinks = JSON.parse(JSON.stringify(mainLinks));
+            }
+            self.saveSettings();
+            self.renderSidePanelSubView(rightPanelUpper, self._sidePanelView, true);
+        }));
+    }
+    return header;
+};
+
+// ===== 小组件子视图：复用主页面「小组件列表」管理视图 =====
+// 独立模式（与主页面保持一致关闭）通过数据交换让同一套视图直接管理侧边栏的小组件。
+// 头部放在管理器容器的外层包裹里：管理器内部切换表单/类型选择不会破坏头部开关。
+OOOInterface.prototype.renderSPWidgetsView = function (rightPanelUpper, skipAnimation) {
+    const self = this;
+    this.enterSidePanelScope({ widgets: true });
+    this.showWidgetPanelMenuInRightPanel(skipAnimation);
+
+    const mgr = rightPanelUpper.querySelector('.settings-menu-container');
+    if (!mgr) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'side-panel-config-view';
+    const header = this.spBuildSubViewHeader(rightPanelUpper, 'sidePanelShowWidgets', '显示小组件', 'sidePanelWidgetsSync');
+    wrapper.appendChild(header);
+    wrapper.appendChild(mgr);
+    rightPanelUpper.appendChild(wrapper);
+};
+
+// ===== 快速访问链接子视图：复用主页面「快速访问链接」管理视图 =====
+OOOInterface.prototype.renderSPQuickLinksView = function (rightPanelUpper, skipAnimation) {
+    const self = this;
+    this.enterSidePanelScope({ quicklinks: true });
+    this.showQuickLinksMenuInRightPanel(skipAnimation);
+
+    const mgr = rightPanelUpper.querySelector('.settings-menu-container');
+    if (!mgr) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'side-panel-config-view';
+    const header = this.spBuildSubViewHeader(rightPanelUpper, 'sidePanelShowQuickLinks', '显示快速访问链接', 'sidePanelQuickLinksSync');
+    wrapper.appendChild(header);
+    wrapper.appendChild(mgr);
+    rightPanelUpper.appendChild(wrapper);
+};
+
+// ===== 搜索框子视图 =====
+OOOInterface.prototype.renderSPSearchView = function (container) {
+    const self = this;
+
+    container.appendChild(this.spBuildSwitchRow('显示搜索框', !!this.settings.sidePanelShowSearch, (checked) => {
+        self.settings.sidePanelShowSearch = checked;
+        // 开启显示时，默认同步开启"与主页面保持一致"
+        if (checked) {
+            self.settings.sidePanelSearchSync = true;
+        }
+        self.saveSettings();
+        self.syncSidePanelSelectDisplay();
+    }));
+
+    container.appendChild(this.spBuildSwitchRow('显示引擎切换按钮', !!this.settings.sidePanelShowEngineButtons, (checked) => {
+        self.settings.sidePanelShowEngineButtons = checked;
+        self.saveSettings();
+        self.syncSidePanelSelectDisplay();
+    }));
+
+    container.appendChild(this.spBuildSwitchRow('与主页面保持一致', !!this.settings.sidePanelSearchSync, (checked) => {
+        self.settings.sidePanelSearchSync = checked;
+        self.saveSettings();
+        self.syncSidePanelSelectDisplay();
+    }));
+
+    if (this.settings.sidePanelSearchSync) {
+        return;
+    }
+
+    // 搜索框厚度（设置主页面开发者模式同款滑块 + 数值输入）
+    const item = document.createElement('div');
+    item.className = 'developer-control-item';
+    const label = document.createElement('label');
+    label.textContent = '搜索框厚度';
+    item.appendChild(label);
+
+    const row = document.createElement('div');
+    row.className = 'control-with-reset';
+    const range = document.createElement('input');
+    range.type = 'range';
+    range.className = 'slider-input';
+    range.min = '20';
+    range.max = '200';
+    range.step = '1';
+    range.value = String(this.settings.sidePanelSearchBoxHeight || 50);
+    const num = document.createElement('input');
+    num.type = 'number';
+    num.className = 'slider-value-input';
+    num.min = '20';
+    num.max = '200';
+    num.step = '1';
+    num.value = String(this.settings.sidePanelSearchBoxHeight || 50);
+    range.addEventListener('input', () => {
+        num.value = range.value;
+        this.settings.sidePanelSearchBoxHeight = parseInt(range.value, 10) || 50;
+        this.saveSettings();
+    });
+    num.addEventListener('change', () => {
+        let v = parseInt(num.value, 10);
+        if (!(v > 0)) v = 50;
+        v = Math.max(20, Math.min(200, v));
+        num.value = String(v);
+        range.value = String(v);
+        this.settings.sidePanelSearchBoxHeight = v;
+        this.saveSettings();
+    });
+    row.appendChild(range);
+    row.appendChild(num);
+    item.appendChild(row);
+    container.appendChild(item);
+};
+
+// ===== 壁纸子视图 =====
+OOOInterface.prototype.renderSPWallpaperView = function (container) {
+    const self = this;
+
+    container.appendChild(this.spBuildSwitchRow('显示壁纸', !!this.settings.sidePanelWallpaperEnabled, (checked) => {
+        self.settings.sidePanelWallpaperEnabled = checked;
+        // 开启显示时，默认同步开启"与主页面保持一致"
+        if (checked) {
+            self.settings.sidePanelWallpaperSync = true;
+        }
+        self.saveSettings();
+        self.syncSidePanelSelectDisplay();
+    }));
+
+    container.appendChild(this.spBuildSwitchRow('与主页面保持一致', !!this.settings.sidePanelWallpaperSync, (checked) => {
+        self.settings.sidePanelWallpaperSync = checked;
+        self.saveSettings();
+        self.syncSidePanelSelectDisplay();
+    }));
+
+    if (this.settings.sidePanelWallpaperSync) {
+        return;
+    }
+
+    // 壁纸地址（与设置主页面下拉框同款外观的输入框）
+    const group = document.createElement('div');
+    group.className = 'setting-group';
+    const label = document.createElement('label');
+    label.textContent = '壁纸地址:';
+    group.appendChild(label);
+    const urlInput = document.createElement('input');
+    urlInput.type = 'text';
+    urlInput.className = 'side-panel-url-input';
+    urlInput.placeholder = '留空使用默认壁纸';
+    urlInput.value = this.settings.sidePanelWallpaperUrl || '';
+    urlInput.addEventListener('change', () => {
+        this.settings.sidePanelWallpaperUrl = urlInput.value.trim();
+        this.saveSettings();
+    });
+    group.appendChild(urlInput);
+    container.appendChild(group);
+};
+
+// 同步侧边栏功能下拉摘要，并在右面板停留在该视图时刷新
+// （仅当焦点在右面板视图内部的文本输入框中——如壁纸地址——才跳过重渲染避免打断输入；
+//  主页面搜索框等视图外的输入框持有焦点时不能影响刷新）
+OOOInterface.prototype.syncSidePanelSelectDisplay = function () {
+    const selectedDisplay = document.getElementById('side-panel-select-selected');
+    if (selectedDisplay) {
+        selectedDisplay.textContent = this.getSidePanelSummary();
+    }
+    const rpu = document.getElementById('right-panel-upper');
+    if (rpu && rpu.dataset.menuType === 'side-panel') {
+        const ae = document.activeElement;
+        const isTyping = !!(ae && rpu.contains(ae) && ((ae.tagName === 'INPUT' && (!ae.type || ae.type === 'text' || ae.type === 'url' || ae.type === 'number' || ae.type === 'range')) || ae.tagName === 'TEXTAREA'));
+        if (isTyping) {
+            return;
+        }
+        this.refreshSidePanelView(rpu);
+    }
+};
+
+
 OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected, hiddenSelect, skipAnimation) {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
+    // 离开侧边栏子视图时恢复数据交换
+    this.exitSidePanelScope();
 
     let menuType = '';
     if (selected.id === 'font-select-selected' || selected.parentElement.querySelector('#font-select')) {
@@ -9310,6 +9875,8 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
         menuType = 'theme';
     } else if (selected.id === 'badge-open-method-selected' || selected.parentElement.querySelector('#badge-open-method-select')) {
         menuType = 'badge-open-method';
+    } else if (selected.id === 'side-panel-select-selected' || selected.parentElement.querySelector('#side-panel-select')) {
+        menuType = 'side-panel';
     }
 
     rightPanelUpper.innerHTML = '';
@@ -9319,6 +9886,12 @@ OOOInterface.prototype.showSettingsMenuInRightPanel = function (items, selected,
     // 底部铭牌功能：独立的三段式双选项视图，不走通用列表渲染
     if (menuType === 'badge-open-method') {
         this.renderBadgeConfigView(rightPanelUpper);
+        return;
+    }
+
+    // 侧边栏功能：独立配置视图（功能开关组），不走通用列表渲染
+    if (menuType === 'side-panel') {
+        this.renderSidePanelConfigView(rightPanelUpper);
         return;
     }
 
@@ -11709,7 +12282,7 @@ OOOInterface.prototype.initSettingsMenus = function () {
     }
 };
 
-OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
+OOOInterface.prototype.showQuickLinksMenuInRightPanel = function (skipAnimation) {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
@@ -11719,7 +12292,7 @@ OOOInterface.prototype.showQuickLinksMenuInRightPanel = function () {
     rightPanelUpper.innerHTML = '';
 
     const container = document.createElement('div');
-    container.className = 'settings-menu-container slide-in-right';
+    container.className = 'settings-menu-container' + (skipAnimation ? '' : ' slide-in-right');
 
     const listContainer = document.createElement('div');
     listContainer.className = 'quick-links-list-container';
@@ -12617,6 +13190,8 @@ OOOInterface.prototype.createWidgetInstance = function (config) {
 OOOInterface.prototype.renderWidgetPanel = function () {
     const grid = document.getElementById('widget-panel-grid');
     if (!grid) return;
+    // 侧边栏小组件子视图交换期间挂起，避免主页面网格渲染侧边栏数据
+    if (this._spSwap && this._spSwap.widgetPanel !== undefined) return;
 
     // 销毁旧实例
     if (this.widgetInstances) {
@@ -12933,7 +13508,7 @@ OOOInterface.prototype.openWidgetSettings = function (widgetId) {
 };
 
 // 设置右面板：小组件管理界面
-OOOInterface.prototype.showWidgetPanelMenuInRightPanel = function () {
+OOOInterface.prototype.showWidgetPanelMenuInRightPanel = function (skipAnimation) {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
@@ -12943,7 +13518,7 @@ OOOInterface.prototype.showWidgetPanelMenuInRightPanel = function () {
     rightPanelUpper.innerHTML = '';
 
     const container = document.createElement('div');
-    container.className = 'settings-menu-container slide-in-right';
+    container.className = 'settings-menu-container' + (skipAnimation ? '' : ' slide-in-right');
 
     const listContainer = document.createElement('div');
     listContainer.className = 'widget-panel-list-container';

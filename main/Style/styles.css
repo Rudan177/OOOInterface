@@ -8573,3 +8573,61 @@ body:not(.dynamic-blur) .radial-wheel {
         background: rgba(255, 255, 255, 0.08);
     }
 }
+
+/* 侧边栏功能 - 壁纸地址输入（与设置主页面下拉框同款外观） */
+.side-panel-url-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: var(--background-color);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.side-panel-url-input:focus {
+    border-color: var(--primary-color);
+}
+
+body.dynamic-blur .side-panel-url-input {
+    background: rgba(var(--surface-color-rgb), 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+@media (prefers-color-scheme: light) {
+    body.dynamic-blur .side-panel-url-input {
+        background: rgba(225, 228, 232, 0.7);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* 子视图内：操作按钮行回到文档流、列表完整展开，整个视图随右面板滚动
+   （避免悬浮按钮遮挡列表条目） */
+.side-panel-config-view .settings-menu-button-container {
+    position: static;
+    pointer-events: auto;
+    margin-top: 10px;
+}
+
+.side-panel-config-view .quick-links-list-container,
+.side-panel-config-view .widget-panel-list-container {
+    flex: 0 0 auto;
+    max-height: none;
+    overflow: visible;
+    padding-bottom: 2px;
+}
+
+
+/* 侧边栏功能子视图外层包裹：填满右面板并保持纵向 flex，
+   使内部 .settings-menu-container（flex:1 设计）恢复正常高度 */
+.side-panel-config-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
