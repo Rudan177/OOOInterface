@@ -46,6 +46,41 @@
             </div>
         </div>
 
+        <!-- 内置页浏览器：开启「内置页打开」后，搜索/访问的网页在此以 iframe 展示。
+             顶部为操作控件（Home / Back / Next / 网址栏），下方为圆角浮动卡片，
+             开启时替代原本的小组件 / 快速访问链接区域 -->
+        <div class="qa-panel-browser" id="qa-panel-browser" aria-hidden="true">
+            <div class="qa-browser-toolbar" id="qa-browser-toolbar">
+                <button class="qa-browser-btn" id="qa-browser-home" type="button" title="返回默认视图">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path>
+                    </svg>
+                </button>
+                <button class="qa-browser-btn" id="qa-browser-back" type="button" title="后退">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+                    </svg>
+                </button>
+                <button class="qa-browser-btn" id="qa-browser-forward" type="button" title="前进">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"></path>
+                    </svg>
+                </button>
+                <div class="qa-browser-urlbar">
+                    <input type="text" id="qa-browser-url" class="qa-browser-url-input" spellcheck="false"
+                        autocomplete="off" placeholder="输入网址或搜索内容">
+                </div>
+            </div>
+            <div class="qa-browser-card" id="qa-browser-card">
+                <!-- sandbox 有意省略 allow-top-navigation：阻止站点用 JS 帧破坏脚本
+                     （top.location = self.location）把整个侧边栏劫持跳转；
+                     其余令牌尽量放开以保证页面功能正常 -->
+                <iframe id="qa-browser-frame" class="qa-browser-frame" src="about:blank"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock allow-presentation allow-storage-access-by-user-activation"
+                    title="内置页浏览器"></iframe>
+            </div>
+        </div>
+
         <!-- 底部搜索区：搜索框 + 引擎切换按钮（复用主页面样式） -->
         <div class="qa-panel-search" id="qa-panel-search">
             <div class="search-section">
@@ -57,8 +92,18 @@
                             </path>
                         </svg>
                     </div>
+                    <!-- 模式指示 chip：进入 /web 或 /translate 模式后替代命令前缀文字（与主页面一致，位于输入框左侧） -->
+                    <div id="qa-search-mode-chip" class="search-mode-chip">
+                        <span class="material-icons search-mode-chip-icon">language</span>
+                        <span class="search-mode-chip-text"></span>
+                    </div>
                     <input type="text" id="qa-search-input" class="search-input">
                 </div>
+            </div>
+            <!-- “/” 命令列表 / 翻译语言历史显示区域（复用主页面样式） -->
+            <div id="qa-search-command-container" class="search-command-container">
+                <div class="search-command-list" id="qa-search-command-list"></div>
+                <div class="translate-history-list" id="qa-translate-history-list"></div>
             </div>
             <div class="engine-buttons" id="qa-engine-buttons">
                 <button id="qa-google-engine" class="engine-btn active">Google</button>

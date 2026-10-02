@@ -80,6 +80,8 @@ class OOOInterface {
             sidePanelQuickLinks: [],
             sidePanelSearchSync: false,
             sidePanelSearchBoxHeight: 50,
+            // 内置页打开：开启后侧边栏搜索/访问的网页用 iframe 在面板内展示
+            sidePanelBuiltinOpen: false,
             widgetPanel: {
                 enabled: true,
                 widgets: []
@@ -1698,6 +1700,7 @@ class OOOInterface {
         if (savedSettings.sidePanelQuickLinks !== undefined) result.sidePanelQuickLinks = savedSettings.sidePanelQuickLinks;
         if (savedSettings.sidePanelSearchSync !== undefined) result.sidePanelSearchSync = savedSettings.sidePanelSearchSync;
         if (savedSettings.sidePanelSearchBoxHeight !== undefined) result.sidePanelSearchBoxHeight = savedSettings.sidePanelSearchBoxHeight;
+        if (savedSettings.sidePanelBuiltinOpen !== undefined) result.sidePanelBuiltinOpen = savedSettings.sidePanelBuiltinOpen;
         if (savedSettings.hiddenBadge !== undefined) result.hiddenBadge = savedSettings.hiddenBadge;
         if (savedSettings.ocpPlayerEnabled !== undefined) result.ocpPlayerEnabled = savedSettings.ocpPlayerEnabled;
 
@@ -2516,6 +2519,7 @@ class OOOInterface {
             'sidePanelShowEngineButtons', 'sidePanelWallpaperEnabled', 'sidePanelWallpaperSync', 'sidePanelWallpaperUrl',
             'sidePanelWidgetsSync', 'sidePanelWidgetPanel', 'sidePanelQuickLinksSync', 'sidePanelQuickLinks',
             'sidePanelSearchSync', 'sidePanelSearchBoxHeight',
+            'sidePanelBuiltinOpen',
             'widgetPanel'];
         let syncTimer = null;
         let pendingValue = null;
@@ -9753,6 +9757,12 @@ OOOInterface.prototype.renderSPSearchView = function (container) {
         self.settings.sidePanelShowEngineButtons = checked;
         self.saveSettings();
         self.syncSidePanelSelectDisplay();
+    }));
+
+    // 内置页打开：开启后搜索/访问的网页在内置 iframe 浏览器中展示（不新开标签页）
+    container.appendChild(this.spBuildSwitchRow('内置页打开', !!this.settings.sidePanelBuiltinOpen, (checked) => {
+        self.settings.sidePanelBuiltinOpen = checked;
+        self.saveSettings();
     }));
 
     container.appendChild(this.spBuildSwitchRow('与主页面保持一致', !!this.settings.sidePanelSearchSync, (checked) => {

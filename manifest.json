@@ -10,12 +10,22 @@
     "default_path": "main/sidepanel/sidepanel.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "main/background.js"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "builtin_open_frame",
+        "enabled": true,
+        "path": "main/rules.json"
+      }
+    ]
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; font-src 'self' https: data:; style-src 'self' https://fonts.googleapis.com 'unsafe-inline';"
   },
   "host_permissions": [
+    "<all_urls>",
     "https://www.bing.com/*",
     "https://*.bing.net/*",
     "https://suggestqueries.google.com/*",
@@ -33,7 +43,9 @@
     "bookmarks",
     "geolocation",
     "identity",
-    "sidePanel"
+    "sidePanel",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess"
   ],
   "commands": {
     "activate-ooointerface": {

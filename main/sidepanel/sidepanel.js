@@ -41,6 +41,8 @@
         sidePanelQuickLinks: [],
         sidePanelSearchSync: false,
         sidePanelSearchBoxHeight: 50,
+        // 内置页打开：开启后搜索/访问的网页用 iframe 在面板内展示
+        sidePanelBuiltinOpen: false,
         // 小组件面板配置（与主页面共用）
         widgetPanel: { enabled: true, widgets: [] }
     };
@@ -50,6 +52,12 @@
     // 记录上次渲染的小组件配置，避免无关设置变化时重建小组件
     var lastWidgetsJson = null;
     var widgetInstances = [];
+
+    // 内置页浏览器状态：是否展示、自有历史栈（iframe 跨域无法读取其历史，故自行维护）
+    var browserOpen = false;
+    var browserHistory = [];
+    var browserIndex = -1;
+    var browserCloseTimer = null;
 
     // 主页面 app 的轻量替身：小组件仅依赖这三个方法（均有 typeof 守卫）
     var panelOOO = {
@@ -627,16 +635,899 @@
         if (bingBtn) bingBtn.classList.toggle('active', currentEngine === 'bing');
     }
 
+    // ========== “/” 命令系统（网址 / 翻译） ==========
+    // 主页面把这套逻辑实现在 App 类里；面板是独立页面，这里按相同的语法与交互移植一份。
+    // DOM 与样式仍复用主页面：styles.css 中的 search-command-container /
+    // search-command-item / search-mode-chip / search-history-item 等类直接生效。
+
+    var searchCommandMode = null;
+    var translateSelectedPair = null;
+    var commandListState = { visible: false, items: [], highlight: -1 };
+
+    function escapeHtml(text) {
+        return String(text === null || text === undefined ? '' : text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function getSlashCommands() {
+        return [
+            { name: 'web', icon: 'language', desc: '打开网页' },
+            { name: 'translate', icon: 'translate', desc: '翻译文本' }
+        ];
+    }
+
+    function isWebCommand(word) {
+        return ['web', 'w', '网址'].indexOf((word || '').toLowerCase()) !== -1;
+    }
+
+    function isTranslateCommand(word) {
+        return ['translate', 't', '翻译'].indexOf((word || '').toLowerCase()) !== -1;
+    }
+
+    // 语言别名表：sc/jp/en 等缩写映射到两家引擎各自的语言代码；key 为历史记录使用的规范键
+    // （与主页面 resolveTranslateLanguage 的表保持一致）
+    function getTranslateLanguages() {
+        return [
+            { key: 'auto', label: '自动检测', aliases: ['auto', 'a', '自动'], g: 'auto', m: 'auto-detect' },
+            { key: 'sc', label: '简体中文', aliases: ['sc', 'zh-cn', 'zh', 'cn', '简体', '中文'], g: 'zh-CN', m: 'zh-Hans' },
+            { key: 'tc', label: '繁体中文', aliases: ['tc', 'zh-tw', 'tw', '繁体'], g: 'zh-TW', m: 'zh-Hant' },
+            { key: 'en', label: '英语', aliases: ['en', 'english', '英'], g: 'en', m: 'en' },
+            { key: 'ja', label: '日语', aliases: ['jp', 'jpn', 'ja', '日'], g: 'ja', m: 'ja' },
+            { key: 'ko', label: '韩语', aliases: ['kr', 'kor', 'ko', '韩'], g: 'ko', m: 'ko' },
+            { key: 'fr', label: '法语', aliases: ['fr', '法'], g: 'fr', m: 'fr' },
+            { key: 'de', label: '德语', aliases: ['de', '德'], g: 'de', m: 'de' },
+            { key: 'ru', label: '俄语', aliases: ['ru', '俄'], g: 'ru', m: 'ru' },
+            { key: 'pt', label: '葡萄牙语', aliases: ['pt', '葡'], g: 'pt', m: 'pt' },
+            { key: 'it', label: '意大利语', aliases: ['it', '意'], g: 'it', m: 'it' },
+            { key: 'th', label: '泰语', aliases: ['th', '泰'], g: 'th', m: 'th' },
+            { key: 'vi', label: '越南语', aliases: ['vi', '越'], g: 'vi', m: 'vi' },
+            { key: 'ar', label: '阿拉伯语', aliases: ['ar', '阿'], g: 'ar', m: 'ar' }
+        ];
+    }
+
+    function resolveTranslateLanguage(rawCode) {
+        var code = (rawCode || '').toLowerCase().trim();
+        if (!code) return null;
+        var table = getTranslateLanguages();
+        for (var i = 0; i < table.length; i++) {
+            if (table[i].key === code || table[i].aliases.indexOf(code) !== -1) return table[i];
+        }
+        return null;
+    }
+
+    // 解析语言对文本：'sc-jp' 或省略源语言的 'jp'
+    function resolveLanguagePair(pairText) {
+        var parts = (pairText || '').toLowerCase().split('-').filter(Boolean);
+        if (parts.length === 0) return null;
+
+        var fromEntry;
+        var toEntry;
+        if (parts.length >= 2) {
+            fromEntry = resolveTranslateLanguage(parts[0]);
+            toEntry = resolveTranslateLanguage(parts[1]);
+        } else {
+            fromEntry = resolveTranslateLanguage('auto');
+            toEntry = resolveTranslateLanguage(parts[0]);
+        }
+        if (!fromEntry || !toEntry) return null;
+
+        return { raw: fromEntry.key + '-' + toEntry.key, from: fromEntry, to: toEntry };
+    }
+
+    // ---- 翻译语言对 / 网址历史（localStorage，与主页面共用同一份存储） ----
+
+    function getTranslateHistory() {
+        try {
+            return JSON.parse(localStorage.getItem('oooTranslateHistory') || '[]') || [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function setTranslateHistory(list) {
+        localStorage.setItem('oooTranslateHistory', JSON.stringify(list || []));
+    }
+
+    function recordTranslateHistory(fromEntry, toEntry) {
+        if (!fromEntry || !toEntry) return;
+        var raw = fromEntry.key + '-' + toEntry.key;
+        var list = getTranslateHistory().filter(function (item) { return item && item.pair !== raw; });
+        list.unshift({ pair: raw });
+        if (list.length > 12) list.length = 12;
+        setTranslateHistory(list);
+    }
+
+    function getWebHistory() {
+        try {
+            return JSON.parse(localStorage.getItem('oooWebCommandHistory') || '[]') || [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function setWebHistory(list) {
+        localStorage.setItem('oooWebCommandHistory', JSON.stringify(list || []));
+    }
+
+    // 记录通过命令打开的网址（存主机名用于展示，key 用于去重）
+    function recordWebHistory(urlText) {
+        var parsed;
+        try {
+            parsed = new URL(urlText);
+        } catch (e) {
+            return;
+        }
+        var rest = (parsed.pathname === '/' && !parsed.search) ? '' : parsed.pathname + parsed.search;
+        var key = parsed.origin + (rest || '/');
+        var list = getWebHistory().filter(function (item) { return item && item.key !== key; });
+        list.unshift({ key: key, host: parsed.host.replace(/^www\./, ''), rest: rest });
+        if (list.length > 12) list.length = 12;
+        setWebHistory(list);
+    }
+
+    // ---- 翻译引擎（直连优先，配置了本地代理且直连抛错时走代理重试） ----
+
+    async function slashFetch(url, options) {
+        try {
+            return await fetch(url, options);
+        } catch (err) {
+            if (typeof ProxyManager !== 'undefined' && ProxyManager.isProxyEnabled()) {
+                return await ProxyManager.proxiedFetch(url, options);
+            }
+            throw err;
+        }
+    }
+
+    async function fetchGoogleTranslate(text, sl, tl) {
+        var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' +
+            encodeURIComponent(sl) + '&tl=' + encodeURIComponent(tl) + '&dt=t&q=' + encodeURIComponent(text);
+
+        var response = await slashFetch(url);
+        if (!response.ok) {
+            throw new Error('Google 翻译服务响应异常 (HTTP ' + response.status + ')');
+        }
+
+        var data = await response.json();
+        if (!Array.isArray(data) || !Array.isArray(data[0])) {
+            throw new Error('Google 翻译结果解析失败');
+        }
+
+        return data[0].map(function (segment) {
+            return (segment && segment[0]) ? segment[0] : '';
+        }).join('');
+    }
+
+    // Microsoft(Bing) 免费接口：需先从 bing 首页抓取 IG 与防滥用 token
+    async function getBingTranslateAuth(forceRefresh) {
+        if (!forceRefresh) {
+            try {
+                var cached = JSON.parse(localStorage.getItem('oooBingTranslateAuth') || 'null');
+                if (cached && cached.token && cached.ig && Date.now() - cached.ts < 20 * 60 * 1000) {
+                    return cached;
+                }
+            } catch (e) { /* 缓存损坏则重新获取 */ }
+        }
+
+        var response = await slashFetch('https://www.bing.com/');
+        var html = await response.text();
+
+        var igMatch = html.match(/IG:"([^"]+)"/);
+        var tokenMatch = html.match(/params_AbusePreventionHelper\s*=\s*\[\s*\d+\s*,\s*"([^"]+)"/);
+
+        if (!igMatch || !tokenMatch) {
+            throw new Error('无法获取 Microsoft 翻译凭证');
+        }
+
+        var auth = { ig: igMatch[1], token: tokenMatch[1], ts: Date.now() };
+        localStorage.setItem('oooBingTranslateAuth', JSON.stringify(auth));
+        return auth;
+    }
+
+    async function fetchBingTranslate(text, fromCode, toCode, forceNewAuth) {
+        try {
+            var auth = await getBingTranslateAuth(!!forceNewAuth);
+            var body = new URLSearchParams({
+                from: fromCode,
+                to: toCode,
+                text: text,
+                token: auth.token,
+                key: auth.ig
+            }).toString();
+
+            var response = await slashFetch('https://www.bing.com/ttranslatev3?isTanslateReq=true', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            });
+
+            if (!response.ok) {
+                throw new Error('Microsoft 翻译服务响应异常 (HTTP ' + response.status + ')');
+            }
+
+            var data = await response.json();
+            if (Array.isArray(data) && data[0] && Array.isArray(data[0].translations)) {
+                return data[0].translations.map(function (item) { return item.text || ''; }).join('');
+            }
+            throw new Error('Microsoft 翻译结果解析失败');
+        } catch (err) {
+            // 凭证失效等情况：强制刷新一次后重试
+            if (!forceNewAuth) {
+                return await fetchBingTranslate(text, fromCode, toCode, true);
+            }
+            throw err;
+        }
+    }
+
+    // 引擎跟随面板当前选择的搜索引擎（与主页面同一套回退策略）
+    async function translateText(text, fromEntry, toEntry) {
+        if (currentEngine === 'bing') {
+            try {
+                return await fetchBingTranslate(text, fromEntry.m, toEntry.m, false);
+            } catch (err) {
+                console.warn('[面板翻译] Microsoft 翻译失败，回退到 Google 翻译:', err.message);
+            }
+        }
+        return await fetchGoogleTranslate(text, fromEntry.g, toEntry.g);
+    }
+
+    // ---- 命令列表 / 模式 chip / 历史面板 UI ----
+
+    // 统一同步搜索框辅助 UI：
+    // - 组件模式（web/translate）激活时：左侧 chip 替代命令文字，下方展示对应历史
+    // - 未进入模式且以“/”开头：显示命令候选列表，“/别名+空格”立即进入对应模式
+    function syncSearchAssistantUI(value) {
+        if (typeof value !== 'string') value = '';
+
+        if (searchCommandMode === 'web') {
+            hideSearchCommandList();
+            updateSearchModeChip();
+            refreshSearchDropdownPanels();
+            return;
+        }
+
+        if (searchCommandMode === 'translate') {
+            hideSearchCommandList();
+            lockTranslatePairFromInput(value);
+            updateSearchModeChip();
+            refreshSearchDropdownPanels();
+            return;
+        }
+
+        if (value.charAt(0) === '/') {
+            // “/别名 + 空格”：把前缀替换为左侧 chip，剩余文本作为参数继续输入
+            var entered = value.match(/^\/(\S+)\s([\s\S]*)$/);
+            if (entered && (isWebCommand(entered[1]) || isTranslateCommand(entered[1]))) {
+                var mode = isWebCommand(entered[1]) ? 'web' : 'translate';
+                var input = document.getElementById('qa-search-input');
+                if (input) input.value = entered[2] || '';
+                enterSearchCommandMode(mode);
+                if (mode === 'translate') {
+                    lockTranslatePairFromInput(input ? input.value : '');
+                    updateSearchModeChip();
+                    refreshSearchDropdownPanels();
+                }
+                return;
+            }
+
+            updateSearchModeChip();
+            showSearchCommandList(value);
+            return;
+        }
+
+        hideSearchCommandList();
+        updateSearchModeChip();
+        refreshSearchDropdownPanels();
+    }
+
+    function showSearchCommandList(currentInput) {
+        if ((currentInput || '').charAt(0) !== '/') {
+            hideSearchCommandList();
+            return;
+        }
+
+        // 只在第一个空格之前提供候选；出现空格说明已进入对应组件模式
+        var partial = currentInput.slice(1);
+        if (/\s/.test(partial)) {
+            hideSearchCommandList();
+            return;
+        }
+
+        var filter = partial.toLowerCase();
+        var items = getSlashCommands().filter(function (cmd) {
+            if (!filter) return true;
+            if (cmd.name.toLowerCase().indexOf(filter) === 0) return true;
+            var extraAliases = isWebCommand(cmd.name)
+                ? ['w', '网址']
+                : (isTranslateCommand(cmd.name) ? ['t', '翻译'] : []);
+            return extraAliases.some(function (alias) {
+                return alias.toLowerCase().indexOf(filter) === 0;
+            });
+        });
+
+        if (items.length === 0) {
+            hideSearchCommandList();
+            return;
+        }
+
+        commandListState = { visible: true, items: items, highlight: -1 };
+        renderSearchCommandItems();
+        refreshSearchDropdownPanels();
+    }
+
+    function hideSearchCommandList() {
+        var container = document.getElementById('qa-search-command-container');
+        if (container) container.classList.remove('show');
+        if (commandListState) {
+            commandListState.visible = false;
+            commandListState.highlight = -1;
+        }
+    }
+
+    function renderSearchCommandItems() {
+        var list = document.getElementById('qa-search-command-list');
+        if (!list || !commandListState) return;
+
+        list.innerHTML = '';
+        commandListState.items.forEach(function (cmd, index) {
+            var item = document.createElement('div');
+            item.className = 'search-command-item' + (index === commandListState.highlight ? ' selected' : '');
+            item.dataset.index = index;
+            item.innerHTML =
+                '<span class="search-command-icon material-icons">' + cmd.icon + '</span>' +
+                '<div class="search-command-info">' +
+                '<span class="search-command-name">/' + cmd.name + '</span>' +
+                '<span class="search-command-desc">' + escapeHtml(cmd.desc) + '</span>' +
+                '</div>';
+            list.appendChild(item);
+        });
+    }
+
+    function moveSearchCommandHighlight(delta) {
+        var state = commandListState;
+        if (!state || !state.visible || state.items.length === 0) return;
+
+        var max = state.items.length - 1;
+        state.highlight += delta;
+        if (state.highlight > max) state.highlight = 0;
+        if (state.highlight < 0) state.highlight = max;
+
+        renderSearchCommandItems();
+    }
+
+    function applySearchCommand(cmd) {
+        if (!cmd) return;
+        var input = document.getElementById('qa-search-input');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+        enterSearchCommandMode(isWebCommand(cmd.name) ? 'web' : 'translate');
+    }
+
+    function enterSearchCommandMode(mode) {
+        searchCommandMode = mode;
+        translateSelectedPair = null;
+        hideSearchCommandList();
+        updateSearchModeChip();
+        refreshSearchDropdownPanels();
+
+        var input = document.getElementById('qa-search-input');
+        if (input) input.focus();
+    }
+
+    // 退出组件模式；clearInput=false 时保留输入框现有内容（如翻译结果）
+    function exitSearchCommandMode(clearInput) {
+        searchCommandMode = null;
+        translateSelectedPair = null;
+
+        var input = document.getElementById('qa-search-input');
+        if (clearInput !== false && input) input.value = '';
+
+        updateSearchModeChip();
+        hideSearchCommandList();
+        refreshSearchDropdownPanels();
+    }
+
+    // 模式 chip：由组件模式状态驱动，位于输入框左侧。
+    // 进入模式时放大镜图标收缩隐去、椭圆展开顶入（CSS 过渡联动），退出时反向还原
+    function updateSearchModeChip() {
+        var chip = document.getElementById('qa-search-mode-chip');
+        if (!chip) return;
+
+        var searchContainer = document.querySelector('.qa-panel-search .search-container');
+        if (searchContainer) {
+            searchContainer.classList.toggle('mode-active', !!searchCommandMode);
+        }
+
+        var iconEl = chip.querySelector('.search-mode-chip-icon');
+        var textEl = chip.querySelector('.search-mode-chip-text');
+
+        if (searchCommandMode === 'web') {
+            iconEl.textContent = 'language';
+            textEl.textContent = '网址';
+            chip.classList.add('expanded');
+        } else if (searchCommandMode === 'translate') {
+            iconEl.textContent = 'translate';
+            textEl.textContent = translateSelectedPair
+                ? translateSelectedPair.from.label + '→' + translateSelectedPair.to.label
+                : '翻译';
+            chip.classList.add('expanded');
+        } else {
+            chip.classList.remove('expanded');
+        }
+    }
+
+    // translate 模式下从输入中锁定语言对：首个空白之前的部分若可解析则锁定，并把它从输入中移除
+    function lockTranslatePairFromInput(value) {
+        if (translateSelectedPair || !value) return;
+
+        var spIndex = value.search(/\s/);
+        if (spIndex === -1) return; // 尚未出现空格，等待继续输入
+
+        var pair = resolveLanguagePair(value.slice(0, spIndex));
+        if (!pair) return; // 无法解析时保留原样，交由 Enter 时提示
+
+        translateSelectedPair = pair;
+        var input = document.getElementById('qa-search-input');
+        if (input) input.value = value.slice(spIndex).replace(/^\s+/, '');
+    }
+
+    // 下方共享下拉面板：命令列表可见时优先；否则按当前组件模式展示使用历史。
+    // 行样式复用原生搜索历史 search-history-item
+    function refreshSearchDropdownPanels() {
+        var container = document.getElementById('qa-search-command-container');
+        if (!container) return;
+
+        var commandVisible = !!(commandListState && commandListState.visible);
+
+        var commandList = document.getElementById('qa-search-command-list');
+        if (commandList && !commandVisible) commandList.innerHTML = '';
+
+        var historyEntries = [];
+        var historyKind = '';
+        if (!commandVisible) {
+            if (searchCommandMode === 'translate') {
+                historyEntries = getTranslateHistory();
+                historyKind = 'translate';
+            } else if (searchCommandMode === 'web') {
+                historyEntries = getWebHistory();
+                historyKind = 'web';
+            }
+        }
+
+        var historyList = document.getElementById('qa-translate-history-list');
+        if (historyList) {
+            historyList.innerHTML = '';
+
+            if (historyKind === 'translate' && historyEntries.length > 0) {
+                historyEntries.forEach(function (entry) {
+                    if (!entry || !entry.pair) return;
+                    var sides = String(entry.pair).split('-');
+                    var fromE = resolveTranslateLanguage(sides[0]);
+                    var toE = resolveTranslateLanguage(sides[1]);
+                    var labels = (fromE ? fromE.label : sides[0]) + '→' + (toE ? toE.label : sides[1]);
+
+                    var row = document.createElement('div');
+                    row.className = 'search-history-item';
+                    row.dataset.pair = entry.pair;
+                    row.innerHTML =
+                        '<span class="search-history-text">' + escapeHtml(entry.pair + ' · ' + labels) + '</span>' +
+                        '<button class="search-history-delete" data-kind="translate" data-pair="' +
+                        escapeHtml(entry.pair) + '">×</button>';
+                    historyList.appendChild(row);
+                });
+            } else if (historyKind === 'web' && historyEntries.length > 0) {
+                historyEntries.forEach(function (entry) {
+                    if (!entry || !entry.host) return;
+
+                    var row = document.createElement('div');
+                    row.className = 'search-history-item';
+                    row.dataset.key = entry.key || '';
+                    row.innerHTML =
+                        '<span class="search-history-text">' + escapeHtml(entry.host + (entry.rest || '')) + '</span>' +
+                        '<button class="search-history-delete" data-kind="web" data-key="' +
+                        escapeHtml(entry.key || '') + '">×</button>';
+                    historyList.appendChild(row);
+                });
+            }
+        }
+
+        if (commandVisible || (historyList && historyList.children.length > 0)) {
+            container.classList.add('show');
+        } else {
+            container.classList.remove('show');
+        }
+    }
+
+    function applyTranslateHistoryPair(pairRaw) {
+        if (searchCommandMode !== 'translate') {
+            enterSearchCommandMode('translate');
+        }
+
+        var pair = resolveLanguagePair((pairRaw || '').replace(/→/g, '-'));
+        if (!pair) return;
+
+        translateSelectedPair = pair;
+        updateSearchModeChip();
+        refreshSearchDropdownPanels();
+
+        var input = document.getElementById('qa-search-input');
+        if (input) input.focus();
+    }
+
+    function applyWebHistoryEntry(entry) {
+        if (!entry || !entry.host) return;
+
+        if (searchCommandMode !== 'web') {
+            enterSearchCommandMode('web');
+        }
+
+        var input = document.getElementById('qa-search-input');
+        if (input) {
+            input.value = entry.host + (entry.rest || '');
+            input.focus();
+        }
+    }
+
+    // ---- 执行 ----
+
+    // 通过命令打开网址：记录历史；开启「内置页打开」时在面板 iframe 内展示，否则新标签页
+    function openExternalUrl(urlText) {
+        var url = (urlText || '').trim();
+        if (!url) return false;
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+        try {
+            new URL(url);
+        } catch (e) {
+            return false;
+        }
+
+        recordWebHistory(url);
+        if (settings.sidePanelBuiltinOpen) {
+            openBuiltinPage(url);
+        } else {
+            openLink(url);
+        }
+        return true;
+    }
+
+    // 翻译模式的回车执行：未锁定语言对时把首词作为语言对兜底解析
+    async function executeTranslateModeQuery(rawText) {
+        var text = (rawText || '').trim();
+        if (!text) return;
+
+        if (!translateSelectedPair) {
+            var inlineMatch = text.match(/^(\S+)\s+([\s\S]+)$/);
+            if (inlineMatch) {
+                var inlinePair = resolveLanguagePair(inlineMatch[1]);
+                if (inlinePair) {
+                    translateSelectedPair = inlinePair;
+                    updateSearchModeChip();
+                    await runTranslateFlow(inlineMatch[2], inlinePair);
+                    return;
+                }
+            }
+            return;
+        }
+
+        await runTranslateFlow(text, translateSelectedPair);
+    }
+
+    // 统一翻译执行：调用引擎 → 结果输出到搜索框 → 复制 → 记录历史 → 退出模式（保留结果）
+    async function runTranslateFlow(text, pair) {
+        try {
+            var result = await translateText(text, pair.from, pair.to);
+            if (!result) throw new Error('未获得翻译结果');
+
+            var input = document.getElementById('qa-search-input');
+            if (input) input.value = result;
+
+            recordTranslateHistory(pair.from, pair.to);
+            exitSearchCommandMode(false);
+
+            try {
+                await navigator.clipboard.writeText(result);
+            } catch (e) {
+                console.warn('面板翻译: 复制到剪贴板失败:', e);
+            }
+        } catch (err) {
+            console.error('面板翻译失败:', err.message);
+        }
+    }
+
+    // “/” 命令语法兜底路径（正常流程中前缀在输入空格时已替换为 chip）
+    async function executeSlashCommand(trimmedQuery) {
+        var match = trimmedQuery.slice(1).match(/^(\S*)(?:\s+([\s\S]*))?$/);
+        if (!match) return;
+
+        var word = match[1] || '';
+
+        if (isWebCommand(word)) {
+            var url = (match[2] || '').replace(/\s+/g, '');
+            if (!url) return;
+            if (openExternalUrl(url)) {
+                var input = document.getElementById('qa-search-input');
+                if (input) input.value = '';
+                exitSearchCommandMode(false);
+            }
+            return;
+        }
+
+        if (isTranslateCommand(word)) {
+            var rest = (match[2] || '').trim();
+            if (!rest) return;
+
+            var parts = rest.match(/^(\S+)\s+([\s\S]+)$/);
+            if (!parts) return;
+
+            var pair = resolveLanguagePair(parts[1]);
+            if (!pair) return;
+
+            await runTranslateFlow(parts[2], pair);
+        }
+    }
+
+    // 回车提交：分类处理组件模式 / “/” 命令，其余走搜索或直达网址
+    function submitSearch(value) {
+        var text = (value || '').trim();
+        if (!text) return;
+
+        var input = document.getElementById('qa-search-input');
+
+        if (searchCommandMode === 'web') {
+            if (openExternalUrl(text)) {
+                if (input) input.value = '';
+                exitSearchCommandMode(false);
+            }
+            return;
+        }
+
+        if (searchCommandMode === 'translate') {
+            executeTranslateModeQuery(text);
+            return;
+        }
+
+        if (text.charAt(0) === '/') {
+            executeSlashCommand(text);
+            hideSearchCommandList();
+            return;
+        }
+
+        if (input) input.value = '';
+        var target = resolveBrowserTarget(text);
+        // 开启「内置页打开」时在面板内 iframe 展示，否则新标签页打开
+        if (settings.sidePanelBuiltinOpen) {
+            openBuiltinPage(target);
+        } else {
+            openLink(target);
+        }
+    }
+
+    // ========== 内置页浏览器（开启「内置页打开」后，搜索/访问的网页在此以 iframe 展示） ==========
+
+    // 移动端模式：面板窄于阈值时，把发往搜索引擎的「子帧」请求 UA 改为移动端，
+    // 使其返回移动版页面。Chrome 不支持为单个 iframe 单独设置 UA，只能通过
+    // DNR 会话规则实现；用 requestDomains 限定作用域，避免影响其它页面的 iframe。
+    var MOBILE_UA = 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36';
+    var MOBILE_UA_RULE_ID = 9001;
+    var MOBILE_NARROW_MAX = 520;
+    // 标准手机布局宽度：取略大于常见手机视口（Pixel 7 约 412px）的值，给移动版页面
+    // 留出布局余量——站点的 min-width / 100vw（含滚动条）等固定宽元素常略超设备视口，
+    // 若视口恰好等于设备宽度，超出的部分会被裁切导致右侧显示不全
+    var MOBILE_VIEWPORT_WIDTH = 480;
+    var MOBILE_UA_DOMAINS = ['google.com', 'bing.com'];
+    var mobileUaRuleEnabled = false;
+    var lastNarrowState = window.innerWidth < MOBILE_NARROW_MAX;
+
+    function dnrAvailable() {
+        try {
+            return typeof chrome !== 'undefined' && !!chrome.declarativeNetRequest &&
+                typeof chrome.declarativeNetRequest.updateSessionRules === 'function';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // 依据「功能开关 + 面板宽度」同步移动端 UA 会话规则
+    function syncMobileUaRule() {
+        if (!dnrAvailable()) return;
+        var shouldEnable = !!settings.sidePanelBuiltinOpen && window.innerWidth < MOBILE_NARROW_MAX;
+        if (shouldEnable === mobileUaRuleEnabled) return;
+        mobileUaRuleEnabled = shouldEnable;
+        var options = shouldEnable
+            ? {
+                removeRuleIds: [MOBILE_UA_RULE_ID],
+                addRules: [{
+                    id: MOBILE_UA_RULE_ID,
+                    priority: 1,
+                    action: {
+                        type: 'modifyHeaders',
+                        requestHeaders: [
+                            { header: 'user-agent', operation: 'set', value: MOBILE_UA }
+                        ]
+                    },
+                    condition: {
+                        requestDomains: MOBILE_UA_DOMAINS,
+                        resourceTypes: ['sub_frame']
+                    }
+                }]
+            }
+            : { removeRuleIds: [MOBILE_UA_RULE_ID] };
+        try {
+            var p = chrome.declarativeNetRequest.updateSessionRules(options);
+            if (p && typeof p.catch === 'function') p.catch(function () { });
+        } catch (e) { }
+    }
+
+    // 窄屏移动端视口缩放：卡片宽度小于移动端设计宽度时，把 iframe 布局视口固定为
+    // MOBILE_VIEWPORT_WIDTH 再等比缩放到卡片内，使移动版页面按标准手机宽度排版，
+    // 避免站点 min-width 造成的横向溢出（超出屏幕边界）
+    function applyMobileViewportScale() {
+        // 尺寸读取与计算延后到下一帧：load / resize 回调触发时 DOM 布局可能尚未稳定，
+        // 此刻读到的 clientWidth/clientHeight 会导致 scale 偏差、右侧被裁切
+        requestAnimationFrame(function () {
+            var card = document.getElementById('qa-browser-card');
+            var frame = document.getElementById('qa-browser-frame');
+            if (!card || !frame) return;
+            var narrow = !!settings.sidePanelBuiltinOpen && window.innerWidth < MOBILE_NARROW_MAX;
+            var cardW = card.clientWidth;
+            var cardH = card.clientHeight;
+            var scale = (narrow && cardW > 0 && cardW < MOBILE_VIEWPORT_WIDTH) ? cardW / MOBILE_VIEWPORT_WIDTH : 1;
+            if (scale < 1) {
+                card.classList.add('qa-mobile-mode');
+                frame.style.width = MOBILE_VIEWPORT_WIDTH + 'px';
+                // 视觉高度需等于卡片高度 => 布局高度 = 卡片高度 / scale
+                frame.style.height = Math.round(cardH / scale) + 'px';
+                frame.style.transform = 'scale(' + scale + ')';
+            } else {
+                card.classList.remove('qa-mobile-mode');
+                frame.style.width = '';
+                frame.style.height = '';
+                frame.style.transform = '';
+            }
+        });
+    }
+
+    // 面板尺寸变化跨越阈值时，若内置页正打开则重新加载当前页，使 UA 立即生效
+    function handlePanelResize() {
+        syncMobileUaRule();
+        applyMobileViewportScale();
+        var narrow = window.innerWidth < MOBILE_NARROW_MAX;
+        if (narrow === lastNarrowState) return;
+        lastNarrowState = narrow;
+        if (!browserOpen || browserIndex < 0) return;
+        var frame = document.getElementById('qa-browser-frame');
+        if (!frame) return;
+        var url = browserHistory[browserIndex];
+        // 同一 src 赋值不会触发重载，先清空再回填以强制刷新
+        frame.src = 'about:blank';
+        setTimeout(function () { frame.src = url; }, 0);
+    }
+
+    // 面板卸载时移除会话规则，避免规则残留影响其它页面的 iframe
+    function removeMobileUaRule() {
+        if (!dnrAvailable()) return;
+        mobileUaRuleEnabled = false;
+        try { chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [MOBILE_UA_RULE_ID] }); } catch (e) { }
+    }
+
+    // 将输入内容解析为地址：网址直连，其余按当前引擎搜索
+    function resolveBrowserTarget(text) {
+        var value = (text || '').trim();
+        if (!value) return '';
+        return isUrlLike(value)
+            ? (/^https?:\/\//i.test(value) ? value : 'https://' + value)
+            : getSearchUrl(value);
+    }
+
+    function browserSetFrame(url) {
+        var frame = document.getElementById('qa-browser-frame');
+        if (frame) {
+            // iframe 内容渲染完成后尺寸才稳定，需重算一次视口缩放，
+            // 否则按加载前的卡片尺寸算出的 scale 会与实际不符
+            if (!frame._scaleLoadBound) {
+                frame._scaleLoadBound = true;
+                frame.addEventListener('load', function () { applyMobileViewportScale(); });
+            }
+            frame.src = url;
+        }
+        var urlInput = document.getElementById('qa-browser-url');
+        if (urlInput) urlInput.value = url;
+    }
+
+    function updateBrowserControls() {
+        var backBtn = document.getElementById('qa-browser-back');
+        var forwardBtn = document.getElementById('qa-browser-forward');
+        if (backBtn) backBtn.disabled = browserIndex <= 0;
+        if (forwardBtn) forwardBtn.disabled = browserIndex >= browserHistory.length - 1;
+    }
+
+    // 导航到目标地址并压入自有历史栈；push=false 用于前进/后退回放（不重复入栈）
+    function browserNavigate(url, push) {
+        if (!url) return;
+        if (push !== false) {
+            browserHistory = browserHistory.slice(0, browserIndex + 1);
+            browserHistory.push(url);
+            browserIndex = browserHistory.length - 1;
+        }
+        browserSetFrame(url);
+        updateBrowserControls();
+    }
+
+    function browserBack() {
+        if (browserIndex <= 0) return;
+        browserIndex--;
+        browserSetFrame(browserHistory[browserIndex]);
+        updateBrowserControls();
+    }
+
+    function browserForward() {
+        if (browserIndex >= browserHistory.length - 1) return;
+        browserIndex++;
+        browserSetFrame(browserHistory[browserIndex]);
+        updateBrowserControls();
+    }
+
+    // 打开内置页：展示浏览器视图并播放进入动画，小组件/链接区让位
+    function openBuiltinPage(url) {
+        var wrap = document.getElementById('qa-panel-browser');
+        if (!wrap) return;
+        clearTimeout(browserCloseTimer);
+        browserOpen = true;
+        document.body.classList.add('qa-browser-open');
+        wrap.setAttribute('aria-hidden', 'false');
+        applySectionsVisibility();
+        // 视图已显示，按当前卡片尺寸应用窄屏移动端视口缩放
+        applyMobileViewportScale();
+        // 先移除再强制回流，确保连续打开时进入动画可重放
+        wrap.classList.remove('qa-browser-leave');
+        wrap.classList.remove('qa-browser-enter');
+        void wrap.offsetWidth;
+        wrap.classList.add('qa-browser-enter');
+        browserNavigate(url, true);
+    }
+
+    // 关闭内置页（Home）：播放退出动画后恢复默认视图并清空历史
+    function closeBuiltinView() {
+        var wrap = document.getElementById('qa-panel-browser');
+        if (!wrap || !browserOpen) return;
+        wrap.classList.remove('qa-browser-enter');
+        wrap.classList.add('qa-browser-leave');
+        clearTimeout(browserCloseTimer);
+        browserCloseTimer = setTimeout(function () {
+            browserOpen = false;
+            document.body.classList.remove('qa-browser-open');
+            wrap.classList.remove('qa-browser-leave');
+            wrap.setAttribute('aria-hidden', 'true');
+            var frame = document.getElementById('qa-browser-frame');
+            if (frame) frame.src = 'about:blank';
+            var urlInput = document.getElementById('qa-browser-url');
+            if (urlInput) urlInput.value = '';
+            browserHistory = [];
+            browserIndex = -1;
+            updateBrowserControls();
+            applySectionsVisibility();
+        }, 200);
+    }
+
     // ========== 应用全部外观状态 ==========
 
     function applySectionsVisibility() {
         var widgetsSection = document.getElementById('qa-panel-widgets');
-        if (widgetsSection) widgetsSection.style.display = settings.sidePanelShowWidgets ? '' : 'none';
+        // 内置页打开时，小组件/链接区让位于浏览器视图
+        var widgetsVisible = settings.sidePanelShowWidgets && !browserOpen;
+        if (widgetsSection) widgetsSection.style.display = widgetsVisible ? '' : 'none';
         // 间距标记：小组件区可见时，它与链接卡的间距由小组件区底部内边距提供
-        document.body.classList.toggle('qa-hide-widgets', !settings.sidePanelShowWidgets);
+        document.body.classList.toggle('qa-hide-widgets', !widgetsVisible);
 
         var sidebar = document.getElementById('quick-access-sidebar');
-        if (sidebar) sidebar.classList.toggle('active', !!settings.sidePanelShowQuickLinks);
+        var linksVisible = !!settings.sidePanelShowQuickLinks && !browserOpen;
+        if (sidebar) sidebar.classList.toggle('active', linksVisible);
 
         var search = document.getElementById('qa-panel-search');
         if (search) search.style.display = settings.sidePanelShowSearch ? '' : 'none';
@@ -652,12 +1543,20 @@
 
         // 高度分配标记：链接区可见时小组件区最多占 50%（链接+搜索至少占 50%）；
         // 链接区隐藏时小组件可用全部剩余高度
-        document.body.classList.toggle('qa-hide-links', !settings.sidePanelShowQuickLinks);
+        document.body.classList.toggle('qa-hide-links', !linksVisible);
     }
 
     function applyAll() {
         var body = document.body;
         panelOOO.settings = settings;
+
+        // 「内置页打开」被关闭时，收起已打开的内置页，恢复默认视图
+        if (!settings.sidePanelBuiltinOpen && browserOpen) {
+            closeBuiltinView();
+        }
+
+        // 窄面板下启用移动端 UA（仅作用于搜索引擎域名的子帧请求）
+        syncMobileUaRule();
 
         if (settings.dynamicBlur) {
             body.classList.add('dynamic-blur');
@@ -737,15 +1636,146 @@
             });
         }
 
-        // 搜索框：Enter 搜索或直达网址
+        // 搜索框：同步 “/” 命令辅助 UI，回车按模式/命令/搜索分流
         var searchInput = document.getElementById('qa-search-input');
         if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                syncSearchAssistantUI(searchInput.value);
+            });
+            searchInput.addEventListener('focus', function () {
+                syncSearchAssistantUI(searchInput.value);
+            });
+
+            // ArrowUp/Down 选择命令、Enter 插入命令、Esc/Backspace 退出模式（与主页面一致）
             searchInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    if ((commandListState && commandListState.visible) || searchCommandMode) {
+                        e.preventDefault();
+                        if (searchCommandMode) {
+                            exitSearchCommandMode();
+                        } else {
+                            hideSearchCommandList();
+                            searchInput.value = '';
+                            syncSearchAssistantUI('');
+                        }
+                    }
+                    return;
+                }
+
+                // 组件模式下按退格删除 chip：输入为空时才生效；
+                // translate 已锁定语言对时先解锁语言对，再退格彻底退出
+                if (e.key === 'Backspace' && searchCommandMode && searchInput.value === '') {
+                    e.preventDefault();
+                    if (searchCommandMode === 'translate' && translateSelectedPair) {
+                        translateSelectedPair = null;
+                        updateSearchModeChip();
+                        refreshSearchDropdownPanels();
+                    } else {
+                        exitSearchCommandMode();
+                    }
+                    return;
+                }
+
+                if (commandListState && commandListState.visible) {
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        moveSearchCommandHighlight(e.key === 'ArrowDown' ? 1 : -1);
+                        return;
+                    }
+                    if (e.key === 'Enter' && commandListState.highlight >= 0) {
+                        e.preventDefault();
+                        applySearchCommand(commandListState.items[commandListState.highlight]);
+                        return;
+                    }
+                }
+
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitSearch(searchInput.value);
+                }
+            });
+        }
+
+        // 命令候选列表点击：套用对应命令
+        var commandListEl = document.getElementById('qa-search-command-list');
+        if (commandListEl) {
+            commandListEl.addEventListener('click', function (e) {
+                var item = e.target.closest('.search-command-item');
+                if (!item) return;
+                var index = parseInt(item.dataset.index, 10);
+                if (commandListState && commandListState.items[index]) {
+                    applySearchCommand(commandListState.items[index]);
+                }
+            });
+        }
+
+        // 翻译语言对 / 网址历史点击：删除按钮分流清理，行点击套用
+        var historyListEl = document.getElementById('qa-translate-history-list');
+        if (historyListEl) {
+            historyListEl.addEventListener('click', function (e) {
+                var deleteBtn = e.target.closest('.search-history-delete');
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    if (deleteBtn.dataset.kind === 'web') {
+                        setWebHistory(getWebHistory().filter(function (x) {
+                            return x && x.key !== deleteBtn.dataset.key;
+                        }));
+                    } else if (deleteBtn.dataset.kind === 'translate') {
+                        setTranslateHistory(getTranslateHistory().filter(function (x) {
+                            return x && x.pair !== deleteBtn.dataset.pair;
+                        }));
+                    }
+                    refreshSearchDropdownPanels();
+                    return;
+                }
+
+                var item = e.target.closest('.search-history-item');
+                if (!item) return;
+
+                if (item.dataset.key !== undefined) {
+                    var entry = getWebHistory().filter(function (x) {
+                        return x && x.key === item.dataset.key;
+                    })[0];
+                    if (entry) applyWebHistoryEntry(entry);
+                } else {
+                    applyTranslateHistoryPair(item.dataset.pair || '');
+                }
+            });
+        }
+
+        // 模式 chip 点击退出当前模式
+        var modeChipEl = document.getElementById('qa-search-mode-chip');
+        if (modeChipEl) {
+            modeChipEl.addEventListener('click', function () {
+                if (searchCommandMode) exitSearchCommandMode();
+                if (searchInput) searchInput.focus();
+            });
+        }
+
+        // 点击面板其它区域时收起命令列表
+        document.addEventListener('click', function (e) {
+            var container = document.getElementById('qa-search-command-container');
+            if (!container) return;
+            if (!container.contains(e.target) && (!searchInput || !searchInput.contains(e.target))) {
+                hideSearchCommandList();
+            }
+        });
+
+        // 内置页浏览器操作控件：Home（返回默认视图）/ Back / Next / 网址栏
+        var browserHomeBtn = document.getElementById('qa-browser-home');
+        if (browserHomeBtn) browserHomeBtn.addEventListener('click', closeBuiltinView);
+        var browserBackBtn = document.getElementById('qa-browser-back');
+        if (browserBackBtn) browserBackBtn.addEventListener('click', browserBack);
+        var browserForwardBtn = document.getElementById('qa-browser-forward');
+        if (browserForwardBtn) browserForwardBtn.addEventListener('click', browserForward);
+        var browserUrlInput = document.getElementById('qa-browser-url');
+        if (browserUrlInput) {
+            browserUrlInput.addEventListener('keydown', function (e) {
                 if (e.key !== 'Enter') return;
-                var value = searchInput.value.trim();
-                if (!value) return;
-                searchInput.value = '';
-                openLink(isUrlLike(value) ? ( /^https?:\/\//i.test(value) ? value : 'https://' + value ) : getSearchUrl(value));
+                var target = resolveBrowserTarget(browserUrlInput.value);
+                if (!target) return;
+                browserNavigate(target, true);
+                browserUrlInput.blur();
             });
         }
 
@@ -782,6 +1812,7 @@
             'sidePanelShowEngineButtons', 'sidePanelWallpaperEnabled', 'sidePanelWallpaperSync', 'sidePanelWallpaperUrl',
             'sidePanelWidgetsSync', 'sidePanelWidgetPanel', 'sidePanelQuickLinksSync', 'sidePanelQuickLinks',
             'sidePanelSearchSync', 'sidePanelSearchBoxHeight',
+            'sidePanelBuiltinOpen',
             'widgetPanel', 'wallpaper', 'wallpaperUrl'];
         var syncTimer = null;
         var pendingSyncValue = null;
@@ -824,6 +1855,8 @@
         applyAll();
         initInteractions();
         initWidgetScaleSync();
+        window.addEventListener('resize', handlePanelResize);
+        window.addEventListener('pagehide', removeMobileUaRule);
     }
 
     if (document.readyState === 'loading') {
