@@ -35,6 +35,14 @@
     "identity",
     "sidePanel"
   ],
+  "commands": {
+    "activate-ooointerface": {
+      "suggested_key": {
+        "default": "Alt+O"
+      },
+      "description": "激活 OOOInterface 扩展程序"
+    }
+  },
 
   "icons": {
     "16": "images/icon16.png",
