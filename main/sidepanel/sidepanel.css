@@ -60,13 +60,19 @@ body.qa-panel-page {
     overflow: hidden;
 }
 
-/* 内层滚动容器：滚动条隐藏，边界留白由外层内边距提供 */
+/* 内层滚动容器 = 小组件的"看不见的外框"：无背景、无边框，仅靠圆角 + overflow
+   把滚动裁切收进圆角边界内，于是上下两端始终呈现圆角
+   （与主页面 .widget-panel-container 的观感一致）。
+   宽度铺满小组件区：列数由 JS 按可用宽度动态计算（见 sidepanel.js syncWidgetScale），
+   面板越宽列数越多（3 列、4 列……），单张卡片保持主页面标准尺寸附近，不会被过度放大。 */
 .qa-panel-widgets-scroll {
     flex: 1 1 auto;
     min-height: 0;
+    width: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
+    border-radius: 14px;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }

@@ -390,53 +390,59 @@
         syncWidgetCardHeights();
     }
 
-    // 与主页面小组件面板保持同一观感：主页面面板网格宽 240px（正方形卡片 116px），
-    // 侧边栏按面板宽度整体等比缩放（zoom），卡片/字号/间距与主页面同比例。
-    // 卡片尺寸恒定：组件放不下时不缩小，改由小组件区内部滚动（见 sidepanel.css）。
-    var WIDGET_GRID_BASE_WIDTH = 240;
+    // 与主页面小组件面板保持同一观感：主页面为 2 列、网格宽 240px
+    //（单列/正方形卡片 116px、间距 8px）。侧边栏铺满可用宽度，列数按宽度动态计算：
+    // 面板越宽列数越多（3 列、4 列……），单列始终保持基准 116px 附近，
+    // 再把整块网格按 zoom 等比缩放以铺满宽度（窄面板时缩放 <1，保证内容不溢出）。
+    var WIDGET_COL_BASE = 116;   // 主页面单列（正方形卡片）宽度
+    var WIDGET_GAP = 8;          // 网格间距，与 widget-panel.css 一致
     var lastWidgetScale = null;
+    var currentWidgetColumns = 2;
 
     function syncWidgetScale() {
-        var wrap = document.getElementById('qa-panel-widgets');
         var grid = document.getElementById('qa-widgets-grid');
-        if (!wrap || !grid) return;
+        var scrollEl = document.getElementById('qa-widgets-scroll');
+        if (!grid || !scrollEl) return;
         // 无小组件时不做缩放：空状态提示须按正常字号显示
         //（否则 zoom 会把提示文字放大数倍，呈现为"报错"般的大字）
         if (!getWidgetsSource().length) {
             if (lastWidgetScale !== 'empty') {
                 lastWidgetScale = 'empty';
+                currentWidgetColumns = 2;
                 grid.style.zoom = '';
                 grid.style.width = '';
                 grid.style.margin = '';
                 grid.style.gridAutoRows = '';
+                grid.style.gridTemplateColumns = '';
             }
             return;
         }
-        // 外层左右各 10px 内边距（外层未缩放），网格的目标可视宽度 = 面板宽 - 20
-        var visualWidth = wrap.clientWidth - 20;
+        // 外框（滚动视口）的可视宽度 = 网格目标宽度
+        var visualWidth = scrollEl.clientWidth;
         if (!(visualWidth > 0)) return;
-        var scale = Math.round((visualWidth / WIDGET_GRID_BASE_WIDTH) * 10000) / 10000;
-        // 缩小时网格窄于面板，水平居中
-        grid.style.margin = '0 auto';
-        if (lastWidgetScale === scale) return;
+        // 列数：只在可用宽度真正放得下下一列时才加列（向下取整）。
+        // 首列没有前置间距，故分子要补一个间距：(宽度 + 间距) / (列宽 + 间距)；
+        // 未加列时下面的 zoom 会把当前卡片等比放大铺满整宽，即"正常缩放"
+        var cols = Math.max(2, Math.floor((visualWidth + WIDGET_GAP) / (WIDGET_COL_BASE + WIDGET_GAP)));
+        // 该列数下网格的"设计宽度"（未缩放）：N 列 + N-1 个间距
+        var localWidth = cols * WIDGET_COL_BASE + (cols - 1) * WIDGET_GAP;
+        var scale = Math.round((visualWidth / localWidth) * 10000) / 10000;
+        if (lastWidgetScale === scale && currentWidgetColumns === cols) return;
         lastWidgetScale = scale;
+        currentWidgetColumns = cols;
+        grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+        grid.style.width = localWidth + 'px';
         grid.style.zoom = String(scale);
-        grid.style.width = WIDGET_GRID_BASE_WIDTH + 'px';
+        grid.style.margin = '0 auto';
     }
 
-    // 行高 = 列宽（与主页面 syncWidgetCardHeights 一致）
+    // 行高 = 列宽（与主页面 syncWidgetCardHeights 一致）。
+    // 网格宽度 = N 列 × 116 + 间距、各列为 1fr，故列宽恒为基准 116px（缩放前的布局值）
     function syncWidgetCardHeights() {
         var grid = document.getElementById('qa-widgets-grid');
         if (!grid) return;
         if (!getWidgetsSource().length) return;
-        requestAnimationFrame(function () {
-            if (!grid.isConnected) return;
-            var gap = 8;
-            // clientWidth 为缩放前的布局宽度（= 基准 240px），与卡片列宽同一坐标空间
-            var colWidth = (grid.clientWidth - gap) / 2;
-            if (!(colWidth > 0)) return;
-            grid.style.gridAutoRows = colWidth + 'px';
-        });
+        grid.style.gridAutoRows = WIDGET_COL_BASE + 'px';
     }
 
     // ========== 数据源解析（与主页面保持一致 / 侧边栏独立配置） ==========

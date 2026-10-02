@@ -9573,20 +9573,25 @@ OOOInterface.prototype.renderSidePanelConfigView = function (rightPanelUpper, sk
     const wrapper = document.createElement('div');
     wrapper.className = 'side-panel-config-view';
     const container = document.createElement('div');
-    container.className = 'settings-menu-container' + (skipAnimation ? '' : ' slide-in-right');
+    container.className = 'settings-menu-container side-panel-root-view' + (skipAnimation ? '' : ' slide-in-right');
 
-    // 主开关（设置主页面同款开关行）
+    // 主开关（设置主页面同款开关行）；关闭后其下四项直接隐藏，故重建根视图
     container.appendChild(this.spBuildSwitchRow('侧边栏功能', !!this.settings.sidePanelEnabled, (checked) => {
         self.settings.sidePanelEnabled = checked;
         self.saveSettings();
-        self.syncSidePanelSelectDisplay();
+        const selectedDisplay = document.getElementById('side-panel-select-selected');
+        if (selectedDisplay) selectedDisplay.textContent = self.getSidePanelSummary();
+        self.renderSidePanelConfigView(rightPanelUpper, true);
     }));
 
-    this.getSidePanelNavItems().forEach(item => {
-        container.appendChild(this.spBuildNavRow(item.label, this.getSidePanelNavStatus(item), () => {
-            self.renderSidePanelSubView(rightPanelUpper, item.key);
-        }));
-    });
+    // 侧边栏功能关闭时，四个功能项一并隐藏
+    if (this.settings.sidePanelEnabled) {
+        this.getSidePanelNavItems().forEach(item => {
+            container.appendChild(this.spBuildNavRow(item.label, this.getSidePanelNavStatus(item), () => {
+                self.renderSidePanelSubView(rightPanelUpper, item.key);
+            }));
+        });
+    }
 
     wrapper.appendChild(container);
     rightPanelUpper.appendChild(wrapper);
@@ -9650,13 +9655,10 @@ OOOInterface.prototype.refreshSidePanelView = function (rightPanelUpper) {
 OOOInterface.prototype.spBuildSubViewHeader = function (rightPanelUpper, showKey, showLabel, syncKey) {
     const self = this;
     const header = document.createElement('div');
+    header.className = 'side-panel-subview-header';
 
     header.appendChild(this.spBuildSwitchRow(showLabel, !!this.settings[showKey], (checked) => {
         self.settings[showKey] = checked;
-        // 开启显示时，默认同步开启"与主页面保持一致"，直接沿用主页面已有内容
-        if (checked && syncKey) {
-            self.settings[syncKey] = true;
-        }
         self.saveSettings();
         self.syncSidePanelSelectDisplay();
     }));
@@ -9680,40 +9682,61 @@ OOOInterface.prototype.spBuildSubViewHeader = function (rightPanelUpper, showKey
     return header;
 };
 
-// ===== 小组件子视图：复用主页面「小组件列表」管理视图 =====
-// 独立模式（与主页面保持一致关闭）通过数据交换让同一套视图直接管理侧边栏的小组件。
-// 头部放在管理器容器的外层包裹里：管理器内部切换表单/类型选择不会破坏头部开关。
-OOOInterface.prototype.renderSPWidgetsView = function (rightPanelUpper, skipAnimation) {
-    const self = this;
-    this.enterSidePanelScope({ widgets: true });
-    this.showWidgetPanelMenuInRightPanel(skipAnimation);
-
-    const mgr = rightPanelUpper.querySelector('.settings-menu-container');
-    if (!mgr) return;
-
+// ===== 可同步子视图（小组件 / 快速访问链接）公共主体 =====
+// 跟随主页面（sync 开启）时不再渲染下方管理列表，改为提示行，避免与主页面配置重复；
+// 独立模式（sync 关闭）沿用主页面现成管理视图，数据已由 enterSidePanelScope 交换为侧边栏数据。
+OOOInterface.prototype.spRenderSyncableSubView = function (rightPanelUpper, cfg) {
     const wrapper = document.createElement('div');
     wrapper.className = 'side-panel-config-view';
-    const header = this.spBuildSubViewHeader(rightPanelUpper, 'sidePanelShowWidgets', '显示小组件', 'sidePanelWidgetsSync');
-    wrapper.appendChild(header);
-    wrapper.appendChild(mgr);
-    rightPanelUpper.appendChild(wrapper);
+    const header = this.spBuildSubViewHeader(rightPanelUpper, cfg.showKey, cfg.showLabel, cfg.syncKey);
+
+    if (this.settings[cfg.syncKey]) {
+        rightPanelUpper.innerHTML = '';
+        wrapper.appendChild(header);
+        wrapper.appendChild(this.spBuildSyncHint('当前与主页面保持一致，如需单独配置请关闭上方「与主页面保持一致」。'));
+        rightPanelUpper.appendChild(wrapper);
+    } else {
+        cfg.renderManager();
+        const mgr = rightPanelUpper.querySelector('.settings-menu-container');
+        if (!mgr) return;
+        wrapper.appendChild(header);
+        wrapper.appendChild(mgr);
+        rightPanelUpper.appendChild(wrapper);
+    }
+
+    const modal = document.getElementById('settings-modal');
+    if (modal) modal.classList.add('right-panel-open');
+};
+
+// 跟随主页面时的提示行，替代下方管理列表
+OOOInterface.prototype.spBuildSyncHint = function (text) {
+    const hint = document.createElement('div');
+    hint.className = 'side-panel-sync-hint';
+    hint.textContent = text;
+    return hint;
+};
+
+// ===== 小组件子视图：复用主页面「小组件列表」管理视图 =====
+// 头部放在管理器容器的外层包裹里：管理器内部切换表单/类型选择不会破坏头部开关。
+OOOInterface.prototype.renderSPWidgetsView = function (rightPanelUpper, skipAnimation) {
+    this.enterSidePanelScope({ widgets: true });
+    this.spRenderSyncableSubView(rightPanelUpper, {
+        showKey: 'sidePanelShowWidgets',
+        showLabel: '显示小组件',
+        syncKey: 'sidePanelWidgetsSync',
+        renderManager: () => this.showWidgetPanelMenuInRightPanel(skipAnimation)
+    });
 };
 
 // ===== 快速访问链接子视图：复用主页面「快速访问链接」管理视图 =====
 OOOInterface.prototype.renderSPQuickLinksView = function (rightPanelUpper, skipAnimation) {
-    const self = this;
     this.enterSidePanelScope({ quicklinks: true });
-    this.showQuickLinksMenuInRightPanel(skipAnimation);
-
-    const mgr = rightPanelUpper.querySelector('.settings-menu-container');
-    if (!mgr) return;
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'side-panel-config-view';
-    const header = this.spBuildSubViewHeader(rightPanelUpper, 'sidePanelShowQuickLinks', '显示快速访问链接', 'sidePanelQuickLinksSync');
-    wrapper.appendChild(header);
-    wrapper.appendChild(mgr);
-    rightPanelUpper.appendChild(wrapper);
+    this.spRenderSyncableSubView(rightPanelUpper, {
+        showKey: 'sidePanelShowQuickLinks',
+        showLabel: '显示快速访问链接',
+        syncKey: 'sidePanelQuickLinksSync',
+        renderManager: () => this.showQuickLinksMenuInRightPanel(skipAnimation)
+    });
 };
 
 // ===== 搜索框子视图 =====
@@ -9722,10 +9745,6 @@ OOOInterface.prototype.renderSPSearchView = function (container) {
 
     container.appendChild(this.spBuildSwitchRow('显示搜索框', !!this.settings.sidePanelShowSearch, (checked) => {
         self.settings.sidePanelShowSearch = checked;
-        // 开启显示时，默认同步开启"与主页面保持一致"
-        if (checked) {
-            self.settings.sidePanelSearchSync = true;
-        }
         self.saveSettings();
         self.syncSidePanelSelectDisplay();
     }));
@@ -9795,10 +9814,6 @@ OOOInterface.prototype.renderSPWallpaperView = function (container) {
 
     container.appendChild(this.spBuildSwitchRow('显示壁纸', !!this.settings.sidePanelWallpaperEnabled, (checked) => {
         self.settings.sidePanelWallpaperEnabled = checked;
-        // 开启显示时，默认同步开启"与主页面保持一致"
-        if (checked) {
-            self.settings.sidePanelWallpaperSync = true;
-        }
         self.saveSettings();
         self.syncSidePanelSelectDisplay();
     }));

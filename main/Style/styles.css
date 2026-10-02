@@ -8574,11 +8574,11 @@ body:not(.dynamic-blur) .radial-wheel {
     }
 }
 
-/* 侧边栏功能 - 壁纸地址输入（与设置主页面下拉框同款外观） */
+/* 侧边栏功能 - 壁纸地址输入（与设置主页面下拉框同款外观，内边距取 16px 与下拉框等高） */
 .side-panel-url-input {
     width: 100%;
     box-sizing: border-box;
-    padding: 14px 16px;
+    padding: 16px;
     border: 1px solid var(--border-color);
     border-radius: 16px;
     background: var(--background-color);
@@ -8630,4 +8630,31 @@ body.dynamic-blur .side-panel-url-input {
     flex-direction: column;
     flex: 1;
     min-height: 0;
+}
+
+/* ===== 侧边栏功能设置视图：沿用设置主页面的分组间距与文案样式 =====
+   仅作用于设置弹窗右侧的「侧边栏功能」视图，不影响设置主页面同名控件 */
+
+/* 子视图头部（显示小组件/快速访问链接）容器透明化：其内部开关行直接参与外层纵向排列。
+   设置主页面各分组靠 .setting-group 的 14px 下边距拉开层次、并无分隔线，
+   这里同样不再额外加分隔线或间距 */
+.side-panel-subview-header {
+    display: contents;
+}
+
+/* 跟随主页面时的描述文案：与设置页面既有描述文案（.widget-add-form-hint）同款 */
+.side-panel-sync-hint {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    padding: 0 4px;
+}
+
+/* 可下钻功能项：补上悬停/按下反馈，明确可点击（与其它输入控件同色） */
+.side-panel-config-view .select-selected:hover {
+    border-color: var(--primary-color);
+}
+
+.side-panel-config-view .select-selected:active {
+    background: var(--surface-color);
 }
