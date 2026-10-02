@@ -19,3 +19,4 @@
 | 20260929   | 风的来信 A Letter From the Wind | HOYO-MiX & 孙晔 | 197s | 1 | Official |
 | 20261001   | 予明日的叶笺 | HOYO-MiX | 198s | 1 | Official |
 | 20261002   | The Weekend Whip | The Fold | 206s | 1 | Contribute |
+| 20261003   | 热烈盛开 | 周深 | 248s | 1 | Contribute |
