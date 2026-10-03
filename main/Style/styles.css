@@ -4000,33 +4000,42 @@ body.dynamic-blur .settings-menu-confirm:active {
 
 
 
-.quick-link-menu-item.dragging {
-    outline: 2px solid var(--primary-color);
+/* 拖动排序（共享给快速访问链接与小组件两个列表，见 Script/sortable.js） */
+
+/* 跟随光标的悬浮克隆体 */
+.sortable-float {
+    position: fixed;
+    margin: 0;
+    box-sizing: border-box;
+    z-index: 2147483000;
+    pointer-events: none;
+    border-radius: 16px;
+    background: var(--surface-variant);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .30), 0 2px 6px rgba(0, 0, 0, .18);
+    opacity: 0.98;
+    /* 关键：克隆体带 .quick-link-menu-item / .widget-menu-item 类，
+       它们有 transition: all 0.2s ease —— 不禁用的话浏览器会用缓动
+       去"追"我们写入的位移，表现为明显滞后、不跟手。 */
+    transition: none !important;
+    /* 位移走 transform：提升为独立合成层，移动时不重排、不重绘 */
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+/* 被拖条目原位留下的占位槽（保留尺寸，列表高度不变） */
+.sortable-source {
+    background: var(--surface-variant);
+    outline: 2px dashed var(--primary-color);
     outline-offset: -2px;
     border-radius: 16px;
 }
 
-/* 拖拽放置指示线 */
-
-.drag-indicator {
-    height: 3px;
-    background-color: var(--primary-color);
-    border-radius: 2px;
-    flex-shrink: 0;
-    margin: 2px 16px;
-    animation: dragIndicatorPulse 1s ease infinite;
+.sortable-source > * {
+    visibility: hidden;
 }
 
-@keyframes dragIndicatorPulse {
-
-    0%,
-    100% {
-        opacity: 0.6;
-    }
-
-    50% {
-        opacity: 1;
-    }
+body.sortable-active {
+    cursor: grabbing;
 }
 
 
@@ -4043,6 +4052,8 @@ body.dynamic-blur .settings-menu-confirm:active {
     flex-shrink: 0;
     opacity: 0.4;
     transition: opacity 0.2s ease;
+    /* 触屏/触笔在手柄上起拖时不触发列表滚动 */
+    touch-action: none;
 }
 
 

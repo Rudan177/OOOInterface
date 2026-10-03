@@ -3,6 +3,7 @@
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
 
 import { QuickLinksExporter, QuickLinksImporter } from '../quicklinks-export.js';
+import { attachSortableList } from '../sortable.js';
 
 export const QuickLinksMixin = {
     handleOpenQuickLinksParam() {
@@ -721,8 +722,6 @@ showQuickLinksAddInterface (container, listContainer, buttonContainer, editIndex
         });
         container.addEventListener('drop', (e) => {
             if (!isAddViewActive()) return;
-            // 文件拖放过程中可能误触发排序逻辑，先清理可能残留的排序指示线
-            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
             const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
             readFileAndImport(file);
         });
@@ -800,6 +799,7 @@ updateQuickLinksListInMenu (listContainer) {
     if (!listContainer) return;
 
     const self = this;
+    if (listContainer._sortable) { listContainer._sortable.destroy(); listContainer._sortable = null; }
     listContainer.innerHTML = '';
 
     if (this.settings.quickLinks.length === 0) {
@@ -817,13 +817,8 @@ updateQuickLinksListInMenu (listContainer) {
         const item = document.createElement('div');
         item.className = 'quick-link-menu-item';
         item.setAttribute('data-index', index);
-        item.draggable = true;
-
-        // 拖入外部文件（如 JSON 导入）时不参与排序逻辑的判断
-        const isFileDrag = (e) => {
-            return !!(e.dataTransfer && e.dataTransfer.types &&
-                Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1);
-        };
+        // 保存对 settings 对象的引用：拖动提交时按此重排，而不是从 DOM 文本重建
+        item._sortRef = link;
 
         const dragHandle = document.createElement('div');
         dragHandle.className = 'quick-link-drag-handle';
@@ -876,97 +871,6 @@ updateQuickLinksListInMenu (listContainer) {
         item.appendChild(info);
         item.appendChild(deleteBtn);
         fragment.appendChild(item);
-
-        item.addEventListener('dragstart', (e) => {
-            item.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', 'move');
-            e.dataTransfer.effectAllowed = 'move';
-            // 清除默认拖拽半透明预览
-            const blankImg = new Image();
-            blankImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-            e.dataTransfer.setDragImage(blankImg, 0, 0);
-        });
-
-        item.addEventListener('dragend', () => {
-            item.classList.remove('dragging');
-            // 移除所有拖拽指示线
-            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
-            listContainer.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-        });
-
-        item.addEventListener('dragover', (e) => {
-            // 外部文件拖入（JSON 导入）时跳过排序逻辑，交由容器导入处理器处理
-            if (isFileDrag(e)) return;
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            const dragged = listContainer.querySelector('.dragging');
-            if (!dragged || dragged === item) return;
-
-            // 移除其他指示线
-            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
-
-            // 根据鼠标在项目中的位置决定插入上方还是下方
-            const rect = item.getBoundingClientRect();
-            const midY = rect.top + rect.height / 2;
-            const insertBefore = e.clientY < midY;
-
-            const indicator = document.createElement('div');
-            indicator.className = 'drag-indicator';
-            if (insertBefore) {
-                item.parentNode.insertBefore(indicator, item);
-            } else {
-                item.parentNode.insertBefore(indicator, item.nextSibling);
-            }
-        });
-
-        item.addEventListener('dragleave', (e) => {
-            // 只在离开此元素时移除自身的指示线（不处理子元素冒泡）
-            if (e.target === item) {
-                const indicator = item.parentNode.querySelector('.drag-indicator');
-                if (indicator) indicator.remove();
-            }
-        });
-
-        item.addEventListener('drop', (e) => {
-            // 外部文件拖入（JSON 导入）时不拦截，让事件冒泡到容器完成导入
-            if (isFileDrag(e)) return;
-            e.preventDefault();
-            const dragged = listContainer.querySelector('.dragging');
-            if (!dragged) return;
-
-            const indicator = listContainer.querySelector('.drag-indicator');
-            if (!indicator) return;
-
-            // 根据指示线位置移动DOM元素
-            const referenceNode = indicator.nextSibling;
-            indicator.remove();
-
-            if (referenceNode) {
-                listContainer.insertBefore(dragged, referenceNode);
-            } else {
-                listContainer.appendChild(dragged);
-            }
-
-            // 更新所有项的 data-index
-            const allItems = listContainer.querySelectorAll('.quick-link-menu-item');
-            allItems.forEach((el, i) => {
-                el.setAttribute('data-index', i);
-            });
-
-            // 根据DOM顺序重建设置数组（不重新渲染，避免闪烁）
-            const newLinks = [];
-            allItems.forEach(el => {
-                const nameEl = el.querySelector('.quick-link-menu-name');
-                const urlEl = el.querySelector('.quick-link-menu-url');
-                if (nameEl && urlEl) {
-                    newLinks.push({ name: nameEl.textContent, url: urlEl.textContent });
-                }
-            });
-
-            self.settings.quickLinks = newLinks;
-            self.saveSettings();
-            self.showNotification('顺序已调整');
-        });
     });
 
     // 全部条目构建完成后一次性挂载到列表容器
@@ -992,5 +896,17 @@ updateQuickLinksListInMenu (listContainer) {
         });
         listContainer.appendChild(clearAllBtn);
     }
+
+    // 接管拖动排序（整行可拖，移动超过阈值才算拖动；轻点仍进入编辑）
+    listContainer._sortable = attachSortableList(listContainer, {
+        itemSelector: '.quick-link-menu-item',
+        onCommit: (items) => {
+            // 按新 DOM 顺序重排同一批对象引用，保留对象上的其它字段
+            self.settings.quickLinks = items.map(el => el._sortRef);
+            items.forEach((el, i) => el.setAttribute('data-index', i));
+            self.saveSettings();
+            self.showNotification('顺序已调整');
+        }
+    });
 },
 };

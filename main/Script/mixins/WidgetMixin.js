@@ -17,6 +17,7 @@ import {
     normalizeWidgetSize as normalizeSize,
     getWidgetSizeLabel as sizeLabelOf,
 } from '../widgets/widget-types.js';
+import { attachSortableList } from '../sortable.js';
 
 export const WidgetMixin = {
 // 类型表与尺寸辅助函数已提取到 widgets/widget-types.js，与侧边栏面板共用。
@@ -429,6 +430,7 @@ showWidgetPanelMenuInRightPanel (skipAnimation) {
 updateWidgetPanelListInMenu (listContainer) {
     const self = this;
     if (!listContainer) return;
+    if (listContainer._sortable) { listContainer._sortable.destroy(); listContainer._sortable = null; }
     listContainer.innerHTML = '';
 
     const widgets = (this.settings.widgetPanel && Array.isArray(this.settings.widgetPanel.widgets))
@@ -452,7 +454,8 @@ updateWidgetPanelListInMenu (listContainer) {
         item.className = 'widget-menu-item';
         item.setAttribute('data-index', index);
         item.setAttribute('data-widget-id', widget.id);
-        item.draggable = true;
+        // 保存对 settings 对象的引用：拖动提交时按此重排，保留 data/size 等配置
+        item._sortRef = widget;
 
         // 拖拽手柄（复用快速访问链接样式）
         const dragHandle = document.createElement('div');
@@ -520,92 +523,22 @@ updateWidgetPanelListInMenu (listContainer) {
         item.appendChild(info);
         item.appendChild(deleteBtn);
         fragment.appendChild(item);
-
-        // ===== 拖拽排序（参考快速访问链接） =====
-
-        item.addEventListener('dragstart', (e) => {
-            item.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', 'move');
-            e.dataTransfer.effectAllowed = 'move';
-            // 清除默认拖拽半透明预览
-            const blankImg = new Image();
-            blankImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-            e.dataTransfer.setDragImage(blankImg, 0, 0);
-        });
-
-        item.addEventListener('dragend', () => {
-            item.classList.remove('dragging');
-            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
-            listContainer.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-        });
-
-        item.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            const dragged = listContainer.querySelector('.dragging');
-            if (!dragged || dragged === item) return;
-
-            listContainer.querySelectorAll('.drag-indicator').forEach(el => el.remove());
-
-            const rect = item.getBoundingClientRect();
-            const midY = rect.top + rect.height / 2;
-            const insertBefore = e.clientY < midY;
-
-            const indicator = document.createElement('div');
-            indicator.className = 'drag-indicator';
-            if (insertBefore) {
-                item.parentNode.insertBefore(indicator, item);
-            } else {
-                item.parentNode.insertBefore(indicator, item.nextSibling);
-            }
-        });
-
-        item.addEventListener('dragleave', (e) => {
-            if (e.target === item) {
-                const indicator = item.parentNode.querySelector('.drag-indicator');
-                if (indicator) indicator.remove();
-            }
-        });
-
-        item.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const dragged = listContainer.querySelector('.dragging');
-            if (!dragged) return;
-
-            const indicator = listContainer.querySelector('.drag-indicator');
-            if (!indicator) return;
-
-            const referenceNode = indicator.nextSibling;
-            indicator.remove();
-
-            if (referenceNode) {
-                listContainer.insertBefore(dragged, referenceNode);
-            } else {
-                listContainer.appendChild(dragged);
-            }
-
-            // 更新所有项的 data-index
-            const allItems = listContainer.querySelectorAll('.widget-menu-item');
-            allItems.forEach((el, i) => {
-                el.setAttribute('data-index', i);
-            });
-
-            // 根据 DOM 顺序重建设置数组（按 widget id 重新排列，保留原对象引用）
-            const newWidgets = [];
-            allItems.forEach(el => {
-                const wid = el.getAttribute('data-widget-id');
-                const w = self.settings.widgetPanel.widgets.find(x => x.id === wid);
-                if (w) newWidgets.push(w);
-            });
-
-            self.settings.widgetPanel.widgets = newWidgets;
-            self.saveWidgetSettings();
-            self.renderWidgetPanel();
-            self.showNotification('顺序已调整');
-        });
     });
 
     listContainer.appendChild(fragment);
+
+    // 接管拖动排序（整行可拖，移动超过阈值才算拖动；轻点仍进入编辑）
+    listContainer._sortable = attachSortableList(listContainer, {
+        itemSelector: '.widget-menu-item',
+        onCommit: (items) => {
+            // 按新 DOM 顺序重排同一批对象引用，保留 data/size 等配置
+            self.settings.widgetPanel.widgets = items.map(el => el._sortRef);
+            items.forEach((el, i) => el.setAttribute('data-index', i));
+            self.saveWidgetSettings();
+            self.renderWidgetPanel();
+            self.showNotification('顺序已调整');
+        }
+    });
 },
 getWidgetSubtitle (widget) {
     const data = widget.data || {};
