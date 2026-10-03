@@ -2,7 +2,7 @@
  * OOOInterface 快速访问链接导出模块
  * 将快速访问链接导出为 JSON 文件并触发下载
  */
-var QuickLinksExporter = (function () {
+export const QuickLinksExporter = (function () {
     'use strict';
 
     /**
@@ -102,7 +102,7 @@ var QuickLinksExporter = (function () {
  * OOOInterface 快速访问链接导入模块
  * 支持导入导出生成的 JSON 文件（含 { links: [...] } 结构）或纯链接数组
  */
-var QuickLinksImporter = (function () {
+export const QuickLinksImporter = (function () {
     'use strict';
 
     /**

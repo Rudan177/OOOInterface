@@ -6,7 +6,9 @@
  * - 超大尺寸：大号本月日历（周一起始、含翻月导航与每日农历标注，标题点击回到今天）
  * 每日零点自动刷新（日期/星期/农历跨天更新）
  */
-class CalendarWidget extends WidgetBase {
+import { WidgetBase } from './WidgetBase.js';
+
+export class CalendarWidget extends WidgetBase {
     constructor(config) {
         super(config);
         this.type = 'calendar';

@@ -1,4 +1,8 @@
-class Controller {
+'use strict';
+
+import { runtime } from './runtime.js';
+
+export class Controller {
     constructor() {
         this.gamepadIndex = -1;
         this.connected = false;
@@ -100,7 +104,7 @@ class Controller {
     }
 
     get ooo() {
-        return this._ooo || window.oooInterface || null;
+        return this._ooo || runtime.ooo || window.oooInterface || null;
     }
 
     set ooo(val) {
@@ -1336,6 +1340,9 @@ class Controller {
 
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        window.oooController = new Controller();
+        const controller = new Controller();
+        runtime.controller = controller;
+        // 保留全局引用：script.js 判断径向菜单是否激活时读 window.oooController
+        window.oooController = controller;
     }, 500);
 });

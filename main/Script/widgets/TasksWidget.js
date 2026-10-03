@@ -1,7 +1,9 @@
 /**
  * 任务小组件（仅本地 localStorage）
  */
-class TasksWidget extends WidgetBase {
+import { WidgetBase } from './WidgetBase.js';
+
+export class TasksWidget extends WidgetBase {
     constructor(config) {
         super(config);
         this.type = 'tasks';

@@ -1,4 +1,4 @@
-var DEFAULT_THEME = {
+export default {
     "info": {
         "name": "默认主题",
         "designer": "RUDAN",
@@ -41,4 +41,4 @@ var DEFAULT_THEME = {
         },
         "more": false
     }
-}
+};

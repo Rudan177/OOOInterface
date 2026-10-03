@@ -3,7 +3,9 @@
  * 本地接口：http://127.0.0.1:{port}
  * 交互：消息列表（可滚动）+ 输入框 + 流式响应 + 停止按钮
  */
-class AiAgentWidget extends WidgetBase {
+import { WidgetBase } from './WidgetBase.js';
+
+export class AiAgentWidget extends WidgetBase {
     constructor(config) {
         super(config);
         this.type = 'ai-agent';

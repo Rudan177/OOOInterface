@@ -1,4 +1,6 @@
-class InfoManager {
+import { getColorConfig } from './color.js';
+
+export class InfoManager {
     constructor(app) {
         this.app = app;
         this.infoContainer = null;

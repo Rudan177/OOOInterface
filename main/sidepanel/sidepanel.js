@@ -5,47 +5,32 @@
  * 并按"侧边栏功能"设置渲染：小组件、快速访问链接、底部搜索框与引擎切换。
  */
 
+// color.js 的 getColorConfig：本文件内还有一个同名包装函数（负责补充 themeColorScheme/自定义配色分支），
+// 故以别名导入，避免与本文件内的函数声明重名。
+import { getColorConfig as getColorConfigBase } from '../Script/color.js';
+import { ProxyManager } from '../Script/proxy.js';
+import { ClockWidget } from '../Script/widgets/ClockWidget.js';
+import { CalendarWidget } from '../Script/widgets/CalendarWidget.js';
+import { WeatherWidget } from '../Script/widgets/WeatherWidget.js';
+import { TasksWidget } from '../Script/widgets/TasksWidget.js';
+import { AiAgentWidget } from '../Script/widgets/AiAgentWidget.js';
+import { EmailWidget } from '../Script/widgets/EmailWidget.js';
+import { UpgradeToolWidget } from '../Script/widgets/UpgradeToolWidget.js';
+// 出厂默认设置：与主页面共用同一来源（Stage 9）
+import { DEFAULT_SETTINGS } from '../Script/settings-defaults.js';
+import { SYNC_KEYS } from '../Script/storage-sync.js';
+// 小组件类型表与尺寸辅助函数：与主页面共用同一来源（Stage 9）
+import { getWidgetAllowedSizes, normalizeWidgetSize } from '../Script/widgets/widget-types.js';
+// 翻译语言表与解析函数：与主页面共用同一来源（Stage 9）
+import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/translate-shared.js';
+
 (function () {
     'use strict';
 
-    // 出厂预设中与本面板相关的设置（与 script.js 的 defaultSettings 保持一致）
-    var DEFAULT_SETTINGS = {
-        quickLinks: [],
-        quickAccessSidebar: true,
-        showQuickLinkIcons: true,
-        dynamicBlur: false,
-        enhancedDisplay: false,
-        colorScheme: 'green',
-        themeColorScheme: null,
-        customColors: [],
-        activeCustomColorIndex: -1,
-        customPrimaryColor: '',
-        customSecondaryColor: '',
-        customGradientEnabled: false,
-        customGradientStart: 0,
-        customGradientEnd: 100,
-        font: 'Sans Flex',
-        customFonts: [],
-        // 侧边栏功能：默认全部关闭，与主页面 defaultSettings 保持一致
-        sidePanelEnabled: false,
-        sidePanelShowWidgets: false,
-        sidePanelShowQuickLinks: false,
-        sidePanelShowSearch: false,
-        sidePanelShowEngineButtons: false,
-        sidePanelWallpaperEnabled: false,
-        sidePanelWallpaperSync: false,
-        sidePanelWallpaperUrl: '',
-        sidePanelWidgetsSync: false,
-        sidePanelWidgetPanel: { widgets: [] },
-        sidePanelQuickLinksSync: false,
-        sidePanelQuickLinks: [],
-        sidePanelSearchSync: false,
-        sidePanelSearchBoxHeight: 50,
-        // 内置页打开：开启后搜索/访问的网页用 iframe 在面板内展示
-        sidePanelBuiltinOpen: false,
-        // 小组件面板配置（与主页面共用）
-        widgetPanel: { enabled: true, widgets: [] }
-    };
+    // 出厂预设设置：由 settings-defaults.js 提供，与主页面同源（Stage 9）。
+    // 此前这里只抄了本面板用到的一个子集，靠注释约定“与主页面保持一致”，
+    // 实际已漂移；现在改为共用全集，多余默认键无害——本面板保存时整体回写，
+    // 且 mergeSettings 会保留全部已存键，不会因此在两个页面间丢设置。
 
     var settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
     var isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -73,7 +58,13 @@
 
     function mergeSettings(saved) {
         // 完整保留已存的全部设置键（面板保存时会整体回写，若只保留白名单键会清掉
-        // 主页面的壁纸/小组件等其余设置），默认值仅用于补缺
+        // 主页面的壁纸/小组件等其余设置），默认值仅用于补缺。
+        //
+        // 注意：这里**故意不与**主页面 SettingsMixin.mergeSettings 合并。那个版本是
+        // 逐键白名单合并，带类型校验、旧数据迁移和取值 clamp，且只复制它认识的键；
+        // 本面板需要的是「原样全量保留」，两者契约不同。若把这里换成主页那版，面板
+        // 回写时会把主页的非默认设置冲回默认值；反过来则会让主页丢掉全部校验与迁移。
+        // 共用的只是 DEFAULT_SETTINGS 这份默认值（settings-defaults.js）。
         return Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), saved || {});
     }
 
@@ -137,9 +128,6 @@
     }
 
     // ========== 配色方案（与主页面 getColorConfig/applyColorScheme 逻辑一致） ==========
-
-    // color.js 的全局 getColorConfig（IIFE 内同名函数声明会提升遮蔽全局，必须经 window 取用）
-    var getColorConfigBase = typeof window.getColorConfig === 'function' ? window.getColorConfig : null;
 
     function getColorConfig() {
         var scheme = settings.colorScheme || 'green';
@@ -302,34 +290,10 @@
     }
 
     // ========== 小组件（与主页面小组件面板同一套组件与配置） ==========
-
-    var WIDGET_TYPES = {
-        'clock': { name: '大时钟', defaultSize: 'square', allowSquare: true, allowSuper: false },
-        'calendar': { name: '日历', defaultSize: 'square', allowSquare: true, allowSuper: true },
-        'weather': { name: '天气', defaultSize: 'square', allowSquare: true, allowSuper: false },
-        'tasks': { name: '任务', defaultSize: 'super', allowSquare: false, allowSuper: true },
-        'ai-agent': { name: 'SI Agent', defaultSize: 'super', allowSquare: false, allowSuper: true },
-        'email': { name: '邮箱', defaultSize: 'super', allowSquare: false, allowSuper: true },
-        'upgrade-tool': { name: '升级工具', defaultSize: 'square', allowSquare: true, allowSuper: true }
-    };
-
-    function getWidgetAllowedSizes(type) {
-        var meta = WIDGET_TYPES[type];
-        if (!meta) return ['square', 'rectangle', 'super'];
-        var sizes = [];
-        if (meta.allowSquare !== false) sizes.push('square');
-        sizes.push('rectangle');
-        if (meta.allowSuper === true) sizes.push('super');
-        return sizes;
-    }
-
-    function normalizeWidgetSize(type, size) {
-        var allowed = getWidgetAllowedSizes(type);
-        if (allowed.indexOf(size) >= 0) return size;
-        var meta = WIDGET_TYPES[type];
-        if (meta && allowed.indexOf(meta.defaultSize) >= 0) return meta.defaultSize;
-        return allowed[allowed.length - 1] || 'rectangle';
-    }
+    //
+    // 类型表 getWidgetAllowedSizes / normalizeWidgetSize 已提取到
+    // ../Script/widgets/widget-types.js，与主页面共用（Stage 9）。
+    // 此处只是本地副本删除，两个函数的调用点保持不变。
 
     function createWidgetInstance(config) {
         var baseConfig = {
@@ -612,6 +576,11 @@
     }
 
     // ========== 底部搜索框与引擎切换 ==========
+    //
+    // 与主页面的 oooEngineLocked（script.js / SearchMixin.js）不是一回事，**不要合并**：
+    //   oooEngineLocked    = 主页面用户是否「锁定」了搜索引擎（锁定后不再跟随默认引擎）
+    //   oooSidePanelEngine = 本面板当前选中的搜索引擎
+    // 两者语义不同、可各自独立取值。
 
     var currentEngine = localStorage.getItem('oooSidePanelEngine') === 'bing' ? 'bing' : 'google';
 
@@ -668,55 +637,10 @@
         return ['translate', 't', '翻译'].indexOf((word || '').toLowerCase()) !== -1;
     }
 
-    // 语言别名表：sc/jp/en 等缩写映射到两家引擎各自的语言代码；key 为历史记录使用的规范键
-    // （与主页面 resolveTranslateLanguage 的表保持一致）
-    function getTranslateLanguages() {
-        return [
-            { key: 'auto', label: '自动检测', aliases: ['auto', 'a', '自动'], g: 'auto', m: 'auto-detect' },
-            { key: 'sc', label: '简体中文', aliases: ['sc', 'zh-cn', 'zh', 'cn', '简体', '中文'], g: 'zh-CN', m: 'zh-Hans' },
-            { key: 'tc', label: '繁体中文', aliases: ['tc', 'zh-tw', 'tw', '繁体'], g: 'zh-TW', m: 'zh-Hant' },
-            { key: 'en', label: '英语', aliases: ['en', 'english', '英'], g: 'en', m: 'en' },
-            { key: 'ja', label: '日语', aliases: ['jp', 'jpn', 'ja', '日'], g: 'ja', m: 'ja' },
-            { key: 'ko', label: '韩语', aliases: ['kr', 'kor', 'ko', '韩'], g: 'ko', m: 'ko' },
-            { key: 'fr', label: '法语', aliases: ['fr', '法'], g: 'fr', m: 'fr' },
-            { key: 'de', label: '德语', aliases: ['de', '德'], g: 'de', m: 'de' },
-            { key: 'ru', label: '俄语', aliases: ['ru', '俄'], g: 'ru', m: 'ru' },
-            { key: 'pt', label: '葡萄牙语', aliases: ['pt', '葡'], g: 'pt', m: 'pt' },
-            { key: 'it', label: '意大利语', aliases: ['it', '意'], g: 'it', m: 'it' },
-            { key: 'th', label: '泰语', aliases: ['th', '泰'], g: 'th', m: 'th' },
-            { key: 'vi', label: '越南语', aliases: ['vi', '越'], g: 'vi', m: 'vi' },
-            { key: 'ar', label: '阿拉伯语', aliases: ['ar', '阿'], g: 'ar', m: 'ar' }
-        ];
-    }
-
-    function resolveTranslateLanguage(rawCode) {
-        var code = (rawCode || '').toLowerCase().trim();
-        if (!code) return null;
-        var table = getTranslateLanguages();
-        for (var i = 0; i < table.length; i++) {
-            if (table[i].key === code || table[i].aliases.indexOf(code) !== -1) return table[i];
-        }
-        return null;
-    }
-
-    // 解析语言对文本：'sc-jp' 或省略源语言的 'jp'
-    function resolveLanguagePair(pairText) {
-        var parts = (pairText || '').toLowerCase().split('-').filter(Boolean);
-        if (parts.length === 0) return null;
-
-        var fromEntry;
-        var toEntry;
-        if (parts.length >= 2) {
-            fromEntry = resolveTranslateLanguage(parts[0]);
-            toEntry = resolveTranslateLanguage(parts[1]);
-        } else {
-            fromEntry = resolveTranslateLanguage('auto');
-            toEntry = resolveTranslateLanguage(parts[0]);
-        }
-        if (!fromEntry || !toEntry) return null;
-
-        return { raw: fromEntry.key + '-' + toEntry.key, from: fromEntry, to: toEntry };
-    }
+    // 语言表与解析函数已提取到 ../Script/translate-shared.js，与主页面共用（Stage 9）。
+    // 本地面板此前那份表少了 es（西班牙语），与主页面并不一致；改用共享表后
+    // /t es 也能在面板里解析。下方 resolveTranslateLanguage / resolveLanguagePair
+    // 的调用点保持不变。
 
     // ---- 翻译语言对 / 网址历史（localStorage，与主页面共用同一份存储） ----
 
@@ -1803,17 +1727,9 @@
             applyColorScheme();
         });
 
-        // 面板显示所需的设置键：只有这些键变化才需要重渲染；
-        // 自己的回写与无关键（小组件数据等）的变化直接跳过，避免同步风暴
-        var SYNC_KEYS = ['quickLinks', 'showQuickLinkIcons', 'enhancedDisplay', 'dynamicBlur', 'colorScheme',
-            'themeColorScheme', 'customColors', 'activeCustomColorIndex', 'customPrimaryColor', 'customSecondaryColor',
-            'customGradientEnabled', 'customGradientStart', 'customGradientEnd', 'font',
-            'sidePanelEnabled', 'sidePanelShowWidgets', 'sidePanelShowQuickLinks', 'sidePanelShowSearch',
-            'sidePanelShowEngineButtons', 'sidePanelWallpaperEnabled', 'sidePanelWallpaperSync', 'sidePanelWallpaperUrl',
-            'sidePanelWidgetsSync', 'sidePanelWidgetPanel', 'sidePanelQuickLinksSync', 'sidePanelQuickLinks',
-            'sidePanelSearchSync', 'sidePanelSearchBoxHeight',
-            'sidePanelBuiltinOpen',
-            'widgetPanel', 'wallpaper', 'wallpaperUrl'];
+        // 触发重渲染的门控键表：与主页面共用 storage-sync.js（Stage 9）。
+        // 自己的回写与无关键（小组件数据等）的变化仍被跳过，不会产生同步风暴。
+
         var syncTimer = null;
         var pendingSyncValue = null;
 

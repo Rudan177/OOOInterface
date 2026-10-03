@@ -7,7 +7,9 @@
  * - 正方形：垂直布局（图标+温度居中，城市/描述下方）
  * - 长方形：横向布局（左图标+温度，右城市+详情）
  */
-class WeatherWidget extends WidgetBase {
+import { WidgetBase } from './WidgetBase.js';
+
+export class WeatherWidget extends WidgetBase {
     constructor(config) {
         super(config);
         this.type = 'weather';

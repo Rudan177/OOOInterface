@@ -1,4 +1,6 @@
-class EmailWidget extends WidgetBase {
+import { WidgetBase } from './WidgetBase.js';
+
+export class EmailWidget extends WidgetBase {
     constructor(config) {
         super(config);
         this.type = 'email';

@@ -2,7 +2,9 @@
  * OOOInterface 小组件基类
  * 所有小组件继承此基类，实现 render() 与 destroy()
  */
-class WidgetBase {
+import { ProxyManager } from '../proxy.js';
+
+export class WidgetBase {
     /**
      * @param {Object} config 小组件配置
      * @param {string} config.id 唯一 ID

@@ -3,7 +3,9 @@
  * 支持小/大/超大三种尺寸，通过 OUA 后端接口检查更新
  * 挂载后自动检查一次；超大尺寸底部有手动检查按钮
  */
-class UpgradeToolWidget extends WidgetBase {
+import { WidgetBase } from './WidgetBase.js';
+
+export class UpgradeToolWidget extends WidgetBase {
     constructor(config) {
         super(config);
         this.type = 'upgrade-tool';

@@ -1,4 +1,4 @@
-var DEFAULT_THEME = {
+export default {
     "info": {
         "name": "LTS5.3",
         "designer": "RUDAN",
@@ -41,4 +41,4 @@ var DEFAULT_THEME = {
         },
         "more": false
     }
-}
+};

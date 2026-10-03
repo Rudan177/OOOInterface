@@ -4,7 +4,9 @@
  * - 正方形：垂直布局（时间在上，日期在下）
  * - 长方形：横向布局（时间在左，日期在右）
  */
-class ClockWidget extends WidgetBase {
+import { WidgetBase } from './WidgetBase.js';
+
+export class ClockWidget extends WidgetBase {
     constructor(config) {
         super(config);
         this.type = 'clock';

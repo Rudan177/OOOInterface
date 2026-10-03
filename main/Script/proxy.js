@@ -1,4 +1,4 @@
-var ProxyManager = (function () {
+export const ProxyManager = (function () {
     var proxyPort = null;
 
     function loadProxy() {

@@ -2,7 +2,7 @@
  * 配色方案配置
  * 所有配色相关的常量和配置集中管理
  */
-const COLOR_SCHEME_NAMES = {
+export const COLOR_SCHEME_NAMES = {
     'green': '林绿色',
     'blue': '经典蓝',
     'black-white': '黑白色',
@@ -345,7 +345,7 @@ function buildCustomColorConfig(customColors) {
     return config;
 }
 
-function getColorConfig(scheme, customColors) {
+export function getColorConfig(scheme, customColors) {
     if (scheme === 'custom') {
         if (customColors && customColors.primaryColor) {
             return buildCustomColorConfig(customColors);
