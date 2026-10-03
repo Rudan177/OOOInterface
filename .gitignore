@@ -27,6 +27,9 @@ needs/
 test/
 .trae-aicc/
 
+# Chrome 加载未打包扩展时自动生成的静态规则集二进制索引（每次加载重建）
+_metadata/
+
 
 Open-in-trae.sh
 

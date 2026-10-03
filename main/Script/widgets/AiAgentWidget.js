@@ -23,7 +23,7 @@ class AiAgentWidget extends WidgetBase {
         // 头部：标题 + 连接状态
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'widget-ai-header';
-        this.headerEl.innerHTML = '<span>AI Agent</span>';
+        this.headerEl.innerHTML = '<span>SI Agent</span>';
 
         this.statusEl = document.createElement('span');
         this.statusEl.className = 'widget-ai-status';
@@ -50,7 +50,7 @@ class AiAgentWidget extends WidgetBase {
     renderNoConfig() {
         const noConfig = document.createElement('div');
         noConfig.className = 'widget-ai-no-config';
-        noConfig.innerHTML = '<span>未配置 AI Agent 端口</span>';
+        noConfig.innerHTML = '<span>未配置 SI Agent 端口</span>';
         const btn = document.createElement('button');
         btn.className = 'widget-ai-no-config-btn';
         btn.textContent = '去设置端口';

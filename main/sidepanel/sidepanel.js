@@ -308,7 +308,7 @@
         'calendar': { name: '日历', defaultSize: 'square', allowSquare: true, allowSuper: true },
         'weather': { name: '天气', defaultSize: 'square', allowSquare: true, allowSuper: false },
         'tasks': { name: '任务', defaultSize: 'super', allowSquare: false, allowSuper: true },
-        'ai-agent': { name: 'AI Agent', defaultSize: 'super', allowSquare: false, allowSuper: true },
+        'ai-agent': { name: 'SI Agent', defaultSize: 'super', allowSquare: false, allowSuper: true },
         'email': { name: '邮箱', defaultSize: 'super', allowSquare: false, allowSuper: true },
         'upgrade-tool': { name: '升级工具', defaultSize: 'square', allowSquare: true, allowSuper: true }
     };

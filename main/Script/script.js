@@ -13160,7 +13160,7 @@ OOOInterface.prototype.WIDGET_TYPES = {
     'calendar': { name: '日历',   icon: 'calendar_month',  defaultSize: 'square', allowSquare: true,  allowSuper: true  },
     'weather':  { name: '天气',   icon: 'wb_sunny',        defaultSize: 'square', allowSquare: true,  allowSuper: false },
     'tasks':    { name: '任务',   icon: 'checklist',       defaultSize: 'super',   allowSquare: false, allowSuper: true  },
-    'ai-agent': { name: 'AI Agent', icon: 'smart_toy',     defaultSize: 'super',   allowSquare: false, allowSuper: true  },
+    'ai-agent': { name: 'SI Agent', icon: 'smart_toy',     defaultSize: 'super',   allowSquare: false, allowSuper: true  },
     'email':    { name: '邮箱',   icon: 'mail',            defaultSize: 'super',   allowSquare: false, allowSuper: true  },
     'upgrade-tool': { name: '升级工具', icon: 'system_update', defaultSize: 'square', allowSquare: true,  allowSuper: true  },
 };
@@ -14150,7 +14150,7 @@ OOOInterface.prototype.showWidgetConfigForm = function (listContainer, widget, p
         portRow.appendChild(inputWrap);
         const hint = document.createElement('div');
         hint.className = 'widget-add-form-hint';
-        hint.textContent = 'AI Agent 服务地址为 127.0.0.1:' + (data.port || '端口号') + '，需本地已运行对应服务';
+        hint.textContent = 'SI Agent 服务地址为 127.0.0.1:' + (data.port || '端口号') + '，需本地已运行对应服务';
         portRow.appendChild(hint);
         form.appendChild(portRow);
         extraFields.port = portInput;
