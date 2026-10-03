@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OOOInterface 侧边栏</title>
+    <!-- 复用主页面样式，保证与主页面视觉完全一致 -->
+    <link rel="stylesheet" href="../Style/styles.css">
+    <link rel="stylesheet" href="../Style/dynamic-blur.css">
+    <link rel="stylesheet" href="../Style/widget-panel.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+        rel="stylesheet">
+    <link rel="stylesheet" href="sidepanel.css">
+</head>
+
+<body class="qa-panel-page">
+
+    <!-- 壁纸层 -->
+    <div class="qa-panel-wallpaper" id="qa-panel-wallpaper"></div>
+
+    <!-- 面板内容区 -->
+    <div class="qa-panel-content" id="qa-panel-content">
+
+        <!-- 小组件（与主页面小组件面板同一套组件与配置）。
+             内层 qa-panel-widgets-scroll 负责滚动：外层保留 10px 内边距，
+             使滚动裁切始终发生在距底边 10px 处——下边距在任何滚动位置都恒定 -->
+        <div class="qa-panel-widgets" id="qa-panel-widgets">
+            <div class="qa-panel-widgets-scroll" id="qa-widgets-scroll">
+                <div class="widget-panel-grid" id="qa-widgets-grid"></div>
+            </div>
+        </div>
+
+        <!-- 快速访问链接侧边栏（结构与主页面 index.html 完全一致） -->
+        <div id="quick-access-sidebar" class="quick-access-sidebar active">
+            <div class="quick-access-sidebar-trigger" id="quick-access-sidebar-trigger"></div>
+            <div class="quick-access-sidebar-container" id="quick-access-sidebar-container">
+                <div class="quick-access-sidebar-links" id="quick-access-sidebar-links"></div>
+                <div class="quick-access-sidebar-add" id="quick-access-sidebar-add">
+                    <button class="quick-access-sidebar-add-btn" id="quick-access-sidebar-add-btn">
+                        <span class="quick-access-sidebar-add-icon">+</span>
+                        <span class="quick-access-sidebar-add-text">添加</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 内置页浏览器：开启「内置页打开」后，搜索/访问的网页在此以 iframe 展示。
+             顶部为操作控件（Home / Back / Next / 网址栏），下方为圆角浮动卡片，
+             开启时替代原本的小组件 / 快速访问链接区域 -->
+        <div class="qa-panel-browser" id="qa-panel-browser" aria-hidden="true">
+            <div class="qa-browser-toolbar" id="qa-browser-toolbar">
+                <button class="qa-browser-btn" id="qa-browser-home" type="button" title="返回默认视图">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path>
+                    </svg>
+                </button>
+                <button class="qa-browser-btn" id="qa-browser-back" type="button" title="后退">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+                    </svg>
+                </button>
+                <button class="qa-browser-btn" id="qa-browser-forward" type="button" title="前进">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"></path>
+                    </svg>
+                </button>
+                <div class="qa-browser-urlbar">
+                    <input type="text" id="qa-browser-url" class="qa-browser-url-input" spellcheck="false"
+                        autocomplete="off" placeholder="输入网址或搜索内容">
+                </div>
+            </div>
+            <div class="qa-browser-card" id="qa-browser-card">
+                <!-- sandbox 有意省略 allow-top-navigation：阻止站点用 JS 帧破坏脚本
+                     （top.location = self.location）把整个侧边栏劫持跳转；
+                     其余令牌尽量放开以保证页面功能正常 -->
+                <iframe id="qa-browser-frame" class="qa-browser-frame" src="about:blank"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock allow-presentation allow-storage-access-by-user-activation"
+                    title="内置页浏览器"></iframe>
+            </div>
+        </div>
+
+        <!-- 底部搜索区：搜索框 + 引擎切换按钮（复用主页面样式） -->
+        <div class="qa-panel-search" id="qa-panel-search">
+            <div class="search-section">
+                <div class="search-container">
+                    <div class="search-icon">
+                        <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path
+                                d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z">
+                            </path>
+                        </svg>
+                    </div>
+                    <!-- 模式指示 chip：进入 /web 或 /translate 模式后替代命令前缀文字（与主页面一致，位于输入框左侧） -->
+                    <div id="qa-search-mode-chip" class="search-mode-chip">
+                        <span class="material-icons search-mode-chip-icon">language</span>
+                        <span class="search-mode-chip-text"></span>
+                    </div>
+                    <input type="text" id="qa-search-input" class="search-input">
+                </div>
+            </div>
+            <!-- “/” 命令列表 / 翻译语言历史显示区域（复用主页面样式） -->
+            <div id="qa-search-command-container" class="search-command-container">
+                <div class="search-command-list" id="qa-search-command-list"></div>
+                <div class="translate-history-list" id="qa-translate-history-list"></div>
+            </div>
+            <div class="engine-buttons" id="qa-engine-buttons">
+                <button id="qa-google-engine" class="engine-btn active">Google</button>
+                <button id="qa-bing-engine" class="engine-btn">Bing</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="sidepanel.js"></script>
+</body>
+
+</html>

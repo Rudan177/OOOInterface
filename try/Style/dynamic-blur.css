@@ -1,0 +1,1140 @@
+/* ========== 高级视觉效果样式 ========== */
+
+/* 壁纸模式下隐藏粒子与光晕，避免其颜色污染backdrop-filter的毛玻璃效果 */
+
+body.scrolled.dynamic-blur #particles-container,
+
+body.dynamic-blur.homepage-wallpaper #particles-container {
+
+    opacity: 0 !important;
+
+}
+
+body.scrolled.dynamic-blur #glow-orbs-container,
+
+body.dynamic-blur.homepage-wallpaper #glow-orbs-container {
+
+    opacity: 0.5 !important;
+
+}
+
+/* 背景粒子与光效 */
+.dynamic-blur #particles-container {
+    opacity: 1;
+}
+
+.dynamic-blur #glow-orbs-container {
+    opacity: 1;
+}
+
+/* 底部铭牌 - 高级视觉效果 */
+body.dynamic-blur .ooo-badge {
+    transition: background 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.35s ease-out, opacity 0.3s ease;
+}
+
+body.dynamic-blur .ooo-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur .ooo-badge:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+}
+
+/* 主页模式底部铭牌 */
+body.dynamic-blur:not(.scrolled) .ooo-badge {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(80px) saturate(1.5);
+    -webkit-backdrop-filter: blur(80px) saturate(1.5);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s ease-out, opacity 0.3s ease;
+}
+
+body.dynamic-blur:not(.scrolled) .ooo-badge:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur:not(.scrolled) .ooo-badge {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    body.dynamic-blur:not(.scrolled) .ooo-badge:hover {
+        background: rgba(0, 0, 0, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+}
+
+/* 滚动模式底部铭牌 */
+body.scrolled.dynamic-blur .ooo-badge {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.scrolled.dynamic-blur .ooo-badge:hover {
+    background: rgba(255, 255, 255, 0.22);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+    body.scrolled.dynamic-blur .ooo-badge {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    body.scrolled.dynamic-blur .ooo-badge:hover {
+        background: rgba(0, 0, 0, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+}
+
+/* 模态框毛玻璃效果 */
+.modal.blur-effect {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .modal.blur-effect {
+        background: rgba(0, 0, 0, 0.2) !important;
+        backdrop-filter: blur(80px) saturate(1.5) !important;
+        -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+    }
+}
+
+.modal.blur-effect .modal-content {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+    .modal.blur-effect .modal-content {
+        background: rgba(0, 0, 0, 0.2) !important;
+        backdrop-filter: blur(80px) saturate(1.5) !important;
+        -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .modal.blur-effect .modal-content {
+        background: rgba(255, 255, 255, 0.18) !important;
+    }
+}
+
+/* 搜索框 - 高级视觉效果 */
+body.dynamic-blur:not(.scrolled) .search-container,
+body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container,
+body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .search-container,
+body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .search-container {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+    border: 1px solid transparent;
+    transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dynamic-blur:not(.scrolled) .search-container:hover,
+body.dynamic-blur:not(.scrolled) .search-container:focus-within,
+body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:hover,
+body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:focus-within {
+    background: rgba(255, 255, 255, 0.18) !important;
+}
+
+body.dynamic-blur:not(.scrolled).enhanced-display .search-container:hover,
+body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within {
+    box-shadow:
+        0 0 40px rgba(255, 255, 255, 0.2),
+        0 0 80px rgba(255, 255, 255, 0.1),
+        0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.dynamic-blur:not(.scrolled) .search-container,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .search-container,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .search-container {
+        background: rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid transparent;
+    }
+
+    body.dynamic-blur:not(.scrolled) .search-container:hover,
+    body.dynamic-blur:not(.scrolled) .search-container:focus-within,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:hover,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:focus-within {
+        background: rgba(0, 0, 0, 0.3) !important;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+
+    body.dynamic-blur:not(.scrolled) .search-container,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .search-container,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .search-container {
+        background: rgba(240, 240, 240, 0.5) !important;
+    }
+
+    body.dynamic-blur:not(.scrolled) .search-container:hover,
+    body.dynamic-blur:not(.scrolled) .search-container:focus-within,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:hover,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .search-container:focus-within {
+        background: rgba(240, 240, 240, 0.6) !important;
+    }
+}
+
+/* 滚动模式搜索框 */
+body.scrolled.dynamic-blur .search-container,
+body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+    border: 1px solid transparent;
+    transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.scrolled.dynamic-blur .search-container:hover,
+body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover,
+body.scrolled.dynamic-blur .search-container:focus-within,
+body.scrolled.dynamic-blur.homepage-wallpaper .search-container:focus-within {
+    background: rgba(255, 255, 255, 0.28) !important;
+}
+
+body.scrolled.dynamic-blur.enhanced-display .search-container:hover,
+body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
+    box-shadow:
+        0 0 40px rgba(255, 255, 255, 0.2),
+        0 0 80px rgba(255, 255, 255, 0.1),
+        0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.scrolled.dynamic-blur .search-container,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
+        background: rgba(0, 0, 0, 0.25) !important;
+        border: 1px solid transparent;
+    }
+
+    body.scrolled.dynamic-blur .search-container:hover,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover,
+    body.scrolled.dynamic-blur .search-container:focus-within,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:focus-within {
+        background: rgba(0, 0, 0, 0.35) !important;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+
+    body.scrolled.dynamic-blur .search-container,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container {
+        background: rgba(240, 240, 240, 0.55) !important;
+    }
+
+    body.scrolled.dynamic-blur .search-container:hover,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:hover,
+    body.scrolled.dynamic-blur .search-container:focus-within,
+    body.scrolled.dynamic-blur.homepage-wallpaper .search-container:focus-within {
+        background: rgba(240, 240, 240, 0.65) !important;
+    }
+}
+
+/* 引擎按钮 - 高级视觉效果 */
+body.scrolled.dynamic-blur .engine-btn {
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.scrolled.dynamic-blur .engine-btn:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.scrolled.dynamic-blur.enhanced-display .engine-btn:hover {
+    transform: translateY(-2px);
+}
+
+body.scrolled.dynamic-blur .engine-btn.active {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.scrolled.dynamic-blur .engine-btn {
+        background: rgba(0, 0, 0, 0.25) !important;
+        backdrop-filter: blur(80px) saturate(1.5) !important;
+        -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    body.scrolled.dynamic-blur .engine-btn:hover {
+        background: rgba(0, 0, 0, 0.38) !important;
+    }
+
+    body.scrolled.dynamic-blur .engine-btn.active {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    body.scrolled.dynamic-blur .engine-btn {
+        background: rgba(240, 240, 240, 0.6) !important;
+    }
+
+    body.scrolled.dynamic-blur .engine-btn:hover {
+        background: rgba(240, 240, 240, 0.7) !important;
+    }
+}
+
+/* 主页模式引擎按钮 */
+body.dynamic-blur:not(.scrolled) .engine-btn,
+body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn,
+body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .engine-btn,
+body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+    border: 1px solid transparent;
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dynamic-blur:not(.scrolled) .engine-btn:hover,
+body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+}
+
+body.dynamic-blur:not(.scrolled).enhanced-display .engine-btn:hover,
+body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .engine-btn:hover {
+    transform: translateY(-2px);
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.dynamic-blur:not(.scrolled) .engine-btn,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .engine-btn,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn {
+        background: rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid transparent;
+    }
+
+    body.dynamic-blur:not(.scrolled) .engine-btn:hover,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn:hover {
+        background: rgba(0, 0, 0, 0.3) !important;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+
+    body.dynamic-blur:not(.scrolled) .engine-btn,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .engine-btn,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn {
+        background: rgba(240, 240, 240, 0.5) !important;
+    }
+
+    body.dynamic-blur:not(.scrolled) .engine-btn:hover,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .engine-btn:hover {
+        background: rgba(240, 240, 240, 0.6) !important;
+    }
+}
+
+/* 选中的搜索引擎按钮 - 配色方案 */
+body.dynamic-blur.color-scheme-green .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active {
+    background: #00AE90 !important;
+    color: white !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.dynamic-blur.color-scheme-blue .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.dynamic-blur.color-scheme-black-white .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active {
+    background: #000000 !important;
+    color: white !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* 新星调配色方案 - 选中搜索引擎按钮 */
+body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active,
+body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active,
+body.dynamic-blur.color-scheme-classic-gold .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active,
+body.dynamic-blur.color-scheme-isolation .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active {
+    background-image: var(--scheme-gradient) !important;
+    color: white !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.dynamic-blur.color-scheme-custom .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active,
+body.dynamic-blur.color-scheme-theme-add .engine-btn.active,
+body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active {
+    background: var(--scheme-gradient) !important;
+    color: white !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.dynamic-blur.color-scheme-green .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active {
+        background: #00AE90 !important;
+        border: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    body.dynamic-blur.color-scheme-blue .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active {
+        background: var(--scheme-accent) !important;
+        border: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    body.dynamic-blur.color-scheme-black-white .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active {
+        background: #ffffff !important;
+        color: #303134 !important;
+        border: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    /* 新星调配色方案 - 暗色模式 */
+    body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active,
+    body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active,
+    body.dynamic-blur.color-scheme-classic-gold .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active,
+    body.dynamic-blur.color-scheme-isolation .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active {
+        background-image: var(--scheme-gradient) !important;
+        border: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    body.dynamic-blur.color-scheme-custom .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active,
+    body.dynamic-blur.color-scheme-theme-add .engine-btn.active,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active {
+        background: var(--scheme-gradient) !important;
+        border: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+}
+
+/* 新星调配色方案 - dynamic-blur 模式下保留渐变 */
+body.dynamic-blur.color-scheme-tianyi-blue .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .apply-btn,
+body.dynamic-blur.color-scheme-vibrant-red .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .apply-btn,
+body.dynamic-blur.color-scheme-classic-gold .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .apply-btn,
+body.dynamic-blur.color-scheme-isolation .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .apply-btn,
+body.dynamic-blur.color-scheme-custom .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-custom .apply-btn,
+body.dynamic-blur.color-scheme-theme-add .apply-btn,
+body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .apply-btn {
+    background: var(--scheme-gradient) !important;
+    backdrop-filter: blur(120px) saturate(1.6) !important;
+    -webkit-backdrop-filter: blur(120px) saturate(1.6) !important;
+    border: none !important;
+}
+
+/* 新星调配色方案 - 其余底部图标按钮为透明底 + 描边 */
+body.dynamic-blur.color-scheme-tianyi-blue .settings-plus-btn,
+body.dynamic-blur.color-scheme-vibrant-red .settings-plus-btn,
+body.dynamic-blur.color-scheme-classic-gold .settings-plus-btn,
+body.dynamic-blur.color-scheme-isolation .settings-plus-btn,
+body.dynamic-blur.color-scheme-custom .settings-plus-btn,
+body.dynamic-blur.color-scheme-theme-add .settings-plus-btn {
+    background: transparent !important;
+    background-image: none !important;
+    border: 1px solid var(--scheme-accent) !important;
+    color: var(--scheme-accent) !important;
+}
+
+body.dynamic-blur.color-scheme-tianyi-blue .settings-import-btn,
+body.dynamic-blur.color-scheme-vibrant-red .settings-import-btn,
+body.dynamic-blur.color-scheme-classic-gold .settings-import-btn,
+body.dynamic-blur.color-scheme-isolation .settings-import-btn,
+body.dynamic-blur.color-scheme-custom .settings-import-btn,
+body.dynamic-blur.color-scheme-theme-add .settings-import-btn {
+    background: transparent !important;
+    background-image: none !important;
+    border: 1px solid var(--scheme-accent) !important;
+    color: var(--scheme-accent) !important;
+}
+
+body.dynamic-blur.color-scheme-tianyi-blue .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-vibrant-red .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-classic-gold .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-isolation .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-custom .wallpaper-fill-toggle-wrapper,
+body.dynamic-blur.color-scheme-theme-add .wallpaper-fill-toggle-wrapper {
+    background: transparent !important;
+    background-image: none !important;
+    border: 1px solid var(--scheme-accent) !important;
+    color: var(--scheme-accent) !important;
+}
+
+body.dynamic-blur.color-scheme-tianyi-blue .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-vibrant-red .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-classic-gold .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-isolation .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-custom .context-menu.show .context-menu-item:hover,
+body.dynamic-blur.color-scheme-theme-add .context-menu.show .context-menu-item:hover {
+    background: var(--scheme-gradient) !important;
+    color: white !important;
+}
+
+body.dynamic-blur.color-scheme-green .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active:hover {
+    background: #00AE90 !important;
+    color: white !important;
+    border: none !important;
+}
+
+body.dynamic-blur.color-scheme-blue .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active:hover {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
+}
+
+body.dynamic-blur.color-scheme-black-white .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active:hover {
+    background: #000000 !important;
+    color: white !important;
+    border: none !important;
+}
+
+body.dynamic-blur.color-scheme-custom .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-theme-add .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active:hover {
+    background: var(--scheme-gradient) !important;
+    color: white !important;
+    border: none !important;
+}
+
+/* 新星调配色方案 - 选中搜索引擎按钮悬停 */
+body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-classic-gold .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active:hover,
+body.dynamic-blur.color-scheme-isolation .engine-btn.active:hover,
+body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active:hover {
+    background-image: var(--scheme-gradient) !important;
+    color: white !important;
+    border: none !important;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.dynamic-blur.color-scheme-green .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-green .engine-btn.active:hover {
+        background: #00AE90 !important;
+        border: none !important;
+    }
+
+    body.dynamic-blur.color-scheme-blue .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-blue .engine-btn.active:hover {
+        background: var(--scheme-accent) !important;
+        border: none !important;
+    }
+
+    body.dynamic-blur.color-scheme-black-white .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-black-white .engine-btn.active:hover {
+        background: #ffffff !important;
+        color: #303134 !important;
+        border: none !important;
+    }
+
+    /* 新星调配色方案 - 暗色模式悬停 */
+    body.dynamic-blur.color-scheme-tianyi-blue .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-tianyi-blue .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-vibrant-red .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-vibrant-red .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-classic-gold .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-classic-gold .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-isolation .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-isolation .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-custom .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-custom .engine-btn.active:hover,
+    body.dynamic-blur.color-scheme-theme-add .engine-btn.active:hover,
+    body.dynamic-blur.homepage-wallpaper.color-scheme-theme-add .engine-btn.active:hover {
+        background-image: var(--scheme-gradient) !important;
+        border: none !important;
+    }
+}
+
+/* 快速访问链接 - 高级视觉效果 */
+body.scrolled.dynamic-blur #quick-access-links {
+    background: transparent !important;
+}
+
+body.scrolled.dynamic-blur .quick-access-btn,
+body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.scrolled.dynamic-blur .quick-access-btn:hover,
+body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.scrolled.dynamic-blur.enhanced-display .quick-access-btn:hover,
+body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn:hover {
+    transform: translateY(-2px);
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.scrolled.dynamic-blur .quick-access-btn,
+    body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
+        background: rgba(0, 0, 0, 0.25) !important;
+        backdrop-filter: blur(80px) saturate(1.5) !important;
+        -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    body.scrolled.dynamic-blur .quick-access-btn:hover,
+    body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
+        background: rgba(0, 0, 0, 0.38) !important;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+
+    body.scrolled.dynamic-blur .quick-access-btn,
+    body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
+        background: rgba(240, 240, 240, 0.6) !important;
+    }
+
+    body.scrolled.dynamic-blur .quick-access-btn:hover,
+    body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
+        background: rgba(240, 240, 240, 0.7) !important;
+    }
+}
+
+/* 主页模式快速访问 */
+body.dynamic-blur:not(.scrolled) #quick-access-links,
+body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) #quick-access-links {
+    background: transparent !important;
+}
+
+body.dynamic-blur:not(.scrolled) .quick-access-btn,
+body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn,
+body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .quick-access-btn,
+body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+    border: 1px solid transparent;
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s ease-out, opacity 0.3s ease;
+}
+
+body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
+body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+}
+
+body.dynamic-blur:not(.scrolled).enhanced-display .quick-access-btn:hover,
+body.dynamic-blur:not(.scrolled).enhanced-display.homepage-wallpaper .quick-access-btn:hover {
+    transform: translateY(-2px);
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.dynamic-blur:not(.scrolled) .quick-access-btn,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .quick-access-btn,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn {
+        background: rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid transparent;
+    }
+
+    body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
+        background: rgba(0, 0, 0, 0.3) !important;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+
+    body.dynamic-blur:not(.scrolled) .quick-access-btn,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled) .quick-access-btn,
+    body:not([style*="background-image: none"]).dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn {
+        background: rgba(240, 240, 240, 0.5) !important;
+    }
+
+    body.dynamic-blur:not(.scrolled) .quick-access-btn:hover,
+    body.dynamic-blur:not(.scrolled).homepage-wallpaper .quick-access-btn:hover {
+        background: rgba(240, 240, 240, 0.6) !important;
+    }
+}
+
+/* 搜索历史容器 / “/” 命令与历史面板 */
+body.dynamic-blur:not(.scrolled) .search-history-container,
+body.dynamic-blur:not(.scrolled) .search-command-container {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(80px) saturate(1.5);
+    -webkit-backdrop-filter: blur(80px) saturate(1.5);
+    border: none;
+    box-shadow: none;
+}
+
+body.scrolled.dynamic-blur .search-history-container,
+body.scrolled.dynamic-blur .search-command-container {
+    background: rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur:not(.scrolled) .search-history-container,
+    body.dynamic-blur:not(.scrolled) .search-command-container {
+        background: rgba(0, 0, 0, 0.2) !important;
+        border: none;
+    }
+
+    body.scrolled.dynamic-blur .search-history-container,
+    body.scrolled.dynamic-blur .search-command-container {
+        background: rgba(0, 0, 0, 0.1) !important;
+        border: none;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    body.dynamic-blur:not(.scrolled) .search-history-container,
+    body.dynamic-blur:not(.scrolled) .search-command-container {
+        background: rgba(240, 240, 240, 0.5) !important;
+    }
+
+    body.scrolled.dynamic-blur .search-history-container,
+    body.scrolled.dynamic-blur .search-command-container {
+        background: rgba(240, 240, 240, 0.55) !important;
+    }
+}
+
+/* 设置面板 */
+body.dynamic-blur .setting-group {
+    background: transparent;
+    border: none;
+}
+
+body.dynamic-blur .right-panel-upper {
+    background: rgba(var(--surface-color-rgb), 0.5);
+    backdrop-filter: blur(120px) saturate(1.6);
+    -webkit-backdrop-filter: blur(120px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .apply-btn {
+    background: rgba(var(--scheme-accent-rgb), 0.8);
+    backdrop-filter: blur(120px) saturate(1.6);
+    -webkit-backdrop-filter: blur(120px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .reset-btn {
+    background: rgba(var(--surface-color-rgb), 0.5);
+    backdrop-filter: blur(120px) saturate(1.6);
+    -webkit-backdrop-filter: blur(120px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .about-feedback-btn {
+    background: rgba(var(--surface-color-rgb), 0.5);
+    backdrop-filter: blur(120px) saturate(1.6);
+    -webkit-backdrop-filter: blur(120px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .reset-developer-btn {
+    background: rgba(var(--surface-color-rgb), 0.5);
+    backdrop-filter: blur(120px) saturate(1.6);
+    -webkit-backdrop-filter: blur(120px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .setting-group.action-buttons {
+    background: transparent;
+    border: none;
+}
+
+body.dynamic-blur .modal-body {
+    background: transparent;
+}
+
+body.dynamic-blur .select-selected {
+    background: rgba(var(--surface-color-rgb), 0.5);
+    backdrop-filter: blur(120px) saturate(1.6);
+    -webkit-backdrop-filter: blur(120px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .select-items {
+    background: rgba(var(--surface-color-rgb), 0.5);
+    backdrop-filter: blur(120px) saturate(1.6);
+    -webkit-backdrop-filter: blur(120px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .select-item:hover {
+    background: rgba(0, 0, 0, 0.01);
+}
+
+body.dynamic-blur .slider-value-input {
+    background: rgba(var(--surface-color-rgb), 0.5);
+    backdrop-filter: blur(120px) saturate(1.6);
+    -webkit-backdrop-filter: blur(120px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+body.dynamic-blur .switch input:not(:checked) + .slider {
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.dynamic-blur .switch .slider:before {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+@media (prefers-color-scheme: light) {
+    body.dynamic-blur .right-panel-upper {
+        background: rgba(235, 237, 240, 0.65) !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    }
+
+    body.dynamic-blur .apply-btn {
+        background: rgba(var(--scheme-accent-rgb), 0.85) !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    }
+
+    body.dynamic-blur .reset-btn {
+        background: rgba(225, 228, 232, 0.7) !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.dynamic-blur .select-selected {
+        background: rgba(225, 228, 232, 0.7) !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.dynamic-blur .select-items {
+        background: rgba(225, 228, 232, 0.7) !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.dynamic-blur .slider-value-input {
+        background: rgba(225, 228, 232, 0.7) !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.dynamic-blur .switch input:not(:checked) + .slider {
+        background: rgba(0, 0, 0, 0.07) !important;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.dynamic-blur .switch .slider:before {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+    }
+}
+
+ /* 高级视觉 - 设置菜单操作按钮（透明底 + 描边，毛玻璃下仅悬停时轻微叠加） */
+body.dynamic-blur .settings-plus-btn {
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: none;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .settings-plus-btn:hover {
+    background: rgba(var(--surface-color-rgb), 0.35) !important;
+    transform: scale(1.1);
+}
+
+body.dynamic-blur .settings-plus-btn:active {
+    background: rgba(var(--surface-color-rgb), 0.25) !important;
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .settings-import-btn {
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: none;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .settings-import-btn:hover {
+    background: rgba(var(--surface-color-rgb), 0.35) !important;
+    transform: scale(1.1);
+}
+
+body.dynamic-blur .settings-import-btn:active {
+    background: rgba(var(--surface-color-rgb), 0.25) !important;
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper {
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--text-color) !important;
+    box-shadow: none;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper:hover {
+    background: rgba(var(--surface-color-rgb), 0.35) !important;
+    transform: scale(1.05);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-wrapper:active {
+    background: rgba(var(--surface-color-rgb), 0.25) !important;
+    transform: scale(0.95);
+}
+
+body.dynamic-blur .wallpaper-fill-toggle-text {
+    color: var(--text-color) !important;
+}
+
+/* 右键菜单 */
+body.dynamic-blur .context-menu.show {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(40px) saturate(1.5);
+    -webkit-backdrop-filter: blur(40px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur .context-menu.show {
+        background: rgba(40, 42, 48, 0.6);
+        backdrop-filter: blur(40px) saturate(1.5);
+        -webkit-backdrop-filter: blur(40px) saturate(1.5);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+}
+
+body.dynamic-blur .context-menu.show .context-menu-item {
+    color: var(--context-menu-text-color, #1a1a1a);
+}
+
+body.dynamic-blur .context-menu.show .context-menu-item .md3-icon,
+body.dynamic-blur .context-menu.show .context-menu-item .context-menu-icon {
+    color: var(--context-menu-text-color, rgba(0, 0, 0, 0.55));
+}
+
+body.dynamic-blur .context-menu.show .context-menu-item:hover {
+    background: var(--context-menu-color, rgba(255, 255, 255, 0.45));
+    color: var(--context-menu-text-color, #1a1a1a);
+}
+
+body.dynamic-blur .context-menu.show .context-menu-item:hover .md3-icon,
+body.dynamic-blur .context-menu.show .context-menu-item:hover .context-menu-icon {
+    color: var(--context-menu-text-color, #1a1a1a);
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur .context-menu.show .context-menu-item {
+        color: var(--context-menu-text-color, #c8c8c8);
+    }
+
+    body.dynamic-blur .context-menu.show .context-menu-item .md3-icon,
+    body.dynamic-blur .context-menu.show .context-menu-item .context-menu-icon {
+        color: var(--context-menu-text-color, rgba(255, 255, 255, 0.5));
+    }
+
+    body.dynamic-blur .context-menu.show .context-menu-item:hover {
+        background: var(--context-menu-color, rgba(255, 255, 255, 0.1));
+        color: var(--context-menu-text-color, #dcdcdc);
+    }
+
+    body.dynamic-blur .context-menu.show .context-menu-item:hover .md3-icon,
+    body.dynamic-blur .context-menu.show .context-menu-item:hover .context-menu-icon {
+        color: var(--context-menu-text-color, #dcdcdc);
+    }
+}
+
+/* 侧边栏容器 - 高级进/退动画 */
+body.dynamic-blur .quick-access-sidebar-container {
+    transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1),
+        opacity 0.3s ease,
+        filter 0.3s ease;
+    transform-origin: right center;
+}
+
+body.dynamic-blur .quick-access-sidebar-container.visible {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+}
+
+body.dynamic-blur .quick-access-sidebar-container.hiding {
+    transform: translateX(calc(100% + 20px)) scale(0.9);
+    opacity: 0;
+    filter: blur(4px);
+}
+
+/* 侧边栏文字颜色（与右键菜单一致） */
+body.dynamic-blur .quick-access-sidebar-link {
+    color: #1a1a1a;
+}
+
+body.dynamic-blur .quick-access-sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.45);
+    color: #1a1a1a;
+}
+
+body.dynamic-blur .quick-access-sidebar-add-btn {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+body.dynamic-blur .quick-access-sidebar-add-btn:hover {
+    background: rgba(255, 255, 255, 0.45);
+    color: #1a1a1a;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur .quick-access-sidebar-link {
+        color: #c8c8c8;
+    }
+
+    body.dynamic-blur .quick-access-sidebar-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #dcdcdc;
+    }
+
+    body.dynamic-blur .quick-access-sidebar-add-btn {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    body.dynamic-blur .quick-access-sidebar-add-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #dcdcdc;
+    }
+}
+
+/* 文字颜色 */
+body.dynamic-blur:not(.scrolled) .search-input,
+body.dynamic-blur:not(.scrolled) .engine-btn,
+body.dynamic-blur:not(.scrolled) .quick-access-btn,
+body.dynamic-blur:not(.scrolled) .ooo-badge {
+    color: #1a1a1a;
+}
+
+body.dynamic-blur:not(.scrolled) .search-input::placeholder {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.dynamic-blur:not(.scrolled) .search-input,
+    body.dynamic-blur:not(.scrolled) .engine-btn,
+    body.dynamic-blur:not(.scrolled) .quick-access-btn,
+    body.dynamic-blur:not(.scrolled) .ooo-badge {
+        color: #ffffff;
+    }
+
+    body.dynamic-blur:not(.scrolled) .search-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+}
+
+body.scrolled.dynamic-blur .search-input,
+body.scrolled.dynamic-blur .engine-btn,
+body.scrolled.dynamic-blur .quick-access-btn,
+body.scrolled.dynamic-blur .ooo-badge {
+    color: #1a1a1a;
+}
+
+body.scrolled.dynamic-blur .search-input::placeholder {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body.scrolled.dynamic-blur .search-input,
+    body.scrolled.dynamic-blur .engine-btn,
+    body.scrolled.dynamic-blur .quick-access-btn,
+    body.scrolled.dynamic-blur .ooo-badge {
+        color: #ffffff;
+    }
+
+    body.scrolled.dynamic-blur .search-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* 黑白配色 - 深色模式 + 高级视觉：填充底色按钮使用黑色文字
+   （右侧面板底部图标按钮已改为透明底 + 描边，沿用正文色，不在此列） */
+@media (prefers-color-scheme: dark) {
+    body.color-scheme-black-white.dynamic-blur .engine-btn.active,
+    body.color-scheme-black-white.dynamic-blur .apply-btn {
+        color: #000000 !important;
+    }
+}
