@@ -21,3 +21,4 @@
 | 20261002   | The Weekend Whip | The Fold | 206s | 1 | Contribute |
 | 20261003   | 热烈盛开 | 周深 | 248s   | 1    | Contribute |
 | 20261004   | 亲爱的你啊 | 任素汐 | 236s   | 1    | Contribute |
+| 20261005   | 游京 (悠悠的古城中) | DJ东东 | 187s | 1 | Contribute |
