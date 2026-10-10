@@ -385,9 +385,12 @@ export const SettingsMixin = {
         this.syncSettingsPageToggles();
         this.showNotification(this.settings.searchSuggestions ? '热搜词建议：开启' : '热搜词建议：关闭');
     },
-    toggleEngineLockSetting() {
-        this.settings.engineLocked = !this.settings.engineLocked;
-        if (this.settings.engineLocked) {
+    // 引擎锁定的唯一写入口：设置页开关与右键菜单开关都走这里，
+    // 保证「锁定时把当前引擎写进 localStorage」这一步不会被绕过（此前设置页只改 settings，
+    // 走「应用」提交时不会写 oooEngineLocked，锁定的引擎丢失）。
+    setEngineLock(enabled) {
+        this.settings.engineLocked = !!enabled;
+        if (enabled) {
             localStorage.setItem('oooEngineLocked', this.currentEngine);
         } else {
             localStorage.removeItem('oooEngineLocked');
@@ -395,6 +398,9 @@ export const SettingsMixin = {
         this.saveSettings();
         this.updateContextMenuIcons();
         this.syncSettingsPageToggles();
+    },
+    toggleEngineLockSetting() {
+        this.setEngineLock(!this.settings.engineLocked);
         this.showNotification(this.settings.engineLocked ? '引擎锁定：开启' : '引擎锁定：关闭');
     },
     toggleWallpaperSetting() {

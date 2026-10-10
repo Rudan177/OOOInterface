@@ -317,7 +317,10 @@ _doBackToContextMenuStyleView (rightPanelUpper) {
     const selected = document.getElementById('context-menu-style-selected');
     const hiddenSelect = document.getElementById('context-menu-style');
     if (!selected || !hiddenSelect) return;
-    this.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
+    // 自定义项面板向右推出、右键菜单样式列表从左推入（iOS 式 pop）
+    this.panelTransition(rightPanelUpper, 'pop', () => {
+        this.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
+    });
 },
 renderContextMenuCustomizeView (rightPanelUpper) {
     const self = this;

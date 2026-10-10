@@ -439,7 +439,7 @@ updateWidgetPanelListInMenu (listContainer) {
     if (widgets.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'quick-links-empty';
-        empty.textContent = '暂无小组件，可在设置中添加';
+        empty.textContent = '暂无小组件';
         listContainer.appendChild(empty);
         return;
     }
@@ -483,12 +483,15 @@ updateWidgetPanelListInMenu (listContainer) {
         typeLabel.textContent = self.getWidgetSizeLabel(widget.type, widget.size);
         nameRow.appendChild(typeLabel);
 
-        const sub = document.createElement('div');
-        sub.className = 'widget-menu-sub';
-        sub.textContent = self.getWidgetSubtitle(widget);
-
+        const subText = self.getWidgetSubtitle(widget);
         info.appendChild(nameRow);
-        info.appendChild(sub);
+        // 无实际配置信息时不生成第二行，条目保持单行紧凑
+        if (subText) {
+            const sub = document.createElement('div');
+            sub.className = 'widget-menu-sub';
+            sub.textContent = subText;
+            info.appendChild(sub);
+        }
 
         // 点击条目编辑（参考快速访问链接）
         info.addEventListener('click', (e) => {
@@ -550,8 +553,7 @@ getWidgetSubtitle (widget) {
             const n = Array.isArray(data.items) ? data.items.length : 0;
             return '任务' + (n ? ' · ' + n + ' 个' : '');
         }
-        case 'clock': return '本地时间';
-        case 'calendar': return '本地日期与农历';
+        // 时钟 / 日历的第二行只是复述类型名，无实际配置信息，交由调用方收起该行
         default: return '';
     }
 },

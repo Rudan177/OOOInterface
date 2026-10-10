@@ -1,8 +1,8 @@
-const VERSION = "5.3:33-BS244";
+const VERSION = "5.3:33-BS245.4";
 const PACKAGE_ID = "0xB9c4E5DCAC4201bf";
 const PACKAGE_FLAG = "Release";
 const PRODUCT_NAME = "OOOInterface 33";
-const RELEASE_DATE = "2026年10月3日";
+const RELEASE_DATE = "2026年10月11日";
 const LICENSE_ID = "ABCD-26W08A";
 const COPYRIGHT = "© 2026 ByRUDAN 保留所有权利";
 
