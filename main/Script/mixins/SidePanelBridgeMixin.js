@@ -87,7 +87,9 @@ spBuildNavRow (labelText, statusText, onClick) {
     const box = document.createElement('div');
     box.className = 'custom-select';
     const selected = document.createElement('div');
-    selected.className = 'select-selected';
+    // select-drill：右向箭头，表示点击进入子页面而非展开下拉（与主设置页的
+    // 「小组件列表 / 快速访问链接」两行同款）
+    selected.className = 'select-selected select-drill';
     selected.textContent = statusText;
     selected.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -126,6 +128,12 @@ renderSidePanelConfigView (rightPanelUpper, skipAnimation) {
     // 主开关（设置主页面同款开关行）；关闭后其下四项直接隐藏，故重建根视图
     container.appendChild(this.spBuildSwitchRow('侧边栏功能', !!this.settings.sidePanelEnabled, (checked) => {
         self.settings.sidePanelEnabled = checked;
+        // 侧边栏的主内容就是快速访问链接：开启侧边栏功能时把它一并带开，并与主页面保持一致，
+        // 省去再进子视图开两次开关（仅 false → true 时带开，之后用户仍可手动关闭）
+        if (checked) {
+            self.settings.sidePanelShowQuickLinks = true;
+            self.settings.sidePanelQuickLinksSync = true;
+        }
         self.saveSettings();
         const selectedDisplay = document.getElementById('side-panel-select-selected');
         if (selectedDisplay) selectedDisplay.textContent = self.getSidePanelSummary();
@@ -136,7 +144,10 @@ renderSidePanelConfigView (rightPanelUpper, skipAnimation) {
     if (this.settings.sidePanelEnabled) {
         this.getSidePanelNavItems().forEach(item => {
             container.appendChild(this.spBuildNavRow(item.label, this.getSidePanelNavStatus(item), () => {
-                self.renderSidePanelSubView(rightPanelUpper, item.key);
+                // 进入子页面：根视图向左推出、子页面从右推入（iOS 式 push）
+                self.panelTransition(rightPanelUpper, 'push', () => {
+                    self.renderSidePanelSubView(rightPanelUpper, item.key, true);
+                });
             }));
         });
     }
@@ -162,11 +173,16 @@ renderSidePanelSubView (rightPanelUpper, key, skipAnimation) {
     if (key === 'search' || key === 'wallpaper') {
         this.exitSidePanelScope();
         rightPanelUpper.innerHTML = '';
+        // 与小组件/快速访问链接子视图同款的两层结构：外层包裹 + 内层滚动容器，
+        // 保证四个子视图的内边距、滚动与滑入动画作用对象一致
+        const wrapper = document.createElement('div');
+        wrapper.className = 'side-panel-config-view';
         const container = document.createElement('div');
-        container.className = 'settings-menu-container side-panel-config-view' + (skipAnimation ? '' : ' slide-in-right');
+        container.className = 'settings-menu-container' + (skipAnimation ? '' : ' slide-in-right');
         if (key === 'search') this.renderSPSearchView(container);
         else this.renderSPWallpaperView(container);
-        rightPanelUpper.appendChild(container);
+        wrapper.appendChild(container);
+        rightPanelUpper.appendChild(wrapper);
         const modal = document.getElementById('settings-modal');
         if (modal) modal.classList.add('right-panel-open');
     }
@@ -190,13 +206,14 @@ refreshSidePanelView (rightPanelUpper) {
         if (item) value.textContent = this.getSidePanelNavStatus(item);
     });
 },
-spBuildSubViewHeader (rightPanelUpper, showKey, showLabel, syncKey) {
+spBuildSubViewHeader (rightPanelUpper, showKey, showLabel, syncKey, opts) {
     const self = this;
     const header = document.createElement('div');
     header.className = 'side-panel-subview-header';
 
     header.appendChild(this.spBuildSwitchRow(showLabel, !!this.settings[showKey], (checked) => {
         self.settings[showKey] = checked;
+        if (opts && typeof opts.afterShowChange === 'function') opts.afterShowChange(checked);
         self.saveSettings();
         self.syncSidePanelSelectDisplay();
     }));
@@ -222,12 +239,11 @@ spBuildSubViewHeader (rightPanelUpper, showKey, showLabel, syncKey) {
 spRenderSyncableSubView (rightPanelUpper, cfg) {
     const wrapper = document.createElement('div');
     wrapper.className = 'side-panel-config-view';
-    const header = this.spBuildSubViewHeader(rightPanelUpper, cfg.showKey, cfg.showLabel, cfg.syncKey);
+    const header = this.spBuildSubViewHeader(rightPanelUpper, cfg.showKey, cfg.showLabel, cfg.syncKey, cfg);
 
     if (this.settings[cfg.syncKey]) {
         rightPanelUpper.innerHTML = '';
         wrapper.appendChild(header);
-        wrapper.appendChild(this.spBuildSyncHint('当前与主页面保持一致，如需单独配置请关闭上方「与主页面保持一致」。'));
         rightPanelUpper.appendChild(wrapper);
     } else {
         cfg.renderManager();
@@ -241,18 +257,19 @@ spRenderSyncableSubView (rightPanelUpper, cfg) {
     const modal = document.getElementById('settings-modal');
     if (modal) modal.classList.add('right-panel-open');
 },
-spBuildSyncHint (text) {
-    const hint = document.createElement('div');
-    hint.className = 'side-panel-sync-hint';
-    hint.textContent = text;
-    return hint;
-},
 renderSPWidgetsView (rightPanelUpper, skipAnimation) {
     this.enterSidePanelScope({ widgets: true });
     this.spRenderSyncableSubView(rightPanelUpper, {
         showKey: 'sidePanelShowWidgets',
         showLabel: '显示小组件',
         syncKey: 'sidePanelWidgetsSync',
+        // 侧边栏以小组件 + 快速访问链接为主要内容：开启小组件时把快速访问链接
+        // 一并默认开启并与主页面保持一致（仅 false → true 时带开，之后用户仍可手动关闭）
+        afterShowChange: (checked) => {
+            if (!checked) return;
+            this.settings.sidePanelShowQuickLinks = true;
+            this.settings.sidePanelQuickLinksSync = true;
+        },
         renderManager: () => this.showWidgetPanelMenuInRightPanel(skipAnimation)
     });
 },
@@ -293,6 +310,12 @@ renderSPSearchView (container) {
     }));
 
     if (this.settings.sidePanelSearchSync) {
+        return;
+    }
+
+    // 搜索框厚度与主页面开发者模式里的同名控件等价，属于低频调节项，同样只在开发者模式下露出
+    // （设置仍然生效并持久化，只是普通用户看不到入口）
+    if (!this.settings.developerMode) {
         return;
     }
 

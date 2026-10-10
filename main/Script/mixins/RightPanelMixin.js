@@ -6,6 +6,45 @@ import { COLOR_SCHEME_NAMES } from '../color.js';
 import { ProxyManager } from '../proxy.js';
 
 export const RightPanelMixin = {
+// 右侧面板内下钻视图的切换动画（iOS 式 push / pop）：
+//   push：当前视图向左推出，新视图从右推入
+//   pop ：子视图向右推出，父视图从左推入
+// 切换前把面板现有内容整体搬进一个脱离文档流的「幽灵层」——是直接搬移节点而非克隆，
+// 滚动位置与事件监听都留在原节点上；新视图照常渲染后与幽灵层同帧反向滑动，播完移除幽灵层。
+// render 由调用方提供，内部应以 skipAnimation = true 渲染，避免与这里的方向动画叠加。
+panelTransition (rightPanelUpper, direction, render) {
+    const panel = rightPanelUpper || document.getElementById('right-panel-upper');
+    if (!panel) { render(); return; }
+
+    const isPush = direction !== 'pop';
+
+    // 面板滚动位置归零：新视图与幽灵层都按内容顶部定位，退出时不会错位
+    panel.scrollTop = 0;
+
+    const ghost = document.createElement('div');
+    ghost.className = 'panel-transition-ghost';
+    while (panel.firstChild) ghost.appendChild(panel.firstChild);
+
+    render();
+
+    const inClass = isPush ? 'panel-in-right' : 'panel-in-left';
+    Array.from(panel.children).forEach(el => {
+        // 清掉渲染函数可能自带的滑入/滑出类，同一帧内完成替换，不会真的播出来
+        el.classList.remove('slide-in-right', 'slide-out-right', 'slide-in-left', 'slide-out-left');
+        void el.offsetWidth;
+        el.classList.add(inClass);
+        el.addEventListener('animationend', () => el.classList.remove(inClass), { once: true });
+        setTimeout(() => el.classList.remove(inClass), 400);
+    });
+
+    if (!ghost.firstChild) return;
+
+    ghost.classList.add(isPush ? 'panel-out-left' : 'panel-out-right');
+    ghost.addEventListener('animationend', () => ghost.remove(), { once: true });
+    panel.appendChild(ghost);
+    // 兜底：动画事件在后台标签页等场景可能不触发，避免幽灵层长期压在面板上
+    setTimeout(() => { if (ghost.parentNode) ghost.remove(); }, 600);
+},
 showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
@@ -1375,7 +1414,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         // 立即更新左面板配色显示
                         self.updateColorSchemeSelectDisplay();
                     }
-                    self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, text, optionsList);
+                    self.panelTransition(rightPanelUpper, 'push', () => self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, text, optionsList));
                     return;
                 }
 
@@ -1468,7 +1507,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
             editBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const name = cc.name || '自定义';
-                self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, name, optionsList, idx);
+                self.panelTransition(rightPanelUpper, 'push', () => self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, name, optionsList, idx));
             });
             opt.appendChild(editBtn);
 
@@ -1669,7 +1708,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
         plusBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
-            self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, selected.textContent, optionsList);
+            self.panelTransition(rightPanelUpper, 'push', () => self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, selected.textContent, optionsList));
         });
         buttonContainer.appendChild(plusBtn);
     }
@@ -1736,7 +1775,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
         customizeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
-            self.renderContextMenuCustomizeView(rightPanelUpper);
+            self.panelTransition(rightPanelUpper, 'push', () => self.renderContextMenuCustomizeView(rightPanelUpper));
         });
 
         buttonContainer.appendChild(customizeBtn);
@@ -2215,7 +2254,10 @@ _doBackToCustomColorView (rightPanelUpper) {
     const selected = document.getElementById('color-scheme-select-selected');
     const hiddenSelect = document.getElementById('color-scheme-select');
     if (!selected || !hiddenSelect) return;
-    this.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
+    // 配色编辑器向右推出、配色列表从左推入（iOS 式 pop）
+    this.panelTransition(rightPanelUpper, 'pop', () => {
+        this.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
+    });
 },
 closeSettingsMenuInRightPanel () {
     const rightPanelUpper = document.getElementById('right-panel-upper');

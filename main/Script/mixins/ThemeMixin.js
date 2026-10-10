@@ -398,21 +398,8 @@ export const ThemeMixin = {
                 } else {
                     this.clearWallpaperLayers();
                 }
-                // 主题壁纸在线优先回退（与 applyWallpaper 中逻辑一致）
-                const onlineUrl = this.themeOverrides?.wallpaper?.online;
-                if (onlineUrl && wpUrl !== onlineUrl) {
-                    const localUrl = wpUrl;
-                    const testImg = new Image();
-                    testImg.onload = () => {
-                        if (this.settings.themeEnabled
-                            && (this.settings.persistentWallpaper || document.body.classList.contains('scrolled'))
-                            && this.themeOverrides?.wallpaper?.online === onlineUrl
-                            && this.settings.wallpaperUrl === localUrl) {
-                            this.setWallpaperOnLayers(onlineUrl);
-                        }
-                    };
-                    testImg.src = onlineUrl;
-                }
+                // 主题壁纸本地优先、在线升级（探测结果会被记住，后续重设不再退回本地）
+                this.probeOnlineWallpaper(wpUrl);
             }
         }
 

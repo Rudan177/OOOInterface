@@ -2088,12 +2088,16 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 
 .right-panel-upper {
+    /* 下钻切换的幽灵层靠这两个值对齐内容区，改内边距时一并改 */
+    --panel-pad: 16px;
     flex: 1;
     min-height: 0;
     max-height: 100%;
     overflow-y: auto;
+    /* 下钻推入/推出时内容整体左右平移，横向必须裁掉，避免动画期间出现横向滚动条 */
+    overflow-x: hidden;
     margin-bottom: 16px;
-    padding: 16px;
+    padding: var(--panel-pad);
     border: 1px solid var(--border-color);
     border-radius: 16px;
     background-color: var(--surface-color);
@@ -2192,6 +2196,65 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
         transform: translateX(24px);
         opacity: 0;
     }
+}
+
+/* 右面板内下钻视图切换（iOS 式 push / pop）：
+   push ＝ 当前视图向左推出 + 新视图从右推入；pop ＝ 子视图向右推出 + 父视图从左推入。
+   位移取整屏宽，两屏一进一出严丝合缝；叠一点点淡入淡出（起止 0.6），
+   与其它设置页面滑入动画的柔和程度一致，不至于像硬切。
+   旧视图由 .panel-transition-ghost 承载（脱离文档流浮在新视图之上），播完即移除。
+   这些类由 panelTransition() 动态挂到面板的直接子元素上 */
+.panel-in-right {
+    animation: panelPushIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.panel-in-left {
+    animation: panelPopIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.panel-out-left {
+    animation: panelPushOut 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.panel-out-right {
+    animation: panelPopOut 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes panelPushIn {
+    from { transform: translateX(100%); opacity: 0.6; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes panelPopIn {
+    from { transform: translateX(-100%); opacity: 0.6; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes panelPushOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(-100%); opacity: 0.6; }
+}
+
+@keyframes panelPopOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0.6; }
+}
+
+/* 下钻切换时承载旧视图的幽灵层：范围与右面板的内容区完全重合
+   （节点是直接搬移过来的，滚动位置也保留），因此切换瞬间画面不跳变 */
+.panel-transition-ghost {
+    position: absolute;
+    top: var(--panel-pad, 16px);
+    left: var(--panel-pad, 16px);
+    right: var(--panel-pad, 16px);
+    bottom: var(--panel-pad, 16px);
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    pointer-events: none;
+    background-color: var(--surface-color);
+    will-change: transform, opacity;
 }
 
 
@@ -3115,6 +3178,12 @@ body.dynamic-blur .settings-menu-confirm:active {
     background-size: 20px;
     cursor: pointer;
     user-select: none;
+}
+
+/* 可下钻项（点击进入右面板子页面，而非展开下拉）：箭头换成右向 chevron。
+   设置主页面「小组件列表 / 快速访问链接」与侧边栏功能根视图的四个入口行共用 */
+.select-selected.select-drill {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 6 15 12 9 18'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 
@@ -8651,14 +8720,6 @@ body.dynamic-blur .side-panel-url-input {
    这里同样不再额外加分隔线或间距 */
 .side-panel-subview-header {
     display: contents;
-}
-
-/* 跟随主页面时的描述文案：与设置页面既有描述文案（.widget-add-form-hint）同款 */
-.side-panel-sync-hint {
-    font-size: 11px;
-    color: var(--text-secondary);
-    line-height: 1.4;
-    padding: 0 4px;
 }
 
 /* 可下钻功能项：补上悬停/按下反馈，明确可点击（与其它输入控件同色） */

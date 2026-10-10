@@ -59,6 +59,9 @@ export class OOOInterface {
         // 壁纸填充层
         this.wallpaperBlur = null;
         this.wallpaperMain = null;
+        // 壁纸本地版 → 在线版的升级记录与在途探测（见 WallpaperMixin.probeOnlineWallpaper）
+        this.onlineWallpaperMap = {};
+        this._onlineWallpaperProbes = {};
 
         // 主题系统状态
         this.themes = {};           // { key: themeObject }
@@ -436,8 +439,11 @@ export class OOOInterface {
             } else if (rpu && rpu.dataset.menuType === 'side-panel'
                 && this._sidePanelView && this._sidePanelView !== 'root') {
                 // 侧边栏功能子视图：顶部返回按钮逐级返回（子视图 → 功能根视图 → 关闭右面板）
-                this.exitSidePanelScope();
-                this.renderSidePanelConfigView(rpu);
+                // 子视图向右推出、功能根视图从左推入（iOS 式 pop）
+                this.panelTransition(rpu, 'pop', () => {
+                    this.exitSidePanelScope();
+                    this.renderSidePanelConfigView(rpu, true);
+                });
             } else {
                 this.confirmRightPanelChanges();
                 this.closeSettingsMenuInRightPanel();
@@ -471,9 +477,11 @@ export class OOOInterface {
                             this.backToCustomColorView(rpu);
                         } else if (rpu && rpu.dataset.menuType === 'side-panel'
                             && this._sidePanelView && this._sidePanelView !== 'root') {
-                            // 侧边栏功能子视图：逐级返回（子视图 → 功能根视图）
-                            this.exitSidePanelScope();
-                            this.renderSidePanelConfigView(rpu);
+                            // 侧边栏功能子视图：逐级返回（子视图 → 功能根视图），同顶部返回按钮
+                            this.panelTransition(rpu, 'pop', () => {
+                                this.exitSidePanelScope();
+                                this.renderSidePanelConfigView(rpu, true);
+                            });
                         } else if (rpu) {
                             this.confirmRightPanelChanges();
                             this.closeSettingsMenuInRightPanel();
@@ -554,12 +562,19 @@ export class OOOInterface {
             this.handleProxyChange(e.target.value);
         });
 
-        // 动态模糊开关改变时，实时显示/隐藏增强显示开关
+        // 动态模糊开关改变时，立即写入设置并生效，同时实时显示/隐藏增强显示开关
+        // （即时提交：勾选状态不再需要等到「应用」才被读取，避免中途的 UI 同步把待应用值写回旧值）
         document.getElementById('dynamic-blur-toggle').addEventListener('change', (e) => {
+            this.settings.dynamicBlur = e.target.checked;
             const enhancedDisplayGroup = document.getElementById('enhanced-display-group');
             if (enhancedDisplayGroup) {
                 enhancedDisplayGroup.style.display = e.target.checked ? 'block' : 'none';
             }
+            // 弹窗自身的毛玻璃外观与 openSettings 保持一致
+            const modal = document.getElementById('settings-modal');
+            if (modal) modal.classList.toggle('blur-effect', e.target.checked);
+            this.applySettings();
+            this.saveSettings();
         });
 
         // 增强显示复选框改变时，立即同步到 settings 并更新右键菜单
@@ -571,8 +586,11 @@ export class OOOInterface {
         };
         document.getElementById('enhanced-display-toggle').addEventListener('change', this._enhancedDisplayChangeHandler);
 
-        // 快速访问侧边栏开关改变时，显示/隐藏子开关并同步状态
+        // 快速访问侧边栏开关改变时，立即写入设置并生效，同时显示/隐藏子开关并同步状态
+        // （子开关被主开关强制关闭时不回写 showQuickLinkIcons，保留用户的图标偏好，
+        //   与 updateSettingsUI 里「主开关开启时才带出偏好」的读法一致）
         document.getElementById('quick-access-sidebar-toggle').addEventListener('change', (e) => {
+            this.settings.quickAccessSidebar = e.target.checked;
             const iconsGroup = document.getElementById('show-quick-icons-group');
             const iconsToggle = document.getElementById('show-quick-icons');
             if (iconsGroup && iconsToggle) {
@@ -585,10 +603,22 @@ export class OOOInterface {
                     iconsToggle.checked = false;
                 }
             }
+            this.applyQuickLinks();
+            this.saveSettings();
         });
 
-        // 固定侧边栏主开关改变时，显示/隐藏两个子开关并同步状态
+        // 显示图标子开关：即时生效
+        document.getElementById('show-quick-icons').addEventListener('change', (e) => {
+            this.settings.showQuickLinkIcons = e.target.checked;
+            this.applyQuickLinks();
+            this.saveSettings();
+        });
+
+        // 固定侧边栏主开关改变时，立即写入设置并生效，同时显示/隐藏两个子开关并同步状态
+        // （子开关被主开关强制勾选/取消只是「显示派生」，不回写 fixSidebarHomepage/fixSidebarWallpaper，
+        //   这样子开关的偏好能在主开关反复开关之间保留，与 updateSettingsUI 的读法一致）
         document.getElementById('fix-sidebar-toggle').addEventListener('change', (e) => {
+            this.settings.fixSidebarEnabled = e.target.checked;
             const homepageGroup = document.getElementById('fix-homepage-group');
             const wallpaperGroup = document.getElementById('fix-wallpaper-group');
             const homepageToggle = document.getElementById('fix-sidebar-homepage-toggle');
@@ -596,9 +626,11 @@ export class OOOInterface {
             if (e.target.checked) {
                 if (homepageGroup) homepageGroup.style.display = 'block';
                 if (wallpaperGroup) wallpaperGroup.style.display = 'block';
-                // 开启主开关时，子开关一并开启
+                // 开启主开关时，子开关一并开启（连同设置项一起写回，保持勾选与设置一致）
                 if (homepageToggle) homepageToggle.checked = true;
                 if (wallpaperToggle) wallpaperToggle.checked = true;
+                this.settings.fixSidebarHomepage = true;
+                this.settings.fixSidebarWallpaper = true;
             } else {
                 if (homepageGroup) homepageGroup.style.display = 'none';
                 if (wallpaperGroup) wallpaperGroup.style.display = 'none';
@@ -606,6 +638,20 @@ export class OOOInterface {
                 if (homepageToggle) homepageToggle.checked = false;
                 if (wallpaperToggle) wallpaperToggle.checked = false;
             }
+            this.syncSidebarFixedState();
+            this.saveSettings();
+        });
+
+        // 固定侧边栏的两个子开关：即时生效，各自独立写回自己的设置项
+        [['fix-sidebar-homepage-toggle', 'fixSidebarHomepage'],
+         ['fix-sidebar-wallpaper-toggle', 'fixSidebarWallpaper']].forEach(([id, key]) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('change', (e) => {
+                this.settings[key] = e.target.checked;
+                this.syncSidebarFixedState();
+                this.saveSettings();
+            });
         });
 
         // 简洁视觉效果主开关改变时，联动全部子开关并即时生效
@@ -645,6 +691,29 @@ export class OOOInterface {
             this.showNotification(e.target.checked ? '隐藏铭牌：开启' : '隐藏铭牌：关闭');
         });
 
+        // 搜索历史 / 热搜词建议 / 引擎锁定：与右键菜单里的同名开关走同一套副作用
+        // （此前设置页这三个勾选只在点「应用」时才被读取，中途任何 UI 同步都会把勾选写回旧值）
+        document.getElementById('search-history-toggle').addEventListener('change', (e) => {
+            this.settings.searchHistory = e.target.checked;
+            this.saveSettings();
+            this.updateContextMenuIcons();
+            this.syncSettingsPageToggles();
+            this.showNotification(e.target.checked ? '搜索历史：开启' : '搜索历史：关闭');
+        });
+
+        document.getElementById('search-suggestions-toggle').addEventListener('change', (e) => {
+            this.settings.searchSuggestions = e.target.checked;
+            this.saveSettings();
+            this.updateContextMenuIcons();
+            this.syncSettingsPageToggles();
+            this.showNotification(e.target.checked ? '热搜词建议：开启' : '热搜词建议：关闭');
+        });
+
+        document.getElementById('engine-lock-toggle').addEventListener('change', (e) => {
+            this.setEngineLock(e.target.checked);
+            this.showNotification(e.target.checked ? '引擎锁定：开启' : '引擎锁定：关闭');
+        });
+
         // OCP 播控开关：开启后 OCP 播放过一次即可 hover 铭牌呼出播控；关闭时立即收起
         document.getElementById('ocp-player-toggle').addEventListener('change', (e) => {
             this.settings.ocpPlayerEnabled = e.target.checked;
@@ -664,8 +733,10 @@ export class OOOInterface {
             });
         }
 
-        // 状态栏主开关改变时，显示/隐藏子开关并保留上次保存的秒钟偏好
+        // 状态栏主开关改变时，立即写入设置并生效，同时显示/隐藏子开关并保留上次保存的秒钟偏好
+        // （子开关被主开关强制取消勾选只是显示派生，不回写 showStatusBarSeconds）
         document.getElementById('status-bar-toggle').addEventListener('change', (e) => {
+            this.settings.statusBarEnabled = e.target.checked;
             const showSecondsGroup = document.getElementById('show-seconds-group');
             const showSecondsToggle = document.getElementById('show-seconds-toggle');
             if (showSecondsGroup && showSecondsToggle) {
@@ -677,6 +748,15 @@ export class OOOInterface {
                     showSecondsToggle.checked = false;
                 }
             }
+            this.applyStatusBarSettings();
+            this.saveSettings();
+        });
+
+        // 显示秒数子开关：即时生效
+        document.getElementById('show-seconds-toggle').addEventListener('change', (e) => {
+            this.settings.showStatusBarSeconds = e.target.checked;
+            this.applyStatusBarSettings();
+            this.saveSettings();
         });
 
         document.getElementById('shortcuts-toggle').addEventListener('change', (e) => {
@@ -689,12 +769,22 @@ export class OOOInterface {
             this.showShortcutsHint();
         });
 
-        // 壁纸常显示开关改变时，实时显示/隐藏壁纸缩放开关
+        // 壁纸常显示开关改变时，立即写入设置并生效，同时实时显示/隐藏壁纸缩放开关
         document.getElementById('persistent-wallpaper-toggle').addEventListener('change', (e) => {
+            this.settings.persistentWallpaper = e.target.checked;
             const wallpaperScaleGroup = document.getElementById('wallpaper-scale-group');
             if (wallpaperScaleGroup) {
                 wallpaperScaleGroup.style.display = e.target.checked ? 'block' : 'none';
             }
+            this.applySettings();
+            this.saveSettings();
+        });
+
+        // 壁纸缩放子开关：即时生效
+        document.getElementById('wallpaper-scale-toggle').addEventListener('change', (e) => {
+            this.settings.wallpaperScale = e.target.checked;
+            this.applySettings();
+            this.saveSettings();
         });
 
         // 设置文字Logo事件
@@ -704,6 +794,8 @@ export class OOOInterface {
         });
 
         // 应用按钮事件
+        // 注：各开关现在都是「改动即提交」，下面的读取只是兜底的再同步；需要按主开关派生的
+        // 子开关一律加了守卫，避免关闭主开关后点应用把用户设置的子项偏好抹掉。
         document.getElementById('apply-settings').addEventListener('click', () => {
             try {
                 this.settings.dynamicBlur = document.getElementById('dynamic-blur-toggle').checked;
@@ -722,16 +814,20 @@ export class OOOInterface {
                     this.settings.fixSidebarEnabled = fixSidebarToggle.checked;
                 }
                 const fixHomepageToggle = document.getElementById('fix-sidebar-homepage-toggle');
-                if (fixHomepageToggle) {
+                if (fixHomepageToggle && this.settings.fixSidebarEnabled) {
                     this.settings.fixSidebarHomepage = fixHomepageToggle.checked;
                 }
                 const fixWallpaperToggle = document.getElementById('fix-sidebar-wallpaper-toggle');
-                if (fixWallpaperToggle) {
+                if (fixWallpaperToggle && this.settings.fixSidebarEnabled) {
                     this.settings.fixSidebarWallpaper = fixWallpaperToggle.checked;
                 }
                 this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
                 this.settings.searchSuggestions = document.getElementById('search-suggestions-toggle').checked;
-                this.settings.engineLocked = document.getElementById('engine-lock-toggle').checked;
+                // 引擎锁定走统一写入口：锁定时需要把当前引擎写进 localStorage
+                const engineLockToggle = document.getElementById('engine-lock-toggle');
+                if (engineLockToggle) {
+                    this.setEngineLock(engineLockToggle.checked);
+                }
                 this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
                 // 读取快速访问侧边栏开关
@@ -740,9 +836,9 @@ export class OOOInterface {
                     this.settings.quickAccessSidebar = newQuickLinkToggle.checked;
                 }
 
-                // 读取显示图标开关
+                // 读取显示图标开关（主开关关闭时该子开关被强制取消勾选，同样加守卫保留偏好）
                 const showIconsToggle = document.getElementById('show-quick-icons');
-                if (showIconsToggle) {
+                if (showIconsToggle && this.settings.quickAccessSidebar) {
                     this.settings.showQuickLinkIcons = showIconsToggle.checked;
                 }
 
@@ -804,6 +900,8 @@ export class OOOInterface {
             this.updateDeveloperModeUI();
             this.applyDeveloperSettings();
             this.applyStatusBarSettings();
+            // 右面板若正停在使用开发者门槛的视图上，需要重渲染才能即时露出/收起其中的控件
+            this.syncSidePanelSelectDisplay();
             this.showNotification(this.settings.developerMode ? '开发者模式已开启' : '开发者模式已关闭');
         });
 

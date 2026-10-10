@@ -787,6 +787,9 @@ export const WallpaperMixin = {
         const wallpaperUrl = this.getWallpaperUrl();
 
         if (wallpaperUrl) {
+            // 尽早开始探测在线版，用户滚动进壁纸模式时可直接用在线版
+            this.probeOnlineWallpaper(wallpaperUrl);
+
             // 预加载到浏览器缓存
             const img = new Image();
             img.onload = () => { };
@@ -889,6 +892,8 @@ export const WallpaperMixin = {
         const url = this.getWallpaperUrl();
         if (url) {
             this.setWallpaperOnLayers(url);
+            // 冷启动未走 applyWallpaper 时补一次在线版探测
+            this.probeOnlineWallpaper(url);
         }
         document.body.style.backgroundImage = 'none';
 
@@ -1045,16 +1050,57 @@ export const WallpaperMixin = {
         }
     },
     getWallpaperUrl() {
+        let url = null;
         if (this.settings.wallpaper === 'default') {
-            return this.localBackgroundUrl;
+            url = this.localBackgroundUrl;
         } else if (this.settings.wallpaper === 'bing' && this.settings.wallpaperUrl) {
-            return this.settings.wallpaperUrl;
+            url = this.settings.wallpaperUrl;
         } else if (this.settings.wallpaper === 'url' && this.settings.wallpaperUrl) {
-            return this.settings.wallpaperUrl;
+            url = this.settings.wallpaperUrl;
         } else if (this.settings.wallpaper && this.settings.wallpaper !== 'default' && this.settings.wallpaper !== 'bing' && this.settings.wallpaper !== 'url') {
-            return this.settings.wallpaper; // 自定义上传壁纸 data URL
+            url = this.settings.wallpaper; // 自定义上传壁纸 data URL
+        }
+        if (!url) return null;
+        // 已探测成功的在线版直接返回，避免每次重设壁纸都先退回本地再异步升级
+        return this.onlineWallpaperMap[url] || url;
+    },
+    // 默认壁纸与主题壁纸都是同一张图的「本地路径 + 在线路径」两份（在线为高清版）：
+    // 给出某个本地 URL 对应的在线 URL，非此类壁纸返回 null。
+    getOnlineWallpaperUrl(localUrl) {
+        if (!localUrl) return null;
+        if (this.settings.wallpaper === 'default' && localUrl === this.localBackgroundUrl) {
+            return this.onlineBackgroundUrl;
+        }
+        if (this.settings.themeEnabled && this.settings.wallpaperUrl === localUrl) {
+            return this.themeOverrides?.wallpaper?.online || null;
         }
         return null;
+    },
+    // 探测本地壁纸的在线版并记住结果。所有重设壁纸的路径都调它
+    // （此前 applyWallpaper/applyTheme 各写一份内联探测，而 showWallpaper/preloadWallpaper
+    //  只 set 本地、没有探测，于是「动一下」就永久回落到本地）。
+    probeOnlineWallpaper(localUrl) {
+        const onlineUrl = this.getOnlineWallpaperUrl(localUrl);
+        if (!onlineUrl || onlineUrl === localUrl) return;
+        if (this.onlineWallpaperMap[localUrl] === onlineUrl || this._onlineWallpaperProbes[localUrl]) return;
+
+        this._onlineWallpaperProbes[localUrl] = true;
+        const testImg = new Image();
+        testImg.onload = () => {
+            delete this._onlineWallpaperProbes[localUrl];
+            this.onlineWallpaperMap[localUrl] = onlineUrl;
+            // 探测期间壁纸可能已被切走或关闭：仅在仍指向同一张在线版且壁纸应显示时升级
+            if (this.getOnlineWallpaperUrl(localUrl) === onlineUrl
+                && (this.settings.persistentWallpaper
+                    || this.isScrolled
+                    || document.body.classList.contains('scrolled'))) {
+                this.setWallpaperOnLayers(onlineUrl);
+            }
+        };
+        testImg.onerror = () => {
+            delete this._onlineWallpaperProbes[localUrl];
+        };
+        testImg.src = onlineUrl;
     },
     setWallpaperOnLayers(url) {
         if (!url) {
@@ -1131,15 +1177,10 @@ export const WallpaperMixin = {
     },
     applyDefaultWallpaper() {
         // 使用层系统，body上不设背景图；本地优先，异步升级到在线
-        this.setWallpaperOnLayers(this.localBackgroundUrl);
+        const url = this.getWallpaperUrl();
+        this.setWallpaperOnLayers(url);
         document.body.style.backgroundImage = 'none';
-        const testImg = new Image();
-        testImg.onload = () => {
-            if (this.settings.persistentWallpaper || document.body.classList.contains('scrolled')) {
-                this.setWallpaperOnLayers(this.onlineBackgroundUrl);
-            }
-        };
-        testImg.src = this.onlineBackgroundUrl;
+        this.probeOnlineWallpaper(url);
     },
     applyWallpaper() {
         if (this.settings.persistentWallpaper || document.body.classList.contains('scrolled')) {
@@ -1149,36 +1190,8 @@ export const WallpaperMixin = {
                 // body上不设背景图，避免与CSS类冲突和黑边
                 document.body.style.backgroundImage = 'none';
 
-                // 主题壁纸：在线优先，失败回退本地
-                const themeOnline = this.settings.themeEnabled && this.themeOverrides?.wallpaper?.online;
-                if (themeOnline && url !== themeOnline) {
-                    const localUrl = url;
-                    const onlineUrl = themeOnline;
-                    const testImg = new Image();
-                    testImg.onload = () => {
-                        // 异步回执时再次确认主题仍开启且仍是同一张壁纸
-                        // 同时确认壁纸仍应显示（未在异步期间被关闭）
-                        if (this.settings.themeEnabled
-                            && (this.settings.persistentWallpaper || document.body.classList.contains('scrolled'))
-                            && this.themeOverrides?.wallpaper?.online === onlineUrl
-                            && this.settings.wallpaperUrl === localUrl) {
-                            this.setWallpaperOnLayers(onlineUrl);
-                        }
-                    };
-                    testImg.src = onlineUrl;
-                }
-
-                // 默认壁纸：本地优先，在线升级（同上的异步测试模式）
-                if (this.settings.wallpaper === 'default') {
-                    const testImg = new Image();
-                    testImg.onload = () => {
-                        if (this.settings.wallpaper === 'default'
-                            && (this.settings.persistentWallpaper || document.body.classList.contains('scrolled'))) {
-                            this.setWallpaperOnLayers(this.onlineBackgroundUrl);
-                        }
-                    };
-                    testImg.src = this.onlineBackgroundUrl;
-                }
+                // 本地优先、在线升级：探测结果会被记住，后续重设壁纸直接给在线版
+                this.probeOnlineWallpaper(url);
             }
         } else {
             this.clearWallpaperLayers();
