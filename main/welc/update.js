@@ -13,7 +13,14 @@ var WELC_CONTENT = {
         {
             header: '体验优化',
             items: [
-                '优化显示效果',
+                '修复了一些已知问题',
+            ]
+        },
+        {
+            header: '提供最新补丁',
+            items: [
+                '融入OOOInterface10月安全补丁更新',
+                '提供新版架构更新兼容'
             ]
         }
     ],
