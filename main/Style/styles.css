@@ -6343,6 +6343,21 @@ body.scrolled .engine-buttons {
 
 
 
+/* 提示框贴底居中，压着的正是"底部居中"的常驻元素：主页是铭牌，壁纸模式是引擎按钮
+   （搜索区沉底时按钮在 33~75px 一带）。两者与提示框同色同形，叠在一起会糊成一团；
+   把它们整体抬到提示框上方又不够"贴底"。所以提示框在的这几秒让它们先淡出——
+   两个元素本来就带 opacity 过渡，淡入淡出是现成的；提示框移除后规则自动失效。
+   .engine-buttons 只在壁纸模式下才沉底，主页模式下它在搜索框下面，不能跟着淡出。
+   顺手关掉它们的指针事件：看不见的东西不该还能点到。 */
+
+body:has(#ooo-interface-notification) .footer,
+body.scrolled:has(#ooo-interface-notification) .engine-buttons {
+    opacity: 0;
+    pointer-events: none;
+}
+
+
+
 /* 壁纸模式 - 搜索区域 */
 
 body.scrolled .search-section {
