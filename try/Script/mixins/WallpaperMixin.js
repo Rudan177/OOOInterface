@@ -614,9 +614,17 @@ export const WallpaperMixin = {
     },
     async fetchBingWallpaper() {
         var randomIdx = Math.floor(Math.random() * 8);
-        var apiUrl = 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=' + randomIdx + '&n=1&mkt=zh-CN';
         var self = this;
         var lastError = null;
+
+        // 多级接口回退：官方 www → 官方 cn（国内直连，返回数据一致）→ biturl 镜像（CORS 开放）。
+        // 官方接口不发送 CORS 头，仅扩展页（host_permissions 覆盖 bing.com）可读；
+        // biturl 的 CORS 头为 *，即使未来迁移到普通网页上下文也可跨域读取。
+        var endpoints = [
+            { label: null, url: 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=' + randomIdx + '&n=1&mkt=zh-CN' },
+            { label: 'cn', url: 'https://cn.bing.com/HPImageArchive.aspx?format=js&idx=' + randomIdx + '&n=1&mkt=zh-CN' },
+            { label: '镜像', url: 'https://bing.biturl.top/?resolution=1920&format=json&index=' + randomIdx + '&mkt=zh-CN' }
+        ];
 
         function notify(msg) {
             var modal = document.getElementById('settings-modal');
@@ -626,8 +634,15 @@ export const WallpaperMixin = {
         }
 
         function tryApply(data) {
-            if (data && data.images && data.images.length > 0) {
-                var imageUrl = 'https://www.bing.com' + data.images[0].url;
+            var imageUrl = null;
+            if (data && data.images && data.images.length > 0 && data.images[0].url) {
+                // 官方接口返回相对路径（/th?id=...），拼接到 www.bing.com
+                imageUrl = 'https://www.bing.com' + data.images[0].url;
+            } else if (data && data.url) {
+                // biturl 镜像返回绝对地址
+                imageUrl = data.url;
+            }
+            if (imageUrl) {
                 self.settings.wallpaperUrl = imageUrl;
                 self.applySettings();
                 self.saveSettings();
@@ -637,7 +652,7 @@ export const WallpaperMixin = {
             return false;
         }
 
-        async function tryFetch(fetchFn, label) {
+        async function tryFetch(fetchFn, label, apiUrl) {
             try {
                 notify('正在获取壁纸' + (label ? ' (' + label + ')' : ''));
                 var response = await fetchFn(apiUrl);
@@ -653,10 +668,17 @@ export const WallpaperMixin = {
         }
 
         try {
-            var result = await tryFetch(function (url) { return fetch(url); }, null);
+            var result = { ok: false };
+            for (var i = 0; i < endpoints.length; i++) {
+                result = await tryFetch(function (url) { return fetch(url); }, endpoints[i].label, endpoints[i].url);
+                if (result.ok) break;
+            }
 
             if (!result.ok && ProxyManager.isProxyEnabled()) {
-                result = await tryFetch(function (url) { return ProxyManager.proxiedFetch(url); }, '代理');
+                for (var j = 0; j < endpoints.length; j++) {
+                    result = await tryFetch(function (url) { return ProxyManager.proxiedFetch(url); }, '代理' + (endpoints[j].label ? '·' + endpoints[j].label : ''), endpoints[j].url);
+                    if (result.ok) break;
+                }
             }
 
             if (!result.ok) {

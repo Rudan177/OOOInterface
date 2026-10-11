@@ -51,6 +51,89 @@ export const NotificationsMixin = {
         // 非高级视觉效果：使用表面色
         return { bg: 'var(--surface-color)', text: 'var(--text-color)', border: 'var(--border-color)', blur: false };
     },
+    // 提示框里的文字视觉上并不居中：line-height 的半行距对齐的是字体的内容区
+    // （ascent + descent），而字体的 ascent/descent 本就不对称，实际画出来的墨迹
+    // 因此整体偏上。偏移量随字体变（本次量到 0.8~1.6px），在 45px 高的胶囊里肉眼可辨。
+    // 这里量出真实偏移，交给调用方用不对称内边距压回去。
+    getNotificationInkOffset(notification) {
+        // 基线探针：零尺寸 inline-block 的底边正好压在基线上（vertical-align: baseline），
+        // 这是 DOM 里唯一能直接读出基线的办法。首尾各放一个，多行文案也能框住整块墨迹
+        // （单行时两者重合）。只测位置、不参与布局：宽高都是 0，不会影响居中和换行。
+        const probeStyle = 'display:inline-block;width:0;height:0;vertical-align:baseline;';
+        const head = document.createElement('span');
+        const tail = document.createElement('span');
+        head.style.cssText = probeStyle;
+        tail.style.cssText = probeStyle;
+        notification.insertBefore(head, notification.firstChild);
+        notification.appendChild(tail);
+
+        const rect = notification.getBoundingClientRect();
+        const firstBaseline = head.getBoundingClientRect().bottom;
+        const lastBaseline = tail.getBoundingClientRect().bottom;
+        head.remove();
+        tail.remove();
+
+        const computed = getComputedStyle(notification);
+        const ink = this.measureTextInk(
+            notification.textContent,
+            computed.fontFamily,
+            parseFloat(computed.fontSize) || 14
+        );
+        if (!ink) return 0;
+
+        const inkCenter = (firstBaseline - ink.ascent + lastBaseline + ink.descent) / 2;
+        const boxCenter = rect.top + rect.height / 2;
+        // 限幅：万一量出离谱的值，也不至于把提示框撑歪
+        return Math.max(-4, Math.min(4, inkCenter - boxCenter));
+    },
+    // 量一段文字"墨迹"（真正落笔的部分）相对基线的上下沿，单位是 CSS px
+    measureTextInk(text, fontFamily, fontSize) {
+        try {
+            // 光栅化比 measureText 准：actualBoundingBoxAscent/Descent 被 Chrome 量化成
+            // 整数，中文字体上能差 1px 以上；扫 alpha 通道得到的是真实落笔范围
+            // （实测与逐像素量截图的结果相差 0.02px）。放大 200px 再画，1px 的量化误差
+            // 摊回 14px 只剩 0.07px。
+            const big = 200;
+            const scale = big / fontSize;
+            // 墨迹上下沿由字形决定，取开头一小段就够，长文案不必画满整张画布
+            const sample = String(text || '').slice(0, 16);
+            if (!sample) return null;
+
+            const canvas = document.createElement('canvas');
+            const measureCtx = canvas.getContext('2d');
+            measureCtx.font = `${big}px ${fontFamily}`;
+            const width = Math.ceil(measureCtx.measureText(sample).width) + 40;
+            const height = 500;
+            const baseline = 350;
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.font = `${big}px ${fontFamily}`;
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = '#000000';
+            ctx.fillText(sample, 20, baseline);
+
+            const data = ctx.getImageData(0, 0, width, height).data;
+            let top = -1;
+            let bottom = -1;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    // alpha > 100 ≈ 四成覆盖率，与肉眼判定"有墨"的界线接近
+                    if (data[(y * width + x) * 4 + 3] > 100) {
+                        if (top < 0) top = y;
+                        bottom = y;
+                        break;
+                    }
+                }
+            }
+            if (top < 0) return null;
+            return { ascent: (baseline - top) / scale, descent: (bottom + 1 - baseline) / scale };
+        } catch (_) {
+            // 画布不可用（取不到像素等）时不修正，退回对称内边距
+            return null;
+        }
+    },
     showNotification(message) {
         // 隐藏弹窗开启时，仅设置在设置页面内仍弹出
         if (this.settings && this.settings.hideNotifications) {
@@ -75,40 +158,66 @@ export const NotificationsMixin = {
             ? 'backdrop-filter: blur(40px) saturate(1.4); -webkit-backdrop-filter: blur(40px) saturate(1.4);'
             : '';
 
+        // 居中底部：水平居中靠 left: 50% + translateX(-50%)，所以这个 -50% 必须并进出/入场
+        // 的 transform 里，否则动画的 transform 会覆盖掉定位用的位移，提示框会甩到屏幕右半边。
+        // 竖向贴底 20px——主页铭牌（bottom: 32px）和壁纸模式的引擎按钮都占着底部居中，
+        // 提示框既然要贴底就必然压到它们身上，由 styles.css 里那条 :has() 规则让它们先淡出。
+        // transition 先留空：下面量完墨迹要改内边距，过渡开着的话这不到 1px 的修正
+        // 也会走一遍 350ms 动画，提示框刚露头时文字还在慢慢往下滑。
         notification.style.cssText = `
             position: fixed;
-            top: 20px;
-            right: 20px;
+            left: 50%;
+            bottom: 20px;
+            /* width: max-content 不能省：left: 50% 且宽度 auto 时，可用宽度只剩视口右半
+               （390px 屏上只有 195px），长文案会被压成一条又高又窄的竖条。给出 max-content
+               让宽度先按内容算，再由 max-width 夹紧并在必要时折行。 */
+            width: max-content;
+            max-width: calc(100% - 40px);
+            box-sizing: border-box;
             background: ${colors.bg};
             color: ${colors.text};
             padding: 12px 20px;
-            border-radius: 16px;
+            border-radius: 999px;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
             z-index: 1001;
             border: 1px solid ${colors.border};
             font-family: inherit;
             font-size: 14px;
             line-height: 1.5;
+            text-align: center;
             ${blurStyle}
-            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: none;
             opacity: 0;
-            transform: translateY(-12px) scale(0.96);
+            transform: translateX(-50%);
             pointer-events: none;
         `;
         notification.textContent = message;
 
         document.body.appendChild(notification);
 
-        // 显示动画
+        // 文字纵向修正：把墨迹（而不是字体的内容区）摆到胶囊正中。上下内边距之和不变，
+        // 胶囊高度和贴底位置都不动，动的只是文字。必须赶在摆入场姿势之前量——入场动画
+        // 带 translateY(12px)，先摆姿势会把量到的中心整体带偏 12px。
+        const inkOffset = this.getNotificationInkOffset(notification);
+        if (inkOffset) {
+            notification.style.paddingTop = `${12 - inkOffset}px`;
+            notification.style.paddingBottom = `${12 + inkOffset}px`;
+        }
+
+        // 入场初态：自下而上浮入。先强制一次重排把修正后的几何定下来，再打开过渡，
+        // 否则修正内边距这件事本身也会被当成一次过渡的起点。
+        notification.style.transform = 'translateX(-50%) translateY(12px) scale(0.96)';
+        void notification.offsetHeight;
+        notification.style.transition = 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
         setTimeout(() => {
             notification.style.opacity = '1';
-            notification.style.transform = 'translateY(0) scale(1)';
+            notification.style.transform = 'translateX(-50%) translateY(0) scale(1)';
         }, 10);
 
         // 3秒后自动隐藏
         setTimeout(() => {
             notification.style.opacity = '0';
-            notification.style.transform = 'translateY(-12px) scale(0.96)';
+            notification.style.transform = 'translateX(-50%) translateY(12px) scale(0.96)';
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.remove();

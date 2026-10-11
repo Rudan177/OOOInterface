@@ -16,6 +16,14 @@ export const QuickLinksMixin = {
                 }, 100);
                 return;
             }
+            // 侧边栏小组件空态/设置跳转直达：打开设置并进入小组件列表管理器
+            if (params.get('openWidgets') === '1') {
+                this.openSettings('badge');
+                setTimeout(() => {
+                    this.showWidgetPanelMenuInRightPanel();
+                }, 100);
+                return;
+            }
             const spView = params.get('openSidePanel');
             if (spView) {
                 this.openSettings('badge');

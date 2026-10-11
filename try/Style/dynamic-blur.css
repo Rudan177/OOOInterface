@@ -1150,3 +1150,30 @@ body.scrolled.dynamic-blur .search-input::placeholder {
         color: #000000 !important;
     }
 }
+
+/* ========== 未开启高级视觉效果：过渡时序对齐 ========== */
+/* 滑动进出壁纸模式时，未开启高级视觉效果（body 无 dynamic-blur）的主页面元素各自沿用基础时序，
+   与开启态不一致（搜索框 0.2s ease、引擎按钮 0.2s 带回弹、侧边栏 0.3s/0.25s、铭牌 0.5s），
+   同一个滚动手势的"手感"因此与开启时不同。此处只把时长与缓动换成开启态的取值，
+   各元素参与过渡的属性集合、以及背景/毛玻璃/描边/缩放等外观一律保持原样。
+   侧边栏页面（body.qa-panel-page）复用同一批类名但有自己的节奏，不在本次对齐范围内。 */
+
+body:not(.qa-panel-page):not(.dynamic-blur) .search-container {
+    transition: border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        background 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body:not(.qa-panel-page):not(.dynamic-blur) .engine-btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body:not(.qa-panel-page):not(.dynamic-blur) .quick-access-sidebar-container {
+    transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1),
+        opacity 0.3s ease;
+}
+
+body:not(.qa-panel-page):not(.dynamic-blur) .ooo-badge {
+    transition: transform 0.35s ease-out,
+        opacity 0.3s ease;
+}

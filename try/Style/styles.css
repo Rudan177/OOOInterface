@@ -505,6 +505,9 @@ body:not(.enhanced-display) .search-container:focus-within {
 
 .search-input {
     flex: 1;
+    /* 窄屏下 "/" 模式 chip 展开后，输入框默认的 auto 最小宽度（约 20 字符）会撑破搜索框并顶出屏幕，
+       放开最小宽度让输入框随容器收缩 */
+    min-width: 0;
     border: none;
     outline: none;
     background: transparent;
@@ -5811,6 +5814,7 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     justify-content: center;
     gap: 6px;
     width: 100%;
+    min-height: 42px;
     padding: 8px 10px;
     border: none;
     border-radius: 10px;
@@ -6267,9 +6271,15 @@ body.homepage-wallpaper {
 
 /* 壁纸模糊 - 背景 */
 
+/* 未开启高级视觉效果时，壁纸模式下 body 不做模糊。
+   此处必须是 none 而不能写 blur(0)：backdrop-filter 只要不是 none，body 就成为
+   固定定位后代的包含块，页面里 position: fixed 的侧边栏与壁纸层会退化成相对 body 定位，
+   它们的盒子随之计入文档的可滚动溢出（实测把文档从 1013px 撑到 1212px），
+   于是触屏上划进入壁纸模式时，浏览器会连带把整页一起滚一下。
+   blur(0) 与 none 的显示效果完全一致，换回 none 后固定定位恢复相对视口。 */
 body.scrolled:not(.dynamic-blur) {
-    backdrop-filter: blur(0);
-    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 
@@ -6330,6 +6340,21 @@ body.scrolled .engine-buttons {
     opacity: 1;
     pointer-events: auto;
     transition: opacity 0.3s ease, margin-top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+
+/* 提示框贴底居中，压着的正是"底部居中"的常驻元素：主页是铭牌，壁纸模式是引擎按钮
+   （搜索区沉底时按钮在 33~75px 一带）。两者与提示框同色同形，叠在一起会糊成一团；
+   把它们整体抬到提示框上方又不够"贴底"。所以提示框在的这几秒让它们先淡出——
+   两个元素本来就带 opacity 过渡，淡入淡出是现成的；提示框移除后规则自动失效。
+   .engine-buttons 只在壁纸模式下才沉底，主页模式下它在搜索框下面，不能跟着淡出。
+   顺手关掉它们的指针事件：看不见的东西不该还能点到。 */
+
+body:has(#ooo-interface-notification) .footer,
+body.scrolled:has(#ooo-interface-notification) .engine-buttons {
+    opacity: 0;
+    pointer-events: none;
 }
 
 
@@ -7467,6 +7492,26 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
     will-change: background-size, background-position, opacity, transform;
+}
+/* 暗色压暗壁纸：蒙版画在壁纸层内部（::after 属于层本身），
+   壁纸层激活才有蒙版、随层显隐联动——顶部无壁纸状态不会被误压暗，
+   且蒙版永远只压壁纸、不碰页面其它层级。
+   开关：主页面设置「暗色压暗壁纸」（wallpaperDarkDim，经 body.wallpaper-dim-off 门控）。
+   侧边栏面板的同款蒙版在 sidepanel.css 的 .qa-panel-wallpaper::after（面板壁纸层内）。 */
+#wallpaper-main::after,
+#wallpaper-blur::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    body:not(.wallpaper-dim-off) #wallpaper-main.active::after,
+    body:not(.wallpaper-dim-off) #wallpaper-blur.active::after {
+        background: rgba(0, 0, 0, 0.28);
+    }
 }
 
 #wallpaper-main.active {

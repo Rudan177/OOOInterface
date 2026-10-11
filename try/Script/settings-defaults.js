@@ -32,6 +32,7 @@ export const DEFAULT_SETTINGS = {
     searchBoxHeight: 50,
     enhancedDisplay: false,
     wallpaperScale: false,
+    wallpaperDarkDim: true,
     wallpaperFill: true,
     colorScheme: 'green',
     customPrimaryColor: '',
