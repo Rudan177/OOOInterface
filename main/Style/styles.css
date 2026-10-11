@@ -6270,9 +6270,15 @@ body.homepage-wallpaper {
 
 /* 壁纸模糊 - 背景 */
 
+/* 未开启高级视觉效果时，壁纸模式下 body 不做模糊。
+   此处必须是 none 而不能写 blur(0)：backdrop-filter 只要不是 none，body 就成为
+   固定定位后代的包含块，页面里 position: fixed 的侧边栏与壁纸层会退化成相对 body 定位，
+   它们的盒子随之计入文档的可滚动溢出（实测把文档从 1013px 撑到 1212px），
+   于是触屏上划进入壁纸模式时，浏览器会连带把整页一起滚一下。
+   blur(0) 与 none 的显示效果完全一致，换回 none 后固定定位恢复相对视口。 */
 body.scrolled:not(.dynamic-blur) {
-    backdrop-filter: blur(0);
-    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 
