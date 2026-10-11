@@ -505,6 +505,9 @@ body:not(.enhanced-display) .search-container:focus-within {
 
 .search-input {
     flex: 1;
+    /* 窄屏下 "/" 模式 chip 展开后，输入框默认的 auto 最小宽度（约 20 字符）会撑破搜索框并顶出屏幕，
+       放开最小宽度让输入框随容器收缩 */
+    min-width: 0;
     border: none;
     outline: none;
     background: transparent;
