@@ -19,6 +19,8 @@ export const SettingsMixin = {
         }
         const wp = document.getElementById('persistent-wallpaper-toggle');
         if (wp) wp.checked = this.settings.persistentWallpaper;
+        const wd = document.getElementById('wallpaper-dim-toggle');
+        if (wd) wd.checked = this.settings.wallpaperDarkDim;
         const sh = document.getElementById('search-history-toggle');
         if (sh) sh.checked = this.settings.searchHistory;
         const ss = document.getElementById('search-suggestions-toggle');
@@ -149,6 +151,7 @@ export const SettingsMixin = {
         if (savedSettings.searchBoxHeight !== undefined) result.searchBoxHeight = savedSettings.searchBoxHeight;
         if (savedSettings.enhancedDisplay !== undefined) result.enhancedDisplay = savedSettings.enhancedDisplay;
         if (savedSettings.wallpaperScale !== undefined) result.wallpaperScale = savedSettings.wallpaperScale;
+        if (savedSettings.wallpaperDarkDim !== undefined) result.wallpaperDarkDim = savedSettings.wallpaperDarkDim;
         if (savedSettings.wallpaperFill !== undefined) result.wallpaperFill = savedSettings.wallpaperFill;
         if (savedSettings.colorScheme !== undefined) result.colorScheme = savedSettings.colorScheme;
         if (savedSettings.customPrimaryColor !== undefined) result.customPrimaryColor = savedSettings.customPrimaryColor;
@@ -631,6 +634,7 @@ export const SettingsMixin = {
         document.getElementById('dynamic-blur-toggle').checked = this.settings.dynamicBlur;
         document.getElementById('enhanced-display-toggle').checked = this.settings.enhancedDisplay;
         document.getElementById('persistent-wallpaper-toggle').checked = this.settings.persistentWallpaper;
+        document.getElementById('wallpaper-dim-toggle').checked = this.settings.wallpaperDarkDim;
         document.getElementById('wallpaper-scale-toggle').checked = this.settings.wallpaperScale;
         document.getElementById('search-history-toggle').checked = this.settings.searchHistory;
         document.getElementById('search-suggestions-toggle').checked = this.settings.searchSuggestions;
@@ -886,6 +890,10 @@ export const SettingsMixin = {
             ProxyManager.setProxy(this.settings.proxyPort);
         }
     },
+    applyWallpaperDim() {
+        // 暗色压暗壁纸：暗色模式下壁纸蒙版的开关（主页面与侧边栏面板共用设置键 wallpaperDarkDim）
+        document.body.classList.toggle('wallpaper-dim-off', !this.settings.wallpaperDarkDim);
+    },
     applyDeveloperSettings() {
         const root = document.documentElement;
 
@@ -1000,6 +1008,7 @@ export const SettingsMixin = {
         safe('applyLogo', this.applyLogo);
         safe('applyQuickLinks', this.applyQuickLinks);
         safe('applyWallpaper', this.applyWallpaper);
+        safe('applyWallpaperDim', this.applyWallpaperDim);
         safe('applyDeveloperSettings', this.applyDeveloperSettings);
         safe('applyContextMenuStyle', this.applyContextMenuStyle);
         safe('renderWidgetPanel', this.renderWidgetPanel);

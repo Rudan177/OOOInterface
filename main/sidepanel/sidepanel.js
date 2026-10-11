@@ -50,7 +50,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
         saveWidgetData: saveWidgetData,
         showNotification: showPanelToast,
         openWidgetSettings: function () {
-            openMainPage('');
+            openMainPage('?openWidgets=1');
         }
     };
 
@@ -340,10 +340,14 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
         if (widgets.length === 0) {
             var empty = document.createElement('div');
             empty.className = 'widget-panel-empty';
-            empty.textContent = settings.sidePanelWidgetsSync
-                ? '暂无小组件，可在主页面设置的"小组件列表"中添加'
-                : '暂无小组件，可在侧边栏功能的"小组件"设置中添加';
+            empty.textContent = '暂无小组件';
             grid.appendChild(empty);
+            // 空态引导：一键直达主页面的小组件管理
+            var emptyCta = document.createElement('button');
+            emptyCta.className = 'widget-panel-empty-cta';
+            emptyCta.textContent = '去添加小组件';
+            emptyCta.addEventListener('click', function () { openMainPage('?openWidgets=1'); });
+            grid.appendChild(emptyCta);
         } else {
             widgets.forEach(function (config) {
                 var widget = createWidgetInstance(config);
@@ -1406,6 +1410,8 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
         document.body.classList.add('qa-browser-open');
         wrap.setAttribute('aria-hidden', 'false');
         applySectionsVisibility();
+        // 防御：与存储同步竞态时可见性可能被旧状态覆盖，稍后再应用一次
+        setTimeout(applySectionsVisibility, 120);
         // 视图已显示，按当前卡片尺寸应用窄屏移动端视口缩放
         applyMobileViewportScale();
         // 先移除再强制回流，确保连续打开时进入动画可重放
@@ -1468,6 +1474,18 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
         // 高度分配标记：链接区可见时小组件区最多占 50%（链接+搜索至少占 50%）；
         // 链接区隐藏时小组件可用全部剩余高度
         document.body.classList.toggle('qa-hide-links', !linksVisible);
+
+        // 暗色压暗壁纸开关（与主页面共用设置键 wallpaperDarkDim）
+        document.body.classList.toggle('wallpaper-dim-off', !settings.wallpaperDarkDim);
+
+        // 未配置引导卡：三个内容区全关（或正被浏览器视图让位）时显示，
+        // 避免新用户打开面板看到纯白空屏
+        var guide = document.getElementById('qa-guide-card');
+        if (guide) {
+            var anyContent = (settings.sidePanelShowWidgets || settings.sidePanelShowQuickLinks || settings.sidePanelShowSearch) && !browserOpen;
+            guide.style.display = anyContent ? 'none' : 'flex';
+            document.body.classList.toggle('qa-guide-show', !anyContent);
+        }
     }
 
     function applyAll() {
@@ -1548,6 +1566,10 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
     }
 
     function initInteractions() {
+        // 引导卡按钮：跳转主页面并直达「侧边栏功能」设置
+        var guideBtn = document.getElementById('qa-guide-open-settings');
+        if (guideBtn) guideBtn.addEventListener('click', function () { openMainPage('?openSidePanel=root'); });
+
         var addBtn = document.getElementById('quick-access-sidebar-add-btn');
         if (addBtn) {
             addBtn.addEventListener('click', function () {

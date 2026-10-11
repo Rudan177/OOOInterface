@@ -74,7 +74,7 @@ renderWidgetPanel () {
     if (widgets.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'widget-panel-empty';
-        empty.textContent = '暂无小组件，可在设置中添加';
+        empty.textContent = '暂无小组件';
         grid.appendChild(empty);
     } else {
         widgets.forEach(config => {

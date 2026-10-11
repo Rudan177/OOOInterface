@@ -787,6 +787,13 @@ export class OOOInterface {
             this.saveSettings();
         });
 
+        // 暗色压暗壁纸开关：控制暗色模式下壁纸蒙版（主页面与侧边栏面板共用设置键）
+        document.getElementById('wallpaper-dim-toggle').addEventListener('change', (e) => {
+            this.settings.wallpaperDarkDim = e.target.checked;
+            this.applySettings();
+            this.saveSettings();
+        });
+
         // 设置文字Logo事件
         document.getElementById('set-text-logo').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -802,6 +809,7 @@ export class OOOInterface {
                 this.settings.enhancedDisplay = document.getElementById('enhanced-display-toggle').checked;
                 const oldPersistentWallpaper = this.settings.persistentWallpaper;
                 this.settings.persistentWallpaper = document.getElementById('persistent-wallpaper-toggle').checked;
+                this.settings.wallpaperDarkDim = document.getElementById('wallpaper-dim-toggle').checked;
                 this.settings.wallpaperScale = document.getElementById('wallpaper-scale-toggle').checked;
                 // 读取右侧面板填满开关（如果面板打开时）
                 const panelFillToggle = document.getElementById('wallpaper-fill-toggle-panel');

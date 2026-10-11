@@ -20,5 +20,6 @@ export const SYNC_KEYS = [
     'sidePanelWidgetsSync', 'sidePanelWidgetPanel', 'sidePanelQuickLinksSync', 'sidePanelQuickLinks',
     'sidePanelSearchSync', 'sidePanelSearchBoxHeight',
     'sidePanelBuiltinOpen',
+    'wallpaperDarkDim',
     'widgetPanel', 'wallpaper', 'wallpaperUrl'
 ];

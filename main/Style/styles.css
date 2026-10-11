@@ -5814,6 +5814,7 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     justify-content: center;
     gap: 6px;
     width: 100%;
+    min-height: 42px;
     padding: 8px 10px;
     border: none;
     border-radius: 10px;
@@ -7491,6 +7492,26 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
     will-change: background-size, background-position, opacity, transform;
+}
+/* 暗色压暗壁纸：蒙版画在壁纸层内部（::after 属于层本身），
+   壁纸层激活才有蒙版、随层显隐联动——顶部无壁纸状态不会被误压暗，
+   且蒙版永远只压壁纸、不碰页面其它层级。
+   开关：主页面设置「暗色压暗壁纸」（wallpaperDarkDim，经 body.wallpaper-dim-off 门控）。
+   侧边栏面板的同款蒙版在 sidepanel.css 的 .qa-panel-wallpaper::after（面板壁纸层内）。 */
+#wallpaper-main::after,
+#wallpaper-blur::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    body:not(.wallpaper-dim-off) #wallpaper-main.active::after,
+    body:not(.wallpaper-dim-off) #wallpaper-blur.active::after {
+        background: rgba(0, 0, 0, 0.28);
+    }
 }
 
 #wallpaper-main.active {

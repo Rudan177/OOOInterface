@@ -24,6 +24,27 @@ body.qa-panel-page {
     pointer-events: none;
 }
 
+/* 暗色模式下给壁纸加一层蒙版，避免暗色控件浮在明亮壁纸上。
+   开关：主页面设置「暗色压暗壁纸」（wallpaperDarkDim，经 body.wallpaper-dim-off 门控，与主页面 #wallpaper-main::after 同款，均画在壁纸层内部） */
+.qa-panel-wallpaper::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    body:not(.wallpaper-dim-off) .qa-panel-wallpaper::after {
+        background: rgba(0, 0, 0, 0.28);
+    }
+
+    .qa-guide-title {
+        color: #f2f2f2;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+}
+
 /* 内容区：通栏纵向排布 小组件 / 快速链接 / 搜索区。
    高度按比例动态分配：小组件区最多 50%（超出内部滚动），
    快速链接+搜索区至少 50%（链接区弹性填充剩余高度） */
@@ -521,3 +542,83 @@ body.dynamic-blur.enhanced-display .qa-browser-card {
     }
 }
 
+
+/* ============ 未配置引导卡 ============ */
+.qa-guide-card {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+    padding: 24px;
+}
+
+.qa-guide-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+}
+
+.qa-guide-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1f1f1f;
+    text-shadow: 0 1px 4px rgba(255, 255, 255, 0.65);
+}
+
+.qa-guide-desc {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #4c4c4c;
+    text-shadow: 0 1px 4px rgba(255, 255, 255, 0.65);
+}
+
+.qa-guide-btn {
+    margin-top: 14px;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--primary-color, #0aa37f);
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+    transition: transform 0.15s ease, filter 0.2s ease;
+}
+
+.qa-guide-btn:hover {
+    filter: brightness(1.06);
+}
+
+.qa-guide-btn:active {
+    transform: scale(0.96);
+}
+
+/* 小组件空态引导按钮（仅面板，主页面空态不变） */
+.widget-panel-empty-cta {
+    display: block;
+    margin: 10px auto 0;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--primary-color, #0aa37f);
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.2s ease;
+}
+
+.widget-panel-empty-cta:hover {
+    filter: brightness(1.06);
+}
+
+.widget-panel-empty-cta:active {
+    transform: scale(0.96);
+}
