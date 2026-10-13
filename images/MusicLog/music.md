@@ -30,3 +30,4 @@
 | 20261011   | 一半一半 | 洛天依 | 270s | 1 | Contribute |
 | 20261012   | 光与影的对白 | 洛天依 | 248s | 1 | Contribute |
 | 20261013   | Are You OK！ | 雷军 | 133s | 1 | Contribute |
+| 20261014   | 流光 (Light Me Up) | 洛天依 | 238s | 1 | Contribute |
