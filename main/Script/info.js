@@ -1,4 +1,5 @@
 import { getColorConfig } from './color.js';
+import { afterFirstPaint } from './first-paint.js';
 
 export class InfoManager {
     constructor(app) {
@@ -86,6 +87,10 @@ export class InfoManager {
 
     async loadInfoContent() {
         const remoteUrl = 'https://rudan177.github.io/OOOInterface/info/info-interface-5.3.json';
+
+        // 公告 json 是「锦上添花」，不挡界面。起跑推到首屏之后，别和首屏抢连接。
+        // 后面读 response / 隐藏容器 / 填内容的分支一律不动。
+        await afterFirstPaint();
 
         try {
             const response = await fetch(remoteUrl + '?t=' + Date.now());

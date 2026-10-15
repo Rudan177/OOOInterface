@@ -85,6 +85,23 @@ export class OOOInterface {
 
         this.preloadWallpaper();
 
+        // 首屏外观抢在几个 await 前面：这几项只依赖 this.settings（chrome.storage 已经读回来了），
+        // 与自定义字体文件、主题文件都无关。实测热刷新时首屏 108ms 就出来了，
+        // 而配色/侧边栏要等到 303ms（排在 loadCustomFonts/loadThemes 之后）——
+        // 中间那段是「先默认外观、后变对」。先应用一次就没了。
+        // 主题启用时 loadThemes() 末尾仍会按主题覆盖一遍（顺序与改动前一致，只是间隔变短）。
+        // 不提前 applyFont：自定义字体的 FontFace 要等 loadCustomFonts() 才注册，
+        // 提前设 font-family 只会先落回退字体、字体到位后再跳一下。
+        // 放在 createWallpaperLayers() 之后：handlePersistentWallpaperToggle() 会调 applyWallpaper()，
+        // 那时图层必须已经存在。
+        this.applyColorScheme();
+        this.syncSidebarFixedState();
+        this.handlePersistentWallpaperToggle();
+
+        // 存量壁纸的一次性重编码。自己挂 afterLoad，不占首屏；首屏之后才问、
+        // 才一条一条地跑（见 WallpaperMixin.maybeShrinkStoredWallpapers）。
+        this.maybeShrinkStoredWallpapers();
+
         this.initCustomSelect();
 
         this.initContextMenu();
@@ -125,7 +142,15 @@ export class OOOInterface {
             this.checkAndFetchBingWallpaper();
         }
 
-        this.primeWallpaperEffects();
+        // 这里原本调 primeWallpaperEffects()：临时给 body 加 scrolled+dynamic-blur 一帧，
+        // 逼浏览器先把动态模糊控件的 backdrop-filter 光栅化一次，免得第一次进壁纸模式卡一下。
+        // 但 body.scrolled .container 的 padding-top 是 calc(100dvh - 145px)（styles.css:6477），
+        // 于是这一帧搜索框瞬移到屏底、logo 胶囊消失，下一帧再弹回来 —— 实测合成帧在
+        // 705ms 与 735ms 两次全屏变化就是这个，肉眼就是「莫名其妙闪一下壁纸模式」。
+        // 以前首屏被 Google Fonts 的 <link> 堵着，这一帧发生在首帧之前所以看不见；
+        // 字体改成异步之后首屏 196ms 就画出来了，预热帧落在 ~700ms，就露出来了。
+        // 预热和「早出画面」构造上无法共存，取早出画面：删掉预热。代价是第一次进
+        // 壁纸模式时那几个玻璃控件要现光栅化一次（一次性），远小于每次新标签页都闪一下。
 
         // 注册跨上下文设置同步（侧边栏面板 ⇄ 主页面），并处理面板跳转参数
         this.setupSettingsSync();
@@ -436,6 +461,9 @@ export class OOOInterface {
                 }
             } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
                 this.backToCustomColorView(rpu);
+            } else if (rpu && rpu.dataset.subView === 'wallpaper-badge-config') {
+                // 壁纸角标配置：返回壁纸列表（不带这条会一路掉到末尾，把整个右面板关掉）
+                this.backToWallpaperMenu(rpu);
             } else if (rpu && rpu.dataset.menuType === 'side-panel'
                 && this._sidePanelView && this._sidePanelView !== 'root') {
                 // 侧边栏功能子视图：顶部返回按钮逐级返回（子视图 → 功能根视图 → 关闭右面板）
@@ -475,6 +503,8 @@ export class OOOInterface {
                             }
                         } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
                             this.backToCustomColorView(rpu);
+                        } else if (rpu && rpu.dataset.subView === 'wallpaper-badge-config') {
+                            this.backToWallpaperMenu(rpu);
                         } else if (rpu && rpu.dataset.menuType === 'side-panel'
                             && this._sidePanelView && this._sidePanelView !== 'root') {
                             // 侧边栏功能子视图：逐级返回（子视图 → 功能根视图），同顶部返回按钮

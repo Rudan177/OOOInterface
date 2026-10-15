@@ -743,6 +743,11 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
             }
         } else if (menuType === 'wallpaper') {
             // 壁纸菜单的处理
+            //
+            // 本次格式识别上线前上传的壁纸没有 format 字段，先补一次识别再渲染，
+            // 否则老用户的壁纸库一个方框都不会显示（同步返回，无缺项时零开销）。
+            self.backfillWallpaperFormats();
+
             const wallpaperValue = originalItem.getAttribute('data-value');
             const isCustomWallpaperClass = originalItem.classList.contains('select-item-custom-wallpaper');
 
@@ -774,6 +779,10 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     deleteBtn.title = '删除此壁纸';
                     contentWrapper.appendChild(deleteBtn);
 
+                    // HDR / 实况照片方框，放在删除按钮左侧
+                    const formatBadges = self.buildWallpaperFormatBadges(customWallpaper);
+                    if (formatBadges) contentWrapper.insertBefore(formatBadges, deleteBtn);
+
                     option.appendChild(contentWrapper);
 
                     // 检查是否是当前选中的值
@@ -784,6 +793,11 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     // 点击选项时选中并应用
                     option.addEventListener('click', (e) => {
                         if (e.target === deleteBtn || e.target.closest('.custom-wallpaper-delete-btn')) {
+                            return;
+                        }
+                        // 格式方框是开关，点它不该等于选中这张壁纸（它自己已经 stopPropagation，
+                        // 这里再挡一道，免得以后方框挪出 wrapper 就漏了）
+                        if (e.target.closest && e.target.closest('.wallpaper-format-badge')) {
                             return;
                         }
 
@@ -1645,37 +1659,27 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
 
         buttonContainer.appendChild(plusBtn);
 
-        // 壁纸菜单：在加号旁边添加填满全屏开关
+        // 壁纸菜单：加号左边一枚设置齿轮（就用全站其它地方那枚 settings 字形，
+        // 不自绘 SVG —— 图标形状必须与「设置」按钮、右键菜单里的那枚逐像素一致），
+        // 点开面板内的「壁纸显示设置」视图。
+        // 原先铺在底栏的那颗「填满」药丸已收进该视图，底栏因此只剩 [齿轮][+]。
         if (menuType === 'wallpaper') {
-            const fillWrapper = document.createElement('div');
-            fillWrapper.className = 'wallpaper-fill-toggle-wrapper';
-            fillWrapper.title = '壁纸填满全屏（关闭则显示完整画面，空隙用模糊填充）';
-
-            const fillLabel = document.createElement('label');
-            fillLabel.className = 'wallpaper-fill-toggle-label';
-
-            const fillSpan = document.createElement('span');
-            fillSpan.className = 'wallpaper-fill-toggle-text';
-            fillSpan.textContent = '填满';
-
-            const fillSwitch = document.createElement('label');
-            fillSwitch.className = 'switch wallpaper-fill-switch';
-
-            const fillInput = document.createElement('input');
-            fillInput.type = 'checkbox';
-            fillInput.id = 'wallpaper-fill-toggle-panel';
-            fillInput.checked = self.settings.wallpaperFill;
-
-            const fillSlider = document.createElement('span');
-            fillSlider.className = 'slider';
-
-            fillSwitch.appendChild(fillInput);
-            fillSwitch.appendChild(fillSlider);
-            fillLabel.appendChild(fillSpan);
-            fillLabel.appendChild(fillSwitch);
-            fillWrapper.appendChild(fillLabel);
-
-            buttonContainer.insertBefore(fillWrapper, plusBtn);
+            const settingsEntry = document.createElement('button');
+            settingsEntry.type = 'button';
+            settingsEntry.className = 'wallpaper-badge-config-entry';
+            // 只要 aria-label，不要 title：title 会变成浏览器系统级的悬停提示，
+            // 而这一屏（含入口）要求没有任何悬停说明文字。
+            settingsEntry.setAttribute('aria-label', '壁纸显示设置');
+            const icon = document.createElement('span');
+            icon.className = 'material-icons';
+            icon.textContent = 'settings';
+            settingsEntry.appendChild(icon);
+            settingsEntry.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                self.panelTransition(rightPanelUpper, 'push', () => self.renderWallpaperBadgeConfigView(rightPanelUpper, true));
+            });
+            buttonContainer.insertBefore(settingsEntry, plusBtn);
         }
 
         // 一键清除按钮（超过5个自定义壁纸时显示）
@@ -1785,6 +1789,84 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
     rightPanelUpper.appendChild(container);
     document.getElementById('settings-modal').classList.add('right-panel-open');
 },
+// 壁纸菜单那枚齿轮点开的「壁纸显示设置」视图，三段的顺序是：
+//   ① 铺满            —— 壁纸是否填满全屏（原来底栏那颗药丸收进了这里）
+//   ② 是否显示对应角标 —— LIVE / HDR 两个总开关
+//   ③ 在哪显示角标     —— 一个「主页面显示」同时管两个格式（关掉 = 只在壁纸模式显示）
+// 段与段之间不额外留间距、也不写组名：一行行开关等距排下来，与设置主页面一致
+//（分组靠 .setting-group 的 14px 下边距，无分隔线、无组名）。
+// 各项都是改动即生效：保存 + 就地重算。角标只是显示开关，不调 applyWallpaper
+//（没理由顺带重设壁纸图层、重播一遍实况视频）；铺满要重排画面，必须走总入口。
+renderWallpaperBadgeConfigView (rightPanelUpper, skipAnimation) {
+    const self = this;
+    if (!rightPanelUpper) return;
+    rightPanelUpper.dataset.subView = 'wallpaper-badge-config';
+
+    // 与侧边栏配置视图同款的两层结构（外层包裹 + 内层滚动容器），
+    // 内边距、滚动与滑入动画的作用对象才对得上
+    const wrapper = document.createElement('div');
+    wrapper.className = 'side-panel-config-view';
+    const container = document.createElement('div');
+    container.className = 'settings-menu-container' + (skipAnimation ? '' : ' slide-in-right');
+
+    // ① 铺满
+    // 沿用原来底栏那颗的 id：设置主页面的「应用」兜底同步与面板关闭时的回写都按 id 找它
+    const fillRow = this.spBuildSwitchRow('壁纸铺满全屏', this.settings.wallpaperFill !== false, (checked) => {
+        self.settings.wallpaperFill = checked;
+        self.saveSettings();
+        self.applyWallpaper();   // 铺满要重排画面，必须走总入口
+    });
+    fillRow.querySelector('input').id = 'wallpaper-fill-toggle-panel';
+    container.appendChild(fillRow);
+
+    // ② 是否显示对应角标（顺序：LIVE 在前、HDR 在后，与方框的排列一致）
+    const kinds = [
+        { on: 'wallpaperBadgeLive', label: 'LIVE 角标' },
+        { on: 'wallpaperBadgeHdr', label: 'HDR 角标' }
+    ];
+    kinds.forEach(item => {
+        container.appendChild(this.spBuildSwitchRow(item.label, !!this.settings[item.on], (checked) => {
+            self.settings[item.on] = checked;
+            self.saveSettings();
+            self.updateWallpaperFormatCorner();
+            // 开关会决定第三段那行在不在，整视图重渲染一次最省事（同侧边栏主开关）
+            self.renderWallpaperBadgeConfigView(rightPanelUpper, true);
+        }));
+    });
+
+    // ③ 在哪显示角标：两个格式共用一个「主页面显示」，拨一下同时写两个键
+    //（两个键各自的意义不变，updateWallpaperFormatCorner 照旧分别读它们）。
+    // 两个总开关都没开时这行没有意义，整行不出现。
+    if (this.settings.wallpaperBadgeLive || this.settings.wallpaperBadgeHdr) {
+        const homeOn = this.settings.wallpaperBadgeLiveHomepage !== false
+            || this.settings.wallpaperBadgeHdrHomepage !== false;
+        container.appendChild(this.spBuildSwitchRow('主页面显示', homeOn, (checked) => {
+            self.settings.wallpaperBadgeLiveHomepage = checked;
+            self.settings.wallpaperBadgeHdrHomepage = checked;
+            self.saveSettings();
+            self.updateWallpaperFormatCorner();
+        }));
+    }
+
+    wrapper.appendChild(container);
+    rightPanelUpper.innerHTML = '';
+    rightPanelUpper.appendChild(wrapper);
+    const modal = document.getElementById('settings-modal');
+    if (modal) modal.classList.add('right-panel-open');
+},
+
+// 从角标配置视图返回壁纸列表：配置视图向右推出、列表从左推入（iOS 式 pop）。
+// showSettingsMenuInRightPanel 自己会清掉 dataset.subView。
+backToWallpaperMenu (rightPanelUpper) {
+    const items = document.getElementById('wallpaper-select-items');
+    const selected = document.getElementById('wallpaper-select-selected');
+    const hiddenSelect = document.getElementById('wallpaper-select');
+    if (!items || !selected || !hiddenSelect) return;
+    this.panelTransition(rightPanelUpper, 'pop', () => {
+        this.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
+    });
+},
+
 showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, optionsList, editIndex) {
     const self = this;
 

@@ -125,6 +125,7 @@ export const SettingsMixin = {
         if (savedSettings.textLogo) result.textLogo = savedSettings.textLogo;
         if (savedSettings.wallpaper) result.wallpaper = savedSettings.wallpaper;
         if (savedSettings.wallpaperUrl !== undefined) result.wallpaperUrl = savedSettings.wallpaperUrl;
+        if (savedSettings.wallpaperCompressVersion !== undefined) result.wallpaperCompressVersion = savedSettings.wallpaperCompressVersion;
         if (savedSettings.dynamicBlur !== undefined) result.dynamicBlur = savedSettings.dynamicBlur;
         if (savedSettings.persistentWallpaper !== undefined) result.persistentWallpaper = savedSettings.persistentWallpaper;
         if (savedSettings.searchHistory !== undefined) result.searchHistory = savedSettings.searchHistory;
@@ -195,6 +196,10 @@ export const SettingsMixin = {
         if (savedSettings.fixSidebarEnabled !== undefined) result.fixSidebarEnabled = savedSettings.fixSidebarEnabled;
         if (savedSettings.fixSidebarHomepage !== undefined) result.fixSidebarHomepage = savedSettings.fixSidebarHomepage;
         if (savedSettings.fixSidebarWallpaper !== undefined) result.fixSidebarWallpaper = savedSettings.fixSidebarWallpaper;
+        if (savedSettings.wallpaperBadgeHdr !== undefined) result.wallpaperBadgeHdr = savedSettings.wallpaperBadgeHdr;
+        if (savedSettings.wallpaperBadgeHdrHomepage !== undefined) result.wallpaperBadgeHdrHomepage = savedSettings.wallpaperBadgeHdrHomepage;
+        if (savedSettings.wallpaperBadgeLive !== undefined) result.wallpaperBadgeLive = savedSettings.wallpaperBadgeLive;
+        if (savedSettings.wallpaperBadgeLiveHomepage !== undefined) result.wallpaperBadgeLiveHomepage = savedSettings.wallpaperBadgeLiveHomepage;
 
         // 侧边栏面板功能
         if (savedSettings.sidePanelEnabled !== undefined) result.sidePanelEnabled = savedSettings.sidePanelEnabled;

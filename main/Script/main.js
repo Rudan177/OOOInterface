@@ -7,9 +7,15 @@
 //   2. 承接原先写在 script.js 末尾的启动引导（首启/版本升级跳欢迎页）；
 //   3. 维护 runtime 注册表，供 OOOInterface 与 Controller 互相取用。
 //
-// 加载顺序说明：index.html 中 version.js 仍以经典脚本标签加载，且排在模块标签之前。
-// 经典脚本在解析时立即执行，模块脚本延迟到文档解析完成后执行，因此此处可以安全地
-// 以裸名读取 version.js 的全局（VERSION / compareVersions 等）。
+// 加载顺序说明：index.html 中 version.js 仍以经典脚本标签加载，且排在 bundle 之前。
+// bundle 自己用 <script defer>：经典脚本，同样是文档解析完成后、DOMContentLoaded
+// 之前执行（与原来的 type="module" 时机一致），因此此处可以安全地以裸名读取
+// version.js 的全局（VERSION / compareVersions 等）。
+//
+// 为什么不用 type="module"：扩展页里 Chromium 会为同一个模块 URL 发两次 parser 请求，
+// 910KB 的 bundle 因此要读两遍；换成经典 defer 脚本只读一次，实测 DCL 66→41ms、
+// app-constructed 76→55ms。副作用是经典脚本共享全局词法作用域：bundle 顶层的
+// const/class 会进入全局，改名时注意别和 version.js（VERSION 等）重名。
 
 import { OOOInterface } from './script.js';
 import { runtime } from './runtime.js';

@@ -95,20 +95,35 @@ export const StatusBarMixin = {
 
         this.wallpaperAnalysisUrl = url;
         this.wallpaperAnalysisPromise = new Promise((resolve) => {
-            const image = new Image();
-            image.crossOrigin = 'anonymous';
-
-            image.onload = () => {
+            const done = (image) => {
                 this.wallpaperAnalysisImage = image;
                 this.wallpaperAnalysisPromise = null;
                 resolve(image);
             };
-
-            image.onerror = () => {
+            const fail = () => {
                 this.wallpaperAnalysisImage = null;
                 this.wallpaperAnalysisPromise = null;
                 resolve(null);
             };
+
+            // data: URL 不走 <img>：<img> 是文档资源，在 load 之前起跑会把 window.load
+            // 拖到它解码完（实测一张几 MB 的上传壁纸在这里再拖约 330ms）。
+            // 这条路径只要像素 —— ImageBitmap 一样能 drawImage、一样有 width/height，
+            // 而 fetch（含 data: URL）不占文档的 load。HTTP 壁纸仍走 <img>：
+            // 那条路要靠 crossOrigin='anonymous' 才能把像素读进 canvas。
+            if (/^data:/i.test(url)) {
+                fetch(url)
+                    .then((res) => res.blob())
+                    .then((blob) => createImageBitmap(blob))
+                    .then(done)
+                    .catch(fail);
+                return;
+            }
+
+            const image = new Image();
+            image.crossOrigin = 'anonymous';
+            image.onload = () => done(image);
+            image.onerror = fail;
 
             image.src = url;
         });

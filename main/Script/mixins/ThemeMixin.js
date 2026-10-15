@@ -2,6 +2,8 @@
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
 
+import { afterLoad } from '../first-paint.js';
+
 export const ThemeMixin = {
     async loadThemes() {
         this.themes = {};
@@ -20,17 +22,25 @@ export const ThemeMixin = {
         // 记录内置主题 key，供导入时避免冲突
         this.builtinThemeKeys = new Set(fileNames.map(f => f.replace(/\.js$/, '')));
 
-        for (const fileName of fileNames) {
-            if (!fileName.endsWith('.js')) continue;
+        // 并行加载：主题文件之间没有任何依赖，串行 await 只是把 5 个十几毫秒的请求
+        // 排成一队，瀑布上会留下两段几十毫秒的空窗（实测 139→208、208→256）。
+        // Promise.all 的结果数组保持 fileNames 的顺序，下面按序写入 this.themes，
+        // 键顺序与串行时完全一致（下拉列表顺序、主题导入去重都依赖它）。
+        const loadedThemes = await Promise.all(fileNames.map(async (fileName) => {
+            if (!fileName.endsWith('.js')) return null;
             try {
                 const theme = await this.loadThemeFile(fileName);
                 if (theme && theme.info && theme.details) {
                     const key = fileName.replace(/\.js$/, '');
-                    this.themes[key] = this.normalizeThemePaths(theme);
+                    return [key, this.normalizeThemePaths(theme)];
                 }
             } catch (e) {
                 console.warn(`主题文件 ${fileName} 加载失败:`, e);
             }
+            return null;
+        }));
+        for (const entry of loadedThemes) {
+            if (entry) this.themes[entry[0]] = entry[1];
         }
 
         // 注册已导入的自定义主题
@@ -461,16 +471,21 @@ export const ThemeMixin = {
             logoElement.src = localUrl;
             return;
         }
-        const testImg = new Image();
-        testImg.onload = () => {
-            logoElement.src = onlineUrl;
-        };
-        testImg.onerror = () => {
-            logoElement.src = localUrl;
-        };
-        testImg.src = onlineUrl;
         // 先用本地占位，避免等待
         logoElement.src = localUrl;
+        // 与 AssetsMixin.loadIconWithFallback 同一个道理：这个 new Image() 若在 load
+        // 之前开始加载，会把 window.load 拖到图片下完。本地占位图已经在显示，探测推到
+        // load 之后。回填路径不变。
+        afterLoad(() => {
+            const testImg = new Image();
+            testImg.onload = () => {
+                logoElement.src = onlineUrl;
+            };
+            testImg.onerror = () => {
+                logoElement.src = localUrl;
+            };
+            testImg.src = onlineUrl;
+        });
     },
     checkThemeConsistency(settingName, newValue) {
         if (!this.settings.themeEnabled || !this.settings.theme) return;

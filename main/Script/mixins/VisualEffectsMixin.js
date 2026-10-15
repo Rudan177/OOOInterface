@@ -127,12 +127,20 @@ export const VisualEffectsMixin = {
             const top = Math.random() * 80 + 10;
             const delay = Math.random() * -20;
 
+            // 柔边由渐变自己画：从本色渐变到「同色但 alpha=0」。
+            // 不要退回 `background: ${colors[i]}` + CSS 里的 filter: blur(60px) —— 见
+            // styles.css 那条 .glow-orb 注释：带动画的元素上挂 blur 滤镜每帧都要重算，
+            // 实测把 60fps 打到 20fps。
+            // 透明端必须写 rgba(r,g,b,0) 而不是 `transparent`：后者是 rgba(0,0,0,0)，
+            // 与本色之间插值会经过灰色，光晕边缘会发脏。
+            const fade = colors[i].replace(/[\d.]+\s*\)$/, '0)');
+
             orb.style.cssText = `
                 width: ${size}px;
                 height: ${size}px;
                 left: ${left}%;
                 top: ${top}%;
-                background: ${colors[i]};
+                background: radial-gradient(circle, ${colors[i]} 0%, ${fade} 70%);
                 animation-delay: ${delay}s;
             `;
 

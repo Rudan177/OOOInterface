@@ -5,13 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OOOInterface 侧边栏</title>
+    <!-- font-loader.js 要排在这几条 <link rel=stylesheet> 前面（经典脚本执行前
+         会等在途样式表，排后面就得先等 styles.css 加载完），它自身不产生绘制。
+         图标字体不在这里同步加载（渲染阻塞，CDN 一慢整页零绘制）：主页面用同一份
+         styles.css，那边的 html:not(.icons-ready) 留白规则也管这里。 -->
+    <script src="../Script/font-loader.js"></script>
     <!-- 复用主页面样式，保证与主页面视觉完全一致 -->
     <link rel="stylesheet" href="../Style/styles.css">
     <link rel="stylesheet" href="../Style/dynamic-blur.css">
     <link rel="stylesheet" href="../Style/widget-panel.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
-        rel="stylesheet">
     <link rel="stylesheet" href="sidepanel.css">
 </head>
 
@@ -119,7 +121,9 @@
         <button class="qa-guide-btn" id="qa-guide-open-settings">去主页面设置开启</button>
     </div>
 
-    <script type="module" src="sidepanel.js"></script>
+    <!-- 同主页：用经典 defer 脚本引入产物，不要写回 type="module"
+         （扩展页里模块脚本会被请求两次，详见 main/index.html 里的注释） -->
+    <script defer src="bundle.sidepanel.js"></script>
 </body>
 
 </html>

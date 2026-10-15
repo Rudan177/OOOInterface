@@ -2,6 +2,57 @@
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
 
+import { afterLoad } from '../first-paint.js';
+
+// 画完再看像素里有没有透明。判容器是不够的：PNG 的调色板 + tRNS、WebP/AVIF 的
+// alpha 通道都不体现在容器名上，而这里宁可多花一次 getImageData 也不能把用户的
+// 透明壁纸压成黑底。读不出来（理论上不会，同源）就当有 alpha，退回原样存。
+//
+// 12MP 上这一次扫描实测 78ms（PNG 156ms），是整条压缩路径里最贵的一段。所以两头都收：
+//   1) 「格式上装不下 alpha」的（JPEG、color type 0/2 的 PNG）在调用方就跳过，压根不进这里；
+//   2) 真要扫时按 4 字节整字比，而不是逐字节跳 4 —— 实测 78ms → 13ms。
+function canvasHasTransparency(ctx, w, h) {
+    let d;
+    try {
+        d = ctx.getImageData(0, 0, w, h).data;
+    } catch (e) {
+        return true;   // 读不出来（理论上不会，同源）就当有 alpha，退回原样存
+    }
+    // 按 4 字节整字比：12MP 实测 78ms → 13ms。
+    // alpha 是每个像素的第 4 个字节，小端机上就是 32 位字的最高字节，用 `>>> 24` 取。
+    // **不能写 `(u[i] & 0xFF000000) !== 0xFF000000`** —— `&` 会把结果当 int32，最高位
+    // 为 1 时是负数（-16777216），永远不等于那个正值字面量，于是每一张不透明图都被判成
+    // 「有透明」、所有壁纸都被改存成 PNG（体积反而涨）。矩阵测试逮到的就是这个。
+    try {
+        const u = new Uint32Array(d.buffer, d.byteOffset, d.length >> 2);
+        for (let i = 0; i < u.length; i++) {
+            if ((u[i] >>> 24) !== 255) return true;
+        }
+        return false;
+    } catch (e) {
+        // 视图建不起来（理论上不会）就退回逐字节扫，别把「工具失败」当成「有 alpha」
+        for (let i = 3; i < d.length; i += 4) {
+            if (d[i] !== 255) return true;
+        }
+        return false;
+    }
+}
+
+// 「这份字节在格式上就装不下 alpha 通道」—— 这是证明，不是猜测，所以可以据此跳过
+// 上面那次全画布扫描。JPEG 的段结构里没有 alpha 可言；PNG 的 IHDR color type
+// 0（灰度）与 2（真彩）也没有（3=调色板可能带 tRNS、4=灰度+alpha、6=RGBA 都得扫）。
+// PNG 布局：8 字节签名 + 4 长度 + 'IHDR'，于是 data 从头算起是 16 宽 / 20 高 /
+// 24 位深 / **25 颜色类型**。
+function containerCannotHaveAlpha(bytes) {
+    if (!bytes || bytes.length < 26) return false;
+    if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return true;
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+        const colorType = bytes[25];
+        return colorType === 0 || colorType === 2;
+    }
+    return false;
+}
+
 export const AssetsMixin = {
     loadCustomFonts() {
         const promises = this.settings.customFonts.map(font => {
@@ -223,31 +274,55 @@ export const AssetsMixin = {
 
         reader.readAsDataURL(file);
     },
+    // File 入口，实现在 compressImageBytes 里
     compressImage(file, maxWidth, maxHeight, quality) {
+        return file.arrayBuffer()
+            .then((buf) => this.compressImageBytes(new Uint8Array(buf), file.type, maxWidth, maxHeight, quality));
+    },
+    // 从字节压缩。走 Blob URL 而不是 FileReader.readAsDataURL —— 后者会先造一份
+    // base64 字符串（10MB 的文件就是 13MB 的字符串），而我们紧接着就要把它解码成
+    // 像素，那份字符串纯属白造。迁移已有壁纸时手里也只有字节，没有 File。
+    // 出口是 JPEG：canvas.toDataURL 只有 JPEG 能调质量，尺寸压下来之后再编码成 PNG
+    // 只会更大。preserveAlpha 为真时，若原图确实带透明像素就改用 PNG ——
+    // 壁纸是满屏铺的，把透明区域压成黑色是实打实的观感变化。
+    compressImageBytes(bytes, mime, maxWidth, maxHeight, quality, preserveAlpha) {
         return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    let w = img.width;
-                    let h = img.height;
-                    if (w > maxWidth || h > maxHeight) {
-                        const ratio = Math.min(maxWidth / w, maxHeight / h);
-                        w = Math.round(w * ratio);
-                        h = Math.round(h * ratio);
-                    }
-                    const canvas = document.createElement('canvas');
-                    canvas.width = w;
-                    canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-                img.onerror = () => reject(new Error('图片加载失败'));
-                img.src = e.target.result;
+            const url = URL.createObjectURL(new Blob([bytes], { type: mime || 'image/jpeg' }));
+            const img = new Image();
+            const done = () => {
+                img.onload = null;
+                img.onerror = null;
+                URL.revokeObjectURL(url);
             };
-            reader.onerror = () => reject(new Error('文件读取失败'));
-            reader.readAsDataURL(file);
+            img.onload = () => {
+                let w = img.width;
+                let h = img.height;
+                if (w > maxWidth || h > maxHeight) {
+                    const ratio = Math.min(maxWidth / w, maxHeight / h);
+                    w = Math.round(w * ratio);
+                    h = Math.round(h * ratio);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                let out;
+                // preserveAlpha 的调用方（壁纸）宁愿多扫一次，也不愿把透明图压成黑底；
+                // 但「格式上不可能有 alpha」时那次扫描是白扫，直接跳过（12MP 实测省 78ms）。
+                if (preserveAlpha && !containerCannotHaveAlpha(bytes) && canvasHasTransparency(ctx, w, h)) {
+                    out = canvas.toDataURL('image/png');
+                } else {
+                    out = canvas.toDataURL('image/jpeg', quality);
+                }
+                done();
+                resolve(out);
+            };
+            img.onerror = () => {
+                done();
+                reject(new Error('图片加载失败'));
+            };
+            img.src = url;
         });
     },
     updateCustomLogosList() {
@@ -574,18 +649,24 @@ export const AssetsMixin = {
             return;
         }
 
-        const testImg = new Image();
-        testImg.onload = () => {
-            this.iconLoadStatus[iconName] = 'online';
-            logoElement.src = onlineUrl;
-        };
-        testImg.onerror = () => {
-            this.iconLoadStatus[iconName] = 'local';
-            logoElement.src = localUrl;
-        };
-        testImg.src = onlineUrl;
-
         logoElement.src = localUrl;
+
+        // 在线 logo 探测是「锦上添花」：本地图已经在显示（images/dll.png 就在扩展里）。
+        // 起跑推到 **load 之后** —— 这个 new Image() 在 load 之前开始加载的话，
+        // 会把 window.load 一起拖到图片下完（线上这张 2MB，实测 1.9 秒）。
+        // 判定结果与回填路径不变。
+        afterLoad(() => {
+            const testImg = new Image();
+            testImg.onload = () => {
+                this.iconLoadStatus[iconName] = 'online';
+                logoElement.src = onlineUrl;
+            };
+            testImg.onerror = () => {
+                this.iconLoadStatus[iconName] = 'local';
+                logoElement.src = localUrl;
+            };
+            testImg.src = onlineUrl;
+        });
     },
     applyLogo() {
         const logoElement = document.getElementById('logo');

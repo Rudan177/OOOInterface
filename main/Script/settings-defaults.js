@@ -16,6 +16,10 @@ export const DEFAULT_SETTINGS = {
     customFonts: [],
     customWallpapers: [],
     wallpaperSeries: [],
+    // 「存量壁纸已按哪版压缩参数重编码过」。加进默认值不是为了默认行为，
+    // 而是因为主页面 mergeSettings 是逐键白名单 —— 不在这里登记，
+    // 这个键每次读取都会被丢掉，迁移就会每次启动重跑一遍。
+    wallpaperCompressVersion: 0,
     quickLinks: [],
     wallpaper: 'default',
     wallpaperUrl: '',
@@ -57,6 +61,14 @@ export const DEFAULT_SETTINGS = {
     fixSidebarEnabled: false,
     fixSidebarHomepage: false,
     fixSidebarWallpaper: false,
+    // 壁纸格式角标：主页与壁纸模式右上角显示「当前壁纸」的 HDR / LIVE 标识。
+    // 每个格式一个总开关；Homepage 是它的子开关 —— 关掉就是只在壁纸模式显示。
+    // 总开关默认关（新 UI 元素不该不请自来），Homepage 默认开，
+    // 于是「打开开关」得到的就是「主页面与壁纸模式都显示」。
+    wallpaperBadgeHdr: false,
+    wallpaperBadgeHdrHomepage: true,
+    wallpaperBadgeLive: false,
+    wallpaperBadgeLiveHomepage: true,
     // 侧边栏面板功能：默认全部关闭（主开关与内部各开关均关闭，
     // 由用户按需逐项开启；开启后点击工具栏图标打开侧边栏，关闭则新建标签页）
     sidePanelEnabled: false,
