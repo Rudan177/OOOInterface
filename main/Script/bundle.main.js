@@ -1,9 +1,9 @@
 // ⚠️ 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹: 70468e33367736a4    模块数: 47
-// 入口: main/Script/main.js
-// 源码仍在 main/Script/** 按 mixin 拆分维护；改完源码后重新构建：
+// 源码指纹: 03d2e42f782974c6    模块数: 47
+// 入口: main/Script/core/main.js
+// 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
-// ==== main/Script/color.js ====
+// ==== main/Script/core/color.js ====
 /**
  * 配色方案配置
  * 所有配色相关的常量和配置集中管理
@@ -361,7 +361,7 @@ function getColorConfig(scheme, customColors) {
     return COLOR_SCHEME_CONFIGS[scheme] || COLOR_SCHEME_CONFIGS['green'];
 }
 
-// ==== main/Script/first-paint.js ====
+// ==== main/Script/core/first-paint.js ====
 // 「什么时候才起跑」的调度点。这里只决定**起跑时刻**：
 // 请求发出之后，成功回填、去重守卫、重设图层这些逻辑一概不碰。
 
@@ -453,7 +453,7 @@ function afterIdle(fn, timeoutMs) {
     setTimeout(fn, 1000);
 }
 
-// ==== main/Script/info.js ====
+// ==== main/Script/core/info.js ====
 // [bundled] import { … } from './color.js'
 // [bundled] import { … } from './first-paint.js'
 
@@ -733,7 +733,7 @@ class InfoManager {
     }
 }
 
-// ==== main/Script/settings-defaults.js ====
+// ==== main/Script/core/settings-defaults.js ====
 // 出厂默认设置：主页面与侧边栏共用的唯一来源（Stage 9）。
 //
 // 主页面的 OOOInterface 与侧边栏面板此前各存一份，侧边栏那份是主页面的子集，
@@ -843,7 +843,7 @@ const DEFAULT_SETTINGS = {
     customThemes: []             // 用户导入的自定义主题 [{key, name, designer, version, data}]
 };
 
-// ==== main/Script/script.js ====
+// ==== main/Script/core/script.js ====
 'use strict';
 
 // 核心类仍直接使用：init 中创建 InfoManager
@@ -2200,7 +2200,7 @@ class OOOInterface {
 
 }
 
-// ==== main/Script/runtime.js ====
+// ==== main/Script/core/runtime.js ====
 'use strict';
 
 // 运行时注册表
@@ -2215,7 +2215,7 @@ const runtime = {
     controller: null  // Controller 实例
 };
 
-// ==== main/Script/Controller.js ====
+// ==== main/Script/core/Controller.js ====
 'use strict';
 
 // [bundled] import { … } from './runtime.js'
@@ -3565,7 +3565,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 500);
 });
 
-// ==== main/Script/mixins/BadgeMixin.js ====
+// ==== main/Script/core/mixins/BadgeMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -3809,7 +3809,7 @@ renderBadgeConfigView (rightPanelUpper) {
 },
 };
 
-// ==== main/Script/mixins/BadgeAudioMixin.js ====
+// ==== main/Script/core/mixins/BadgeAudioMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -4288,7 +4288,7 @@ const BadgeAudioMixin = {
     },
 };
 
-// ==== main/Script/mixins/ContextMenuMixin.js ====
+// ==== main/Script/core/mixins/ContextMenuMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -4701,7 +4701,7 @@ renderContextMenuCustomizeView (rightPanelUpper) {
 },
 };
 
-// ==== main/Script/mixins/VisualEffectsMixin.js ====
+// ==== main/Script/core/mixins/VisualEffectsMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -4854,7 +4854,7 @@ const VisualEffectsMixin = {
     },
 };
 
-// ==== main/Script/mixins/CustomSelectMixin.js ====
+// ==== main/Script/core/mixins/CustomSelectMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -4982,7 +4982,7 @@ const CustomSelectMixin = {
     },
 };
 
-// ==== main/Script/mixins/ThemeMixin.js ====
+// ==== main/Script/core/mixins/ThemeMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -5634,7 +5634,7 @@ const ThemeMixin = {
     },
 };
 
-// ==== main/Script/mixins/ColorMixin.js ====
+// ==== main/Script/core/mixins/ColorMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -5752,7 +5752,7 @@ const ColorMixin = {
     },
 };
 
-// ==== main/Script/mixins/StatusBarMixin.js ====
+// ==== main/Script/core/mixins/StatusBarMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -6058,7 +6058,7 @@ const StatusBarMixin = {
     },
 };
 
-// ==== main/Script/mixins/NotificationsMixin.js ====
+// ==== main/Script/core/mixins/NotificationsMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -6539,7 +6539,7 @@ const NotificationsMixin = {
     },
 };
 
-// ==== main/Script/mixins/InfoPopupToggleMixin.js ====
+// ==== main/Script/core/mixins/InfoPopupToggleMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -6666,7 +6666,7 @@ const InfoPopupToggleMixin = {
     },
 };
 
-// ==== main/Script/mixins/ResetMixin.js ====
+// ==== main/Script/core/mixins/ResetMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -6946,7 +6946,7 @@ const ResetMixin = {
     },
 };
 
-// ==== main/Script/mixins/AssetsMixin.js ====
+// ==== main/Script/core/mixins/AssetsMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -7718,7 +7718,7 @@ const AssetsMixin = {
     },
 };
 
-// ==== main/Script/proxy.js ====
+// ==== main/Script/core/proxy.js ====
 const ProxyManager = (function () {
     var proxyPort = null;
 
@@ -7831,7 +7831,7 @@ const ProxyManager = (function () {
     };
 })();
 
-// ==== main/Script/wallpaper-formats.js ====
+// ==== main/Script/core/wallpaper-formats.js ====
 'use strict';
 
 // 壁纸格式识别：HDR（HDR10 / HDR10+ / HDR Vivid / Dolby Vision / HLG / Ultra HDR）
@@ -8857,7 +8857,7 @@ function isSupportedWallpaperFile(file) {
     return LIVE_EXT.test(file.name || '');
 }
 
-// ==== main/Script/mixins/WallpaperMixin.js ====
+// ==== main/Script/core/mixins/WallpaperMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -9114,7 +9114,7 @@ const WallpaperMixin = {
     },
     // ==================== 壁纸格式（HDR / 实况照片）====================
     //
-    // 判定在 main/Script/wallpaper-formats.js 里做（纯字节解析），
+    // 判定在 main/Script/core/wallpaper-formats.js 里做（纯字节解析），
     // 这里只负责把判定结果接进「存储 / 渲染 / 界面」三条链。
 
     // 存库前的压缩。返回可直接落盘的 data URL。
@@ -10987,7 +10987,7 @@ const WallpaperMixin = {
     },
 };
 
-// ==== main/Script/quicklinks-export.js ====
+// ==== main/Script/core/quicklinks-export.js ====
 /**
  * OOOInterface 快速访问链接导出模块
  * 将快速访问链接导出为 JSON 文件并触发下载
@@ -11219,7 +11219,7 @@ const QuickLinksImporter = (function () {
     };
 })();
 
-// ==== main/Script/sortable.js ====
+// ==== main/Script/core/sortable.js ====
 'use strict';
 
 // 纵向列表的 Pointer Events 拖拽排序实现。
@@ -11649,7 +11649,7 @@ function attachSortableList(listContainer, options) {
     };
 }
 
-// ==== main/Script/mixins/QuickLinksMixin.js ====
+// ==== main/Script/core/mixins/QuickLinksMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -12571,7 +12571,7 @@ updateQuickLinksListInMenu (listContainer) {
 },
 };
 
-// ==== main/Script/mixins/SearchMixin.js ====
+// ==== main/Script/core/mixins/SearchMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -13395,7 +13395,7 @@ const SearchMixin = {
     },
 };
 
-// ==== main/Script/translate-shared.js ====
+// ==== main/Script/core/translate-shared.js ====
 // 翻译语言表与解析函数：主页面与侧边栏面板共用（Stage 9）。
 //
 // 此前两侧各存一份表，注释都写着"与主页面保持一致"，实际已经漂移：
@@ -13449,7 +13449,7 @@ function resolveLanguagePair(pairText) {
     return { raw: fromEntry.key + '-' + toEntry.key, from: fromEntry, to: toEntry };
 }
 
-// ==== main/Script/mixins/TranslateMixin.js ====
+// ==== main/Script/core/mixins/TranslateMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -13801,7 +13801,7 @@ const TranslateMixin = {
     },
 };
 
-// ==== main/Script/storage-sync.js ====
+// ==== main/Script/core/storage-sync.js ====
 // 主页面与侧边栏面板共用的 chrome.storage 同步白名单（Stage 9）。
 //
 // 语义：只有这个列表里的键发生变化时，另一侧才需要重新应用设置。
@@ -13828,7 +13828,7 @@ const SYNC_KEYS = [
     'widgetPanel', 'wallpaper', 'wallpaperUrl'
 ];
 
-// ==== main/Script/mixins/SettingsMixin.js ====
+// ==== main/Script/core/mixins/SettingsMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -14896,7 +14896,7 @@ const SettingsMixin = {
     },
 };
 
-// ==== main/Script/mixins/SidePanelBridgeMixin.js ====
+// ==== main/Script/core/mixins/SidePanelBridgeMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -15314,7 +15314,7 @@ syncSidePanelSelectDisplay () {
 },
 };
 
-// ==== main/Script/mixins/RightPanelMixin.js ====
+// ==== main/Script/core/mixins/RightPanelMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -17770,7 +17770,7 @@ initSettingsMenus () {
 },
 };
 
-// ==== main/Script/mixins/BookmarkMixin.js ====
+// ==== main/Script/core/mixins/BookmarkMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -18088,7 +18088,7 @@ importBookmarksFromChrome (mode, folderId, dropdown, folderSubmenu) {
 },
 };
 
-// ==== main/Script/widgets/WidgetBase.js ====
+// ==== main/Script/core/widgets/WidgetBase.js ====
 /**
  * OOOInterface 小组件基类
  * 所有小组件继承此基类，实现 render() 与 destroy()
@@ -18259,7 +18259,7 @@ class WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/ClockWidget.js ====
+// ==== main/Script/core/widgets/ClockWidget.js ====
 /**
  * 大时钟小组件
  * 纯客户端，本地时间，每秒刷新
@@ -18312,7 +18312,7 @@ class ClockWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/CalendarWidget.js ====
+// ==== main/Script/core/widgets/CalendarWidget.js ====
 /**
  * 日历小组件
  * 纯客户端，本地时间，农历转换（1900-2100 查表算法，无网络依赖）
@@ -18717,7 +18717,7 @@ const LUNAR_DAY_NAMES = ['初一', '初二', '初三', '初四', '初五', '初�
 const WEEKDAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
 const WEEKDAY_HEADER = ['一', '二', '三', '四', '五', '六', '日'];
 
-// ==== main/Script/widgets/WeatherWidget.js ====
+// ==== main/Script/core/widgets/WeatherWidget.js ====
 /**
  * 天气小组件
  * 数据源：Open-Meteo（免费无 Key）
@@ -18999,7 +18999,7 @@ class WeatherWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/TasksWidget.js ====
+// ==== main/Script/core/widgets/TasksWidget.js ====
 /**
  * 任务小组件（仅本地 localStorage）
  */
@@ -19250,7 +19250,7 @@ class TasksWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/AiAgentWidget.js ====
+// ==== main/Script/core/widgets/AiAgentWidget.js ====
 /**
  * AI Agent 小组件
  * 本地接口：http://127.0.0.1:{port}
@@ -19499,7 +19499,7 @@ class AiAgentWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/EmailWidget.js ====
+// ==== main/Script/core/widgets/EmailWidget.js ====
 // [bundled] import { … } from './WidgetBase.js'
 
 class EmailWidget extends WidgetBase {
@@ -19819,7 +19819,7 @@ class EmailWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/UpgradeToolWidget.js ====
+// ==== main/Script/core/widgets/UpgradeToolWidget.js ====
 /**
  * 升级工具小组件
  * 支持小/大/超大三种尺寸，通过 OUA 后端接口检查更新
@@ -20171,7 +20171,7 @@ class UpgradeToolWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/widget-types.js ====
+// ==== main/Script/core/widgets/widget-types.js ====
 // 小组件类型表与尺寸辅助函数：主页面与侧边栏面板共用（Stage 9）。
 //
 // 数据以主页面那份为准——它是侧边栏那份的**超集**（多一个 icon 字段，
@@ -20217,7 +20217,7 @@ function getWidgetSizeLabel(type, size) {
     return s === 'rectangle' ? '大' : s === 'super' ? '超大' : '小';
 }
 
-// ==== main/Script/mixins/WidgetMixin.js ====
+// ==== main/Script/core/mixins/WidgetMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -21505,7 +21505,7 @@ importWidgets (text, listContainer) {
 },
 };
 
-// ==== main/Script/mixins/ImportExportMixin.js ====
+// ==== main/Script/core/mixins/ImportExportMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -21576,7 +21576,7 @@ importSettingsFromMarkdown (file) {
 },
 };
 
-// ==== main/Script/mixins/SystemInfoMixin.js ====
+// ==== main/Script/core/mixins/SystemInfoMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -21599,7 +21599,7 @@ const SystemInfoMixin = {
     },
 };
 
-// ==== main/Script/mixins/InteractionMixin.js ====
+// ==== main/Script/core/mixins/InteractionMixin.js ====
 // 本文件由 script.js 拆分而来（Stage 8）。
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
@@ -21670,7 +21670,7 @@ const InteractionMixin = {
     },
 };
 
-// ==== main/Script/main.js ====
+// ==== main/Script/core/main.js ====
 'use strict';
 
 // 新标签页（main/index.html）的模块入口。

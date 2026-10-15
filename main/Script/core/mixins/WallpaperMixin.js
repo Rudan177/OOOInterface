@@ -266,7 +266,7 @@ export const WallpaperMixin = {
     },
     // ==================== 壁纸格式（HDR / 实况照片）====================
     //
-    // 判定在 main/Script/wallpaper-formats.js 里做（纯字节解析），
+    // 判定在 main/Script/core/wallpaper-formats.js 里做（纯字节解析），
     // 这里只负责把判定结果接进「存储 / 渲染 / 界面」三条链。
 
     // 存库前的压缩。返回可直接落盘的 data URL。

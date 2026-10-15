@@ -41,9 +41,9 @@ const ROOT = path.resolve(__dirname, '..');
 const TARGETS = [
   {
     name: 'main',
-    entry: 'main/Script/main.js',
+    entry: 'main/Script/core/main.js',
     out: 'main/Script/bundle.main.js',
-    html: { file: 'main/index.html', src: 'Script/bundle.main.js', was: 'Script/main.js' },
+    html: { file: 'main/index.html', src: 'Script/bundle.main.js', was: 'Script/core/main.js' },
   },
   {
     name: 'sidepanel',
@@ -261,7 +261,7 @@ function buildBundle(target) {
     '// ⚠️ 本文件由 tools/build.js 自动生成，请勿直接编辑。',
     `// 源码指纹: ${fingerprint}    模块数: ${order.length}`,
     `// 入口: ${target.entry}`,
-    '// 源码仍在 main/Script/** 按 mixin 拆分维护；改完源码后重新构建：',
+    '// 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：',
     '//     node tools/build.js          （或 node tools/build.js --watch）',
     '',
   ].join('\n');

@@ -1868,7 +1868,7 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 
 
-/* 图标字体是异步挂载的（见 Script/font-loader.js）：Google Fonts 那份样式表由脚本插进
+/* 图标字体是异步挂载的（见 Script/core/font-loader.js）：Google Fonts 那份样式表由脚本插进
    <head>，不阻塞首屏，于是从首屏画出到字体族生效之间有几十~几百毫秒（CDN 慢时更久），
    这期间这两个类名没有对应的字体族，字形会退化成字面文字（按钮上直接印出 settings
    这个词）。先留白 —— 这与改动前（同步 link + 字体的 block 期）的观感一致。
@@ -4239,7 +4239,7 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
 
 
 
-/* 拖动排序（共享给快速访问链接与小组件两个列表，见 Script/sortable.js） */
+/* 拖动排序（共享给快速访问链接与小组件两个列表，见 Script/core/sortable.js） */
 
 /* 跟随光标的悬浮克隆体 */
 .sortable-float {

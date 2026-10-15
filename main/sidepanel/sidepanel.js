@@ -7,22 +7,22 @@
 
 // color.js 的 getColorConfig：本文件内还有一个同名包装函数（负责补充 themeColorScheme/自定义配色分支），
 // 故以别名导入，避免与本文件内的函数声明重名。
-import { getColorConfig as getColorConfigBase } from '../Script/color.js';
-import { ProxyManager } from '../Script/proxy.js';
-import { ClockWidget } from '../Script/widgets/ClockWidget.js';
-import { CalendarWidget } from '../Script/widgets/CalendarWidget.js';
-import { WeatherWidget } from '../Script/widgets/WeatherWidget.js';
-import { TasksWidget } from '../Script/widgets/TasksWidget.js';
-import { AiAgentWidget } from '../Script/widgets/AiAgentWidget.js';
-import { EmailWidget } from '../Script/widgets/EmailWidget.js';
-import { UpgradeToolWidget } from '../Script/widgets/UpgradeToolWidget.js';
+import { getColorConfig as getColorConfigBase } from '../Script/core/color.js';
+import { ProxyManager } from '../Script/core/proxy.js';
+import { ClockWidget } from '../Script/core/widgets/ClockWidget.js';
+import { CalendarWidget } from '../Script/core/widgets/CalendarWidget.js';
+import { WeatherWidget } from '../Script/core/widgets/WeatherWidget.js';
+import { TasksWidget } from '../Script/core/widgets/TasksWidget.js';
+import { AiAgentWidget } from '../Script/core/widgets/AiAgentWidget.js';
+import { EmailWidget } from '../Script/core/widgets/EmailWidget.js';
+import { UpgradeToolWidget } from '../Script/core/widgets/UpgradeToolWidget.js';
 // 出厂默认设置：与主页面共用同一来源（Stage 9）
-import { DEFAULT_SETTINGS } from '../Script/settings-defaults.js';
-import { SYNC_KEYS } from '../Script/storage-sync.js';
+import { DEFAULT_SETTINGS } from '../Script/core/settings-defaults.js';
+import { SYNC_KEYS } from '../Script/core/storage-sync.js';
 // 小组件类型表与尺寸辅助函数：与主页面共用同一来源（Stage 9）
-import { getWidgetAllowedSizes, normalizeWidgetSize } from '../Script/widgets/widget-types.js';
+import { getWidgetAllowedSizes, normalizeWidgetSize } from '../Script/core/widgets/widget-types.js';
 // 翻译语言表与解析函数：与主页面共用同一来源（Stage 9）
-import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/translate-shared.js';
+import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/translate-shared.js';
 
 (function () {
     'use strict';
@@ -292,7 +292,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
     // ========== 小组件（与主页面小组件面板同一套组件与配置） ==========
     //
     // 类型表 getWidgetAllowedSizes / normalizeWidgetSize 已提取到
-    // ../Script/widgets/widget-types.js，与主页面共用（Stage 9）。
+    // ../Script/core/widgets/widget-types.js，与主页面共用（Stage 9）。
     // 此处只是本地副本删除，两个函数的调用点保持不变。
 
     function createWidgetInstance(config) {
@@ -641,7 +641,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
         return ['translate', 't', '翻译'].indexOf((word || '').toLowerCase()) !== -1;
     }
 
-    // 语言表与解析函数已提取到 ../Script/translate-shared.js，与主页面共用（Stage 9）。
+    // 语言表与解析函数已提取到 ../Script/core/translate-shared.js，与主页面共用（Stage 9）。
     // 本地面板此前那份表少了 es（西班牙语），与主页面并不一致；改用共享表后
     // /t es 也能在面板里解析。下方 resolveTranslateLanguage / resolveLanguagePair
     // 的调用点保持不变。

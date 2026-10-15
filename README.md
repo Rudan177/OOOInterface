@@ -5,8 +5,8 @@
 ## 项目信息
 
 - **产品名称**: OOOInterface 33
-- **当前版本**: 5.3:33-BS256
-- **发布日期**: 2026年10月11日
+- **当前版本**: 5.3:33-BS249.5
+- **发布日期**: 2026年10月17日
 - **许可证**: ABCD-26W08A
 - **Manifest 版本**: V3
 
@@ -30,7 +30,7 @@
 ## 开发：改完源码需要重新构建
 
 `main/index.html` 和 `main/sidepanel/sidepanel.html` 加载的是**打包产物**，源码仍按 mixin
-拆分在 `main/Script/**`、`main/sidepanel/sidepanel.js`。改完源码必须重新构建，否则页面跑的还是旧产物：
+拆分在 `main/Script/core/**`、`main/sidepanel/sidepanel.js`。改完源码必须重新构建，否则页面跑的还是旧产物：
 
 ```bash
 node tools/build.js            # 构建一次

@@ -1,9 +1,9 @@
 // ⚠️ 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹: c14b8f157ff4f0ef    模块数: 15
+// 源码指纹: 77c7f341ff27a7da    模块数: 15
 // 入口: main/sidepanel/sidepanel.js
-// 源码仍在 main/Script/** 按 mixin 拆分维护；改完源码后重新构建：
+// 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
-// ==== main/Script/color.js ====
+// ==== main/Script/core/color.js ====
 /**
  * 配色方案配置
  * 所有配色相关的常量和配置集中管理
@@ -361,7 +361,7 @@ function getColorConfig(scheme, customColors) {
     return COLOR_SCHEME_CONFIGS[scheme] || COLOR_SCHEME_CONFIGS['green'];
 }
 
-// ==== main/Script/proxy.js ====
+// ==== main/Script/core/proxy.js ====
 const ProxyManager = (function () {
     var proxyPort = null;
 
@@ -474,7 +474,7 @@ const ProxyManager = (function () {
     };
 })();
 
-// ==== main/Script/widgets/WidgetBase.js ====
+// ==== main/Script/core/widgets/WidgetBase.js ====
 /**
  * OOOInterface 小组件基类
  * 所有小组件继承此基类，实现 render() 与 destroy()
@@ -645,7 +645,7 @@ class WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/ClockWidget.js ====
+// ==== main/Script/core/widgets/ClockWidget.js ====
 /**
  * 大时钟小组件
  * 纯客户端，本地时间，每秒刷新
@@ -698,7 +698,7 @@ class ClockWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/CalendarWidget.js ====
+// ==== main/Script/core/widgets/CalendarWidget.js ====
 /**
  * 日历小组件
  * 纯客户端，本地时间，农历转换（1900-2100 查表算法，无网络依赖）
@@ -1103,7 +1103,7 @@ const LUNAR_DAY_NAMES = ['初一', '初二', '初三', '初四', '初五', '初�
 const WEEKDAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
 const WEEKDAY_HEADER = ['一', '二', '三', '四', '五', '六', '日'];
 
-// ==== main/Script/widgets/WeatherWidget.js ====
+// ==== main/Script/core/widgets/WeatherWidget.js ====
 /**
  * 天气小组件
  * 数据源：Open-Meteo（免费无 Key）
@@ -1385,7 +1385,7 @@ class WeatherWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/TasksWidget.js ====
+// ==== main/Script/core/widgets/TasksWidget.js ====
 /**
  * 任务小组件（仅本地 localStorage）
  */
@@ -1636,7 +1636,7 @@ class TasksWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/AiAgentWidget.js ====
+// ==== main/Script/core/widgets/AiAgentWidget.js ====
 /**
  * AI Agent 小组件
  * 本地接口：http://127.0.0.1:{port}
@@ -1885,7 +1885,7 @@ class AiAgentWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/EmailWidget.js ====
+// ==== main/Script/core/widgets/EmailWidget.js ====
 // [bundled] import { … } from './WidgetBase.js'
 
 class EmailWidget extends WidgetBase {
@@ -2205,7 +2205,7 @@ class EmailWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/widgets/UpgradeToolWidget.js ====
+// ==== main/Script/core/widgets/UpgradeToolWidget.js ====
 /**
  * 升级工具小组件
  * 支持小/大/超大三种尺寸，通过 OUA 后端接口检查更新
@@ -2557,7 +2557,7 @@ class UpgradeToolWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/settings-defaults.js ====
+// ==== main/Script/core/settings-defaults.js ====
 // 出厂默认设置：主页面与侧边栏共用的唯一来源（Stage 9）。
 //
 // 主页面的 OOOInterface 与侧边栏面板此前各存一份，侧边栏那份是主页面的子集，
@@ -2667,7 +2667,7 @@ const DEFAULT_SETTINGS = {
     customThemes: []             // 用户导入的自定义主题 [{key, name, designer, version, data}]
 };
 
-// ==== main/Script/storage-sync.js ====
+// ==== main/Script/core/storage-sync.js ====
 // 主页面与侧边栏面板共用的 chrome.storage 同步白名单（Stage 9）。
 //
 // 语义：只有这个列表里的键发生变化时，另一侧才需要重新应用设置。
@@ -2694,7 +2694,7 @@ const SYNC_KEYS = [
     'widgetPanel', 'wallpaper', 'wallpaperUrl'
 ];
 
-// ==== main/Script/widgets/widget-types.js ====
+// ==== main/Script/core/widgets/widget-types.js ====
 // 小组件类型表与尺寸辅助函数：主页面与侧边栏面板共用（Stage 9）。
 //
 // 数据以主页面那份为准——它是侧边栏那份的**超集**（多一个 icon 字段，
@@ -2740,7 +2740,7 @@ function getWidgetSizeLabel(type, size) {
     return s === 'rectangle' ? '大' : s === 'super' ? '超大' : '小';
 }
 
-// ==== main/Script/translate-shared.js ====
+// ==== main/Script/core/translate-shared.js ====
 // 翻译语言表与解析函数：主页面与侧边栏面板共用（Stage 9）。
 //
 // 此前两侧各存一份表，注释都写着"与主页面保持一致"，实际已经漂移：
@@ -2805,22 +2805,22 @@ function resolveLanguagePair(pairText) {
 // color.js 的 getColorConfig：本文件内还有一个同名包装函数（负责补充 themeColorScheme/自定义配色分支），
 // 故以别名导入，避免与本文件内的函数声明重名。
 const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig as getColorConfigBase }
-// [bundled] import { … +1 个改名绑定 } from '../Script/color.js'
-// [bundled] import { … } from '../Script/proxy.js'
-// [bundled] import { … } from '../Script/widgets/ClockWidget.js'
-// [bundled] import { … } from '../Script/widgets/CalendarWidget.js'
-// [bundled] import { … } from '../Script/widgets/WeatherWidget.js'
-// [bundled] import { … } from '../Script/widgets/TasksWidget.js'
-// [bundled] import { … } from '../Script/widgets/AiAgentWidget.js'
-// [bundled] import { … } from '../Script/widgets/EmailWidget.js'
-// [bundled] import { … } from '../Script/widgets/UpgradeToolWidget.js'
+// [bundled] import { … +1 个改名绑定 } from '../Script/core/color.js'
+// [bundled] import { … } from '../Script/core/proxy.js'
+// [bundled] import { … } from '../Script/core/widgets/ClockWidget.js'
+// [bundled] import { … } from '../Script/core/widgets/CalendarWidget.js'
+// [bundled] import { … } from '../Script/core/widgets/WeatherWidget.js'
+// [bundled] import { … } from '../Script/core/widgets/TasksWidget.js'
+// [bundled] import { … } from '../Script/core/widgets/AiAgentWidget.js'
+// [bundled] import { … } from '../Script/core/widgets/EmailWidget.js'
+// [bundled] import { … } from '../Script/core/widgets/UpgradeToolWidget.js'
 // 出厂默认设置：与主页面共用同一来源（Stage 9）
-// [bundled] import { … } from '../Script/settings-defaults.js'
-// [bundled] import { … } from '../Script/storage-sync.js'
+// [bundled] import { … } from '../Script/core/settings-defaults.js'
+// [bundled] import { … } from '../Script/core/storage-sync.js'
 // 小组件类型表与尺寸辅助函数：与主页面共用同一来源（Stage 9）
-// [bundled] import { … } from '../Script/widgets/widget-types.js'
+// [bundled] import { … } from '../Script/core/widgets/widget-types.js'
 // 翻译语言表与解析函数：与主页面共用同一来源（Stage 9）
-// [bundled] import { … } from '../Script/translate-shared.js'
+// [bundled] import { … } from '../Script/core/translate-shared.js'
 
 (function () {
     'use strict';
@@ -3090,7 +3090,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
     // ========== 小组件（与主页面小组件面板同一套组件与配置） ==========
     //
     // 类型表 getWidgetAllowedSizes / normalizeWidgetSize 已提取到
-    // ../Script/widgets/widget-types.js，与主页面共用（Stage 9）。
+    // ../Script/core/widgets/widget-types.js，与主页面共用（Stage 9）。
     // 此处只是本地副本删除，两个函数的调用点保持不变。
 
     function createWidgetInstance(config) {
@@ -3439,7 +3439,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         return ['translate', 't', '翻译'].indexOf((word || '').toLowerCase()) !== -1;
     }
 
-    // 语言表与解析函数已提取到 ../Script/translate-shared.js，与主页面共用（Stage 9）。
+    // 语言表与解析函数已提取到 ../Script/core/translate-shared.js，与主页面共用（Stage 9）。
     // 本地面板此前那份表少了 es（西班牙语），与主页面并不一致；改用共享表后
     // /t es 也能在面板里解析。下方 resolveTranslateLanguage / resolveLanguagePair
     // 的调用点保持不变。

@@ -9,7 +9,7 @@
          会等在途样式表，排后面就得先等 styles.css 加载完），它自身不产生绘制。
          图标字体不在这里同步加载（渲染阻塞，CDN 一慢整页零绘制）：主页面用同一份
          styles.css，那边的 html:not(.icons-ready) 留白规则也管这里。 -->
-    <script src="../Script/font-loader.js"></script>
+    <script src="../Script/core/font-loader.js"></script>
     <!-- 复用主页面样式，保证与主页面视觉完全一致 -->
     <link rel="stylesheet" href="../Style/styles.css">
     <link rel="stylesheet" href="../Style/dynamic-blur.css">
