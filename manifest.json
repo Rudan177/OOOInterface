@@ -52,7 +52,7 @@
       "suggested_key": {
         "default": "Alt+O"
       },
-      "description": "激活 OOOInterface 扩展程序"
+      "description": "切换 OOOInterface 侧边栏（侧边栏功能关闭时打开主页）"
     }
   },
 

@@ -1,5 +1,5 @@
 // ⚠️ 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹: 77c7f341ff27a7da    模块数: 15
+// 源码指纹: e6ca621f07228951    模块数: 15
 // 入口: main/sidepanel/sidepanel.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -4578,6 +4578,40 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
 
     // ========== 启动 ==========
 
+    // ========== 入场动画重放 ==========
+    //
+    // 入场动画写在 sidepanel.css 里，且只能挂在"玻璃元素自身"上：祖先只要带
+    // transform / opacity < 1 就会形成 backdrop root，后代的 backdrop-filter
+    // 随即失效（实测：挂在 .qa-panel-search 上会让搜索框 80px 毛玻璃永久失效）。
+    //
+    // 面板关闭时若 Chrome 复用本页（不重新加载），纯 CSS 动画一辈子只播一次，
+    // 再次打开就没有入场效果；故在"由隐藏转为可见"时重放一次。首次加载不在
+    // 此列——那时 CSS 动画本来就在播，重复触发只会让元素闪一下。
+    var ENTRANCE_SELECTOR = [
+        '.qa-panel-widgets .widget-card',
+        '.qa-panel-search .search-container',
+        '.qa-panel-search .engine-btn',
+        '.widget-panel-empty-cta',
+        '.qa-guide-card'
+    ].join(',');
+
+    function replayEntranceAnimation() {
+        var els = Array.prototype.slice.call(document.querySelectorAll(ENTRANCE_SELECTOR));
+        if (!els.length) return;
+        els.forEach(function (el) { el.style.animation = 'none'; });
+        void document.body.offsetWidth; // 一次性强制回流，让旧动画被真正取消
+        els.forEach(function (el) { el.style.animation = ''; });
+    }
+
+    function initEntranceReplay() {
+        var wasHidden = document.hidden;
+        document.addEventListener('visibilitychange', function () {
+            var hidden = document.hidden;
+            if (wasHidden && !hidden) replayEntranceAnimation();
+            wasHidden = hidden;
+        });
+    }
+
     async function start() {
         try {
             await loadSettings();
@@ -4591,6 +4625,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         applyAll();
         initInteractions();
         initWidgetScaleSync();
+        initEntranceReplay();
         window.addEventListener('resize', handlePanelResize);
         window.addEventListener('pagehide', removeMobileUaRule);
     }
