@@ -33,3 +33,4 @@
 | 20261014   | 流光 (Light Me Up) | 洛天依 | 238s | 1 | Contribute |
 | 20261015   | 珍珠 | 洛天依 | 201s | 1 | Contribute |
 | 20261016   | 心同此愿 | 周深 | 275s | 1 | Contribute |
+| 20261017   | 不散的花 | 泠鸢yousa | 222s | 1 | Contribute |
