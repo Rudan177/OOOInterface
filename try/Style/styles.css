@@ -1868,6 +1868,17 @@ body.scrolled.dynamic-blur .ooo-badge {
 
 
 
+/* 图标字体是异步挂载的（见 Script/core/font-loader.js）：Google Fonts 那份样式表由脚本插进
+   <head>，不阻塞首屏，于是从首屏画出到字体族生效之间有几十~几百毫秒（CDN 慢时更久），
+   这期间这两个类名没有对应的字体族，字形会退化成字面文字（按钮上直接印出 settings
+   这个词）。先留白 —— 这与改动前（同步 link + 字体的 block 期）的观感一致。
+   font-loader.js 拿到这份 CSS（或确定它拿不到）后，给 <html> 加上对应的标记类，
+   图标随即显形；那之前一直空着 —— 宁可空着也不要印出字面文字。 */
+html:not(.icons-ready) .material-icons,
+html:not(.symbols-ready) .material-symbols-outlined {
+    visibility: hidden;
+}
+
 .material-icons {
     font-family: 'Material Icons' !important;
 }
@@ -2660,12 +2671,12 @@ body.dynamic-blur .badge-action-thumb {
         background: rgba(var(--surface-color-rgb), 0.9) !important;
     }
 
-    .wallpaper-fill-toggle-wrapper {
+    .wallpaper-badge-config-entry {
         background: transparent;
         border-color: var(--border-color);
     }
 
-    .wallpaper-fill-toggle-wrapper:hover {
+    .wallpaper-badge-config-entry:hover {
         background: rgba(var(--surface-color-rgb), 0.8);
     }
 
@@ -2685,11 +2696,11 @@ body.dynamic-blur .badge-action-thumb {
         background: rgba(var(--surface-color-rgb), 0.35) !important;
     }
 
-    body.dynamic-blur .wallpaper-fill-toggle-wrapper {
+    body.dynamic-blur .wallpaper-badge-config-entry {
         background: transparent !important;
     }
 
-    body.dynamic-blur .wallpaper-fill-toggle-wrapper:hover {
+    body.dynamic-blur .wallpaper-badge-config-entry:hover {
         background: rgba(var(--surface-color-rgb), 0.92) !important;
     }
 }
@@ -3799,9 +3810,165 @@ body.dynamic-blur .settings-menu-confirm:active {
 
 .custom-wallpaper-name {
     flex: 1;
+    /* 加了固定宽度的格式方框后，长名字必须能真正收缩，
+       否则 flex 的默认 min-width:auto 会把方框和删除按钮顶出容器 */
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* 壁纸格式方框（HDR / 实况照片），位于壁纸名与删除按钮之间。
+   是与删除按钮同一套写法：1px 实边、6px 圆角、0.2s 过渡、选中态翻白
+   （选中行是主色渐变底，暖色/冷色都会被糊掉）。
+   和删除按钮不同的是它是个**开关按钮**：图标取 Material Symbols 的
+   hdr_on/hdr_off、motion_photos_on/motion_photos_off（关闭态自带一道斜杠），
+   配色只是开关状态的第二重提示。 */
+.wallpaper-format-badges {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.wallpaper-format-badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 纯图标：只有一枚 12px 的 SVG，内边距收成方章（12 + 5×2 + 1×2 = 24px 宽） */
+    padding: 4px 5px;
+    margin: 0;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    /* button 默认样式一律清掉，否则会带上系统字体与凸起背景 */
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: inherit;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: all 0.2s ease;
+}
+
+.wallpaper-format-badge svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    display: block;
+}
+
+.wallpaper-format-badge.hdr {
+    color: #ffb300;
+    background: rgba(255, 179, 0, 0.14);
+}
+
+.wallpaper-format-badge.live {
+    color: #4dd0e1;
+    background: rgba(77, 208, 225, 0.14);
+}
+
+/* 关闭态：图标换成带斜杠的那版，配色同时退回中性灰，
+   两重提示叠加，缩略图大小下也能一眼看出开关状态 */
+.wallpaper-format-badge.off {
+    color: #8b93a1;
+    background: rgba(139, 147, 161, 0.12);
+}
+
+.wallpaper-format-badge.hdr:hover {
+    background: rgba(255, 179, 0, 0.3);
+    border-color: #ffb300;
+}
+
+.wallpaper-format-badge.live:hover {
+    background: rgba(77, 208, 225, 0.3);
+    border-color: #4dd0e1;
+}
+
+.wallpaper-format-badge.off:hover {
+    background: rgba(139, 147, 161, 0.24);
+    border-color: #8b93a1;
+}
+
+.wallpaper-format-badge:active {
+    transform: scale(0.94);
+}
+
+/* 键盘操作要有可见焦点，但不能在点击时也亮一圈 */
+.wallpaper-format-badge:focus {
+    outline: none;
+}
+
+.wallpaper-format-badge:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+}
+
+.settings-menu-option.selected .wallpaper-format-badge {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.settings-menu-option.selected .wallpaper-format-badge.off {
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.settings-menu-option.selected .wallpaper-format-badge:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: #fff;
+}
+
+/* 右上角的当前壁纸格式角标：HDR / 实况两种，纯 MD 图标、不可点击。
+   它是指示灯不是开关 —— 开关在壁纸列表的方框上。
+   显隐全交给 CSS：JS 只写 data-scope（home = 主页面与壁纸模式都显示，
+   wallpaper = 只在 body.scrolled 下显示），进/出壁纸模式因此不用在每条路径上重算。
+   z-index 4：压在快捷访问侧边栏（5）之下 —— 侧边栏展开时是块不透明面板，角标让位；
+   同样在状态条（25）与设置弹窗（1000）之下，弹通知/开设置时不会压在它们上面。 */
+.wallpaper-format-corner {
+    position: fixed;
+    top: calc(var(--status-bar-offset) + 12px);
+    right: 16px;
+    display: flex;
+    gap: 10px;
+    z-index: 4;
+    pointer-events: none;
+}
+
+/* 只有图标、没有底框：原来的深色圆角底换成图标外缘的一圈暗描边 ——
+   同一个形状叠几层不同半径的 drop-shadow，近处压出实心暗边、远处留一层柔和投影，
+   亮壁纸上也读得清。不用 backdrop-filter 做毛玻璃底：本页 body 上就有过
+   fixed 元素被它变成相对定位的案例。 */
+.wallpaper-format-corner-badge {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9))
+            drop-shadow(0 0 2px rgba(0, 0, 0, 0.65))
+            drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+.wallpaper-format-corner-badge svg {
+    width: 26px;
+    height: 26px;
+    display: block;
+}
+
+.wallpaper-format-corner-badge.hdr {
+    color: #ffb300;
+}
+
+.wallpaper-format-corner-badge.live {
+    color: #4dd0e1;
+}
+
+.wallpaper-format-corner-badge[data-scope="home"] {
+    display: inline-flex;
+}
+
+body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
+    display: inline-flex;
 }
 
 /* 自定义壁纸删除按钮 */
@@ -4072,7 +4239,7 @@ body.dynamic-blur .settings-menu-confirm:active {
 
 
 
-/* 拖动排序（共享给快速访问链接与小组件两个列表，见 Script/sortable.js） */
+/* 拖动排序（共享给快速访问链接与小组件两个列表，见 Script/core/sortable.js） */
 
 /* 跟随光标的悬浮克隆体 */
 .sortable-float {
@@ -6448,10 +6615,15 @@ body.scrolled .search-section {
 
 
 
+/* 光晕的柔边靠 background 里的 radial-gradient 做（见 VisualEffectsMixin.createGlowOrbs），
+   **不要**用 filter: blur()：这个元素在跑 transform 动画，带 blur 滤镜时 Chrome 无法复用
+   缓存的模糊纹理，每一帧都要重算一次 60px 半径的高斯模糊，4 个光晕就是每帧 4 次。
+   实测（本机无头 Chrome，全部高级视觉效果开着）：
+     原样 中位帧间隔 50.0ms(20fps) → 只把这条 filter 去掉 16.7ms(60fps)
+   —— 这一条是整个「卡到爆炸」的主因，比全屏 backdrop-filter 还重。 */
 .glow-orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(60px);
     opacity: 0.3;
     animation: orb-float 20s ease-in-out infinite;
     will-change: transform;
@@ -7043,7 +7215,7 @@ body.dynamic-blur .settings-import-btn:active {
     transform: scale(0.95);
 }
 
-body.dynamic-blur .wallpaper-fill-toggle-wrapper {
+body.dynamic-blur .wallpaper-badge-config-entry {
     background: rgba(var(--surface-color-rgb), 0.85) !important;
     border: none !important;
     color: var(--text-color) !important;
@@ -7051,18 +7223,14 @@ body.dynamic-blur .wallpaper-fill-toggle-wrapper {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-body.dynamic-blur .wallpaper-fill-toggle-wrapper:hover {
+body.dynamic-blur .wallpaper-badge-config-entry:hover {
     background: rgba(var(--surface-color-rgb), 0.92) !important;
-    transform: scale(1.05);
+    transform: scale(1.1);
 }
 
-body.dynamic-blur .wallpaper-fill-toggle-wrapper:active {
+body.dynamic-blur .wallpaper-badge-config-entry:active {
     background: rgba(var(--surface-color-rgb), 0.78) !important;
     transform: scale(0.95);
-}
-
-body.dynamic-blur .wallpaper-fill-toggle-text {
-    color: var(--text-color) !important;
 }
 
 /* 高级视觉 - 设置菜单 */
@@ -7528,6 +7696,30 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     opacity: 0 !important;
 }
 
+/* Live 图（实况照片）播放层：与 #wallpaper-main 同为 z-index:-1，
+   在 DOM 里排在 main 之后，因此播放期间盖住静帧；播完移除 .active 淡出，
+   露出下面的静帧。填充/适配模式与静帧保持一致。 */
+#wallpaper-live {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+#wallpaper-live.active {
+    opacity: 1;
+}
+
+#wallpaper-live.fill-mode {
+    object-fit: cover;
+}
+
 
 
 #wallpaper-main.no-transition {
@@ -7541,14 +7733,17 @@ body.wallpaper-layers-ready {
     background-image: none !important;
 }
 
-/* ========== 右侧面板壁纸填满开关 ========== */
-
-.wallpaper-fill-toggle-wrapper {
+/* ========== 右侧面板壁纸菜单的「显示设置」入口 ========== */
+/* 与旁边的 + 号同为 40×40 的图标按钮，只放一枚设置齿轮 —— 铺满与角标设置都收进
+   它点开的视图里，底栏因此只剩 [齿轮][+] 两个图标。
+   按钮上没有可读文字，说明交给 title 与 aria-label。 */
+.wallpaper-badge-config-entry {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    width: 40px;
     height: 40px;
-    padding: 0 12px 0 14px;
+    padding: 0;
     background: transparent;
     border: 1px solid var(--border-color);
     color: var(--text-color);
@@ -7556,51 +7751,27 @@ body.wallpaper-layers-ready {
     cursor: pointer;
     user-select: none;
     flex-shrink: 0;
+    appearance: none;
+    -webkit-appearance: none;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.wallpaper-fill-toggle-wrapper:hover {
+/* 图标来自全站的 Material Icons 字体（与设置按钮、右键菜单里那枚 settings 同源），
+   字体栈自己会给 .material-icons 一个 24px 的字号，这里收到与相邻 + 号相称的大小 */
+.wallpaper-badge-config-entry .material-icons {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.wallpaper-badge-config-entry:hover {
     background: rgba(var(--surface-color-rgb), 0.9);
     border-color: var(--text-secondary);
-    transform: scale(1.05);
+    transform: scale(1.1);
 }
 
-.wallpaper-fill-toggle-wrapper:active {
+.wallpaper-badge-config-entry:active {
     background: rgba(var(--surface-color-rgb), 0.75);
     transform: scale(0.95);
-}
-
-.wallpaper-fill-toggle-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    user-select: none;
-    flex-shrink: 0;
-}
-
-.wallpaper-fill-toggle-text {
-    font-size: 12px;
-    font-weight: 500;
-    color: white;
-    white-space: nowrap;
-    transition: color 0.2s ease;
-}
-
-.wallpaper-fill-switch {
-    width: 36px !important;
-    height: 20px !important;
-}
-
-.wallpaper-fill-switch .slider:before {
-    height: 16px !important;
-    width: 16px !important;
-    left: 2px !important;
-    bottom: 2px !important;
-}
-
-.wallpaper-fill-switch input:checked+.slider:before {
-    transform: translateX(16px) !important;
 }
 
 /* 屏幕高度500~700px时，按钮区域上下间距缩小 */

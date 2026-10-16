@@ -5,19 +5,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OOOInterface</title>
+    <!-- font-loader.js 必须排在这几条 <link rel=stylesheet> 前面：
+         经典脚本执行前会等所有在途样式表，排在后面就得先等本地的 styles.css 加载完，
+         字体的请求也跟着晚 100ms 以上。它只有几 KB，自身不产生任何绘制。 -->
+    <script src="Script/core/font-loader.js"></script>
     <link rel="stylesheet" href="Style/styles.css">
     <link rel="stylesheet" href="Style/dynamic-blur.css">
     <link rel="stylesheet" href="Style/info.css">
     <link rel="stylesheet" href="Style/widget-panel.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
-        rel="stylesheet">
+    <!-- 图标字体（Material Icons / Material Symbols）不在这里写死：
+         它们是渲染阻塞资源，字体 CDN 一慢整页零绘制（实测拖 5 秒 → 3 秒内连
+         DOMContentLoaded 都到不了）。改由上面那行 font-loader.js 在解析到这附近时
+         用 appendChild 插进来 —— 脚本插入的样式表**不参与渲染阻塞**，首屏不等它，
+         而请求该什么时候发还是什么时候发（实测解析到脚本标签即发出，t≈40ms，
+         与原来那条阻塞 <link> 一样早、同为 VeryHigh 优先级）。
+         字形到位前由 styles.css 里那条 html:not(.icons-ready) 规则留白。 -->
 </head>
 
 <body>
 
     <div id="status-bar" class="status-bar" aria-live="polite"></div>
     <div id="status-bar-blur" class="status-bar-blur"></div>
+
+    <!-- 当前壁纸的格式角标（HDR / 实况照片），内容由 updateWallpaperFormatCorner() 填。
+         必须是 body 的直接子元素：position: fixed 一旦被带 transform/filter 的祖先包住就退化 -->
+    <div id="wallpaper-format-corner" class="wallpaper-format-corner"></div>
 
     <div class="container">
 
@@ -244,7 +256,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <input type="file" id="wallpaper-upload" accept="image/*" style="display: none;">
+                            <input type="file" id="wallpaper-upload" accept="image/*,.heic,.heif,.avif,.jxl,.livp,.mov" style="display: none;">
                         </div>
 
                         <div class="setting-group">
@@ -798,7 +810,12 @@
     </div>
 
     <script src="Script/version.js"></script>
-    <script type="module" src="Script/main.js"></script>
+    <!-- bundle 用经典 defer 脚本，不要写回 type="module"：扩展页里 Chromium 会为同一个
+         模块 URL 发两次 parser 请求（910KB 的 bundle 读两遍）；换成经典脚本只读一次，
+         执行时机不变（同样是解析完成后、DOMContentLoaded 之前）。实测 DCL 66→41ms、
+         app-constructed 76→55ms。副作用是经典脚本共享全局词法作用域，所以 bundle 顶层
+         声明名不能和 version.js 的全局重名（当前无重名）。 -->
+    <script defer src="Script/bundle.main.js"></script>
 </body>
 
 </html>

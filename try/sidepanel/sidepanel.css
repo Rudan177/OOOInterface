@@ -622,3 +622,120 @@ body.dynamic-blur.enhanced-display .qa-browser-card {
 .widget-panel-empty-cta:active {
     transform: scale(0.96);
 }
+
+/* ============================================================
+   进入动画：小组件卡 / 搜索框 / 搜索引擎按钮 / 引导卡
+   ------------------------------------------------------------
+   链接卡自身已有由 .quick-access-sidebar-container 的 .visible 过渡驱动的滑入
+   （translateX(calc(100% + 20px)) → 0，0.3s cubic-bezier(0.4, 0, 0.2, 1)），
+   这里给其余区块同一支节奏的"滑入 + 淡入"，并用 animation-delay 形成
+   自上而下的接力，避免面板打开时元素硬邦邦地跳出（内置页浏览器自带
+   qaBrowser* 动画，不在此列）。
+
+   ⚠ 位移/淡入只能挂在「玻璃元素自身」，绝不能挂在它们的祖先容器上：
+   backdrop-filter 的取样范围止于最近的 backdrop root，而祖先只要带
+   transform / opacity < 1（哪怕是动画残留的恒等 transform）就会成为
+   backdrop root，后代的毛玻璃随即失效。Chromium 152 实测（条纹壁纸 +
+   量玻璃下方像素清晰度）：把动画挂在 .qa-panel-search / .qa-panel-widgets
+   上并配 animation-fill-mode: both，动画结束后容器仍残留
+   matrix(1,0,0,1,0,0) 的合成层 transform，搜索框 80px 与小组件卡 40px
+   毛玻璃被永久打断（该区域与同位置纯壁纸逐像素相同）；祖先只做 opacity
+   动画同样会永久打断。反之把同一支动画挂在 .search-container / .widget-card
+   自身，行进中与结束后毛玻璃都完好。故：
+     · 容器不动；
+     · 只动玻璃元素本身；
+     · fill-mode 用 backwards —— 结束后回到基础样式，不留残值
+       （与主页面 widget-panel.css 的 widgetCardIn 同款写法）。
+   ============================================================ */
+
+@keyframes qaPanelItemIn {
+    from {
+        opacity: 0;
+        transform: translateX(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+body.qa-panel-page .qa-panel-widgets .widget-card,
+body.qa-panel-page .qa-panel-search .search-container,
+body.qa-panel-page .qa-panel-search .engine-btn,
+body.qa-panel-page .widget-panel-empty-cta,
+body.qa-panel-page .qa-guide-card {
+    animation: qaPanelItemIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+/* 自上而下的接力延迟（与链接卡的滑入节奏对齐） */
+body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(1) {
+    animation-delay: 0s;
+}
+
+body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(2) {
+    animation-delay: 0.05s;
+}
+
+body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(3) {
+    animation-delay: 0.1s;
+}
+
+body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(4) {
+    animation-delay: 0.15s;
+}
+
+body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(n+5) {
+    animation-delay: 0.2s;
+}
+
+body.qa-panel-page .qa-panel-search .search-container {
+    animation-delay: 0.07s;
+}
+
+body.qa-panel-page .qa-panel-search .engine-btn:nth-child(1) {
+    animation-delay: 0.12s;
+}
+
+body.qa-panel-page .qa-panel-search .engine-btn:nth-child(2) {
+    animation-delay: 0.17s;
+}
+
+body.qa-panel-page .qa-panel-search .engine-btn:nth-child(n+3) {
+    animation-delay: 0.22s;
+}
+
+body.qa-panel-page .widget-panel-empty-cta {
+    animation-delay: 0.05s;
+}
+
+body.qa-panel-page .qa-guide-card {
+    animation: qaPanelItemIn 0.32s cubic-bezier(0.4, 0, 0.2, 1) 0.07s backwards;
+}
+
+/* 系统开启"减少动态效果"时去掉位移，只保留短淡入。
+   注意不能在这里直接 animation: none —— 链接卡用的是 transition（不受本条影响），
+   一旦关掉就成了"链接卡照样滑入、其余区块纹丝不动"的不一致观感。 */
+@keyframes qaPanelFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    body.qa-panel-page .qa-panel-widgets .widget-card,
+    body.qa-panel-page .qa-panel-search .search-container,
+    body.qa-panel-page .qa-panel-search .engine-btn,
+    body.qa-panel-page .widget-panel-empty-cta {
+        animation: qaPanelFadeIn 0.2s ease-out backwards;
+    }
+
+    body.qa-panel-page .qa-guide-card {
+        animation: qaPanelFadeIn 0.2s ease-out 0.07s backwards;
+    }
+}

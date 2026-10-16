@@ -7,22 +7,22 @@
 
 // color.js 的 getColorConfig：本文件内还有一个同名包装函数（负责补充 themeColorScheme/自定义配色分支），
 // 故以别名导入，避免与本文件内的函数声明重名。
-import { getColorConfig as getColorConfigBase } from '../Script/color.js';
-import { ProxyManager } from '../Script/proxy.js';
-import { ClockWidget } from '../Script/widgets/ClockWidget.js';
-import { CalendarWidget } from '../Script/widgets/CalendarWidget.js';
-import { WeatherWidget } from '../Script/widgets/WeatherWidget.js';
-import { TasksWidget } from '../Script/widgets/TasksWidget.js';
-import { AiAgentWidget } from '../Script/widgets/AiAgentWidget.js';
-import { EmailWidget } from '../Script/widgets/EmailWidget.js';
-import { UpgradeToolWidget } from '../Script/widgets/UpgradeToolWidget.js';
+import { getColorConfig as getColorConfigBase } from '../Script/core/color.js';
+import { ProxyManager } from '../Script/core/proxy.js';
+import { ClockWidget } from '../Script/core/widgets/ClockWidget.js';
+import { CalendarWidget } from '../Script/core/widgets/CalendarWidget.js';
+import { WeatherWidget } from '../Script/core/widgets/WeatherWidget.js';
+import { TasksWidget } from '../Script/core/widgets/TasksWidget.js';
+import { AiAgentWidget } from '../Script/core/widgets/AiAgentWidget.js';
+import { EmailWidget } from '../Script/core/widgets/EmailWidget.js';
+import { UpgradeToolWidget } from '../Script/core/widgets/UpgradeToolWidget.js';
 // 出厂默认设置：与主页面共用同一来源（Stage 9）
-import { DEFAULT_SETTINGS } from '../Script/settings-defaults.js';
-import { SYNC_KEYS } from '../Script/storage-sync.js';
+import { DEFAULT_SETTINGS } from '../Script/core/settings-defaults.js';
+import { SYNC_KEYS } from '../Script/core/storage-sync.js';
 // 小组件类型表与尺寸辅助函数：与主页面共用同一来源（Stage 9）
-import { getWidgetAllowedSizes, normalizeWidgetSize } from '../Script/widgets/widget-types.js';
+import { getWidgetAllowedSizes, normalizeWidgetSize } from '../Script/core/widgets/widget-types.js';
 // 翻译语言表与解析函数：与主页面共用同一来源（Stage 9）
-import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/translate-shared.js';
+import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/translate-shared.js';
 
 (function () {
     'use strict';
@@ -292,7 +292,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
     // ========== 小组件（与主页面小组件面板同一套组件与配置） ==========
     //
     // 类型表 getWidgetAllowedSizes / normalizeWidgetSize 已提取到
-    // ../Script/widgets/widget-types.js，与主页面共用（Stage 9）。
+    // ../Script/core/widgets/widget-types.js，与主页面共用（Stage 9）。
     // 此处只是本地副本删除，两个函数的调用点保持不变。
 
     function createWidgetInstance(config) {
@@ -641,7 +641,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
         return ['translate', 't', '翻译'].indexOf((word || '').toLowerCase()) !== -1;
     }
 
-    // 语言表与解析函数已提取到 ../Script/translate-shared.js，与主页面共用（Stage 9）。
+    // 语言表与解析函数已提取到 ../Script/core/translate-shared.js，与主页面共用（Stage 9）。
     // 本地面板此前那份表少了 es（西班牙语），与主页面并不一致；改用共享表后
     // /t es 也能在面板里解析。下方 resolveTranslateLanguage / resolveLanguagePair
     // 的调用点保持不变。
@@ -1780,6 +1780,40 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
 
     // ========== 启动 ==========
 
+    // ========== 入场动画重放 ==========
+    //
+    // 入场动画写在 sidepanel.css 里，且只能挂在"玻璃元素自身"上：祖先只要带
+    // transform / opacity < 1 就会形成 backdrop root，后代的 backdrop-filter
+    // 随即失效（实测：挂在 .qa-panel-search 上会让搜索框 80px 毛玻璃永久失效）。
+    //
+    // 面板关闭时若 Chrome 复用本页（不重新加载），纯 CSS 动画一辈子只播一次，
+    // 再次打开就没有入场效果；故在"由隐藏转为可见"时重放一次。首次加载不在
+    // 此列——那时 CSS 动画本来就在播，重复触发只会让元素闪一下。
+    var ENTRANCE_SELECTOR = [
+        '.qa-panel-widgets .widget-card',
+        '.qa-panel-search .search-container',
+        '.qa-panel-search .engine-btn',
+        '.widget-panel-empty-cta',
+        '.qa-guide-card'
+    ].join(',');
+
+    function replayEntranceAnimation() {
+        var els = Array.prototype.slice.call(document.querySelectorAll(ENTRANCE_SELECTOR));
+        if (!els.length) return;
+        els.forEach(function (el) { el.style.animation = 'none'; });
+        void document.body.offsetWidth; // 一次性强制回流，让旧动画被真正取消
+        els.forEach(function (el) { el.style.animation = ''; });
+    }
+
+    function initEntranceReplay() {
+        var wasHidden = document.hidden;
+        document.addEventListener('visibilitychange', function () {
+            var hidden = document.hidden;
+            if (wasHidden && !hidden) replayEntranceAnimation();
+            wasHidden = hidden;
+        });
+    }
+
     async function start() {
         try {
             await loadSettings();
@@ -1793,6 +1827,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/transla
         applyAll();
         initInteractions();
         initWidgetScaleSync();
+        initEntranceReplay();
         window.addEventListener('resize', handlePanelResize);
         window.addEventListener('pagehide', removeMobileUaRule);
     }
