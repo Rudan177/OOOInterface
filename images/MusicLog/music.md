@@ -36,3 +36,4 @@
 | 20261017   | 不散的花 | 泠鸢yousa | 222s | 1 | Contribute |
 | 20261018   | 水龙吟 Samudrartha | HOYO-MiX、优素Yusuf | 172s | 1 | Contribute |
 | 20261019   | 夏虫 | 洛天依 | 259s | 1 | Contribute |
+| 20261020   | 为了你唱下去 | 洛天依 | 305s | 1 | Contribute |
