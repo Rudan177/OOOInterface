@@ -1,15 +1,31 @@
 {
   "manifest_version": 3,
   "name": "OOOInterface",
-  "version": "5.3.32",
+  "version": "5.3.33",
   "description": "RUDAN开发的浏览器首页插件。",
   "chrome_url_overrides": {
     "newtab": "main/index.html"
+  },
+  "side_panel": {
+    "default_path": "main/sidepanel/sidepanel.html"
+  },
+  "background": {
+    "service_worker": "main/background.js"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "builtin_open_frame",
+        "enabled": true,
+        "path": "main/rules.json"
+      }
+    ]
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; font-src 'self' https: data:; style-src 'self' https://fonts.googleapis.com 'unsafe-inline';"
   },
   "host_permissions": [
+    "<all_urls>",
     "https://www.bing.com/*",
     "https://*.bing.net/*",
     "https://suggestqueries.google.com/*",
@@ -26,8 +42,19 @@
     "unlimitedStorage",
     "bookmarks",
     "geolocation",
-    "identity"
+    "identity",
+    "sidePanel",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess"
   ],
+  "commands": {
+    "activate-ooointerface": {
+      "suggested_key": {
+        "default": "Alt+O"
+      },
+      "description": "切换 OOOInterface 侧边栏（侧边栏功能关闭时打开主页）"
+    }
+  },
 
   "icons": {
     "16": "images/icon16.png",

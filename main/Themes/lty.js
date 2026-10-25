@@ -1,4 +1,4 @@
-var DEFAULT_THEME = {
+export default {
     "info": {
         "name": "洛水天依",
         "designer": "RUDAN",
@@ -42,4 +42,4 @@ var DEFAULT_THEME = {
             }
         }
     }
-}
+};

@@ -1,0 +1,741 @@
+/* ============================================================
+   OOOInterface 侧边栏面板（Chrome Side Panel）
+   在复用主页面 styles.css / dynamic-blur.css / widget-panel.css 的基础上，
+   仅做面板容器形态的最小适配，保证视觉与主页面完全一致。
+   ============================================================ */
+
+/* 面板页面基础：与主页面一致的背景与字体 */
+body.qa-panel-page {
+    margin: 0;
+    background: var(--background-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 壁纸层（铺满面板，内容浮于其上） */
+.qa-panel-wallpaper {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    pointer-events: none;
+}
+
+/* 暗色模式下给壁纸加一层蒙版，避免暗色控件浮在明亮壁纸上。
+   开关：主页面设置「暗色压暗壁纸」（wallpaperDarkDim，经 body.wallpaper-dim-off 门控，与主页面 #wallpaper-main::after 同款，均画在壁纸层内部） */
+.qa-panel-wallpaper::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    body:not(.wallpaper-dim-off) .qa-panel-wallpaper::after {
+        background: rgba(0, 0, 0, 0.28);
+    }
+
+    .qa-guide-title {
+        color: #f2f2f2;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+}
+
+/* 内容区：通栏纵向排布 小组件 / 快速链接 / 搜索区。
+   高度按比例动态分配：小组件区最多 50%（超出内部滚动），
+   快速链接+搜索区至少 50%（链接区弹性填充剩余高度） */
+.qa-panel-content {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 5;
+    overflow: hidden;
+    scrollbar-width: none;
+}
+
+.qa-panel-content::-webkit-scrollbar {
+    display: none;
+}
+
+/* 小组件区：高度随内容自适应，上限为面板一半（-10px 为链接卡底边距的互补）。
+   flex:0 0 不可收缩（防被长链接列表挤压变小）。外层只做尺寸与内边距，
+   实际滚动交给内层 qa-panel-widgets-scroll——裁切发生在内层边界，
+   即距区域底边恒定 10px 处，于是"下边距"在任何滚动位置都保留，
+   滚到底时最后一行卡片的下圆角也完整可见。
+   内容不满上限时保持实际高度，剩余空间由下方链接卡向上补充 */
+.qa-panel-widgets {
+    flex: 0 0 auto;
+    max-height: calc(50% - 10px);
+    min-height: 0;
+    padding: 10px 10px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 内层滚动容器 = 小组件的"看不见的外框"：无背景、无边框，仅靠圆角 + overflow
+   把滚动裁切收进圆角边界内，于是上下两端始终呈现圆角
+   （与主页面 .widget-panel-container 的观感一致）。
+   宽度铺满小组件区：列数由 JS 按可用宽度动态计算（见 sidepanel.js syncWidgetScale），
+   面板越宽列数越多（3 列、4 列……），单张卡片保持主页面标准尺寸附近，不会被过度放大。 */
+.qa-panel-widgets-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    border-radius: 14px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.qa-panel-widgets-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* 链接区隐藏时，小组件可用全部剩余高度（不再受 50% 限制） */
+body.qa-hide-links .qa-panel-widgets {
+    flex: 1 1 auto;
+    max-height: none;
+}
+
+.qa-panel-widgets .widget-panel-grid {
+    max-height: none;
+    overflow: visible;
+}
+
+/* 快速访问侧边栏：改为内容流中的常驻卡片（主页面为右侧 hover 弹出，需覆盖定位）。
+   弹性填充剩余高度：与搜索区合计至少占面板 50% */
+body.qa-panel-page .quick-access-sidebar {
+    position: relative;
+    top: 0;
+    left: 0;
+    right: auto;
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    /* 与小组件区的间距由小组件区底部内边距提供（滚动到底时该间距一并可见，
+       下圆角不会被裁切）；小组件区隐藏时回退为自身 10px 上边距 */
+    margin-top: 0;
+    /* 主页面是右侧 hover 弹出的横向布局（align-items:flex-start，高度按内容收缩）；
+       面板内改为纵向延展，让链接卡撑满分配的高度 */
+    flex-direction: column;
+    align-items: stretch;
+}
+
+body.qa-hide-widgets .quick-access-sidebar {
+    margin-top: 10px;
+}
+
+/* 链接列表自身限高滚动，外层卡片圆角不受影响 */
+body.qa-panel-page .quick-access-sidebar-container {
+    height: auto;
+    flex: none;
+}
+
+body.qa-panel-page .quick-access-sidebar-links {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+body.qa-panel-page .quick-access-sidebar-links::-webkit-scrollbar {
+    display: none;
+}
+
+body.qa-panel-page .quick-access-sidebar-trigger {
+    display: none;
+}
+
+body.qa-panel-page .quick-access-sidebar-container {
+    flex: 1;
+    min-height: 0;
+    max-width: none;
+    width: auto;
+    /* 底部恢复 10px 外边距（卡片下圆角不贴住搜索区）；
+       小组件区上限 calc(50% - 10px) 与该边距互补，
+       "链接框 + 搜索框"可见高度仍不低于面板的一半 */
+    margin: 0 10px 10px 10px;
+    height: auto;
+}
+
+/* 面板中无壁纸时内容底部留白由容器 margin 提供 */
+
+/* 底部搜索区：固定在内容区底部；上方无填充时贴底 */
+.qa-panel-search {
+    flex: 0 0 auto;
+    margin-top: auto;
+    z-index: 6;
+    padding: 8px 10px 10px 10px;
+    background: var(--background-color);
+}
+
+/* 壁纸/毛玻璃模式下吸底区不铺独立背景与模糊：毛玻璃应落在搜索框、引擎按钮
+   各自组件上（与主页面一致），避免底部出现一条与组件不融合的模糊带 */
+body.qa-has-wallpaper .qa-panel-search,
+body.dynamic-blur .qa-panel-search {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.qa-panel-search .search-section {
+    margin-bottom: 0;
+}
+
+.qa-panel-search .search-container {
+    max-width: none;
+    height: var(--search-box-height);
+}
+
+.qa-panel-search .engine-buttons {
+    justify-content: center;
+    margin-top: 8px;
+}
+
+/* “/” 命令列表 / 翻译语言历史：主页面样式限宽 600px 并居中，
+   面板里改为铺满，并压低展开高度（面板整体矮，避免挤占上方内容） */
+.qa-panel-search .search-command-container {
+    max-width: none;
+    /* 收起状态下不占任何间距（否则会在搜索框与引擎按钮之间留下空隙） */
+    margin: 0;
+}
+
+.qa-panel-search .search-command-container.show {
+    margin-top: 8px;
+    max-height: 160px;
+}
+
+/* 面板比主页面窄得多：输入框默认为 auto 最小宽度，叠加展开的模式 chip 会撑破搜索框，
+   故放开输入框最小宽度，并收紧 chip 的最大宽度（超出部分由 chip 自身省略号截断） */
+.qa-panel-search .search-input {
+    min-width: 0;
+}
+
+.qa-panel-search .search-mode-chip.expanded {
+    max-width: 140px;
+}
+
+/* 面板提示浮层（小组件通知用，配色跟随方案） */
+.qa-panel-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%) translateY(8px);
+    max-width: calc(100% - 32px);
+    padding: 9px 16px;
+    border-radius: 12px;
+    background: var(--primary-color);
+    color: #ffffff;
+    font-size: 13px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 20;
+}
+
+.qa-panel-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================================
+   内置页浏览器（侧边栏搜索/访问的网页在此以内嵌 iframe 展示）
+   结构：顶部操作控件（Home / Back / Next / 网址栏）+ 圆角浮动卡片。
+   仅当 body.qa-browser-open 时显示，并替代小组件 / 快速访问链接区域。
+   ============================================================ */
+
+.qa-panel-browser {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    /* 底部 10px 与搜索区 8px 上内边距合计 18px，与"链接卡底边距 + 搜索区上内边距"
+       的既有间距一致；搜索区隐藏时也保留 10px 底边距 */
+    padding: 10px 10px 10px 10px;
+    overflow: hidden;
+}
+
+body.qa-browser-open .qa-panel-browser {
+    display: flex;
+}
+
+/* 内置页模式下取消搜索区贴底的 auto 外边距：auto margin 会参与空闲空间分配，
+   可能与浏览器视图的 flex-grow 争夺空间，导致卡片撑不满 => 显式归零后由 flex-grow 主导 */
+body.qa-browser-open .qa-panel-search {
+    margin-top: 0;
+}
+
+/* 顶部操作控件：圆角工具栏，与面板卡片同一套底色 / 描边语言 */
+.qa-browser-toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 8px;
+    border-radius: 14px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+/* 圆形图标按钮（Home / Back / Next） */
+.qa-browser-btn {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.qa-browser-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    display: block;
+}
+
+.qa-browser-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--text-color);
+}
+
+.qa-browser-btn:active {
+    transform: scale(0.9);
+}
+
+.qa-browser-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+    background: transparent;
+    transform: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    .qa-browser-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+    }
+}
+
+/* 网址栏：胶囊输入框，沿用搜索框底色 */
+.qa-browser-urlbar {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.qa-browser-url-input {
+    width: 100%;
+    height: 30px;
+    padding: 0 14px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.qa-browser-url-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.qa-browser-url-input:focus {
+    border-color: var(--primary-color);
+    background: var(--background-color);
+}
+
+@media (prefers-color-scheme: dark) {
+    .qa-browser-url-input {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .qa-browser-url-input:focus {
+        background: var(--background-color);
+    }
+}
+
+/* 浮动卡片：承载 iframe，圆角裁切。
+   用 flex 纵向布局让 iframe 通过 flex 撑满，避免百分比高度在 flex 链中解析失败 */
+.qa-browser-card {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.qa-browser-frame {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: block;
+    border: 0;
+    background: var(--background-color);
+}
+
+/* 窄屏移动端模式：卡片宽度小于移动端设计宽度时，把 iframe 视口固定为标准手机宽度
+   （由 JS 设置 width/height/transform），整体等比缩放到卡片内。
+   改用绝对定位以免被卡片的 flex 横向拉伸干扰 */
+.qa-browser-card.qa-mobile-mode .qa-browser-frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: auto;
+    height: auto;
+    transform-origin: top left;
+}
+
+/* ---------- 进入 / 退出动画 ---------- */
+
+@keyframes qaBrowserToolbarIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes qaBrowserCardIn {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes qaBrowserOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(10px) scale(0.97);
+    }
+}
+
+.qa-panel-browser.qa-browser-enter .qa-browser-toolbar {
+    animation: qaBrowserToolbarIn 0.36s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+.qa-panel-browser.qa-browser-enter .qa-browser-card {
+    animation: qaBrowserCardIn 0.44s cubic-bezier(0.34, 1.2, 0.64, 1) 0.05s both;
+}
+
+.qa-panel-browser.qa-browser-leave .qa-browser-toolbar,
+.qa-panel-browser.qa-browser-leave .qa-browser-card {
+    animation: qaBrowserOut 0.2s ease-in both;
+}
+
+/* ---------- 高级视觉效果（毛玻璃）适配 ---------- */
+
+body.dynamic-blur .qa-browser-toolbar {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(80px) saturate(1.5);
+    -webkit-backdrop-filter: blur(80px) saturate(1.5);
+    border-color: transparent;
+}
+
+body.dynamic-blur .qa-browser-url-input {
+    background: rgba(255, 255, 255, 0.15);
+    color: #1a1a1a;
+}
+
+body.dynamic-blur .qa-browser-url-input::placeholder {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+body.dynamic-blur .qa-browser-url-input:focus {
+    background: rgba(255, 255, 255, 0.24);
+    border-color: transparent;
+}
+
+body.dynamic-blur .qa-browser-btn {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+body.dynamic-blur .qa-browser-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #1a1a1a;
+}
+
+body.dynamic-blur .qa-browser-card {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+body.dynamic-blur.enhanced-display .qa-browser-card {
+    box-shadow:
+        0 0 40px rgba(255, 255, 255, 0.2),
+        0 0 80px rgba(255, 255, 255, 0.1),
+        0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur .qa-browser-toolbar {
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    body.dynamic-blur .qa-browser-url-input {
+        background: rgba(0, 0, 0, 0.25);
+        color: #ffffff;
+    }
+
+    body.dynamic-blur .qa-browser-url-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    body.dynamic-blur .qa-browser-url-input:focus {
+        background: rgba(0, 0, 0, 0.35);
+    }
+
+    body.dynamic-blur .qa-browser-btn {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    body.dynamic-blur .qa-browser-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+    }
+
+    body.dynamic-blur .qa-browser-card {
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+
+/* ============ 未配置引导卡 ============ */
+.qa-guide-card {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+    padding: 24px;
+}
+
+.qa-guide-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+}
+
+.qa-guide-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1f1f1f;
+    text-shadow: 0 1px 4px rgba(255, 255, 255, 0.65);
+}
+
+.qa-guide-desc {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #4c4c4c;
+    text-shadow: 0 1px 4px rgba(255, 255, 255, 0.65);
+}
+
+.qa-guide-btn {
+    margin-top: 14px;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--primary-color, #0aa37f);
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+    transition: transform 0.15s ease, filter 0.2s ease;
+}
+
+.qa-guide-btn:hover {
+    filter: brightness(1.06);
+}
+
+.qa-guide-btn:active {
+    transform: scale(0.96);
+}
+
+/* 小组件空态引导按钮（仅面板，主页面空态不变） */
+.widget-panel-empty-cta {
+    display: block;
+    margin: 10px auto 0;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--primary-color, #0aa37f);
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.2s ease;
+}
+
+.widget-panel-empty-cta:hover {
+    filter: brightness(1.06);
+}
+
+.widget-panel-empty-cta:active {
+    transform: scale(0.96);
+}
+
+/* ============================================================
+   进入动画：小组件卡 / 搜索框 / 搜索引擎按钮 / 引导卡
+   ------------------------------------------------------------
+   链接卡自身已有由 .quick-access-sidebar-container 的 .visible 过渡驱动的滑入
+   （translateX(calc(100% + 20px)) → 0，0.3s cubic-bezier(0.4, 0, 0.2, 1)），
+   这里给其余区块同一支节奏的"滑入 + 淡入"，并用 animation-delay 形成
+   自上而下的接力，避免面板打开时元素硬邦邦地跳出（内置页浏览器自带
+   qaBrowser* 动画，不在此列）。
+
+   ⚠ 位移/淡入只能挂在「玻璃元素自身」，绝不能挂在它们的祖先容器上：
+   backdrop-filter 的取样范围止于最近的 backdrop root，而祖先只要带
+   transform / opacity < 1（哪怕是动画残留的恒等 transform）就会成为
+   backdrop root，后代的毛玻璃随即失效。Chromium 152 实测（条纹壁纸 +
+   量玻璃下方像素清晰度）：把动画挂在 .qa-panel-search / .qa-panel-widgets
+   上并配 animation-fill-mode: both，动画结束后容器仍残留
+   matrix(1,0,0,1,0,0) 的合成层 transform，搜索框 80px 与小组件卡 40px
+   毛玻璃被永久打断（该区域与同位置纯壁纸逐像素相同）；祖先只做 opacity
+   动画同样会永久打断。反之把同一支动画挂在 .search-container / .widget-card
+   自身，行进中与结束后毛玻璃都完好。故：
+     · 容器不动；
+     · 只动玻璃元素本身；
+     · fill-mode 用 backwards —— 结束后回到基础样式，不留残值
+       （与主页面 widget-panel.css 的 widgetCardIn 同款写法）。
+   ============================================================ */
+
+@keyframes qaPanelItemIn {
+    from {
+        opacity: 0;
+        transform: translateX(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+body.qa-panel-page .qa-panel-widgets .widget-card,
+body.qa-panel-page .qa-panel-search .search-container,
+body.qa-panel-page .qa-panel-search .engine-btn,
+body.qa-panel-page .widget-panel-empty-cta,
+body.qa-panel-page .qa-guide-card {
+    animation: qaPanelItemIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+/* 自上而下的接力延迟（与链接卡的滑入节奏对齐） */
+body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(1) {
+    animation-delay: 0s;
+}
+
+body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(2) {
+    animation-delay: 0.05s;
+}
+
+body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(3) {
+    animation-delay: 0.1s;
+}
+
+body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(4) {
+    animation-delay: 0.15s;
+}
+
+body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(n+5) {
+    animation-delay: 0.2s;
+}
+
+body.qa-panel-page .qa-panel-search .search-container {
+    animation-delay: 0.07s;
+}
+
+body.qa-panel-page .qa-panel-search .engine-btn:nth-child(1) {
+    animation-delay: 0.12s;
+}
+
+body.qa-panel-page .qa-panel-search .engine-btn:nth-child(2) {
+    animation-delay: 0.17s;
+}
+
+body.qa-panel-page .qa-panel-search .engine-btn:nth-child(n+3) {
+    animation-delay: 0.22s;
+}
+
+body.qa-panel-page .widget-panel-empty-cta {
+    animation-delay: 0.05s;
+}
+
+body.qa-panel-page .qa-guide-card {
+    animation: qaPanelItemIn 0.32s cubic-bezier(0.4, 0, 0.2, 1) 0.07s backwards;
+}
+
+/* 系统开启"减少动态效果"时去掉位移，只保留短淡入。
+   注意不能在这里直接 animation: none —— 链接卡用的是 transition（不受本条影响），
+   一旦关掉就成了"链接卡照样滑入、其余区块纹丝不动"的不一致观感。 */
+@keyframes qaPanelFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    body.qa-panel-page .qa-panel-widgets .widget-card,
+    body.qa-panel-page .qa-panel-search .search-container,
+    body.qa-panel-page .qa-panel-search .engine-btn,
+    body.qa-panel-page .widget-panel-empty-cta {
+        animation: qaPanelFadeIn 0.2s ease-out backwards;
+    }
+
+    body.qa-panel-page .qa-guide-card {
+        animation: qaPanelFadeIn 0.2s ease-out 0.07s backwards;
+    }
+}

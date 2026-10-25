@@ -1776,12 +1776,6 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     background-color: var(--surface-variant);
 }
 
-.widget-menu-item.dragging {
-    outline: 2px solid var(--primary-color);
-    outline-offset: -2px;
-    border-radius: 16px;
-}
-
 /* 拖拽手柄 — 与快速访问链接保持一致 */
 .widget-menu-item .quick-link-drag-handle {
     width: 24px;
@@ -1795,6 +1789,8 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     flex-shrink: 0;
     opacity: 0.4;
     transition: opacity 0.2s ease;
+    /* 触屏/触笔在手柄上起拖时不触发列表滚动 */
+    touch-action: none;
 }
 
 .widget-menu-item:hover .quick-link-drag-handle {
