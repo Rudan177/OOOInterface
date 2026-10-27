@@ -45,3 +45,4 @@
 | 20261026 | 飞鸟说 | ChiliChill乐团 | 213s | 1 | Contribute |
 | 20261027 | Heart Of Peace | ZHANGYE、周深 | 226s | 1 | Contribute |
 | 20261028 | 三月雨 | 洛天依 | 257s | 1 | Contribute |
+| 20261029 | Rubia | 周深 | 195s | 1 | Contribute |
