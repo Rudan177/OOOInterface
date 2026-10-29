@@ -47,3 +47,4 @@
 | 20261028 | 三月雨 | 洛天依 | 257s | 1 | Contribute |
 | 20261029 | Rubia | 周深 | 195s | 1 | Contribute |
 | 20261030 | 天星问 | 洛天依 | 240s | 1 | Contribute |
+| 20261031 | 1% Battery Girl 低电量女孩 | ChiliChill乐团、三Z-STUDIO、HOYO-MiX | 209s | 1 | Contribute |
