@@ -3,112 +3,528 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#00ae00">
+    <meta name="color-scheme" content="light">
     <meta name="format-detection" content="telephone=no">
-    <title>OOOInterface 32</title>
-    <link rel="stylesheet" href="../core/style.css">
+    <title>OOOInterface 32 停止支持</title>
+    <style>
+        :root {
+            --c1: #00ae00;
+            --c2: #00ae90;
+            --c3: #10bf90;
+            --ink: #06130c;
+            --ease: cubic-bezier(0.16, 1, 0.3, 1);
+            --serif: 'Noto Serif CJK SC', 'Noto Serif SC', 'Source Han Serif SC',
+                'Source Han Serif CN', 'Songti SC', 'STSong', 'SimSun', '宋体',
+                '经典宋体简', 'AR PL UMing CN', serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            overflow-y: auto;
+            color: var(--ink);
+            font-family: var(--serif);
+            background: var(--c2);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            overscroll-behavior: none;
+        }
+
+        /* ===== 背景 ===== */
+        .bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg::before {
+            content: '';
+            position: absolute;
+            inset: -12%;
+            background: linear-gradient(116deg,
+                    var(--c1) 0%,
+                    #00ae7c 42%,
+                    var(--c2) 68%,
+                    var(--c3) 100%);
+            background-size: 118% 118%;
+            animation: bgPan 36s ease-in-out infinite alternate;
+        }
+
+        .bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(60% 60% at 18% 22%, rgba(255, 255, 255, 0.16) 0%, transparent 62%),
+                radial-gradient(58% 58% at 84% 82%, rgba(0, 64, 48, 0.26) 0%, transparent 66%),
+                radial-gradient(90% 90% at 50% 50%, transparent 55%, rgba(0, 48, 36, 0.18) 100%);
+        }
+
+        .grain {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.05;
+            mix-blend-mode: soft-light;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        .orb {
+            position: fixed;
+            z-index: 1;
+            border-radius: 50%;
+            pointer-events: none;
+            filter: blur(60px);
+        }
+
+        .orb-a {
+            width: 40vmax;
+            height: 40vmax;
+            left: -10vmax;
+            top: -8vmax;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.34) 0%, transparent 68%);
+            opacity: 0.3;
+            animation: orbA 16s ease-in-out infinite alternate;
+        }
+
+        .orb-b {
+            width: 34vmax;
+            height: 34vmax;
+            right: -8vmax;
+            bottom: -10vmax;
+            background: radial-gradient(circle, rgba(0, 78, 58, 0.4) 0%, transparent 70%);
+            opacity: 0.28;
+            animation: orbB 20s ease-in-out infinite alternate;
+        }
+
+        .sheen {
+            position: fixed;
+            inset: -20% -30%;
+            z-index: 2;
+            pointer-events: none;
+            background: linear-gradient(104deg,
+                    transparent 40%,
+                    rgba(255, 255, 255, 0.22) 50%,
+                    transparent 60%);
+            mix-blend-mode: soft-light;
+            transform: translate3d(-115%, 0, 0);
+            animation: sheenPass 1.5s var(--ease) 0.08s 1 forwards;
+        }
+
+        .veil {
+            position: fixed;
+            inset: 0;
+            z-index: 9;
+            pointer-events: none;
+            background: #000;
+            opacity: 0;
+            transition: opacity 0.18s ease;
+        }
+
+        /* ===== 内容 ===== */
+        .stage {
+            position: relative;
+            z-index: 3;
+            width: min(94vw, 1180px);
+            padding:
+                max(28px, env(safe-area-inset-top))
+                max(10px, env(safe-area-inset-right))
+                max(28px, env(safe-area-inset-bottom))
+                max(10px, env(safe-area-inset-left));
+            text-align: center;
+        }
+
+        .notice {
+            margin: 0 auto;
+            max-width: 1180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .brand {
+            margin: 0;
+            font-size: clamp(1.95rem, min(9.2vw, 13vh), 7.4rem);
+            line-height: 1.04;
+            font-weight: 700;
+            letter-spacing: 0.004em;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateY(12px);
+            filter: blur(7px);
+            animation: fadeUp 0.6s var(--ease) 0.05s forwards;
+        }
+
+        .status {
+            margin: clamp(0.4rem, 1.5vh, 1rem) 0 0;
+            font-size: clamp(1.35rem, min(6.8vw, 8.6vh), 4.8rem);
+            line-height: 1.15;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-indent: 0.09em;
+            opacity: 0;
+            transform: translateY(12px);
+            filter: blur(7px);
+            animation: fadeUp 0.55s var(--ease) 0.14s forwards;
+        }
+
+        .headline {
+            margin: clamp(0.35rem, 1.4vh, 1rem) 0 0;
+            display: flex;
+            justify-content: center;
+            font-size: clamp(3.2rem, min(22vw, 31vh), 17.5rem);
+            line-height: 0.98;
+            font-weight: 900;
+            letter-spacing: 0.012em;
+        }
+
+        .ch {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(0.18em);
+            filter: blur(12px);
+            animation: charIn 0.7s var(--ease) forwards;
+            will-change: transform, opacity;
+        }
+
+        .ch:nth-child(1) {
+            animation-delay: 0.26s;
+        }
+
+        .ch:nth-child(2) {
+            animation-delay: 0.33s;
+        }
+
+        .ch:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        .ch:nth-child(4) {
+            animation-delay: 0.47s;
+        }
+
+        .period {
+            margin: clamp(0.7rem, 3vh, 1.9rem) 0 0;
+            font-size: clamp(1.05rem, min(4.9vw, 5.8vh), 3.4rem);
+            font-weight: 700;
+            line-height: 1.3;
+            letter-spacing: 0.07em;
+            text-indent: 0.07em;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateY(10px);
+            filter: blur(7px);
+            animation: fadeUp 0.6s var(--ease) 0.56s forwards;
+        }
+
+        .update {
+            margin: clamp(0.7rem, 2.4vh, 1.5rem) 0 0;
+            font-size: clamp(0.92rem, min(2.9vw, 3.4vh), 1.9rem);
+            line-height: 1.8;
+            font-weight: 500;
+            letter-spacing: 0.025em;
+            opacity: 0;
+            transform: translateY(10px);
+            filter: blur(7px);
+            animation: fadeUp 0.6s var(--ease) 0.66s forwards;
+        }
+
+        .update a {
+            color: inherit;
+            white-space: nowrap;
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 0.2em;
+            text-decoration-color: rgba(6, 19, 12, 0.32);
+            transition: text-decoration-color 0.4s ease;
+        }
+
+        .update a:hover,
+        .update a:focus-visible {
+            text-decoration-color: var(--ink);
+            outline: none;
+        }
+
+        /* ===== 动画 ===== */
+        @keyframes bgPan {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes sheenPass {
+            0% {
+                transform: translate3d(-115%, 0, 0);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate3d(115%, 0, 0);
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeUp {
+            0% {
+                opacity: 0;
+                filter: blur(7px);
+                transform: translateY(14px);
+            }
+
+            100% {
+                opacity: 1;
+                filter: blur(0);
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes charIn {
+            0% {
+                opacity: 0;
+                filter: blur(12px);
+                transform: translateY(0.18em);
+            }
+
+            100% {
+                opacity: 1;
+                filter: blur(0);
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes orbA {
+            0% {
+                transform: translate3d(0, 0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate3d(4vmax, 3vmax, 0) scale(1.07);
+            }
+        }
+
+        @keyframes orbB {
+            0% {
+                transform: translate3d(0, 0, 0) scale(1.05);
+            }
+
+            100% {
+                transform: translate3d(-3vmax, -4vmax, 0) scale(1);
+            }
+        }
+
+        /* ===== 短屏 / 横屏 ===== */
+        @media (max-height: 600px) and (orientation: landscape) {
+            .stage {
+                padding-top: max(16px, env(safe-area-inset-top));
+                padding-bottom: max(16px, env(safe-area-inset-bottom));
+            }
+
+            .brand {
+                font-size: clamp(1.7rem, min(9vw, 15vh), 4.6rem);
+            }
+
+            .status {
+                margin-top: 0.3rem;
+                font-size: clamp(1rem, min(5vw, 9vh), 2.4rem);
+            }
+
+            .headline {
+                font-size: clamp(2.4rem, min(19vw, 32vh), 9rem);
+            }
+
+            .period {
+                font-size: clamp(0.95rem, min(3.6vw, 6vh), 1.7rem);
+            }
+
+            .update {
+                margin-top: 0.5rem;
+                font-size: clamp(0.82rem, min(2.2vw, 3.8vh), 1.05rem);
+                line-height: 1.6;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .status {
+                letter-spacing: 0.06em;
+                text-indent: 0.06em;
+            }
+
+            .period {
+                letter-spacing: 0.04em;
+                text-indent: 0.04em;
+            }
+        }
+
+        /* ===== 手机竖屏：停止支持分两行 ===== */
+        @media (max-width: 640px) and (orientation: portrait) {
+            .headline {
+                display: grid;
+                grid-template-columns: repeat(2, max-content);
+                justify-content: center;
+                font-size: clamp(3.4rem, 34vw, 16rem);
+                line-height: 1.06;
+                row-gap: 0.02em;
+            }
+        }
+
+        /* ===== 减少动态 ===== */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important;
+            }
+
+            .brand,
+            .status,
+            .ch,
+            .period,
+            .update,
+            .headline {
+                opacity: 1 !important;
+                transform: none !important;
+                filter: none !important;
+            }
+
+            .sheen {
+                display: none;
+            }
+
+            .orb {
+                animation: none !important;
+            }
+        }
+    </style>
 </head>
 
-<body class="enhanced-display">
-    <div class="version-container">
-        <div class="decoration">ByRUDAN OOOInterface</div>
+<body>
+    <div class="bg" aria-hidden="true"></div>
+    <div class="orb orb-a" aria-hidden="true"></div>
+    <div class="orb orb-b" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="sheen" aria-hidden="true"></div>
+    <div class="veil" aria-hidden="true"></div>
 
-        <div class="hero-section">
-            <img id="logoImage" class="hero-logo" style="width: 128px; height: 128px;  border-radius: 30px;"
-                src="../../images/icon32.png" alt="OOOInterface Logo">
-            <h1 class="hero-title">OOOInterface</h1>
-            <a href="https://github.com/Rudan177/OOOInterface/archive/refs/heads/main.zip"
-                class="download-btn">点击下载</a>
-        </div>
-        <div class="info-row">
-            <div class="section-card" style="--i:1">
-                <h2>版本信息</h2>
-                <ul>
-                    <li><strong>版本号：</strong><a href="../../about/about.html">OOOInterface 32.1</a></li>
-                    <li><strong>发布日期：</strong>2026年10月11日</li>
-                    <li><strong>许可证：</strong>ABCD-26W08A</li>
-                </ul>
-            </div>
+    <main class="stage">
+        <section class="notice" aria-labelledby="headline">
+            <p class="brand">OOOInterface <span class="ver">32</span></p>
+            <p class="status">现已正式</p>
+            <h1 class="headline" id="headline">
+                <span class="ch">停</span>
+                <span class="ch">止</span>
+                <span class="ch">支</span>
+                <span class="ch">持</span>
+            </h1>
+            <p class="period">2026.9.27 - 2026.10.27</p>
+            <p class="update">
+                前往更新至 <a href="../33/33.html">OOOInterface 33</a><br>
+                以获得最新支持
+            </p>
+        </section>
+    </main>
 
-            <div class="section-card" style="--i:2">
-                <h2>系统要求</h2>
-                <ul>
-                    <li><strong>浏览器：</strong>Chromium 内核浏览器</li>
-                    <li><strong>存储空间：</strong>至少 20MB 可用空间</li>
-                    <li><strong>网络环境：</strong>能够连通全球互联网</li>
-                </ul>
-            </div>
-        </div>
+    <script>
+        (function () {
+            var target = '../33/33.html';
+            var veil = document.querySelector('.veil');
+            var THRESHOLD = 520;
+            var progress = 0;
+            var locked = false;
+            var idleTimer = null;
+            var startY = null;
 
-        <div class="section-card" style="--i:3">
-            <h2><span class="ver-num">5.3:32</span> 版本更新</h2>
-            <div class="changelog-item">
-                <h3>新增功能</h3>
-                <ul>
-                    <li>新增全新热搜词功能（该功能需在手动开启且输入字符大于4时触发）</li>
-                    <li>新增底部名牌功能设置项</li>
-                    <li>新增音频播放功能</li>
-                    <li>新增OCP播控：开始播放OCP后，悬停底部铭牌即可呼出媒体播控（需在设置中开启）</li>
-                    <li>新增全新配色：地球色</li>
-                </ul>
-            </div>
-            <div class="changelog-item">
-                <h3>体验优化</h3>
-                <ul>
-                    <li>融入OOOInterface 9月安全补丁更新</li>
-                    <li>优化设置页面显示效果</li>
-                    <li>优化部分配色显示效果</li>
-                    <li>修复了一些已知问题</li>
-                </ul>
-            </div>
-            <h2><span class="ver-num">5.3:32.1</span> 提供最新补丁</h2>
-            <div class="changelog-item">
-                <h3>体验优化</h3>
-                <ol>
-                    <li>修复了一些已知问题</li>
-                </ol>
-                <h3>安全补丁</h3>
-                <ol>
-                    <li>融入OOOInterface10月安全补丁更新</li>
-                    <li>提供新版架构更新兼容</li>
-                </ol>
-            </div>
-        </div>
+            function setProgress(value) {
+                progress = Math.max(0, Math.min(1, value));
+                veil.style.opacity = progress.toFixed(3);
+            }
 
-        <nav class="nav-links">
-            <a href="../../index.html">返回首页</a>
-            <a href="../../about/about.html">历史版本</a>
-        </nav>
-    </div>
+            function finish() {
+                if (locked) return;
+                locked = true;
+                clearTimeout(idleTimer);
+                veil.style.transition = 'opacity 0.4s ease';
+                setProgress(1);
+                setTimeout(function () {
+                    window.location.href = target;
+                }, 460);
+            }
 
-    <footer class="footer">
-        <p>© 2026 ByRUDAN 保留所有权利。</p>
-        <p>许可证：ABCD-26W08A</p>
-    </footer>
+            function resetLater() {
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(function () {
+                    if (locked) return;
+                    veil.style.transition = 'opacity 0.45s ease';
+                    setProgress(0);
+                    setTimeout(function () {
+                        veil.style.transition = 'opacity 0.18s ease';
+                    }, 480);
+                }, 180);
+            }
 
-    <button class="float-btn" id="floatBtn">
-        <svg class="icon-back-top" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
-            width="24px" fill="currentColor">
-            <path d="M160-760v-80h640v80H160Zm280 640v-408L336-424l-56-56 200-200 200 200-56 56-104-104v408h-80Z" />
-        </svg>
-        <span class="theme-icons">
-            <svg class="icon-theme-logo" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
-                width="24px" fill="currentColor">
-                <path
-                    d="M324-111.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM520-163q119-15 199.5-104.5T800-480q0-123-80.5-212.5T520-797v634Z" />
-            </svg>
-            <svg class="icon-lock" xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960"
-                width="12px" fill="#ff4444" style="display: none;">
-                <path
-                    d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z" />
-            </svg>
-        </span>
-    </button>
+            window.addEventListener('wheel', function (e) {
+                if (locked) return;
+                e.preventDefault();
+                var delta = e.deltaMode === 1 ? e.deltaY * 18 : e.deltaY;
+                setProgress(progress + delta / THRESHOLD);
+                if (progress >= 1) {
+                    finish();
+                } else {
+                    resetLater();
+                }
+            }, { passive: false });
 
-    <script src="../core/script.js"></script>
+            window.addEventListener('touchstart', function (e) {
+                if (locked || e.touches.length !== 1) return;
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+
+            window.addEventListener('touchmove', function (e) {
+                if (locked || startY === null || e.touches.length !== 1) return;
+                e.preventDefault();
+                var dy = startY - e.touches[0].clientY;
+                setProgress(dy / (THRESHOLD * 0.72));
+                if (progress >= 1) finish();
+            }, { passive: false });
+
+            window.addEventListener('touchend', function () {
+                startY = null;
+                if (!locked) resetLater();
+            }, { passive: true });
+        })();
+    </script>
 </body>
 
 </html>

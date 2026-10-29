@@ -42,9 +42,8 @@
 | 20261023 | 剑与雪 | 星尘 | 273s | 1 | Contribute |
 | 20261024 | 无名河 | WOVOP、乐正绫 | 216s | 1 | Contribute |
 | 20261025 | 飞鸟说 | ChiliChill乐团 | 213s | 1 | Contribute |
-| 20261026 | 飞鸟说 | ChiliChill乐团 | 213s | 1 | Contribute |
-| 20261027 | Heart Of Peace | ZHANGYE、周深 | 226s | 1 | Contribute |
-| 20261028 | 三月雨 | 洛天依 | 257s | 1 | Contribute |
-| 20261029 | Rubia | 周深 | 195s | 1 | Contribute |
-| 20261030 | 天星问 | 洛天依 | 240s | 1 | Contribute |
-| 20261031 | 1% Battery Girl 低电量女孩 | ChiliChill乐团、三Z-STUDIO、HOYO-MiX | 209s | 1 | Contribute |
+| 20261026 | Heart Of Peace | ZHANGYE、周深 | 226s | 1 | Contribute |
+| 20261027 | 三月雨 | 洛天依 | 257s | 1 | Contribute |
+| 20261028 | Rubia | 周深 | 195s | 1 | Contribute |
+| 20261029 | 天星问 | 洛天依 | 240s | 1 | Contribute |
+| 20261030 | 1% Battery Girl 低电量女孩 | ChiliChill乐团、三Z-STUDIO、HOYO-MiX | 209s | 1 | Contribute |
