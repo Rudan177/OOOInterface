@@ -48,3 +48,4 @@
 | 20261029 | 天星问 | 洛天依 | 240s | 1 | Contribute |
 | 20261030 | 1% Battery Girl 低电量女孩 | ChiliChill乐团、三Z-STUDIO、HOYO-MiX | 209s | 1 | Contribute |
 | 20261031 | 东南苦山行 | 殷正洋 | 239s | 1 | Official |
+| 20261101 | 谁听 | 洛天依 | 262s | 1 | Contribute |

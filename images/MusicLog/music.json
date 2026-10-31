@@ -383,6 +383,14 @@
       "duration": "239s",
       "times": 1,
       "type": "Official"
+    },
+    {
+      "date": "20261101",
+      "name": "谁听",
+      "artist": "洛天依",
+      "duration": "262s",
+      "times": 1,
+      "type": "Contribute"
     }
   ]
 }
