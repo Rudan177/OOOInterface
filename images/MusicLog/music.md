@@ -51,3 +51,4 @@
 | 20261101 | 谁听 | 洛天依 | 262s | 1 | Contribute |
 | 20261102 | 非凡 | 刘德华 | 261s | 1 | Official |
 | 20261103 | 奔向你 | 周深 | 276s | 1 | Contribute |
+| 20261104 | 不及 | 苏诗丁 / 三Z-STUDIO / HOYO-MiX | 290s | 1 | Contribute |
