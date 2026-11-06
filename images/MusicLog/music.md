@@ -54,3 +54,4 @@
 | 20261104 | 不及 | 苏诗丁 / 三Z-STUDIO / HOYO-MiX | 290s | 1 | Contribute |
 | 20261105 | 天知河 | 说说Crystal | 275s | 1 | Contribute |
 | 20261106 | 此刻Memories | 李艺彤 | 199s | 1 | Contribute |
+| 20261107 | Just Be My Child | 小智 | 248s | 1 | Contribute |
