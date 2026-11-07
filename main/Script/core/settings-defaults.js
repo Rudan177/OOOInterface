@@ -98,7 +98,7 @@ export const DEFAULT_SETTINGS = {
     // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）
     simpleVisualMode: false,
     hiddenBadge: false,
-    contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle', 'search-suggestions-toggle'],
+    contextMenuCustomItems: [],
     shortcutsEnabled: true,
     theme: 'default',           // 当前主题 key（文件 basename 去扩展名）
     themeEnabled: false,        // 主题功能是否开启

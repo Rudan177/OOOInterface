@@ -1142,7 +1142,8 @@ export class OOOInterface {
             if (!touchActive || this.isAnimating) return;
             const deltaY = touchStartY - e.touches[0].pageY;
             if (Math.abs(deltaY) > 15) {
-                this.handleScroll({ deltaY: deltaY, target: e.target });
+                // touchGesture：这是按「起点→当前点」过滤过的整段位移，跳过 wheel 的累计判定
+                this.handleScroll({ deltaY: deltaY, target: e.target, touchGesture: true });
                 touchActive = false;
             }
         }, { passive: true });

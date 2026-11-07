@@ -2,6 +2,14 @@
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
 
+// 壁纸模式进退的滚动手势判定（触摸板/滚轮共用）。
+// 触摸板一次滑动会连续发几十个 1~3px 的 wheel 事件，滑停时还常带一点反向抖动；
+// 过去按单个事件的 deltaY 正负直接切换模式，这点抖动就能把用户刚滑进去的壁纸模式弹回主页。
+// 现在按「同一方向累计位移」判定：方向一反转就清零，累计超过阈值才切换。
+// 鼠标滚轮一格带 wheelDeltaY=±120，仍然一格即触发（见下方 wheelTick）。
+const SCROLL_TRIGGER_PX = 40;       // 触发一次模式切换所需的同方向累计位移
+const SCROLL_GESTURE_GAP_MS = 250;  // 两帧间隔超过它视为新手势，累计清零
+
 export const SearchMixin = {
     copySearchContent() {
         const searchInput = document.getElementById('search-input');
@@ -55,6 +63,54 @@ export const SearchMixin = {
         // 节流：如果正在动画中，忽略新的滚动事件
         if (this.isAnimating) return;
 
+        // 触摸屏滑动：touchmove 已按「起点到当前点」的位移过滤过一次，一次调用就是一次完整手势，
+        // 不能再走下面的累计判定（否则一次 swipe 只累加一帧，永远到不了阈值）。
+        if (e.touchGesture) {
+            this._scrollGesture = null;
+            if (e.deltaY > 0 && !this.isScrolled) {
+                this.showWallpaper();
+            } else if (e.deltaY < 0 && this.isScrolled) {
+                this.restoreHomepage();
+            }
+            return;
+        }
+
+        // 触摸板双指缩放会发 ctrlKey+wheel（且 deltaY 很小），横向滑动则以 deltaX 为主：
+        // 两者都不该被当成「上下滑动切壁纸模式」。
+        if (e.ctrlKey) return;
+        const dy0 = e.deltaY || 0;
+        if (!dy0) return;
+        if (Math.abs(e.deltaX || 0) > Math.abs(dy0)) return;
+
+        // deltaMode: 0=像素 1=行 2=页，统一换算成像素再累计
+        let dy = dy0;
+        if (e.deltaMode === 1) dy *= 16;
+        else if (e.deltaMode === 2) dy *= window.innerHeight || 800;
+
+        const now = window.performance && performance.now ? performance.now() : Date.now();
+        let gesture = this._scrollGesture;
+        if (!gesture || now - gesture.last > SCROLL_GESTURE_GAP_MS) {
+            gesture = this._scrollGesture = { dir: 0, dist: 0, last: now };
+        }
+        const dir = dy > 0 ? 1 : -1;
+        if (gesture.dir !== dir) {
+            gesture.dir = dir;
+            gesture.dist = 0;
+        }
+        gesture.last = now;
+        gesture.dist += Math.abs(dy);
+
+        // 传统滚轮一格带 wheelDeltaY=±120，触摸板/精确滚动只有小数值。
+        // 各平台 deltaY 的像素尺度并不一致（有的鼠标一格只有几 px），
+        // 用这个非标准字段保住「鼠标一格即切换」的手感。
+        const wheelTick = Math.abs(
+            e.wheelDeltaY != null ? e.wheelDeltaY : (e.wheelDelta || 0)
+        ) >= 120;
+
+        // 累计还不够：不切换模式，也不打断正在进行的动画
+        if (gesture.dist < SCROLL_TRIGGER_PX && !wheelTick) return;
+        gesture.dist = 0;
+
         // 清除之前的动画定时器，允许打断
         if (this._animationTimeout) {
             clearTimeout(this._animationTimeout);
@@ -62,11 +118,11 @@ export const SearchMixin = {
         }
 
         // 向下滚动出现壁纸
-        if (e.deltaY > 0 && !this.isScrolled) {
+        if (dir > 0 && !this.isScrolled) {
             this.showWallpaper();
         }
         // 向上滚动恢复
-        else if (e.deltaY < 0 && this.isScrolled) {
+        else if (dir < 0 && this.isScrolled) {
             this.restoreHomepage();
         }
     },

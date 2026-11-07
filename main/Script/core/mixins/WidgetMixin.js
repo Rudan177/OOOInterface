@@ -176,6 +176,9 @@ syncWidgetPanelsForWallpaper (wallpaperMode) {
         container.classList.remove('visible');
         container.classList.add('hiding');
     });
+    // 侧边栏已回到隐藏态：壁纸偏移一起撤销（非常显壁纸在主页本就没有偏移，
+    // 常显壁纸则要等 restoreHomepage 随后的 transform 一起回缩）
+    this.setSidebarWallpaperPush(false);
 },
 syncSidebarFixedState () {
     const sidebarContainer = document.getElementById('quick-access-sidebar-container');
@@ -216,6 +219,9 @@ syncSidebarFixedState () {
     // 清除推动残留（widget-panel-open / sidebar-visible），避免固定状态误触发推挤
     document.body.classList.remove('widget-panel-open');
     document.body.classList.remove('sidebar-visible');
+    // 固定侧边栏不是「临时推入」：同步撤销壁纸偏移，否则 hover 退出后
+    // 壁纸会停在偏移位置，固定侧边栏却始终贴着右边缘。
+    this.setSidebarWallpaperPush(false);
 },
 initWidgetPanel () {
     // 幂等：若 mousemove 监听器已绑定（非首次调用），跳过

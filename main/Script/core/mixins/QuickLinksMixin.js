@@ -344,6 +344,10 @@ export const QuickLinksMixin = {
                 container.classList.remove('visible');
                 container.classList.add('hiding');
             }
+            // 容器被强制收起时，主内容让位与壁纸偏移必须一起撤销，
+            // 否则关掉开关后壁纸会停在「被推开」的位置，直到下一次鼠标移动。
+            document.body.classList.remove('sidebar-visible');
+            this.setSidebarWallpaperPush(false);
         }
     },
     isSidebarFixed() {
@@ -372,17 +376,17 @@ export const QuickLinksMixin = {
         }
 
         let hideTimeout = null;
-        let isVisible = false;
         const TRIGGER_ZONE_WIDTH = 100;   // 右侧触发区域宽度（像素）
         const HIDE_DELAY = 0;            // 鼠标离开立即关闭
 
+        // 展开状态只认容器上的 visible/hiding 类。径向菜单、Esc、设置开关等路径
+        // 都会直接改这两个类；这里再维护一份 isVisible 副本，两条路径迟早会分叉
+        // （壁纸被推开却看不到侧边栏，或侧边栏还在却没人推壁纸）。
+        const isSidebarOpen = () =>
+            container.classList.contains('visible') && !container.classList.contains('hiding');
+
         const pushWallpaper = (pushIn) => {
-            this._sidebarPushing = pushIn && window.innerWidth >= 750;
-            if (this.wallpaperMain && this.settings.wallpaperScale &&
-                (this.settings.persistentWallpaper || this.isScrolled)) {
-                this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                this.applyWallpaperTransform();
-            }
+            this.setSidebarWallpaperPush(pushIn);
         };
 
         const showSidebar = () => {
@@ -393,15 +397,12 @@ export const QuickLinksMixin = {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
             }
-            if (!isVisible) {
-                isVisible = true;
-                container.classList.remove('hiding');
-                container.classList.add('visible');
-
-                document.body.classList.add('sidebar-visible');
-
-                pushWallpaper(true);
-            }
+            // 类名与主内容让位标记都已在位：别重复推壁纸
+            if (isSidebarOpen() && document.body.classList.contains('sidebar-visible')) return;
+            container.classList.remove('hiding');
+            container.classList.add('visible');
+            document.body.classList.add('sidebar-visible');
+            pushWallpaper(true);
         };
 
         const scheduleHide = () => {
@@ -409,13 +410,15 @@ export const QuickLinksMixin = {
             hideTimeout = setTimeout(() => {
                 // 当前视图处于固定模式时，不被 hover 隐藏
                 if (this.isSidebarFixed()) return;
-                if (isVisible) {
-                    isVisible = false;
-                    container.classList.remove('visible');
-                    container.classList.add('hiding');
-                    document.body.classList.remove('sidebar-visible');
-                    pushWallpaper(false);
+                // 已被其它路径（径向菜单/Esc/模式切换）收起或重新展开：以实际状态为准
+                if (!isSidebarOpen()) {
+                    hideTimeout = null;
+                    return;
                 }
+                container.classList.remove('visible');
+                container.classList.add('hiding');
+                document.body.classList.remove('sidebar-visible');
+                pushWallpaper(false);
                 hideTimeout = null;
             }, HIDE_DELAY);
         };
@@ -432,7 +435,7 @@ export const QuickLinksMixin = {
                 // 当前视图处于固定模式时，无需 hover 触发
                 if (this.isSidebarFixed()) return;
                 showSidebar();
-            } else if (isVisible && !this.isSidebarFixed()) {
+            } else if (isSidebarOpen() && !this.isSidebarFixed()) {
                 // 仅在容器可见且未固定时检查是否需要隐藏
                 const containerRect = container.getBoundingClientRect();
                 const isOverContainer = (
@@ -455,13 +458,11 @@ export const QuickLinksMixin = {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
             }
-            if (!isVisible) {
-                isVisible = true;
-                container.classList.remove('hiding');
-                container.classList.add('visible');
-                document.body.classList.add('sidebar-visible');
-                pushWallpaper(true);
-            }
+            if (isSidebarOpen() && document.body.classList.contains('sidebar-visible')) return;
+            container.classList.remove('hiding');
+            container.classList.add('visible');
+            document.body.classList.add('sidebar-visible');
+            pushWallpaper(true);
         });
 
         container.addEventListener('mouseleave', () => {
@@ -481,6 +482,14 @@ export const QuickLinksMixin = {
         };
         sidebar.addEventListener('wheel', sidebarWheelHandler, { passive: true });
         container.addEventListener('wheel', sidebarWheelHandler, { passive: true });
+
+        // 主页推入的缩放比例是按下式现算的：vw / (vw - 2 * pushPx)。
+        // 窗口宽度变了而侧边栏还开着时按新宽度重算，否则右侧会露出黑边（或缩放过量）。
+        window.addEventListener('resize', () => {
+            if (document.body.classList.contains('sidebar-visible')) {
+                this.setSidebarWallpaperPush(true, { force: true });
+            }
+        });
     },
 showQuickLinksMenuInRightPanel (skipAnimation) {
     const self = this;

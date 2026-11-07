@@ -862,12 +862,15 @@ export class Controller {
                 // 当前视图处于固定模式时，Escape 不隐藏固定的侧边栏
                 if (this.ooo && this.ooo.isSidebarFixed()) {
                     document.body.classList.remove('sidebar-visible');
+                    if (this.ooo) this.ooo.setSidebarWallpaperPush(false);
                     return;
                 }
                 container.classList.remove('visible');
                 container.classList.add('hiding');
             }
             document.body.classList.remove('sidebar-visible');
+            // 壁纸偏移与容器一起收起，别等下一次 mousemove
+            if (this.ooo) this.ooo.setSidebarWallpaperPush(false);
             return;
         }
 
@@ -919,10 +922,13 @@ export class Controller {
                     container.classList.remove('visible');
                     container.classList.add('hiding');
                     document.body.classList.remove('sidebar-visible');
+                    this.ooo.setSidebarWallpaperPush(false);
                 } else if (container) {
                     container.classList.remove('hiding');
                     container.classList.add('visible');
                     document.body.classList.add('sidebar-visible');
+                    // 与 hover 展开走同一套推入逻辑，保证壁纸位移一致
+                    this.ooo.setSidebarWallpaperPush(true);
                 }
             } else {
                 if (this.ooo.isScrolled) this.ooo.restoreHomepage();

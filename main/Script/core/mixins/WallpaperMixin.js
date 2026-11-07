@@ -1723,6 +1723,13 @@ export const WallpaperMixin = {
 
         this.isScrolled = true;
 
+        // 进入壁纸模式后侧边栏的显隐改由固定配置接管（下面 rAF 里同步），
+        // 当前 hover 推入状态立即作废。必须在后面的 transform 计算之前清掉，
+        // 否则壁纸会带着一次已经失效的侧边栏偏移进入壁纸模式。
+        this.setSidebarWallpaperPush(false, { apply: false });
+        // 模式已切换，滚动手势的累计作废（避免切换前攒下的位移带进下一次滑动）
+        this._scrollGesture = null;
+
         // 进入壁纸模式后铭牌不可交互，立即收起 OCP 播控，避免残留悬空
         this.hideOcpPlayer();
 
@@ -1830,6 +1837,11 @@ export const WallpaperMixin = {
         }
 
         this.isScrolled = false;
+
+        // 退出壁纸模式后侧边栏是否固定由下面的 syncWidgetPanelsForWallpaper 决定，
+        // 壁纸模式里的 hover 推入先作废，避免回主页后壁纸停在偏移位置。
+        this.setSidebarWallpaperPush(false, { apply: false });
+        this._scrollGesture = null;
 
         if (!immediate) {
             document.body.classList.add('enter-animation');
@@ -2059,6 +2071,29 @@ export const WallpaperMixin = {
         this.wallpaperAnalysisUrl = null;
         this.wallpaperAnalysisPromise = null;
         this.updateStatusBarTextContrast();
+    },
+    // 侧边栏推入壁纸的唯一入口：hover、径向菜单、Esc、设置开关、模式切换都从这里改状态，
+    // 避免 _sidebarPushing 与侧边栏实际显隐分叉（出现「壁纸被推开但侧边栏已收起」，
+    // 或反过来「侧边栏还在但壁纸没让位」）。
+    //   apply=false  只更新状态、不立即写 transform —— 模式切换动画由调用方按自己的时序应用；
+    //   force=true   状态没变也重算一次（窗口尺寸变化会改变主页推入所需的缩放比例）。
+    setSidebarWallpaperPush(pushIn, { animate = true, apply = true, force = false } = {}) {
+        const pushing = !!pushIn && window.innerWidth >= 750;
+        const changed = this._sidebarPushing !== pushing;
+        this._sidebarPushing = pushing;
+
+        if (!apply) return;
+        if (!this.wallpaperMain || !this.settings.wallpaperScale) return;
+        // 非常显壁纸在主页没有可位移的层；它的显示/缩放由 showWallpaper/restoreHomepage 接管
+        if (!this.settings.persistentWallpaper && !this.isScrolled) return;
+        if (!changed && !force) return;
+
+        if (animate) {
+            // 与侧边栏自身 0.4s 的回弹缓动对齐（styles.css / dynamic-blur.css），
+            // 两者同时开始、同时到位，不会一个先到、一个还在滑。
+            this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)';
+        }
+        this.applyWallpaperTransform();
     },
     applyWallpaperTransform() {
         const wm = this.wallpaperMain;
