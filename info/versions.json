@@ -1028,6 +1028,32 @@
       ] 
     },
     {
+      "version": "5.3:30.4",
+      "title": "提供最新补丁",
+      "content": [
+        {
+          "type": "heading",
+          "text": "体验优化"
+        },
+        {
+          "type": "list",
+          "items": [
+            "修复了一些已知问题"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "安全补丁"
+        },
+        {
+          "type": "list",
+          "items": [
+            "融入OOOInterface11月安全补丁更新"
+          ]
+        }
+      ]
+    },
+    {
       "version": "5.3:31",
       "title": "版本更新",
       "content": [
@@ -1189,6 +1215,32 @@
             "侧边栏面板各区块加入进场动画",
             "快捷键可关闭侧边栏（Alt+O 开/关切换）",
             "修复了一些已知问题"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "5.3:33.1",
+      "title": "提供最新补丁",
+      "content": [
+        {
+          "type": "heading",
+          "text": "体验优化"
+        },
+        {
+          "type": "list",
+          "items": [
+            "修复了一些已知问题"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "安全补丁"
+        },
+        {
+          "type": "list",
+          "items": [
+            "融入OOOInterface11月安全补丁更新"
           ]
         }
       ]
