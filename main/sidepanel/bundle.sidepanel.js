@@ -1,5 +1,5 @@
 // ⚠️ 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹: e6ca621f07228951    模块数: 15
+// 源码指纹: 5fc63055c157fd81    模块数: 15
 // 入口: main/sidepanel/sidepanel.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -2658,7 +2658,7 @@ const DEFAULT_SETTINGS = {
     // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）
     simpleVisualMode: false,
     hiddenBadge: false,
-    contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle', 'search-suggestions-toggle'],
+    contextMenuCustomItems: [],
     shortcutsEnabled: true,
     theme: 'default',           // 当前主题 key（文件 basename 去扩展名）
     themeEnabled: false,        // 主题功能是否开启

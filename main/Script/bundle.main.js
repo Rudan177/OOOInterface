@@ -1,5 +1,5 @@
 // ⚠️ 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹: 03d2e42f782974c6    模块数: 47
+// 源码指纹: 5cec8c1d586e45d7    模块数: 47
 // 入口: main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -834,7 +834,7 @@ const DEFAULT_SETTINGS = {
     // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）
     simpleVisualMode: false,
     hiddenBadge: false,
-    contextMenuCustomItems: ['wallpaper-toggle', 'search-history-toggle', 'search-suggestions-toggle'],
+    contextMenuCustomItems: [],
     shortcutsEnabled: true,
     theme: 'default',           // 当前主题 key（文件 basename 去扩展名）
     themeEnabled: false,        // 主题功能是否开启
@@ -1988,7 +1988,8 @@ class OOOInterface {
             if (!touchActive || this.isAnimating) return;
             const deltaY = touchStartY - e.touches[0].pageY;
             if (Math.abs(deltaY) > 15) {
-                this.handleScroll({ deltaY: deltaY, target: e.target });
+                // touchGesture：这是按「起点→当前点」过滤过的整段位移，跳过 wheel 的累计判定
+                this.handleScroll({ deltaY: deltaY, target: e.target, touchGesture: true });
                 touchActive = false;
             }
         }, { passive: true });
@@ -3080,12 +3081,15 @@ class Controller {
                 // 当前视图处于固定模式时，Escape 不隐藏固定的侧边栏
                 if (this.ooo && this.ooo.isSidebarFixed()) {
                     document.body.classList.remove('sidebar-visible');
+                    if (this.ooo) this.ooo.setSidebarWallpaperPush(false);
                     return;
                 }
                 container.classList.remove('visible');
                 container.classList.add('hiding');
             }
             document.body.classList.remove('sidebar-visible');
+            // 壁纸偏移与容器一起收起，别等下一次 mousemove
+            if (this.ooo) this.ooo.setSidebarWallpaperPush(false);
             return;
         }
 
@@ -3137,10 +3141,13 @@ class Controller {
                     container.classList.remove('visible');
                     container.classList.add('hiding');
                     document.body.classList.remove('sidebar-visible');
+                    this.ooo.setSidebarWallpaperPush(false);
                 } else if (container) {
                     container.classList.remove('hiding');
                     container.classList.add('visible');
                     document.body.classList.add('sidebar-visible');
+                    // 与 hover 展开走同一套推入逻辑，保证壁纸位移一致
+                    this.ooo.setSidebarWallpaperPush(true);
                 }
             } else {
                 if (this.ooo.isScrolled) this.ooo.restoreHomepage();
@@ -10571,6 +10578,13 @@ const WallpaperMixin = {
 
         this.isScrolled = true;
 
+        // 进入壁纸模式后侧边栏的显隐改由固定配置接管（下面 rAF 里同步），
+        // 当前 hover 推入状态立即作废。必须在后面的 transform 计算之前清掉，
+        // 否则壁纸会带着一次已经失效的侧边栏偏移进入壁纸模式。
+        this.setSidebarWallpaperPush(false, { apply: false });
+        // 模式已切换，滚动手势的累计作废（避免切换前攒下的位移带进下一次滑动）
+        this._scrollGesture = null;
+
         // 进入壁纸模式后铭牌不可交互，立即收起 OCP 播控，避免残留悬空
         this.hideOcpPlayer();
 
@@ -10678,6 +10692,11 @@ const WallpaperMixin = {
         }
 
         this.isScrolled = false;
+
+        // 退出壁纸模式后侧边栏是否固定由下面的 syncWidgetPanelsForWallpaper 决定，
+        // 壁纸模式里的 hover 推入先作废，避免回主页后壁纸停在偏移位置。
+        this.setSidebarWallpaperPush(false, { apply: false });
+        this._scrollGesture = null;
 
         if (!immediate) {
             document.body.classList.add('enter-animation');
@@ -10907,6 +10926,29 @@ const WallpaperMixin = {
         this.wallpaperAnalysisUrl = null;
         this.wallpaperAnalysisPromise = null;
         this.updateStatusBarTextContrast();
+    },
+    // 侧边栏推入壁纸的唯一入口：hover、径向菜单、Esc、设置开关、模式切换都从这里改状态，
+    // 避免 _sidebarPushing 与侧边栏实际显隐分叉（出现「壁纸被推开但侧边栏已收起」，
+    // 或反过来「侧边栏还在但壁纸没让位」）。
+    //   apply=false  只更新状态、不立即写 transform —— 模式切换动画由调用方按自己的时序应用；
+    //   force=true   状态没变也重算一次（窗口尺寸变化会改变主页推入所需的缩放比例）。
+    setSidebarWallpaperPush(pushIn, { animate = true, apply = true, force = false } = {}) {
+        const pushing = !!pushIn && window.innerWidth >= 750;
+        const changed = this._sidebarPushing !== pushing;
+        this._sidebarPushing = pushing;
+
+        if (!apply) return;
+        if (!this.wallpaperMain || !this.settings.wallpaperScale) return;
+        // 非常显壁纸在主页没有可位移的层；它的显示/缩放由 showWallpaper/restoreHomepage 接管
+        if (!this.settings.persistentWallpaper && !this.isScrolled) return;
+        if (!changed && !force) return;
+
+        if (animate) {
+            // 与侧边栏自身 0.4s 的回弹缓动对齐（styles.css / dynamic-blur.css），
+            // 两者同时开始、同时到位，不会一个先到、一个还在滑。
+            this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)';
+        }
+        this.applyWallpaperTransform();
     },
     applyWallpaperTransform() {
         const wm = this.wallpaperMain;
@@ -11996,6 +12038,10 @@ const QuickLinksMixin = {
                 container.classList.remove('visible');
                 container.classList.add('hiding');
             }
+            // 容器被强制收起时，主内容让位与壁纸偏移必须一起撤销，
+            // 否则关掉开关后壁纸会停在「被推开」的位置，直到下一次鼠标移动。
+            document.body.classList.remove('sidebar-visible');
+            this.setSidebarWallpaperPush(false);
         }
     },
     isSidebarFixed() {
@@ -12024,17 +12070,17 @@ const QuickLinksMixin = {
         }
 
         let hideTimeout = null;
-        let isVisible = false;
         const TRIGGER_ZONE_WIDTH = 100;   // 右侧触发区域宽度（像素）
         const HIDE_DELAY = 0;            // 鼠标离开立即关闭
 
+        // 展开状态只认容器上的 visible/hiding 类。径向菜单、Esc、设置开关等路径
+        // 都会直接改这两个类；这里再维护一份 isVisible 副本，两条路径迟早会分叉
+        // （壁纸被推开却看不到侧边栏，或侧边栏还在却没人推壁纸）。
+        const isSidebarOpen = () =>
+            container.classList.contains('visible') && !container.classList.contains('hiding');
+
         const pushWallpaper = (pushIn) => {
-            this._sidebarPushing = pushIn && window.innerWidth >= 750;
-            if (this.wallpaperMain && this.settings.wallpaperScale &&
-                (this.settings.persistentWallpaper || this.isScrolled)) {
-                this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                this.applyWallpaperTransform();
-            }
+            this.setSidebarWallpaperPush(pushIn);
         };
 
         const showSidebar = () => {
@@ -12045,15 +12091,12 @@ const QuickLinksMixin = {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
             }
-            if (!isVisible) {
-                isVisible = true;
-                container.classList.remove('hiding');
-                container.classList.add('visible');
-
-                document.body.classList.add('sidebar-visible');
-
-                pushWallpaper(true);
-            }
+            // 类名与主内容让位标记都已在位：别重复推壁纸
+            if (isSidebarOpen() && document.body.classList.contains('sidebar-visible')) return;
+            container.classList.remove('hiding');
+            container.classList.add('visible');
+            document.body.classList.add('sidebar-visible');
+            pushWallpaper(true);
         };
 
         const scheduleHide = () => {
@@ -12061,13 +12104,15 @@ const QuickLinksMixin = {
             hideTimeout = setTimeout(() => {
                 // 当前视图处于固定模式时，不被 hover 隐藏
                 if (this.isSidebarFixed()) return;
-                if (isVisible) {
-                    isVisible = false;
-                    container.classList.remove('visible');
-                    container.classList.add('hiding');
-                    document.body.classList.remove('sidebar-visible');
-                    pushWallpaper(false);
+                // 已被其它路径（径向菜单/Esc/模式切换）收起或重新展开：以实际状态为准
+                if (!isSidebarOpen()) {
+                    hideTimeout = null;
+                    return;
                 }
+                container.classList.remove('visible');
+                container.classList.add('hiding');
+                document.body.classList.remove('sidebar-visible');
+                pushWallpaper(false);
                 hideTimeout = null;
             }, HIDE_DELAY);
         };
@@ -12084,7 +12129,7 @@ const QuickLinksMixin = {
                 // 当前视图处于固定模式时，无需 hover 触发
                 if (this.isSidebarFixed()) return;
                 showSidebar();
-            } else if (isVisible && !this.isSidebarFixed()) {
+            } else if (isSidebarOpen() && !this.isSidebarFixed()) {
                 // 仅在容器可见且未固定时检查是否需要隐藏
                 const containerRect = container.getBoundingClientRect();
                 const isOverContainer = (
@@ -12107,13 +12152,11 @@ const QuickLinksMixin = {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
             }
-            if (!isVisible) {
-                isVisible = true;
-                container.classList.remove('hiding');
-                container.classList.add('visible');
-                document.body.classList.add('sidebar-visible');
-                pushWallpaper(true);
-            }
+            if (isSidebarOpen() && document.body.classList.contains('sidebar-visible')) return;
+            container.classList.remove('hiding');
+            container.classList.add('visible');
+            document.body.classList.add('sidebar-visible');
+            pushWallpaper(true);
         });
 
         container.addEventListener('mouseleave', () => {
@@ -12133,6 +12176,14 @@ const QuickLinksMixin = {
         };
         sidebar.addEventListener('wheel', sidebarWheelHandler, { passive: true });
         container.addEventListener('wheel', sidebarWheelHandler, { passive: true });
+
+        // 主页推入的缩放比例是按下式现算的：vw / (vw - 2 * pushPx)。
+        // 窗口宽度变了而侧边栏还开着时按新宽度重算，否则右侧会露出黑边（或缩放过量）。
+        window.addEventListener('resize', () => {
+            if (document.body.classList.contains('sidebar-visible')) {
+                this.setSidebarWallpaperPush(true, { force: true });
+            }
+        });
     },
 showQuickLinksMenuInRightPanel (skipAnimation) {
     const self = this;
@@ -12576,6 +12627,14 @@ updateQuickLinksListInMenu (listContainer) {
 // 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
 // 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
 
+// 壁纸模式进退的滚动手势判定（触摸板/滚轮共用）。
+// 触摸板一次滑动会连续发几十个 1~3px 的 wheel 事件，滑停时还常带一点反向抖动；
+// 过去按单个事件的 deltaY 正负直接切换模式，这点抖动就能把用户刚滑进去的壁纸模式弹回主页。
+// 现在按「同一方向累计位移」判定：方向一反转就清零，累计超过阈值才切换。
+// 鼠标滚轮一格带 wheelDeltaY=±120，仍然一格即触发（见下方 wheelTick）。
+const SCROLL_TRIGGER_PX = 40;       // 触发一次模式切换所需的同方向累计位移
+const SCROLL_GESTURE_GAP_MS = 250;  // 两帧间隔超过它视为新手势，累计清零
+
 const SearchMixin = {
     copySearchContent() {
         const searchInput = document.getElementById('search-input');
@@ -12629,6 +12688,54 @@ const SearchMixin = {
         // 节流：如果正在动画中，忽略新的滚动事件
         if (this.isAnimating) return;
 
+        // 触摸屏滑动：touchmove 已按「起点到当前点」的位移过滤过一次，一次调用就是一次完整手势，
+        // 不能再走下面的累计判定（否则一次 swipe 只累加一帧，永远到不了阈值）。
+        if (e.touchGesture) {
+            this._scrollGesture = null;
+            if (e.deltaY > 0 && !this.isScrolled) {
+                this.showWallpaper();
+            } else if (e.deltaY < 0 && this.isScrolled) {
+                this.restoreHomepage();
+            }
+            return;
+        }
+
+        // 触摸板双指缩放会发 ctrlKey+wheel（且 deltaY 很小），横向滑动则以 deltaX 为主：
+        // 两者都不该被当成「上下滑动切壁纸模式」。
+        if (e.ctrlKey) return;
+        const dy0 = e.deltaY || 0;
+        if (!dy0) return;
+        if (Math.abs(e.deltaX || 0) > Math.abs(dy0)) return;
+
+        // deltaMode: 0=像素 1=行 2=页，统一换算成像素再累计
+        let dy = dy0;
+        if (e.deltaMode === 1) dy *= 16;
+        else if (e.deltaMode === 2) dy *= window.innerHeight || 800;
+
+        const now = window.performance && performance.now ? performance.now() : Date.now();
+        let gesture = this._scrollGesture;
+        if (!gesture || now - gesture.last > SCROLL_GESTURE_GAP_MS) {
+            gesture = this._scrollGesture = { dir: 0, dist: 0, last: now };
+        }
+        const dir = dy > 0 ? 1 : -1;
+        if (gesture.dir !== dir) {
+            gesture.dir = dir;
+            gesture.dist = 0;
+        }
+        gesture.last = now;
+        gesture.dist += Math.abs(dy);
+
+        // 传统滚轮一格带 wheelDeltaY=±120，触摸板/精确滚动只有小数值。
+        // 各平台 deltaY 的像素尺度并不一致（有的鼠标一格只有几 px），
+        // 用这个非标准字段保住「鼠标一格即切换」的手感。
+        const wheelTick = Math.abs(
+            e.wheelDeltaY != null ? e.wheelDeltaY : (e.wheelDelta || 0)
+        ) >= 120;
+
+        // 累计还不够：不切换模式，也不打断正在进行的动画
+        if (gesture.dist < SCROLL_TRIGGER_PX && !wheelTick) return;
+        gesture.dist = 0;
+
         // 清除之前的动画定时器，允许打断
         if (this._animationTimeout) {
             clearTimeout(this._animationTimeout);
@@ -12636,11 +12743,11 @@ const SearchMixin = {
         }
 
         // 向下滚动出现壁纸
-        if (e.deltaY > 0 && !this.isScrolled) {
+        if (dir > 0 && !this.isScrolled) {
             this.showWallpaper();
         }
         // 向上滚动恢复
-        else if (e.deltaY < 0 && this.isScrolled) {
+        else if (dir < 0 && this.isScrolled) {
             this.restoreHomepage();
         }
     },
@@ -20394,6 +20501,9 @@ syncWidgetPanelsForWallpaper (wallpaperMode) {
         container.classList.remove('visible');
         container.classList.add('hiding');
     });
+    // 侧边栏已回到隐藏态：壁纸偏移一起撤销（非常显壁纸在主页本就没有偏移，
+    // 常显壁纸则要等 restoreHomepage 随后的 transform 一起回缩）
+    this.setSidebarWallpaperPush(false);
 },
 syncSidebarFixedState () {
     const sidebarContainer = document.getElementById('quick-access-sidebar-container');
@@ -20434,6 +20544,9 @@ syncSidebarFixedState () {
     // 清除推动残留（widget-panel-open / sidebar-visible），避免固定状态误触发推挤
     document.body.classList.remove('widget-panel-open');
     document.body.classList.remove('sidebar-visible');
+    // 固定侧边栏不是「临时推入」：同步撤销壁纸偏移，否则 hover 退出后
+    // 壁纸会停在偏移位置，固定侧边栏却始终贴着右边缘。
+    this.setSidebarWallpaperPush(false);
 },
 initWidgetPanel () {
     // 幂等：若 mousemove 监听器已绑定（非首次调用），跳过
