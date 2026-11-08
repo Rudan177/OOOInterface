@@ -19,9 +19,7 @@ var WELC_CONTENT = {
         {
             header: '提供最新补丁',
             items: [
-                '融入OOOInterface10月安全补丁更新',
-                '提供新版架构更新兼容'
-            ]
+                '融入OOOInterface11月安全补丁更新'            ]
         }
     ],
 
