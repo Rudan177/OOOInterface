@@ -57,3 +57,4 @@
 | 20261107 | Just Be My Child | 小智 | 248s | 1 | Contribute |
 | 20261108 | 我们停止歌唱的理由 | 言和 | 204s | 1 | Contribute |
 | 20261109 | 风之子 | 洛天依 | 195s | 1 | Contribute |
+| 20261110 | Monologue | 洛天依 | 247s | 1 | Contribute |
