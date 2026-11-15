@@ -63,3 +63,4 @@
 | 20261113 | 无中生有 Ex Nihilo | HOYO-MiX / 當山みれい (当山真玲) | 217s | 1 | Contribute |
 | 20261114 | 残月 | MOCKER44. / 乌托邦P / 洛天依Official | 235s | 1 | Contribute |
 | 20261115 | 午后 | 言和 | 330s | 1 | Contribute |
+| 20261116 | Tiny Giant 小巨星 | 三Z-STUDIO / HOYO-MiX / Ashley Alisha | 177s | 1 | Contribute |
