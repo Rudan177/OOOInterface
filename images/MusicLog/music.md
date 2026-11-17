@@ -65,3 +65,4 @@
 | 20261115 | 午后 | 言和 | 330s | 1 | Contribute |
 | 20261116 | Tiny Giant 小巨星 | 三Z-STUDIO / HOYO-MiX / Ashley Alisha | 177s | 1 | Contribute |
 | 20261117 | Nightglow | 蔡健雅 | 183s | 1 | Contribute |
+| 20261118 | TruE | 黄龄 / HOYO-MiX | 188s | 1 | Contribute |
