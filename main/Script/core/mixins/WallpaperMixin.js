@@ -1743,6 +1743,8 @@ export const WallpaperMixin = {
             // 下一帧再修改其他 class，触发 CSS transition。
             document.body.classList.add('scrolled');
             document.body.classList.remove('homepage-wallpaper');
+            // 壁纸模式是否保留聚焦效果由设置决定，进入后重算一次。
+            this.refreshFocusSearchState();
 
             if (!this.settings.persistentWallpaper) {
                 document.body.classList.add('user-scrolled');
@@ -1850,6 +1852,7 @@ export const WallpaperMixin = {
         }
 
         document.body.classList.remove('scrolled');
+        this.refreshFocusSearchState();
 
         // 退出壁纸模式：恢复侧边栏与小组件面板由 hover 控制。
         this.syncWidgetPanelsForWallpaper(false);

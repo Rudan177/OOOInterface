@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：e20ff77a41d871e6    模块数：15
+// 源码指纹：2a8e1fc886be6e71    模块数：15
 // 入口：main/sidepanel/sidepanel.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -2608,6 +2608,11 @@ const DEFAULT_SETTINGS = {
     bingRefreshInterval: 0,
     quickAccessSidebar: true,
     showQuickLinkIcons: true,
+    // 聚焦搜索：聚焦搜索框时放大、上移并压暗（高级视觉效果下改为模糊）背景，
+    // 搜索历史/热搜与搜索框拼成一张卡片。缩放比例 1.0~1.5，默认 1.2。
+    focusSearch: false,
+    focusSearchWallpaper: true,
+    focusSearchScale: 1.2,
     // 固定侧边栏：主开关（false = 恢复 hover 控制）；开启主开关时子开关自动跟随。
     fixSidebarEnabled: false,
     fixSidebarHomepage: false,
@@ -2666,7 +2671,8 @@ const DEFAULT_SETTINGS = {
  */
 
 const SYNC_KEYS = [
-    'quickLinks', 'showQuickLinkIcons', 'enhancedDisplay', 'dynamicBlur', 'colorScheme',
+    'quickLinks', 'showQuickLinkIcons', 'focusSearch', 'focusSearchWallpaper', 'focusSearchScale',
+    'enhancedDisplay', 'dynamicBlur', 'colorScheme',
     'themeColorScheme', 'customColors', 'activeCustomColorIndex', 'customPrimaryColor', 'customSecondaryColor',
     'customGradientEnabled', 'customGradientStart', 'customGradientEnd', 'font',
     'sidePanelEnabled', 'sidePanelShowWidgets', 'sidePanelShowQuickLinks', 'sidePanelShowSearch',

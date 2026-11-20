@@ -166,6 +166,8 @@ export class OOOInterface {
         window.addEventListener('resize', () => {
             this.updateStatusBarTextContrast();
             this.syncWidgetCardHeights();
+            // 窗口宽度变化会改变搜索框的布局宽度，放大比例的上限要重算。
+            this.applyFocusSearch();
             if (document.getElementById('settings-modal').style.display === 'flex') {
                 this.updateSettingsButtonsPosition();
             }
@@ -246,6 +248,12 @@ export class OOOInterface {
                         searchInput.value = '';
                         this.syncSearchAssistantUI('');
                     }
+                } else if (document.body.classList.contains('focus-search-active')) {
+                    // 没有其它浮层时 Esc 退出聚焦搜索：收回下拉并让输入框失焦。
+                    e.preventDefault();
+                    this.hideSearchHistory();
+                    this.setFocusSearchFocused(false);
+                    searchInput.blur();
                 }
                 return;
             }
@@ -284,9 +292,70 @@ export class OOOInterface {
             if (clearBtn) {
                 clearBtn.style.display = searchInput.value.length > 0 ? 'flex' : 'none';
             }
+            this.setFocusSearchFocused(true);
+        });
+
+        // 首屏的 autofocus 直接给输入框焦点，但那只是页面就绪，不算用户要搜索。
+        // 点击搜索区或开始键入后才认作用户主动进入，避免一打开新标签页整页就压暗放大。
+        // 点到搜索区之外时立即收起：blur 回调有 150ms 的防抖（照顾清空、删除等内部点击），
+        // 外部点击不需要等它，否则退场动画会晚半拍才起步。
+        document.addEventListener('pointerdown', (e) => {
+            const target = e.target;
+            const inArea = target.closest && target.closest(
+                '.search-section, .search-history-container, .search-command-container, .engine-buttons');
+            if (!inArea) {
+                if (document.body.classList.contains('focus-search-active')) {
+                    this.setFocusSearchFocused(false);
+                }
+                return;
+            }
+            // 点引擎按钮不主动进入（输入框此时并未聚焦），激活中则由 blur 防抖维持。
+            if (target.closest('.engine-buttons')) return;
+            this._focusSearchIntent = true;
+            this.setFocusSearchFocused(true);
+        }, true);
+
+        // 焦点离开搜索框后延迟收起聚焦状态：点删除按钮、清空按钮时焦点会短暂离开，
+        // 立即收起会让整张卡片闪一下；等一拍后焦点仍在聚焦相关区域里就保持不动。
+        searchInput.addEventListener('blur', () => {
+            clearTimeout(this._focusSearchBlurTimer);
+            this._focusSearchBlurTimer = setTimeout(() => {
+                this._focusSearchBlurTimer = null;
+                const focused = document.activeElement;
+                const inFocusArea = focused && focused.closest && focused.closest(
+                    '.search-section, .search-history-container, .search-command-container, .engine-buttons');
+                if (!inFocusArea && focused !== searchInput) {
+                    this.setFocusSearchFocused(false);
+                }
+            }, 150);
+        });
+
+        // 焦点在引擎按钮等搜索区元素上时，输入框上的 Esc 监听收不到事件；
+        // 聚焦视图开着就补一条文档级兜底，让 Esc 照样能收起（输入框自己处理时直接跳过，避免重复）。
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape' || e.target === searchInput) return;
+            if (!document.body.classList.contains('focus-search-active')) return;
+            if (this.searchCommandMode || (this.commandListState && this.commandListState.visible)) return;
+            e.preventDefault();
+            this.hideSearchHistory();
+            this.setFocusSearchFocused(false);
+            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        });
+
+        // 键盘把焦点移出搜索相关区域（例如从引擎按钮 Tab 到快速访问链接）时同样收起。
+        document.addEventListener('focusin', (e) => {
+            if (!document.body.classList.contains('focus-search-active')) return;
+            const target = e.target;
+            if (target === searchInput) return;
+            if (target.closest && target.closest(
+                '.search-section, .search-history-container, .search-command-container, .engine-buttons')) return;
+            this.setFocusSearchFocused(false);
         });
 
         searchInput.addEventListener('input', () => {
+            // 键入同样算主动使用搜索：autofocus 拿到的焦点在第一次输入时补上进入状态。
+            this._focusSearchIntent = true;
+            this.setFocusSearchFocused(true);
             this.syncSearchAssistantUI(searchInput.value);
             const clearBtn = document.querySelector('.search-clear-btn');
             if (clearBtn) {
@@ -309,7 +378,10 @@ export class OOOInterface {
         }
 
         document.addEventListener('click', (e) => {
-            if (!searchHistoryContainer.contains(e.target) && !searchInput.contains(e.target)) {
+            // 点引擎按钮不算离开搜索区：历史面板是搜索区流程里的一部分（在流动布局中撑着按钮的位置），
+            // 在这里收起来会让整排引擎按钮跟着上移一大截，看起来就是切换时按钮跳了一下。
+            const fromEngine = e.target.closest && e.target.closest('.engine-buttons');
+            if (!fromEngine && !searchHistoryContainer.contains(e.target) && !searchInput.contains(e.target)) {
                 this.hideSearchHistory();
             }
             const commandContainer = document.getElementById('search-command-container');
@@ -616,6 +688,70 @@ export class OOOInterface {
             this.saveSettings();
         });
 
+        // 聚焦搜索主开关：即时生效；关闭时同时收起细节项并结束可能进行的聚焦状态。
+        document.getElementById('focus-search-toggle').addEventListener('change', (e) => {
+            this.settings.focusSearch = e.target.checked;
+            ['focus-search-wallpaper-group', 'focus-search-scale-group'].forEach(id => {
+                const group = document.getElementById(id);
+                if (group) group.style.display = e.target.checked ? 'block' : 'none';
+            });
+            this.applyFocusSearch();
+            this.saveSettings();
+        });
+
+        // 壁纸模式是否显示聚焦效果：即时生效。
+        document.getElementById('focus-search-wallpaper-toggle').addEventListener('change', (e) => {
+            this.settings.focusSearchWallpaper = e.target.checked;
+            this.applyFocusSearch();
+            this.saveSettings();
+        });
+
+        // 聚焦缩放比例：拖动时实时预览，松手后落盘（settings 是整库 blob，不做逐像素写入）。
+        const focusScaleSlider = document.getElementById('focus-search-scale');
+        const focusScaleValue = document.getElementById('focus-search-scale-value');
+        const clampFocusScale = (raw) => {
+            let value = parseFloat(raw);
+            if (!isFinite(value)) value = 1.2;
+            value = Math.min(1.5, Math.max(1, value));
+            return Math.round(value * 100) / 100;
+        };
+        const applyFocusScaleInput = (value) => {
+            this.settings.focusSearchScale = value;
+            this.applyFocusSearch();
+        };
+        if (focusScaleSlider) {
+            focusScaleSlider.addEventListener('input', (e) => {
+                const value = clampFocusScale(e.target.value);
+                if (focusScaleValue) focusScaleValue.value = value;
+                applyFocusScaleInput(value);
+            });
+            focusScaleSlider.addEventListener('change', () => this.saveSettings());
+        }
+        if (focusScaleValue) {
+            focusScaleValue.addEventListener('input', (e) => {
+                const value = clampFocusScale(e.target.value);
+                if (focusScaleSlider) focusScaleSlider.value = value;
+                applyFocusScaleInput(value);
+            });
+            focusScaleValue.addEventListener('change', () => this.saveSettings());
+
+            // 滚轮直接调值：数字框默认不响应滚轮，这里按 step 增减并同步滑块。
+            // 滚动会连发多帧，预览实时生效，落盘防抖（settings 是整库 blob）。
+            let focusWheelSaveTimer = null;
+            focusScaleValue.addEventListener('wheel', (e) => {
+                if (e.deltaY === 0) return;
+                e.preventDefault();
+                const step = parseFloat(focusScaleValue.step) || 0.05;
+                const current = clampFocusScale(focusScaleValue.value);
+                const value = clampFocusScale(current + (e.deltaY < 0 ? step : -step));
+                focusScaleValue.value = value;
+                if (focusScaleSlider) focusScaleSlider.value = value;
+                applyFocusScaleInput(value);
+                clearTimeout(focusWheelSaveTimer);
+                focusWheelSaveTimer = setTimeout(() => this.saveSettings(), 250);
+            }, { passive: false });
+        }
+
         // 固定侧边栏主开关改变时，立即写入设置并生效，同时显示/隐藏两个子开关并同步状态
         // （子开关被主开关强制勾选/取消只是「显示派生」，不回写 fixSidebarHomepage/fixSidebarWallpaper，
         //   这样子开关的偏好能在主开关反复开关之间保留，与 updateSettingsUI 的读法一致）。
@@ -850,6 +986,22 @@ export class OOOInterface {
                 const showIconsToggle = document.getElementById('show-quick-icons');
                 if (showIconsToggle && this.settings.quickAccessSidebar) {
                     this.settings.showQuickLinkIcons = showIconsToggle.checked;
+                }
+
+                // 读取聚焦搜索主开关、壁纸模式子开关与缩放比例（子项同样只在主开关开启时读取）。
+                const focusSearchToggle = document.getElementById('focus-search-toggle');
+                if (focusSearchToggle) {
+                    this.settings.focusSearch = focusSearchToggle.checked;
+                }
+                const focusWallpaperToggle = document.getElementById('focus-search-wallpaper-toggle');
+                if (focusWallpaperToggle && this.settings.focusSearch) {
+                    this.settings.focusSearchWallpaper = focusWallpaperToggle.checked;
+                }
+                const focusScaleSlider = document.getElementById('focus-search-scale');
+                if (focusScaleSlider) {
+                    let focusScale = parseFloat(focusScaleSlider.value);
+                    if (!isFinite(focusScale)) focusScale = 1.2;
+                    this.settings.focusSearchScale = Math.min(1.5, Math.max(1, Math.round(focusScale * 100) / 100));
                 }
 
                 const statusBarToggle = document.getElementById('status-bar-toggle');
@@ -1173,6 +1325,7 @@ export class OOOInterface {
                 const searchInput = document.getElementById('search-input');
                 if (searchInput && document.activeElement !== searchInput) {
                     e.preventDefault();
+                    this._focusSearchIntent = true;
                     searchInput.focus();
                 }
             }

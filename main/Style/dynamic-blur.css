@@ -1173,3 +1173,12 @@ body:not(.qa-panel-page):not(.dynamic-blur) .ooo-badge {
     transition: transform 0.35s ease-out,
         opacity 0.3s ease;
 }
+
+/* 聚焦搜索：下拉面板要与放大的搜索框连成一张卡片，底色和模糊都跟随搜索框。
+ * 必须用 !important 抵消上面各模式下带 !important 的独立面板底色，并放在文件末尾靠顺序取胜。 */
+body.dynamic-blur.focus-search-active .search-history-container.show,
+body.dynamic-blur.focus-search-active .search-command-container.show {
+    background: var(--focus-search-surface) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
+}

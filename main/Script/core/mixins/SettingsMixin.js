@@ -64,6 +64,23 @@ export const SettingsMixin = {
         this.syncStatusBarUI();
         this.syncWidgetPanelUI();
         this.syncBadgeOpenMethodUI();
+        this.syncFocusSearchUI();
+    },
+    syncFocusSearchUI() {
+        const toggle = document.getElementById('focus-search-toggle');
+        if (toggle) toggle.checked = this.settings.focusSearch;
+        const wallpaperToggle = document.getElementById('focus-search-wallpaper-toggle');
+        if (wallpaperToggle) wallpaperToggle.checked = this.settings.focusSearchWallpaper;
+        const scale = this.settings.focusSearchScale;
+        const scaleSlider = document.getElementById('focus-search-scale');
+        if (scaleSlider) scaleSlider.value = scale;
+        const scaleValue = document.getElementById('focus-search-scale-value');
+        if (scaleValue) scaleValue.value = scale;
+        // 两个细节项只在主开关开启时显示，与其它主/子开关的派生方式一致。
+        const wallpaperGroup = document.getElementById('focus-search-wallpaper-group');
+        if (wallpaperGroup) wallpaperGroup.style.display = this.settings.focusSearch ? 'block' : 'none';
+        const scaleGroup = document.getElementById('focus-search-scale-group');
+        if (scaleGroup) scaleGroup.style.display = this.settings.focusSearch ? 'block' : 'none';
     },
     async loadSettings() {
         const isFirstRun = localStorage.getItem('oooInterfaceFirstRun');
@@ -194,6 +211,9 @@ export const SettingsMixin = {
         if (savedSettings.bingRefreshInterval !== undefined) result.bingRefreshInterval = savedSettings.bingRefreshInterval;
         if (savedSettings.quickAccessSidebar !== undefined) result.quickAccessSidebar = savedSettings.quickAccessSidebar;
         if (savedSettings.showQuickLinkIcons !== undefined) result.showQuickLinkIcons = savedSettings.showQuickLinkIcons;
+        if (savedSettings.focusSearch !== undefined) result.focusSearch = savedSettings.focusSearch;
+        if (savedSettings.focusSearchWallpaper !== undefined) result.focusSearchWallpaper = savedSettings.focusSearchWallpaper;
+        if (savedSettings.focusSearchScale !== undefined) result.focusSearchScale = savedSettings.focusSearchScale;
         if (savedSettings.fixSidebarEnabled !== undefined) result.fixSidebarEnabled = savedSettings.fixSidebarEnabled;
         if (savedSettings.fixSidebarHomepage !== undefined) result.fixSidebarHomepage = savedSettings.fixSidebarHomepage;
         if (savedSettings.fixSidebarWallpaper !== undefined) result.fixSidebarWallpaper = savedSettings.fixSidebarWallpaper;
@@ -461,6 +481,9 @@ export const SettingsMixin = {
         modal.style.alignItems = 'center';
         modal.style.justifyContent = 'center';
 
+        // 设置弹窗打开期间不保留聚焦搜索的放大/压暗，避免弹窗背后还是聚焦态。
+        this.refreshFocusSearchState();
+
         // 禁用主页面滚动。
         document.body.style.overflow = 'hidden';
 
@@ -681,6 +704,8 @@ export const SettingsMixin = {
             showIconsToggle.checked = this.settings.quickAccessSidebar ? this.settings.showQuickLinkIcons : false;
         }
 
+        this.syncFocusSearchUI();
+
         // 根据固定侧边栏主开关状态显示或隐藏子开关。
         const fsHomepageGroup = document.getElementById('fix-homepage-group');
         const fsWallpaperGroup = document.getElementById('fix-wallpaper-group');
@@ -814,6 +839,8 @@ export const SettingsMixin = {
 
                 // 重新读取设置状态，更新右键菜单图标。
                 this.updateContextMenuIcons();
+
+                this.refreshFocusSearchState();
             }, 400); // 等待动画完成，与 CSS 过渡时间匹配
         } else {
             // 直接执行后续操作，无动画。
@@ -844,6 +871,8 @@ export const SettingsMixin = {
 
             // 重新读取设置状态，更新右键菜单图标。
             this.updateContextMenuIcons();
+
+            this.refreshFocusSearchState();
         }
     },
     updateDeveloperModeUI() {
@@ -895,6 +924,58 @@ export const SettingsMixin = {
             }
             ProxyManager.setProxy(this.settings.proxyPort);
         }
+    },
+    applyFocusSearch() {
+        const root = document.documentElement;
+        let scale = Number(this.settings.focusSearchScale);
+        if (!isFinite(scale)) scale = 1.2;
+        // 夹回滑块范围：导入的设置可能带任意数值，越界会让搜索框盖住整页。
+        scale = Math.min(1.5, Math.max(1, scale));
+        // 窄窗口下再按住可用宽度收一收：搜索框本身已接近满宽时，按设置比例放大会被视口两侧裁掉。
+        const box = document.querySelector('.search-section .search-container');
+        const layoutWidth = box ? box.offsetWidth : 0;
+        if (layoutWidth > 0) {
+            const available = document.documentElement.clientWidth - 32;
+            scale = Math.min(scale, Math.max(1, available / layoutWidth));
+        }
+        root.style.setProperty('--focus-search-scale', scale);
+        this.refreshFocusSearchState();
+    },
+    // 聚焦状态统一在这里落成 body 类：焦点事件只改 _focusSearchFocused，
+    // 壁纸模式切换、设置项开关、设置弹窗打开等路径都靠重跑本方法得到一致结果。
+    refreshFocusSearchState() {
+        const modal = document.getElementById('settings-modal');
+        // 以 display 为准：无动画分支里 show 类加上/取下都很早，动画分支还有嵌套 rAF，
+        // 用 display 能覆盖弹窗从打开到完全关闭的整段时间。
+        const settingsOpen = !!modal && (modal.style.display === 'flex'
+            || modal.classList.contains('show') || modal.classList.contains('hiding'));
+        const wallpaperBlocked = document.body.classList.contains('scrolled') && !this.settings.focusSearchWallpaper;
+        const active = !!this._focusSearchIntent && !!this._focusSearchFocused && this.settings.focusSearch
+            && !wallpaperBlocked && !settingsOpen;
+        const body = document.body;
+        const wasActive = body.classList.contains('focus-search-active');
+        if (active) {
+            clearTimeout(this._focusSearchLeaveTimer);
+            this._focusSearchLeaveTimer = null;
+            body.classList.remove('focus-search-leaving');
+        } else if (wasActive) {
+            // 放大过渡写在 .focus-search-active 上，类一去掉过渡也一并消失，卡片会瞬跳回原位。
+            // 退出时先挂一小段 leaving（与过渡时长对齐），让退场沿用同一组过渡；
+            // 它同时把层级继续压在压暗层之上，压暗层淡出时不会盖住正在缩回的卡片。
+            // 下拉面板留在展开状态会与缩回中的搜索框错位，收起动画也一并从这里开始。
+            this.hideSearchHistory();
+            body.classList.add('focus-search-leaving');
+            clearTimeout(this._focusSearchLeaveTimer);
+            this._focusSearchLeaveTimer = setTimeout(() => {
+                this._focusSearchLeaveTimer = null;
+                body.classList.remove('focus-search-leaving');
+            }, 420);
+        }
+        body.classList.toggle('focus-search-active', active);
+    },
+    setFocusSearchFocused(focused) {
+        this._focusSearchFocused = !!focused;
+        this.refreshFocusSearchState();
     },
     applyWallpaperDim() {
         // 暗色压暗壁纸：暗色模式下壁纸蒙版的开关（主页面与侧边栏面板共用设置键 wallpaperDarkDim）。
@@ -1015,6 +1096,7 @@ export const SettingsMixin = {
         safe('applyQuickLinks', this.applyQuickLinks);
         safe('applyWallpaper', this.applyWallpaper);
         safe('applyWallpaperDim', this.applyWallpaperDim);
+        safe('applyFocusSearch', this.applyFocusSearch);
         safe('applyDeveloperSettings', this.applyDeveloperSettings);
         safe('applyContextMenuStyle', this.applyContextMenuStyle);
         safe('renderWidgetPanel', this.renderWidgetPanel);

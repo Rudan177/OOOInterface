@@ -53,6 +53,11 @@ export const DEFAULT_SETTINGS = {
     bingRefreshInterval: 0,
     quickAccessSidebar: true,
     showQuickLinkIcons: true,
+    // 聚焦搜索：聚焦搜索框时放大、上移并压暗（高级视觉效果下改为模糊）背景，
+    // 搜索历史/热搜与搜索框拼成一张卡片。缩放比例 1.0~1.5，默认 1.2。
+    focusSearch: false,
+    focusSearchWallpaper: true,
+    focusSearchScale: 1.2,
     // 固定侧边栏：主开关（false = 恢复 hover 控制）；开启主开关时子开关自动跟随。
     fixSidebarEnabled: false,
     fixSidebarHomepage: false,

@@ -5,7 +5,8 @@
  */
 
 export const SYNC_KEYS = [
-    'quickLinks', 'showQuickLinkIcons', 'enhancedDisplay', 'dynamicBlur', 'colorScheme',
+    'quickLinks', 'showQuickLinkIcons', 'focusSearch', 'focusSearchWallpaper', 'focusSearchScale',
+    'enhancedDisplay', 'dynamicBlur', 'colorScheme',
     'themeColorScheme', 'customColors', 'activeCustomColorIndex', 'customPrimaryColor', 'customSecondaryColor',
     'customGradientEnabled', 'customGradientStart', 'customGradientEnd', 'font',
     'sidePanelEnabled', 'sidePanelShowWidgets', 'sidePanelShowQuickLinks', 'sidePanelShowSearch',
