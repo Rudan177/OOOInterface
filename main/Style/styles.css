@@ -5390,8 +5390,8 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     border-radius: 16px;
     padding: 6px;
     margin: 0 10px 10px 0;
-    min-width: 160px;
-    max-width: 220px;
+    /* 宽度固定：链接文字长短不再让卡片在 160~220px 之间浮动。 */
+    width: 160px;
     height: calc(100vh - var(--status-bar-offset) - 10px);
     display: flex;
     flex-direction: column;
