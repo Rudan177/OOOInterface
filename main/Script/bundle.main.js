@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：177c9a9c98676945    模块数：47
+// 源码指纹：06b90f0d2b4e28e8    模块数：47
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -6379,6 +6379,7 @@ const NotificationsMixin = {
 
         const items = [
             { key: 'Alt + O', desc: '激活 OOOInterface 扩展程序' },
+            { key: 'Alt + Shift + O', desc: '添加当前网页（侧边栏打开时改为快速编辑链接）' },
             { key: 'Tab', desc: '快速聚焦到搜索框' },
             { key: 'Tab（长按）', desc: '打开快捷轮盘，移动鼠标或方向键选择（斜向按两键）' },
             { key: 'Ctrl + ,', desc: '打开设置页面' },

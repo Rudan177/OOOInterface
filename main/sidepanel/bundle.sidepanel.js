@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：39a126fcfc5f8df5    模块数：15
+// 源码指纹：e20ff77a41d871e6    模块数：15
 // 入口：main/sidepanel/sidepanel.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -3343,6 +3343,274 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
+    // ---------- 快速编辑浮层（Alt+Shift+O） ----------
+    // 面板打开时快捷键不再直接写入链接，而是弹出本浮层编辑当前展示的那份列表：
+    // 同步开启时改 quickLinks，独立配置时改 sidePanelQuickLinks，与 getQuickLinksSource 一致。
+
+    var quickEditIndex = -1; // 正在编辑的链接下标，-1 表示列表视图
+    var panelWindowId = null;
+
+    function isQuickEditOpen() {
+        var overlay = document.getElementById('qa-quick-edit');
+        return !!(overlay && !overlay.hidden);
+    }
+
+    function getQuickLinkTargetKey() {
+        return settings.sidePanelQuickLinksSync ? 'quickLinks' : 'sidePanelQuickLinks';
+    }
+
+    function renderQuickEditList() {
+        var list = document.getElementById('qa-quick-edit-list');
+        if (!list) return;
+        list.innerHTML = '';
+
+        var quickLinks = getQuickLinksSource();
+        if (quickLinks.length === 0) {
+            var emptyMsg = document.createElement('div');
+            emptyMsg.className = 'quick-links-empty';
+            emptyMsg.textContent = '暂无快速访问链接';
+            list.appendChild(emptyMsg);
+            return;
+        }
+
+        quickLinks.forEach(function (link, index) {
+            if (index === quickEditIndex) {
+                list.appendChild(buildQuickEditForm(link, index));
+                return;
+            }
+            list.appendChild(buildQuickEditRow(link, index));
+        });
+    }
+
+    function buildQuickEditRow(link, index) {
+        var item = document.createElement('div');
+        item.className = 'quick-link-menu-item qa-quick-edit-item';
+
+        var info = document.createElement('div');
+        info.className = 'quick-link-menu-info';
+        info.title = '点击编辑';
+
+        var nameEl = document.createElement('div');
+        nameEl.className = 'quick-link-menu-name';
+        nameEl.textContent = link.name;
+
+        var urlEl = document.createElement('div');
+        urlEl.className = 'quick-link-menu-url';
+        urlEl.textContent = link.url;
+
+        info.appendChild(nameEl);
+        info.appendChild(urlEl);
+        info.addEventListener('click', function () {
+            quickEditIndex = index;
+            renderQuickEditList();
+        });
+
+        var deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-link-menu-btn';
+        deleteBtn.type = 'button';
+        deleteBtn.textContent = '×';
+        deleteBtn.title = '删除';
+        deleteBtn.addEventListener('click', function (event) {
+            event.stopPropagation();
+            deleteQuickLinkFromEdit(index);
+        });
+
+        item.appendChild(info);
+        item.appendChild(deleteBtn);
+        return item;
+    }
+
+    function buildQuickEditForm(link, index) {
+        var form = document.createElement('div');
+        form.className = 'qa-quick-edit-form';
+
+        var nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'setting-input';
+        nameInput.placeholder = '网站名称';
+        nameInput.value = link.name;
+        nameInput.setAttribute('aria-label', '网站名称');
+
+        var urlInput = document.createElement('input');
+        urlInput.type = 'text';
+        urlInput.className = 'setting-input';
+        urlInput.placeholder = '网站地址';
+        urlInput.value = link.url;
+        urlInput.setAttribute('aria-label', '网站地址');
+
+        var actions = document.createElement('div');
+        actions.className = 'qa-quick-edit-form-actions';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'qa-quick-edit-cancel';
+        cancelBtn.textContent = '取消';
+        cancelBtn.addEventListener('click', function () {
+            quickEditIndex = -1;
+            renderQuickEditList();
+        });
+
+        var save = function () {
+            saveQuickLinkEdit(index, nameInput.value, urlInput.value);
+        };
+
+        var saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'settings-menu-confirm-primary';
+        saveBtn.textContent = '确定';
+        saveBtn.addEventListener('click', save);
+
+        nameInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') urlInput.focus();
+        });
+        urlInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') save();
+        });
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(saveBtn);
+        form.appendChild(nameInput);
+        form.appendChild(urlInput);
+        form.appendChild(actions);
+
+        // 进入编辑态立即聚焦并全选名称，便于直接整体替换。
+        setTimeout(function () {
+            nameInput.focus();
+            nameInput.select();
+        }, 0);
+        return form;
+    }
+
+    function saveQuickLinkEdit(index, rawName, rawUrl) {
+        var quickLinks = getQuickLinksSource();
+        var link = quickLinks[index];
+        if (!link) return;
+
+        var name = (rawName || '').trim();
+        var url = (rawUrl || '').trim();
+        if (!name || !url) {
+            showPanelToast('名称和地址不能为空');
+            return;
+        }
+
+        // 地址变化后旧图标缓存不再可信，清掉让侧边栏重新探测。
+        if (link.url !== url) delete link._favicon;
+        link.name = name;
+        link.url = url;
+        saveSettings();
+
+        quickEditIndex = -1;
+        renderQuickAccessSidebar();
+        renderQuickEditList();
+        showPanelToast('快速访问链接已更新');
+    }
+
+    function deleteQuickLinkFromEdit(index) {
+        var quickLinks = getQuickLinksSource();
+        if (!quickLinks[index]) return;
+        quickLinks.splice(index, 1);
+        saveSettings();
+
+        quickEditIndex = -1;
+        renderQuickAccessSidebar();
+        renderQuickEditList();
+        showPanelToast('快速访问链接已删除');
+    }
+
+    function addCurrentPageFromQuickEdit() {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+            showPanelToast('当前环境不支持添加');
+            return;
+        }
+
+        var request;
+        try {
+            request = chrome.runtime.sendMessage({
+                type: 'add-active-page-to-quick-links',
+                targetKey: getQuickLinkTargetKey()
+            });
+        } catch (e) {
+            showPanelToast('添加失败，请稍后再试');
+            return;
+        }
+        if (!request || typeof request.then !== 'function') return;
+
+        request.then(function (response) {
+            var status = response && response.status;
+            if (status === 'added') {
+                showPanelToast('已添加当前网页');
+                return;
+            }
+            if (status === 'duplicate') {
+                showPanelToast('该网页已在快速访问链接中');
+                return;
+            }
+            if (status === 'invalid') {
+                showPanelToast('当前页面无法添加');
+                return;
+            }
+            showPanelToast('添加失败，请稍后再试');
+        }).catch(function () {
+            showPanelToast('添加失败，请稍后再试');
+        });
+    }
+
+    function openQuickEdit() {
+        var overlay = document.getElementById('qa-quick-edit');
+        if (!overlay) return;
+        quickEditIndex = -1;
+        renderQuickEditList();
+        overlay.hidden = false;
+        // 一次性强制回流，确保重复打开时入场动画从头播放。
+        void overlay.offsetWidth;
+        overlay.classList.add('open');
+
+        var closeBtn = document.getElementById('qa-quick-edit-close');
+        if (closeBtn) closeBtn.focus();
+    }
+
+    function closeQuickEdit() {
+        var overlay = document.getElementById('qa-quick-edit');
+        if (!overlay || overlay.hidden) return;
+        overlay.classList.remove('open');
+        overlay.hidden = true;
+        quickEditIndex = -1;
+    }
+
+    function toggleQuickEdit() {
+        if (isQuickEditOpen()) {
+            closeQuickEdit();
+            return;
+        }
+        openQuickEdit();
+    }
+
+    // 面板自身窗口 ID 用于忽略其他窗口面板收到的转发消息。
+    function initPanelWindowId() {
+        try {
+            if (!chrome.windows || !chrome.windows.getCurrent) return;
+            chrome.windows.getCurrent().then(function (win) {
+                if (win && typeof win.id === 'number') panelWindowId = win.id;
+            }).catch(function () { });
+        } catch (e) {
+            // 拿不到窗口 ID 时按本窗口处理。
+        }
+    }
+
+    // 后台统一入口转发来的开关消息：命令、页面兜底与面板兜底共用一次节流。
+    function initQuickEditMessages() {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.onMessage) return;
+        chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+            if (!message || message.type !== 'open-quick-link-editor') return;
+            if (typeof message.windowId === 'number' && typeof panelWindowId === 'number'
+                && message.windowId !== panelWindowId) {
+                return;
+            }
+            toggleQuickEdit();
+            sendResponse({ handled: true });
+        });
+    }
+
     // ---------- 底部搜索框与引擎切换 ----------
 
     // 与主页面的 oooEngineLocked（script.js / SearchMixin.js）语义不同，不要合并：
@@ -4284,6 +4552,12 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
 
         renderQuickAccessSidebar();
         updateEngineButtons();
+
+        // 浮层开着时同步刷新列表；外部变更可能改变下标，回到列表视图更安全。
+        if (isQuickEditOpen()) {
+            quickEditIndex = -1;
+            renderQuickEditList();
+        }
     }
 
     // ---------- 交互 ----------
@@ -4327,6 +4601,32 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         // 引导卡按钮：跳转主页面并直达「侧边栏功能」设置。
         var guideBtn = document.getElementById('qa-guide-open-settings');
         if (guideBtn) guideBtn.addEventListener('click', function () { openMainPage('?openSidePanel=root'); });
+
+        // 快速编辑浮层：关闭按钮、遮罩与 Esc 关闭；“添加当前网页”交给后台写入。
+        var quickEditCloseBtn = document.getElementById('qa-quick-edit-close');
+        if (quickEditCloseBtn) quickEditCloseBtn.addEventListener('click', closeQuickEdit);
+        var quickEditBackdrop = document.getElementById('qa-quick-edit-backdrop');
+        if (quickEditBackdrop) quickEditBackdrop.addEventListener('click', closeQuickEdit);
+        var quickEditAddPageBtn = document.getElementById('qa-quick-edit-add-page');
+        if (quickEditAddPageBtn) quickEditAddPageBtn.addEventListener('click', addCurrentPageFromQuickEdit);
+
+        // 面板聚焦时的快捷键兜底：转发给后台，由后台与 chrome.commands 一起节流，
+        // 避免两路触发各自切换一次而相互抵消。
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && isQuickEditOpen()) {
+                closeQuickEdit();
+                return;
+            }
+            if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
+            if (event.code !== 'KeyO') return;
+            event.preventDefault();
+            try {
+                var result = chrome.runtime.sendMessage({ type: 'shortcut-trigger', windowId: panelWindowId });
+                if (result && typeof result.catch === 'function') result.catch(function () { });
+            } catch (e) {
+                // 扩展上下文失效时忽略。
+            }
+        });
 
         var addBtn = document.getElementById('quick-access-sidebar-add-btn');
         if (addBtn) {
@@ -4537,34 +4837,48 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // ---------- 入场动画重放 ----------
-    // 入场动画写在 sidepanel.css 中，且只能挂在「玻璃元素自身」上：祖先只要带
+    // ---------- 入场动画 ----------
+    // 动画规则写在 sidepanel.css，且只能挂在「玻璃元素自身」上：祖先只要带
     // transform 或 opacity < 1 就会形成 backdrop root，后代的 backdrop-filter
     // 随即失效（实测挂在 .qa-panel-search 上会让搜索框 80px 毛玻璃永久失效）。
-    // 面板关闭时若 Chrome 复用本页而不重新加载，纯 CSS 动画只会播一次，再次打开
-    // 便没有入场效果，故在由隐藏转为可见时重放一次；首次加载不重放，那时动画本来
-    // 就在播放，重复触发只会让元素闪一下。
+    // 首次加载时等 applyAll 完成后才加 body.qa-panel-enter，让异步渲染出来的
+    // 小组件卡与链接卡和搜索区同时起跑；动画结束后移除该类，后续设置同步引起的
+    // 局部重渲染不会再播一次。面板由隐藏转为可见时（Chrome 复用本页）重播。
     var ENTRANCE_SELECTOR = [
         '.qa-panel-widgets .widget-card',
+        '.quick-access-sidebar-container',
         '.qa-panel-search .search-container',
         '.qa-panel-search .engine-btn',
         '.widget-panel-empty-cta',
         '.qa-guide-card'
     ].join(',');
 
-    function replayEntranceAnimation() {
-        var els = Array.prototype.slice.call(document.querySelectorAll(ENTRANCE_SELECTOR));
-        if (!els.length) return;
-        els.forEach(function (el) { el.style.animation = 'none'; });
-        void document.body.offsetWidth; // 一次性强制回流，让旧动画被真正取消
-        els.forEach(function (el) { el.style.animation = ''; });
+    var entranceTimer = null;
+
+    // 逐项延迟按 DOM 顺序统一计算，避免各区块各用一套延迟而出现节奏错位；
+    // 只统计可见元素，隐藏区块不占用延迟序号。
+    function playEntranceAnimation() {
+        var body = document.body;
+        var items = Array.prototype.slice.call(document.querySelectorAll(ENTRANCE_SELECTOR))
+            .filter(function (el) { return el.getClientRects().length > 0; });
+        body.classList.remove('qa-panel-enter');
+        items.forEach(function (el, index) {
+            el.style.animationDelay = Math.min(index * 0.05, 0.3) + 's';
+        });
+        void body.offsetWidth; // 一次性强制回流，确保重复打开时动画从头播放
+        body.classList.add('qa-panel-enter');
+        clearTimeout(entranceTimer);
+        entranceTimer = setTimeout(function () {
+            body.classList.remove('qa-panel-enter');
+            items.forEach(function (el) { el.style.animationDelay = ''; });
+        }, 800);
     }
 
     function initEntranceReplay() {
         var wasHidden = document.hidden;
         document.addEventListener('visibilitychange', function () {
             var hidden = document.hidden;
-            if (wasHidden && !hidden) replayEntranceAnimation();
+            if (wasHidden && !hidden) playEntranceAnimation();
             wasHidden = hidden;
         });
     }
@@ -4580,6 +4894,10 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             panelOOO.settings = settings;
         }
         applyAll();
+        document.body.classList.remove('qa-panel-booting');
+        playEntranceAnimation();
+        initPanelWindowId();
+        initQuickEditMessages();
         initInteractions();
         initWidgetScaleSync();
         initEntranceReplay();

@@ -13,6 +13,21 @@ body.qa-panel-page {
     flex-direction: column;
 }
 
+/* 入场动画开始前隐藏内容区：设置与自定义字体是异步读取的，若让基础样式直接可见，
+   链接卡与搜索区会先闪一帧再重新播放入场。JS 在 applyAll 之后移除该类。
+   3s 后由动画强制显示：正常情况下早已被 JS 移除，这条只在脚本加载失败时兜底，
+   避免面板永久空白。visibility 不产生 backdrop root，不影响毛玻璃。 */
+body.qa-panel-booting .qa-panel-content {
+    visibility: hidden;
+    animation: qaPanelBootReveal 0s linear 3s forwards;
+}
+
+@keyframes qaPanelBootReveal {
+    to {
+        visibility: visible;
+    }
+}
+
 /* 壁纸层（铺满面板，内容浮于其上） */
 .qa-panel-wallpaper {
     position: fixed;
@@ -168,6 +183,17 @@ body.qa-panel-page .quick-access-sidebar-container {
        “链接框 + 搜索框”可见高度仍不低于面板的一半。 */
     margin: 0 10px 10px 10px;
     height: auto;
+    /* 面板内链接卡常驻：主页面的 .visible 过渡是从右侧整卡滑入（位移等于卡宽），
+       与其余区块 18px 的入场位移观感不一致，面板内统一交给 qaPanelItemIn。
+       同时覆盖 .visible 变体，避免 dynamic-blur.css 的 translateX(0) scale(1) 规则
+       在开启高级视觉效果时压过基础态。 */
+    transform: none;
+    opacity: 1;
+}
+
+body.qa-panel-page .quick-access-sidebar-container.visible {
+    transform: none;
+    opacity: 1;
 }
 
 /* 面板中无壁纸时内容底部留白由容器 margin 提供。 */
@@ -623,23 +649,24 @@ body.dynamic-blur.enhanced-display .qa-browser-card {
     transform: scale(0.96);
 }
 
-/* ---------- 进入动画：小组件卡 / 搜索框 / 搜索引擎按钮 / 引导卡 ---------- */
+/* ---------- 进入动画：面板打开时各区块统一入场 ---------- */
 /*
- * 链接卡自身已由 .quick-access-sidebar-container 的 .visible 过渡驱动滑入
- * （translateX(calc(100% + 20px)) → 0，0.3s cubic-bezier(0.4, 0, 0.2, 1)），
- * 这里给其余区块同一节奏的滑入 + 淡入，并用 animation-delay 形成自上而下的接力，
- * 避免面板打开时元素硬跳（内置页浏览器自带 qaBrowser* 动画，不在此列）。
+ * 小组件卡、链接卡、搜索框、搜索引擎按钮、引导卡共用同一组关键帧、时长、缓动与
+ * 位移距离；逐项延迟由 JS 按 DOM 顺序写入 animation-delay，形成自上而下的接力。
  *
- * 约束：位移/淡入只能挂在玻璃元素自身，不能挂在祖先容器上。祖先带 transform
- * 或 opacity < 1（哪怕是动画残留的恒等 transform）会成为 backdrop root，导致后代
- * backdrop-filter 失效。Chromium 152 实测：把动画挂到 .qa-panel-search /
- * .qa-panel-widgets 上并配 animation-fill-mode: both，结束后容器残留
- * matrix(1,0,0,1,0,0)，搜索框 80px 与小组件卡 40px 毛玻璃被永久打断；祖先只做
- * opacity 动画同样会打断。改挂到 .search-container / .widget-card 自身，行进中与
- * 结束后毛玻璃都完好。故：容器不动，只动玻璃元素本身；fill-mode 用 backwards，
- * 结束后回到基础样式、不留残值（与主页面 widget-panel.css 的 widgetCardIn 同款写法）。
+ * 约束：
+ * - 位移/淡入只能挂在玻璃元素自身，不能挂在祖先容器上。祖先带 transform 或
+ *   opacity < 1（哪怕是动画残留的恒等 transform）会成为 backdrop root，导致后代
+ *   backdrop-filter 失效。Chromium 152 实测：把动画挂到 .qa-panel-search /
+ *   .qa-panel-widgets 上并配 animation-fill-mode: both，结束后容器残留
+ *   matrix(1,0,0,1,0,0)，搜索框 80px 与小组件卡 40px 毛玻璃被永久打断；祖先只做
+ *   opacity 动画同样会打断。改挂到 .search-container / .widget-card 自身，
+ *   行进中与结束后毛玻璃都完好。
+ * - 动画只在 body.qa-panel-enter 存在期间生效。首次加载时该类比异步读取设置更晚
+ *   添加，保证小组件渲染、链接卡显示与搜索区同时起跑；动画结束后移除，之后设置
+ *   同步引起的重渲染不会重播。面板由隐藏转为可见时重播一次。
+ * - fill-mode 用 backwards：结束后回到基础样式，不留 transform 残值。
  */
-
 @keyframes qaPanelItemIn {
     from {
         opacity: 0;
@@ -652,62 +679,16 @@ body.dynamic-blur.enhanced-display .qa-browser-card {
     }
 }
 
-body.qa-panel-page .qa-panel-widgets .widget-card,
-body.qa-panel-page .qa-panel-search .search-container,
-body.qa-panel-page .qa-panel-search .engine-btn,
-body.qa-panel-page .widget-panel-empty-cta,
-body.qa-panel-page .qa-guide-card {
+body.qa-panel-page.qa-panel-enter .qa-panel-widgets .widget-card,
+body.qa-panel-page.qa-panel-enter .quick-access-sidebar-container,
+body.qa-panel-page.qa-panel-enter .qa-panel-search .search-container,
+body.qa-panel-page.qa-panel-enter .qa-panel-search .engine-btn,
+body.qa-panel-page.qa-panel-enter .widget-panel-empty-cta,
+body.qa-panel-page.qa-panel-enter .qa-guide-card {
     animation: qaPanelItemIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards;
 }
 
-/* 自上而下的接力延迟（与链接卡的滑入节奏对齐）。 */
-body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(1) {
-    animation-delay: 0s;
-}
-
-body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(2) {
-    animation-delay: 0.05s;
-}
-
-body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(3) {
-    animation-delay: 0.1s;
-}
-
-body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(4) {
-    animation-delay: 0.15s;
-}
-
-body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(n+5) {
-    animation-delay: 0.2s;
-}
-
-body.qa-panel-page .qa-panel-search .search-container {
-    animation-delay: 0.07s;
-}
-
-body.qa-panel-page .qa-panel-search .engine-btn:nth-child(1) {
-    animation-delay: 0.12s;
-}
-
-body.qa-panel-page .qa-panel-search .engine-btn:nth-child(2) {
-    animation-delay: 0.17s;
-}
-
-body.qa-panel-page .qa-panel-search .engine-btn:nth-child(n+3) {
-    animation-delay: 0.22s;
-}
-
-body.qa-panel-page .widget-panel-empty-cta {
-    animation-delay: 0.05s;
-}
-
-body.qa-panel-page .qa-guide-card {
-    animation: qaPanelItemIn 0.32s cubic-bezier(0.4, 0, 0.2, 1) 0.07s backwards;
-}
-
-/* 系统开启“减少动态效果”时去掉位移，只保留短淡入。
-   注意不能在这里直接 animation: none —— 链接卡用的是 transition（不受本条影响），
-   一旦关掉就成了“链接卡照样滑入、其余区块纹丝不动”的不一致观感。 */
+/* 系统开启“减少动态效果”时去掉位移，所有区块统一改播短淡入。 */
 @keyframes qaPanelFadeIn {
     from {
         opacity: 0;
@@ -720,14 +701,215 @@ body.qa-panel-page .qa-guide-card {
 
 @media (prefers-reduced-motion: reduce) {
 
-    body.qa-panel-page .qa-panel-widgets .widget-card,
-    body.qa-panel-page .qa-panel-search .search-container,
-    body.qa-panel-page .qa-panel-search .engine-btn,
-    body.qa-panel-page .widget-panel-empty-cta {
+    body.qa-panel-page.qa-panel-enter .qa-panel-widgets .widget-card,
+    body.qa-panel-page.qa-panel-enter .quick-access-sidebar-container,
+    body.qa-panel-page.qa-panel-enter .qa-panel-search .search-container,
+    body.qa-panel-page.qa-panel-enter .qa-panel-search .engine-btn,
+    body.qa-panel-page.qa-panel-enter .widget-panel-empty-cta,
+    body.qa-panel-page.qa-panel-enter .qa-guide-card {
         animation: qaPanelFadeIn 0.2s ease-out backwards;
     }
+}
 
-    body.qa-panel-page .qa-guide-card {
-        animation: qaPanelFadeIn 0.2s ease-out 0.07s backwards;
+/* ---------- 快速访问链接快速编辑浮层 ---------- */
+/*
+ * Alt+Shift+O 在面板打开时弹出：遮罩铺满面板，卡片居中。
+ * 卡片自身承担毛玻璃与入场动画；外层只做定位，避免祖先带 transform
+ * 形成 backdrop root，导致卡片在高级视觉效果下的 backdrop-filter 失效。
+ */
+.qa-quick-edit {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.qa-quick-edit[hidden] {
+    display: none;
+}
+
+.qa-quick-edit-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.28);
+}
+
+.qa-quick-edit-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 360px);
+    max-height: 100%;
+    padding: 14px;
+    border-radius: 18px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.24);
+    color: var(--text-color);
+}
+
+.qa-quick-edit.open .qa-quick-edit-card {
+    animation: qaQuickEditIn 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes qaQuickEditIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
     }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qa-quick-edit.open .qa-quick-edit-card {
+        animation: qaPanelFadeIn 0.2s ease-out;
+    }
+}
+
+/* 毛玻璃与快速访问链接卡片保持同一套底色、模糊与描边。 */
+body.dynamic-blur .qa-quick-edit-card {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(40px) saturate(1.5);
+    -webkit-backdrop-filter: blur(40px) saturate(1.5);
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur .qa-quick-edit-card {
+        background: rgba(40, 42, 48, 0.6);
+        border-color: rgba(255, 255, 255, 0.06);
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+}
+
+.qa-quick-edit-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 2px 10px;
+}
+
+.qa-quick-edit-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.qa-quick-edit-close {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.qa-quick-edit-close:hover {
+    background: var(--surface-variant);
+    color: var(--text-color);
+}
+
+.qa-quick-edit-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 0;
+    scrollbar-width: none;
+}
+
+.qa-quick-edit-list::-webkit-scrollbar {
+    display: none;
+}
+
+/* 复用快速链接管理的条目样式，面板内收紧内边距以适配窄宽度。 */
+.qa-quick-edit-item {
+    padding: 10px 12px;
+    margin-bottom: 0;
+}
+
+.qa-quick-edit-form {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 16px;
+    background: var(--surface-variant);
+}
+
+.qa-quick-edit-form .setting-input {
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.qa-quick-edit-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.qa-quick-edit-cancel {
+    padding: 8px 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.qa-quick-edit-cancel:hover {
+    background: var(--surface-color);
+}
+
+.qa-quick-edit-footer {
+    flex: 0 0 auto;
+    padding-top: 10px;
+}
+
+.qa-quick-edit-add-page {
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 999px;
+    background: var(--primary-color, #0aa37f);
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.2s ease;
+}
+
+.qa-quick-edit-add-page:hover {
+    filter: brightness(1.06);
+}
+
+.qa-quick-edit-add-page:active {
+    transform: scale(0.98);
 }

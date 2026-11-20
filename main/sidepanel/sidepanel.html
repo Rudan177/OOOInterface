@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="sidepanel.css">
 </head>
 
-<body class="qa-panel-page">
+<body class="qa-panel-page qa-panel-booting">
 
     <!-- 壁纸层 -->
     <div class="qa-panel-wallpaper" id="qa-panel-wallpaper"></div>
@@ -119,6 +119,23 @@
         <img class="qa-guide-logo" src="../images/icon128.png" alt="">
         <div class="qa-guide-title">OOOInterface 侧边栏</div>
         <button class="qa-guide-btn" id="qa-guide-open-settings">去主页面设置开启</button>
+    </div>
+
+    <!-- 快速访问链接快速编辑：面板打开时按 Alt+Shift+O 弹出。
+         外层只负责遮罩与定位，卡片自身承载毛玻璃与入场动画，
+         避免祖先带 transform 形成 backdrop root 打断卡片的 backdrop-filter。 -->
+    <div class="qa-quick-edit" id="qa-quick-edit" hidden>
+        <div class="qa-quick-edit-backdrop" id="qa-quick-edit-backdrop"></div>
+        <div class="qa-quick-edit-card" role="dialog" aria-modal="true" aria-labelledby="qa-quick-edit-title">
+            <div class="qa-quick-edit-header">
+                <span class="qa-quick-edit-title" id="qa-quick-edit-title">快速访问链接</span>
+                <button class="qa-quick-edit-close" id="qa-quick-edit-close" type="button" title="关闭">×</button>
+            </div>
+            <div class="qa-quick-edit-list" id="qa-quick-edit-list"></div>
+            <div class="qa-quick-edit-footer">
+                <button class="qa-quick-edit-add-page" id="qa-quick-edit-add-page" type="button">添加当前网页</button>
+            </div>
+        </div>
     </div>
 
     <!-- 同主页：用经典 defer 脚本引入产物，不要写回 type="module"

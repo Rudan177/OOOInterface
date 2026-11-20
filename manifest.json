@@ -12,6 +12,19 @@
   "background": {
     "service_worker": "main/background.js"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "main/content-shortcut.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
   "declarative_net_request": {
     "rule_resources": [
       {
@@ -53,6 +66,12 @@
         "default": "Alt+O"
       },
       "description": "切换 OOOInterface 侧边栏（侧边栏功能关闭时打开主页）"
+    },
+    "add-current-page": {
+      "suggested_key": {
+        "default": "Alt+Shift+O"
+      },
+      "description": "把当前网页添加到快速访问链接（面板打开时快速编辑链接）"
     }
   },
 
