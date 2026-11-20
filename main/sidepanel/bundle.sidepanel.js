@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：2a8e1fc886be6e71    模块数：15
+// 源码指纹：da4ff3aa608562fd    模块数：15
 // 入口：main/sidepanel/sidepanel.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -2650,6 +2650,8 @@ const DEFAULT_SETTINGS = {
     },
     statusBarEnabled: false,
     showStatusBarSeconds: false,
+    // 网络滚动更新：启动时按 sup-list 白名单与远程版本号决定是否加载线上新版页面。
+    onlineRollingUpdate: false,
     hideNotifications: false,
     // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）。
     simpleVisualMode: false,

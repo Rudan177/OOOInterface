@@ -20,6 +20,10 @@ export const StatusBarMixin = {
                 showSecondsToggle.checked = false;
             }
         }
+        const onlineUpdateToggle = document.getElementById('online-rolling-update-toggle');
+        if (onlineUpdateToggle) {
+            onlineUpdateToggle.checked = this.settings.onlineRollingUpdate;
+        }
     },
     formatStatusBarDateTime(date) {
         const pad = (value) => String(value).padStart(2, '0');

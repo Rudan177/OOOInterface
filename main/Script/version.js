@@ -1,7 +1,7 @@
-const VERSION = "5.3:35-BS252";
+const VERSION = "5.3:34-BS258";
 const PACKAGE_ID = "0xB9c4E5DCAC4201bf";
 const PACKAGE_FLAG = "Release";
-const PRODUCT_NAME = "OOOInterface 33";
+const PRODUCT_NAME = "OOOInterface 34";
 const RELEASE_DATE = "2026年11月21日";
 const LICENSE_ID = "ABCD-26W08A";
 const COPYRIGHT = "© 2026 ByRUDAN 保留所有权利";

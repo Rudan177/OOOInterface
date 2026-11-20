@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：cf6c4f3987bd41d1    模块数：47
+// 源码指纹：aacab3d0727c3fb5    模块数：48
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -820,6 +820,8 @@ const DEFAULT_SETTINGS = {
     },
     statusBarEnabled: false,
     showStatusBarSeconds: false,
+    // 网络滚动更新：启动时按 sup-list 白名单与远程版本号决定是否加载线上新版页面。
+    onlineRollingUpdate: false,
     hideNotifications: false,
     // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）。
     simpleVisualMode: false,
@@ -947,6 +949,7 @@ class OOOInterface {
         this.infoManager.init();
 
         this.bindEvents();
+        this.setupOnlineRollingUpdate();
         this.setupMouseScroll();
 
         await this.loadCustomFonts();
@@ -2307,6 +2310,138 @@ const runtime = {
     ooo: null,        // OOOInterface 实例
     controller: null  // Controller 实例
 };
+
+// ---------- main/Script/core/online-update.js ----------
+/**
+ * 网络滚动更新：按 sup-list 白名单与远程版本号判断是否需要加载线上的新版页面。
+ * 命中后直接跳转到线上的 index.html（带版本查询参数），页面与资源由浏览器缓存到本地。
+ */
+
+'use strict';
+
+const ONLINE_UPDATE_SUP_LIST_URL = 'https://rudan177.github.io/OOOInterface/info/sup-list.json';
+const ONLINE_UPDATE_VERSION_URL = 'https://rudan177.github.io/OOOInterface/try/Script/version.js';
+const ONLINE_UPDATE_PAGE_URL = 'https://rudan177.github.io/OOOInterface/try/index.html';
+
+// ---------- 远程读取 ----------
+
+/**
+ * 读取远程文本；网络异常、非 2xx 或空内容一律返回 null。
+ * @param {string} url
+ * @param {RequestCache} [cacheMode] 默认 no-store，页面预热时传 default 以便写入本地缓存。
+ * @returns {Promise<string|null>}
+ */
+async function fetchOnlineUpdateText(url, cacheMode) {
+    try {
+        const response = await fetch(url, { cache: cacheMode || 'no-store' });
+        if (!response.ok) {
+            return null;
+        }
+        const text = await response.text();
+        return text || null;
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * 从 version.js 文本中取出 VERSION 常量。
+ * @param {string} source
+ * @returns {string|null}
+ */
+function parseOnlineUpdateVersion(source) {
+    if (typeof source !== 'string') {
+        return null;
+    }
+    const match = source.match(/VERSION\s*=\s*['"]([^'"]+)['"]/);
+    return match ? match[1] : null;
+}
+
+// ---------- 加载 ----------
+
+/**
+ * 用版本号作查询参数，确保升级后不会复用上一版页面的 HTTP 缓存。
+ * @param {string} version
+ * @returns {string}
+ */
+function getOnlineUpdatePageUrl(version) {
+    return ONLINE_UPDATE_PAGE_URL + '?v=' + encodeURIComponent(version);
+}
+
+/**
+ * 直接跳转到线上 index.html。
+ * 用 replace 而不是 assign，避免用户返回时又落回本地页面并再次触发检查。
+ * @param {string} version
+ * @returns {boolean} 是否已发起跳转。
+ */
+function loadOnlineUpdatePage(version) {
+    window.location.replace(getOnlineUpdatePageUrl(version));
+    return true;
+}
+
+// ---------- 入口 ----------
+
+/**
+ * 设置中的「网络滚动更新」是否开启。
+ * @returns {Promise<boolean>}
+ */
+async function isOnlineRollingUpdateEnabled() {
+    try {
+        const result = await chrome.storage.local.get('oooInterfaceSettings');
+        const settings = result && result.oooInterfaceSettings;
+        return !!(settings && settings.onlineRollingUpdate);
+    } catch (error) {
+        return false;
+    }
+}
+
+/**
+ * 检查并加载新版页面。
+ * 前置条件全部通过才继续：sup-list 含当前产品名、远程版本可解析且高于本地、页面可读取。
+ * @param {{force?: boolean}} [options] force 为 true 时跳过存储读取（刚在设置页开启开关的场景）。
+ * @returns {Promise<boolean>} 是否已切换到新版页面。
+ */
+async function applyOnlineRollingUpdate(options) {
+    const force = !!(options && options.force);
+    if (!force && !(await isOnlineRollingUpdateEnabled())) {
+        return false;
+    }
+
+    const supListText = await fetchOnlineUpdateText(ONLINE_UPDATE_SUP_LIST_URL);
+    if (!supListText) {
+        return false;
+    }
+
+    let supList = null;
+    try {
+        supList = JSON.parse(supListText);
+    } catch (error) {
+        return false;
+    }
+    if (!supList || !Array.isArray(supList['sup-list']) || !supList['sup-list'].includes(PRODUCT_NAME)) {
+        return false;
+    }
+
+    const versionSource = await fetchOnlineUpdateText(ONLINE_UPDATE_VERSION_URL);
+    const remoteVersion = parseOnlineUpdateVersion(versionSource);
+    if (!remoteVersion || typeof compareVersions !== 'function') {
+        return false;
+    }
+    if (compareVersions(remoteVersion, VERSION) <= 0) {
+        return false;
+    }
+
+    // 先确认页面可取，顺带把页面写入浏览器本地缓存，跳转后直接复用。
+    const pageUrl = getOnlineUpdatePageUrl(remoteVersion);
+    const pageHtml = await fetchOnlineUpdateText(pageUrl, 'default');
+    if (!pageHtml || !/<html[\s>]/i.test(pageHtml)) {
+        return false;
+    }
+
+    return loadOnlineUpdatePage(remoteVersion);
+}
+
+// [bundled] export {...}
 
 // ---------- main/Script/core/Controller.js ----------
 /**
@@ -5872,6 +6007,10 @@ const StatusBarMixin = {
                 showSecondsGroup.style.display = 'none';
                 showSecondsToggle.checked = false;
             }
+        }
+        const onlineUpdateToggle = document.getElementById('online-rolling-update-toggle');
+        if (onlineUpdateToggle) {
+            onlineUpdateToggle.checked = this.settings.onlineRollingUpdate;
         }
     },
     formatStatusBarDateTime(date) {
@@ -14019,8 +14158,28 @@ const SYNC_KEYS = [
 
 // [bundled] import { … } from '../proxy.js'
 // [bundled] import { … } from '../storage-sync.js'
+// [bundled] import { … } from '../online-update.js'
 
 const SettingsMixin = {
+    /**
+     * 绑定「网络滚动更新」开关；幂等，重复调用只保留一次监听。
+     */
+    setupOnlineRollingUpdate() {
+        const toggle = document.getElementById('online-rolling-update-toggle');
+        if (!toggle || this._onlineUpdateBound) {
+            return;
+        }
+        this._onlineUpdateBound = true;
+        toggle.addEventListener('change', (e) => {
+            this.settings.onlineRollingUpdate = e.target.checked;
+            this.saveSettings();
+            this.showNotification(e.target.checked ? '网络滚动更新：开启' : '网络滚动更新：关闭');
+            if (e.target.checked) {
+                // 刚写入的设置可能还没落到 storage，这里直接跳过读取，避免竞态。
+                applyOnlineRollingUpdate({ force: true });
+            }
+        });
+    },
     syncSettingsPageToggles() {
         // 主开关状态派生后再同步 UI。
         this.syncSimpleVisualMode();
@@ -14269,6 +14428,7 @@ const SettingsMixin = {
         }
         if (savedSettings.statusBarEnabled !== undefined) result.statusBarEnabled = savedSettings.statusBarEnabled;
         if (savedSettings.showStatusBarSeconds !== undefined) result.showStatusBarSeconds = savedSettings.showStatusBarSeconds;
+        if (savedSettings.onlineRollingUpdate !== undefined) result.onlineRollingUpdate = savedSettings.onlineRollingUpdate;
         if (savedSettings.hideNotifications !== undefined) result.hideNotifications = savedSettings.hideNotifications;
         if (savedSettings.shortcutsEnabled !== undefined) result.shortcutsEnabled = savedSettings.shortcutsEnabled;
         if (savedSettings.contextMenuCustomItems && Array.isArray(savedSettings.contextMenuCustomItems)) {
@@ -21947,6 +22107,7 @@ const InteractionMixin = {
 
 // [bundled] import { … } from './script.js'
 // [bundled] import { … } from './runtime.js'
+// [bundled] import { … } from './online-update.js'
 // 仅为其自带的 DOMContentLoaded 引导（延迟 500 ms 创建手柄控制器）而引入。
 // [bundled] import './Controller.js'
 
@@ -22025,7 +22186,7 @@ const MIXINS = [
 })();
 
 // 初始化应用
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     var storedVersion = localStorage.getItem('welcVersion');
     if (storedVersion && compareVersions(VERSION, storedVersion) > 0) {
         localStorage.removeItem('hasVisited');
@@ -22041,6 +22202,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!localStorage.getItem('hasVisited')) {
         window.location.href = 'welc/welc.html';
     } else {
+        // 网络滚动更新在主应用实例化之前完成：命中新版页面时不再构建本地界面。
+        if (await applyOnlineRollingUpdate()) {
+            return;
+        }
         const app = new OOOInterface();
         runtime.ooo = app;
         // 保留全局引用：仅供调试与既有外部调用（Controller 的兜底读取）使用。

@@ -95,6 +95,8 @@ export const DEFAULT_SETTINGS = {
     },
     statusBarEnabled: false,
     showStatusBarSeconds: false,
+    // 网络滚动更新：启动时按 sup-list 白名单与远程版本号决定是否加载线上新版页面。
+    onlineRollingUpdate: false,
     hideNotifications: false,
     // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）。
     simpleVisualMode: false,

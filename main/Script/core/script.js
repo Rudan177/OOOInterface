@@ -111,6 +111,7 @@ export class OOOInterface {
         this.infoManager.init();
 
         this.bindEvents();
+        this.setupOnlineRollingUpdate();
         this.setupMouseScroll();
 
         await this.loadCustomFonts();

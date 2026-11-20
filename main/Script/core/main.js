@@ -8,6 +8,7 @@
 
 import { OOOInterface } from './script.js';
 import { runtime } from './runtime.js';
+import { applyOnlineRollingUpdate } from './online-update.js';
 // 仅为其自带的 DOMContentLoaded 引导（延迟 500 ms 创建手柄控制器）而引入。
 import './Controller.js';
 
@@ -86,7 +87,7 @@ const MIXINS = [
 })();
 
 // 初始化应用
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     var storedVersion = localStorage.getItem('welcVersion');
     if (storedVersion && compareVersions(VERSION, storedVersion) > 0) {
         localStorage.removeItem('hasVisited');
@@ -102,6 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!localStorage.getItem('hasVisited')) {
         window.location.href = 'welc/welc.html';
     } else {
+        // 网络滚动更新在主应用实例化之前完成：命中新版页面时不再构建本地界面。
+        if (await applyOnlineRollingUpdate()) {
+            return;
+        }
         const app = new OOOInterface();
         runtime.ooo = app;
         // 保留全局引用：仅供调试与既有外部调用（Controller 的兜底读取）使用。

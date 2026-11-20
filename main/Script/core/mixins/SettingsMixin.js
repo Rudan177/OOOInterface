@@ -5,8 +5,28 @@
 
 import { ProxyManager } from '../proxy.js';
 import { SYNC_KEYS } from '../storage-sync.js';
+import { applyOnlineRollingUpdate } from '../online-update.js';
 
 export const SettingsMixin = {
+    /**
+     * 绑定「网络滚动更新」开关；幂等，重复调用只保留一次监听。
+     */
+    setupOnlineRollingUpdate() {
+        const toggle = document.getElementById('online-rolling-update-toggle');
+        if (!toggle || this._onlineUpdateBound) {
+            return;
+        }
+        this._onlineUpdateBound = true;
+        toggle.addEventListener('change', (e) => {
+            this.settings.onlineRollingUpdate = e.target.checked;
+            this.saveSettings();
+            this.showNotification(e.target.checked ? '网络滚动更新：开启' : '网络滚动更新：关闭');
+            if (e.target.checked) {
+                // 刚写入的设置可能还没落到 storage，这里直接跳过读取，避免竞态。
+                applyOnlineRollingUpdate({ force: true });
+            }
+        });
+    },
     syncSettingsPageToggles() {
         // 主开关状态派生后再同步 UI。
         this.syncSimpleVisualMode();
@@ -255,6 +275,7 @@ export const SettingsMixin = {
         }
         if (savedSettings.statusBarEnabled !== undefined) result.statusBarEnabled = savedSettings.statusBarEnabled;
         if (savedSettings.showStatusBarSeconds !== undefined) result.showStatusBarSeconds = savedSettings.showStatusBarSeconds;
+        if (savedSettings.onlineRollingUpdate !== undefined) result.onlineRollingUpdate = savedSettings.onlineRollingUpdate;
         if (savedSettings.hideNotifications !== undefined) result.hideNotifications = savedSettings.hideNotifications;
         if (savedSettings.shortcutsEnabled !== undefined) result.shortcutsEnabled = savedSettings.shortcutsEnabled;
         if (savedSettings.contextMenuCustomItems && Array.isArray(savedSettings.contextMenuCustomItems)) {
