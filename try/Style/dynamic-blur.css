@@ -1,6 +1,6 @@
-/* ========== 高级视觉效果样式 ========== */
+/* ---------- 高级视觉效果样式 ---------- */
 
-/* 壁纸模式下隐藏粒子与光晕，避免其颜色污染backdrop-filter的毛玻璃效果 */
+/* 壁纸模式下隐藏粒子与光晕，避免其颜色污染 backdrop-filter 的毛玻璃效果。 */
 
 body.scrolled.dynamic-blur #particles-container,
 
@@ -784,7 +784,7 @@ body.dynamic-blur .right-panel-upper {
 }
 
 /* 下钻切换时承载旧视图的幽灵层（见 styles.css）：跟随面板自身的高级视觉外观，
-   否则切换瞬间会露出一块不透明的实心面板 */
+   否则切换瞬间会露出一块不透明的实心面板。 */
 body.dynamic-blur .panel-transition-ghost {
     background: rgba(var(--surface-color-rgb), 0.5);
     backdrop-filter: blur(120px) saturate(1.6);
@@ -910,7 +910,7 @@ body.dynamic-blur .switch .slider:before {
     }
 }
 
- /* 高级视觉 - 设置菜单操作按钮（透明底 + 描边，毛玻璃下仅悬停时轻微叠加） */
+/* 高级视觉 - 设置菜单操作按钮（透明底 + 描边，毛玻璃下仅悬停时轻微叠加） */
 body.dynamic-blur .settings-plus-btn {
     background: transparent !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -1147,12 +1147,12 @@ body.scrolled.dynamic-blur .search-input::placeholder {
     }
 }
 
-/* ========== 未开启高级视觉效果：过渡时序对齐 ========== */
+/* ---------- 未开启高级视觉效果：过渡时序对齐 ---------- */
 /* 滑动进出壁纸模式时，未开启高级视觉效果（body 无 dynamic-blur）的主页面元素各自沿用基础时序，
    与开启态不一致（搜索框 0.2s ease、引擎按钮 0.2s 带回弹、侧边栏 0.3s/0.25s、铭牌 0.5s），
-   同一个滚动手势的"手感"因此与开启时不同。此处只把时长与缓动换成开启态的取值，
+   同一个滚动手势的“手感”因此与开启时不同。此处只把时长与缓动换成开启态的取值，
    各元素参与过渡的属性集合、以及背景/毛玻璃/描边/缩放等外观一律保持原样。
-   侧边栏页面（body.qa-panel-page）复用同一批类名但有自己的节奏，不在本次对齐范围内。 */
+   侧边栏页面（body.qa-panel-page）复用同一批类名但有自己的节奏，不在对齐范围内。 */
 
 body:not(.qa-panel-page):not(.dynamic-blur) .search-container {
     transition: border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
@@ -1172,4 +1172,13 @@ body:not(.qa-panel-page):not(.dynamic-blur) .quick-access-sidebar-container {
 body:not(.qa-panel-page):not(.dynamic-blur) .ooo-badge {
     transition: transform 0.35s ease-out,
         opacity 0.3s ease;
+}
+
+/* 聚焦搜索：下拉面板要与放大的搜索框连成一张卡片，底色和模糊都跟随搜索框。
+ * 必须用 !important 抵消上面各模式下带 !important 的独立面板底色，并放在文件末尾靠顺序取胜。 */
+body.dynamic-blur.focus-search-active .search-history-container.show,
+body.dynamic-blur.focus-search-active .search-command-container.show {
+    background: var(--focus-search-surface) !important;
+    backdrop-filter: blur(80px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
 }

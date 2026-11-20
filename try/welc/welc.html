@@ -11,7 +11,7 @@
             font-family: 'HMSC';
             src: url('../fonts/HarmonyOS_SansSC.ttf') format('truetype');
         }
-        
+
         @font-face {
             font-family: 'Sans Flex';
             src: url('../fonts/GoogleSansFlex-VariableFont.ttf') format('truetype');
@@ -315,7 +315,7 @@
         .version-badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px; 
+            gap: 6px;
             padding: 6px 14px;
             background: linear-gradient(135deg, #00A846 0%, #00C853 100%);
             color: white;
@@ -545,7 +545,7 @@
             text-decoration: underline;
         }
 
-        /* ========== 视觉效果控制 ========== */
+        /* ---------- 视觉效果控制 ---------- */
 
         body:not(.dynamic-blur) .welcome-card:hover {
             transform: none;
@@ -567,7 +567,7 @@
                         transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
         }
 
-        /* ========== 增强显示 ========== */
+        /* ---------- 增强显示 ---------- */
 
         body.enhanced-display .hero-logo {
             animation: logoFloat 4s ease-in-out infinite;
@@ -796,7 +796,7 @@
             }
         }
 
-        /* ========== 移动端/矮屏：整页可滚动，避免内容被压扁裁切 ========== */
+        /* ---------- 移动端 / 矮屏：整页可滚动，避免内容被压扁裁切 ---------- */
 
         @media (max-width: 768px), (max-height: 520px) {
             body.ready {
@@ -840,7 +840,7 @@
             }
         }
 
-        /* ========== 矮屏（如手机横屏）：压缩闪屏与迷你标题布局 ========== */
+        /* ---------- 矮屏（如手机横屏）：压缩闪屏与迷你标题布局 ---------- */
 
         @media (max-height: 520px) {
             .splash-logo {

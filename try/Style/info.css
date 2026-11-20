@@ -26,7 +26,7 @@
     transform: translateX(-50%) translateY(0);
 }
 
-/* 高级视觉效果模式 - Info样式 */
+/* 高级视觉效果模式 - Info 样式 */
 body.dynamic-blur:not(.scrolled) .info-iframe-container {
     background: rgba(255, 255, 255, 0.12) !important;
     backdrop-filter: blur(80px) saturate(1.5);
@@ -58,7 +58,7 @@ body.dynamic-blur .info-container {
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: none;
     }
-    
+
     body.scrolled.dynamic-blur .info-iframe-container {
         background: rgba(0, 0, 0, 0.1) !important;
         backdrop-filter: blur(180px) saturate(2) brightness(1.1);
@@ -66,7 +66,7 @@ body.dynamic-blur .info-container {
         border: 1px solid rgba(255, 255, 255, 0.15);
         box-shadow: none;
     }
-    
+
     body.dynamic-blur .info-container {
         background-color: transparent !important;
         color: #ffffff;
@@ -172,7 +172,7 @@ body.dynamic-blur .info-iframe-container {
     color: var(--info-close-hover);
 }
 
-/* 高级视觉效果模式 - Info样式 */
+/* 高级视觉效果模式 - Info 样式 */
 body.dynamic-blur .info-container {
     background-color: transparent;
     backdrop-filter: blur(60px) saturate(1.4);
@@ -201,25 +201,25 @@ body.dynamic-blur .info-close-btn:hover {
     body:not(.dynamic-blur) .info-iframe-container {
         background: rgba(30, 30, 30, 0.15);
     }
-    
+
     body.dynamic-blur .info-container {
         background-color: transparent;
         border: none;
         color: #ffffff;
     }
-    
+
     body.dynamic-blur .info-container a {
         color: #ffffff;
     }
-    
+
     body.dynamic-blur .info-container a:hover {
         color: rgba(255, 255, 255, 0.7);
     }
-    
+
     body.dynamic-blur .info-close-btn {
         color: rgba(255, 255, 255, 0.7);
     }
-    
+
     body.dynamic-blur .info-close-btn:hover {
         color: #ffffff;
     }
@@ -237,11 +237,11 @@ body.dynamic-blur .info-close-btn:hover {
     .info-iframe-container.show {
         transform: translateY(0);
     }
-    
+
     body.dynamic-blur .info-iframe-container {
         transform: scale(0.8) translateY(20px);
     }
-    
+
     body.dynamic-blur .info-iframe-container.show {
         transform: scale(1) translateY(0);
     }

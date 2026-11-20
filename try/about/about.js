@@ -1,3 +1,6 @@
+/**
+ * 关于页面脚本：初始化视觉特效与主题切换，展示版本信息弹窗，并提供 OUA 更新联动。
+ */
 (function () {
     var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent);
     var isSmallScreen = window.innerWidth <= 768;
@@ -155,7 +158,7 @@ window.addEventListener('scroll', function () {
     updateButtonState();
 });
 
-// 与主页面铭牌彩蛋完全同款（样式 + 文本信息）
+// 与主页铭牌彩蛋保持一致（样式与文本信息）。
 let infoPopupOpen = false;
 
 function getOperatingSystem() {
@@ -169,7 +172,7 @@ function getOperatingSystem() {
 }
 
 function getMemoryUsage(type) {
-    // 不再返回假数据，改为实时检测 OUA 后端连接状态
+    // 返回 OUA 后端连接状态；其他类型没有对应数据。
     if (type === 'uac') {
         return String(backendConnected);
     }
@@ -233,7 +236,7 @@ function showInfoPopup() {
         word-wrap: break-word;
     `;
 
-    // 包ID
+    // 包 ID
     const packageId = document.createElement('p');
     packageId.textContent = `[package.id]${PACKAGE_ID}`;
     packageId.style.cssText = `
@@ -265,7 +268,7 @@ function showInfoPopup() {
     // 添加到页面
     document.body.appendChild(popup);
 
-    // ESC键关闭弹窗（带 parentNode 检查避免重复移除报错，并及时注销监听器避免泄漏）
+    // ESC 键关闭弹窗（带 parentNode 检查避免重复移除报错，并及时注销监听器避免泄漏）。
     const closePopup = () => {
         if (popup.parentNode) {
             popup.parentNode.removeChild(popup);
@@ -282,7 +285,7 @@ function showInfoPopup() {
     };
     document.addEventListener('keydown', handleEsc);
 
-    // 点击弹窗也可关闭，避免弹窗长期驻留时监听器泄漏
+    // 点击弹窗也可关闭，避免弹窗长期驻留时监听器泄漏。
     popup.addEventListener('click', closePopup);
 }
 
@@ -315,7 +318,7 @@ function renderVersions(versions) {
     container.style.gap = '12px';
     container.innerHTML = '';
 
-    // 远程 JSON 内容一律用 textContent 写入，避免 innerHTML 拼接导致 XSS
+    // 远程 JSON 内容一律用 textContent 写入，避免 innerHTML 拼接导致 XSS。
     versions.forEach((version, index) => {
         const card = document.createElement('div');
         card.className = 'version-card';
@@ -415,10 +418,8 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('about-footer').textContent = `许可证：${LICENSE_ID} · ${COPYRIGHT}`;
 });
 
-// =============================================
-// OUA 联动：点击版本徽章检查更新 / 从云端更新
-// 通过 OUA 可访问性 HTTP 服务（127.0.0.1:8964）调用后端
-// =============================================
+// ---------- OUA 联动：点击版本徽章检查更新或从云端更新 ----------
+// 通过 OUA 可访问性 HTTP 服务（127.0.0.1:8964）调用后端。
 (function () {
     var API_BASES = ['http://127.0.0.1:8964', 'http://localhost:8964'];
 
@@ -447,13 +448,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function applyDialogScale() {
         if (!dialog || !isEnhancedDisplay) return;
-        // 根据窗口宽度计算缩放比例，保持弹窗不超过视口
+        // 根据窗口宽度计算缩放比例，保持弹窗不超过视口。
         var vw = window.innerWidth;
         var vh = window.innerHeight;
-        var baseW = 460; // max-width from CSS
+        var baseW = 460; // 来自 CSS 的 max-width
         var pct = Math.min(1, (vw * 0.92) / baseW);
         var targetScale = Math.max(0.7, Math.min(1, pct));
-        // 缩放中心偏上，让弹窗从下方“舒展”出来
+        // 缩放中心偏上，让弹窗从下方“舒展”出来。
         dialog.style.transformOrigin = 'center 30%';
         dialog.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
         dialog.style.transform = 'scale(' + targetScale + ') translateY(' + (1 - targetScale) * 20 + 'px)';
@@ -740,7 +741,7 @@ document.addEventListener('DOMContentLoaded', function () {
         progressEl.style.display = '';
         setProgress(0, '正在连接 OUA 后端…');
 
-        // 伪进度：0~80% 匀速平滑动画，SSE 真实进度到达后接管
+        // 伪进度：0~80% 匀速平滑动画，SSE 真实进度到达后接管。
         var fakeDone = false;
         var fakeStart = performance.now();
         var fakeTimer = requestAnimationFrame(function tick() {
@@ -755,7 +756,7 @@ document.addEventListener('DOMContentLoaded', function () {
             cancelAnimationFrame(fakeTimer);
         }
 
-        // 通过 SSE 订阅更新进度（优先使用检查成功时确认可用的后端地址）
+        // 通过 SSE 订阅更新进度（优先使用检查成功时确认可用的后端地址）。
         var es = null;
         try {
             es = new EventSource((activeBase || API_BASES[0]) + '/api/events');
@@ -772,7 +773,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 if (data.channel === 'update-progress') {
                     stopFake();
-                    // 真实进度 0~100 映射到 80~100 区间
+                    // 真实进度 0~100 映射到 80~100 区间。
                     var mapped = 80 + (data.percent / 100) * 20;
                     setProgress(mapped, data.message || '');
                 }
