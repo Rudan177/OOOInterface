@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 右键菜单：菜单项图标与自定义选择、显示定位、样式类与配色同步。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const ContextMenuMixin = {
     initContextMenu() {
@@ -10,7 +11,7 @@ export const ContextMenuMixin = {
         this.initContextMenuCustomize();
     },
     updateContextMenuIcons() {
-        // 更新所有可切换菜单项的图标
+        // 更新所有可切换菜单项的图标。
         const toggleMap = {
             'search-history-toggle': () => this.settings.searchHistory ? 'check_box' : 'check_box_outline_blank',
             'search-suggestions-toggle': () => this.settings.searchSuggestions ? 'check_box' : 'check_box_outline_blank',
@@ -30,7 +31,7 @@ export const ContextMenuMixin = {
         const panel = document.getElementById('context-menu-customize-panel');
         if (!btn || !panel) return;
 
-        // 切换面板显示
+        // 切换面板显示。
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (this.settings.contextMenuStyle === 'minimal') return;
@@ -39,7 +40,7 @@ export const ContextMenuMixin = {
             this.syncCustomizePanelUI();
         });
 
-        // 面板内选项点击
+        // 面板内选项点击。
         panel.addEventListener('click', (e) => {
             e.stopPropagation();
             const item = e.target.closest('.customize-item');
@@ -47,10 +48,10 @@ export const ContextMenuMixin = {
             const key = item.dataset.key;
             const idx = this.settings.contextMenuCustomItems.indexOf(key);
             if (idx >= 0) {
-                // 取消选择
+                // 取消选择。
                 this.settings.contextMenuCustomItems.splice(idx, 1);
             } else {
-                // 选择（最多3个）
+                // 选择（最多 3 个）。
                 if (this.settings.contextMenuCustomItems.length >= 3) return;
                 this.settings.contextMenuCustomItems.push(key);
             }
@@ -58,7 +59,7 @@ export const ContextMenuMixin = {
             this.saveSettings();
         });
 
-        // 点击外部关闭面板
+        // 点击外部关闭面板。
         document.addEventListener('click', (e) => {
             if (!btn.contains(e.target) && !panel.contains(e.target)) {
                 panel.classList.add('select-hide');
@@ -85,13 +86,13 @@ export const ContextMenuMixin = {
             }
         });
 
-        // 更新计数
+        // 更新计数。
         const countEl = document.getElementById('customize-selected-count');
         if (countEl) {
             countEl.textContent = `${selected.length}/3 已选择`;
         }
 
-        // 极简模式下禁用
+        // 极简模式下禁用。
         const isMinimal = this.settings.contextMenuStyle === 'minimal';
         if (btn) btn.disabled = isMinimal;
         if (isMinimal) {
@@ -122,27 +123,27 @@ export const ContextMenuMixin = {
             }
         });
 
-        // 同步更新面板UI
+        // 同步更新面板 UI。
         this.syncCustomizePanelUI();
     },
     showContextMenu(e) {
         if (!this.contextMenu) return;
 
-        // 应用右键菜单样式（compact/minimal 类）
+        // 应用右键菜单样式（compact/minimal 类）。
         this.applyContextMenuStyle();
 
-        // 根据自定义设置显示/隐藏菜单项
+        // 根据自定义设置显示或隐藏菜单项。
         this.applyContextMenuCustomItems();
 
-        // 先设置位置，再显示菜单
+        // 先设置位置，再显示菜单。
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
 
-        // 计算菜单位置，确保在视口内
+        // 计算菜单位置，确保在视口内。
         let left = e.clientX;
         let top = e.clientY;
 
-        // 临时显示菜单以获取尺寸
+        // 临时显示菜单以获取尺寸。
         this.contextMenu.style.display = 'block';
         const rect = this.contextMenu.getBoundingClientRect();
 
@@ -150,17 +151,17 @@ export const ContextMenuMixin = {
             left = viewportWidth - rect.width - 10;
         }
 
-        // 根据鼠标位置决定菜单展开方向
+        // 根据鼠标位置决定菜单展开方向。
         const screenMidpoint = viewportHeight / 2;
         if (e.clientY < screenMidpoint) {
-            // 鼠标在屏幕上半部分，菜单最高点在鼠标位置
+            // 鼠标在屏幕上半部分，菜单最高点在鼠标位置。
             top = e.clientY;
         } else {
-            // 鼠标在屏幕下半部分，菜单最低点在鼠标位置
+            // 鼠标在屏幕下半部分，菜单最低点在鼠标位置。
             top = e.clientY - rect.height;
         }
 
-        // 确保菜单不会超出视口
+        // 确保菜单不会超出视口。
         if (top < 0) {
             top = 10;
         }
@@ -171,44 +172,44 @@ export const ContextMenuMixin = {
         this.contextMenu.style.left = `${left}px`;
         this.contextMenu.style.top = `${top}px`;
 
-        // 移除 hiding 类
+        // 移除 hiding 类。
         this.contextMenu.classList.remove('hiding');
 
-        // 根据dynamicBlur设置决定是否添加动画
+        // 根据 dynamicBlur 设置决定是否添加动画。
         if (this.settings.dynamicBlur) {
-            // 移除no-animation类，启用动画
+            // 移除 no-animation 类，启用动画。
             this.contextMenu.classList.remove('no-animation');
-            // 显示菜单并触发动画
+            // 显示菜单并触发动画。
             setTimeout(() => {
                 this.contextMenu.classList.add('show');
             }, 10);
         } else {
-            // 添加no-animation类，禁用动画
+            // 添加 no-animation 类，禁用动画。
             this.contextMenu.classList.add('no-animation');
-            // 直接显示菜单，无动画
+            // 直接显示菜单，无动画。
             this.contextMenu.classList.add('show');
         }
     },
     hideContextMenu() {
         if (this.contextMenu && this.contextMenu.classList.contains('show')) {
-            // 根据dynamicBlur设置决定是否添加动画
+            // 根据 dynamicBlur 设置决定是否添加动画。
             if (!this.settings.dynamicBlur) {
-                // 添加no-animation类，禁用动画
+                // 添加 no-animation 类，禁用动画。
                 this.contextMenu.classList.add('no-animation');
             }
 
             this.contextMenu.classList.remove('show');
             this.contextMenu.classList.add('hiding');
 
-            // 根据dynamicBlur设置决定是否等待动画完成
+            // 根据 dynamicBlur 设置决定是否等待动画完成。
             if (this.settings.dynamicBlur) {
-                // 等待动画完成后再隐藏
+                // 等待动画完成后再隐藏。
                 setTimeout(() => {
                     this.contextMenu.classList.remove('hiding');
                     this.contextMenu.style.display = 'none';
                 }, 200);
             } else {
-                // 直接隐藏，无动画
+                // 直接隐藏，无动画。
                 this.contextMenu.classList.remove('hiding');
                 this.contextMenu.style.display = 'none';
             }
@@ -261,20 +262,20 @@ export const ContextMenuMixin = {
         const contextMenuGrid = document.querySelector('.context-menu-grid');
         if (!contextMenuGrid) return;
 
-        // 移除所有样式类
+        // 移除所有样式类。
         contextMenuGrid.classList.remove('compact', 'minimal');
 
-        // 添加选中的样式类
+        // 添加选中的样式类。
         if (this.settings.contextMenuStyle === 'compact') {
             contextMenuGrid.classList.add('compact');
         } else if (this.settings.contextMenuStyle === 'minimal') {
             contextMenuGrid.classList.add('minimal');
         }
 
-        // 根据Logo选择更新右键菜单配色
+        // 根据 Logo 选择更新右键菜单配色。
         this.updateContextMenuColors();
 
-        // 同步自定义面板状态（极简模式禁用）
+        // 同步自定义面板状态（极简模式禁用）。
         this.syncCustomizePanelUI();
     },
     updateContextMenuColors() {
@@ -288,8 +289,8 @@ export const ContextMenuMixin = {
         let hoverColor, textColor;
         if (this.settings.dynamicBlur) {
             hoverColor = isDark ? colorConfig.accentDark : colorConfig.accent;
-            // 黑白色在深色模式下：白色背景（accentDark=#ffffff）+ #d0d0d0 灰色文字 = 对比度 1.54:1 不可读
-            // 改为黑色文字，对比度 21:1；其他配色保持原来的 contextMenuTextColorDark 不变
+            // 黑白色在深色模式下：白色背景（accentDark=#ffffff）配 #d0d0d0 灰色文字，对比度 1.54:1，不可读；
+            // 改用黑色文字后对比度为 21:1。其他配色仍使用 contextMenuTextColorDark。
             if (this.settings.colorScheme === 'black-white' && isDark) {
                 textColor = '#000000';
             } else {
@@ -317,7 +318,7 @@ _doBackToContextMenuStyleView (rightPanelUpper) {
     const selected = document.getElementById('context-menu-style-selected');
     const hiddenSelect = document.getElementById('context-menu-style');
     if (!selected || !hiddenSelect) return;
-    // 自定义项面板向右推出、右键菜单样式列表从左推入（iOS 式 pop）
+    // 自定义项面板向右推出、右键菜单样式列表从左推入（iOS 式 pop）。
     this.panelTransition(rightPanelUpper, 'pop', () => {
         this.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
     });

@@ -1,10 +1,11 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 自定义下拉菜单：选中区域展开右面板菜单，选项点击后回写隐藏的 select 并触发 change。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const CustomSelectMixin = {
     initCustomSelect() {
-        // 获取所有自定义下拉菜单
+        // 获取所有自定义下拉菜单。
         const customSelects = document.querySelectorAll('.custom-select');
 
         customSelects.forEach(select => {
@@ -13,7 +14,7 @@ export const CustomSelectMixin = {
             const selectItems = select.querySelectorAll('.select-item');
             const hiddenSelect = select.querySelector('select');
 
-            // 点击选中区域显示/隐藏选项
+            // 点击选中区域显示或隐藏选项。
             selected.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
@@ -21,28 +22,25 @@ export const CustomSelectMixin = {
                 this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
             });
 
-            // 点击选项更新选中值
+            // 点击选项更新选中值。
             selectItems.forEach(item => {
                 item.addEventListener('click', (e) => {
                     e.stopPropagation();
 
-                    // 更新显示的选中值
                     const value = item.getAttribute('data-value');
 
-                    // 如果是自定义文字Logo选项，特殊处理
+                    // 自定义文字 Logo 选项需要展开输入框，单独处理。
                     if (value === 'text-logo') {
-                        // 显示输入框
                         const textLogoGroup = document.getElementById('text-logo-inline-group');
                         if (textLogoGroup) {
                             textLogoGroup.style.display = 'flex';
                         }
-                        // 给选项添加selected类
                         item.classList.add('selected');
-                        // 不关闭下拉菜单，让用户可以输入
+                        // 不关闭下拉菜单，方便继续输入。
                         return;
                     }
 
-                    // 隐藏文字Logo输入框并移除selected类
+                    // 其他选项需要收起文字 Logo 输入框并清除其选中态。
                     const textLogoGroup = document.getElementById('text-logo-inline-group');
                     const textLogoItem = document.querySelector('.select-item-text-logo');
                     if (textLogoGroup) {
@@ -52,23 +50,23 @@ export const CustomSelectMixin = {
                         textLogoItem.classList.remove('selected');
                     }
 
-                    // 获取文本内容，优先使用span元素
+                    // 优先使用 span 元素的文本内容。
                     const spanEl = item.querySelector('span:last-child');
                     const text = spanEl ? spanEl.textContent : item.textContent;
                     selected.textContent = text;
 
-                    // 更新隐藏的select元素的值并触发change事件
+                    // 同步隐藏的 select 并触发 change 事件。
                     hiddenSelect.value = value;
                     const event = new Event('change', { bubbles: true });
                     hiddenSelect.dispatchEvent(event);
 
-                    // 关闭下拉菜单
+                    // 关闭下拉菜单。
                     items.classList.add('select-hide');
                 });
             });
         });
 
-        // 点击页面其他地方关闭下拉菜单
+        // 点击页面其他地方关闭所有下拉菜单。
         document.addEventListener('click', () => {
             document.querySelectorAll('.select-items').forEach(item => {
                 item.classList.add('select-hide');
@@ -84,17 +82,16 @@ export const CustomSelectMixin = {
 
         const selectItems = logoSelectItems.querySelectorAll('.select-item');
         selectItems.forEach(item => {
-            // 移除旧的事件监听器（通过克隆节点）
+            // 克隆节点以移除旧的点击监听器。
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
 
-            // 添加新的事件监听器
             newItem.addEventListener('click', (e) => {
                 e.stopPropagation();
 
                 const value = newItem.getAttribute('data-value');
 
-                // 如果是自定义文字Logo选项，特殊处理
+                // 自定义文字 Logo 选项需要展开输入框，单独处理。
                 if (value === 'text-logo') {
                     const textLogoGroup = document.getElementById('text-logo-inline-group');
                     if (textLogoGroup) {
@@ -104,13 +101,12 @@ export const CustomSelectMixin = {
                     return;
                 }
 
-                // 隐藏文字Logo输入框
+                // 收起文字 Logo 输入框。
                 const textLogoGroup = document.getElementById('text-logo-inline-group');
                 if (textLogoGroup) {
                     textLogoGroup.style.display = 'none';
                 }
 
-                // 更新选中值
                 const text = newItem.textContent;
                 logoSelectSelected.textContent = text;
                 logoSelect.value = value;
@@ -118,7 +114,7 @@ export const CustomSelectMixin = {
                 const event = new Event('change', { bubbles: true });
                 logoSelect.dispatchEvent(event);
 
-                // 关闭下拉菜单
+                // 关闭下拉菜单。
                 logoSelectItems.classList.add('select-hide');
             });
         });

@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 配置的导入导出：以 Markdown 文件承载 JSON 配置，供备份与恢复使用。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const ImportExportMixin = {
 exportSettingsAsMarkdown () {
@@ -45,13 +46,13 @@ importSettingsFromMarkdown (file) {
     reader.onload = function () {
         try {
             const text = reader.result;
-            // 提取 ```json ... ``` 块
+            // 提取 ```json ... ``` 代码块。
             const match = text.match(/```(?:json)?\s*\n([\s\S]*?)\n\s*```/);
             if (!match) throw new Error('未找到 ```json 代码块，文件格式不正确');
             const settings = JSON.parse(match[1].trim());
             if (!settings || typeof settings !== 'object') throw new Error('JSON 解析失败，根节点不是对象');
 
-            // 写入并立即保存
+            // 写入并立即保存。
             self.settings = settings;
             self.saveSettings();
             self.applySettings();

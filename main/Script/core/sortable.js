@@ -1,29 +1,17 @@
+/**
+ * 纵向列表的 Pointer Events 拖拽排序，供设置页的快速访问链接与小组件列表共用。
+ * 抓起后原条目留作占位槽、另造悬浮克隆体跟随光标，其它条目用 FLIP 让位。
+ * 不读写 settings，也不维护 data-index，持久化交给调用方的 onCommit。
+ */
+
 'use strict';
 
-// 纵向列表的 Pointer Events 拖拽排序实现。
-//
-// 用途：设置页「快速访问链接 / 小组件」列表共用的拖动排序。
-// 设计要点：
-//   - 抓起后原条目就地隐藏成一个占位槽（.sortable-source），占位槽保留原有尺寸，
-//     所以列表总高度不变，不会像旧的"往列表里插指示线"那样让布局抖动；
-//   - 另造一个跟随光标的悬浮克隆体（.sortable-float）提供即时反馈；
-//   - 其它条目用 FLIP（Web Animations API）平滑让位；
-//   - 光标靠近可视区上/下边缘时自动滚动；
-//   - 松手即提交（DOM 顺序 = 最终顺序），取消（Escape / pointercancel）则复位。
-//
-// 跟手性/性能注意事项（改动前务必阅读）：
-//   1. 克隆体是 source.cloneNode(true)，会继承行样式里的 `transition: all`。
-//      若不显式禁用，浏览器会用缓动去"追"我们写入的位移 —— 表现为明显滞后。
-//      因此 .sortable-float 必须 `transition: none`，且位移走 transform（合成层），
-//      不要写 top/left。
-//   2. 所有 DOM 读写都收敛到每帧一次的 rAF 回调里：pointermove 只记录坐标，
-//      避免高频事件引发的布局抖动。
-//   3. 被拖行的矩形只在起拖时缓存一次（拖动期间它们彼此的相对顺序不变），
-//      每帧最多一次读取、一次写入。
-//
-// 本模块不读写 settings、也不维护 data-index —— 持久化交给调用方的 onCommit。
+// 克隆体继承行样式里的 transition: all，必须显式设为 transition: none，且位移走 transform，
+// 否则浏览器会用缓动去追位移，表现为明显滞后。DOM 读写收敛到每帧一次的 rAF；
+// 被拖行的矩形只在起拖时缓存一次，拖动期间彼此相对顺序不变。
+// 光标靠近可视区上/下边缘时自动滚动；松手即提交（DOM 顺序即最终顺序），取消则复位。
 
-// 整行可拖，但这些交互元素上的按下不视为起拖（避免和删除键等冲突）
+// 整行可拖，但这些交互元素上的按下不视为起拖（避免和删除键等冲突）。
 const INTERACTIVE_SELECTOR =
     'button, input, textarea, select, a, [contenteditable], [role="button"]';
 
@@ -48,7 +36,7 @@ export function attachSortableList(listContainer, options) {
 
     const getItems = () => Array.prototype.slice.call(listContainer.querySelectorAll(opts.itemSelector));
 
-    // ---- 拖拽状态（同一时刻至多一个）----
+    // ---------- 拖拽状态（同一时刻至多一个） ----------
     let phase = 'idle';        // idle | pending | dragging
     let pointerId = null;
     let source = null;         // 被拖条目（DOM 中的占位槽）
@@ -71,7 +59,7 @@ export function attachSortableList(listContainer, options) {
     let dragSeq = 0;           // 每次起拖自增，用于让旧的收尾动画不干扰新拖动
     let destroyed = false;
 
-    // 找到真正在滚动的祖先（列表短时不溢出，滚动可能落在更外层）
+    // 找到真正在滚动的祖先（列表短时不溢出，滚动可能落在更外层）。
     function findScroller(el) {
         let node = el;
         while (node && node !== document.body && node !== document.documentElement) {
@@ -112,7 +100,7 @@ export function attachSortableList(listContainer, options) {
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
         window.addEventListener('pointercancel', onPointerCancel);
-        // 此处不 preventDefault：轻点（未越过阈值）仍要正常触发 click → 编辑
+        // 此处不 preventDefault：轻点（未越过阈值）仍要正常触发 click 编辑。
     }
 
     function startDrag() {
@@ -123,7 +111,7 @@ export function attachSortableList(listContainer, options) {
         const rect = source.getBoundingClientRect();
         cloneBaseLeft = rect.left;
         cloneBaseTop = rect.top;
-        // 起始帧尚未应用位移：以起拖点为准，让第一帧就能算出正确位移
+        // 起始帧尚未应用位移：以起拖点为准，让第一帧就能算出正确位移。
         lastFrameX = startX;
         lastFrameY = startY;
 
@@ -134,14 +122,14 @@ export function attachSortableList(listContainer, options) {
         clone.style.left = rect.left + 'px';
         clone.style.top = rect.top + 'px';
         clone.style.width = rect.width + 'px';
-        // 以"抓取点"为缩放原点：抬起放大时该点不动，避免起拖瞬间视觉一跳
+        // 以「抓取点」为缩放原点：抬起放大时该点不动，避免起拖瞬间视觉一跳。
         clone.style.transformOrigin = (startX - rect.left) + 'px ' + (startY - rect.top) + 'px';
         document.body.appendChild(clone);
 
         source.classList.add('sortable-source');
         document.body.classList.add('sortable-active');
 
-        // 缓存：拖动期间被拖行之外的条目集合与彼此相对顺序都不变
+        // 缓存：拖动期间被拖行之外的条目集合与彼此相对顺序都不变。
         dragItems = getItems().filter(el => el !== source);
 
         scroller = findScroller(listContainer);
@@ -160,7 +148,7 @@ export function attachSortableList(listContainer, options) {
         if (!rafId && phase === 'dragging') rafId = requestAnimationFrame(frame);
     }
 
-    // 单帧处理：自动滚动 → 悬浮体跟随 → 目标位重算。
+    // 单帧处理：自动滚动、悬浮体跟随、目标位重算。
     // 所有 DOM 读写都收敛到这里，pointermove 只负责记坐标。
     // allowScroll=false 时不自动滚动（松手前的同步冲刷用）。
     function processFrame(allowScroll, reschedule) {
@@ -171,7 +159,7 @@ export function attachSortableList(listContainer, options) {
         const y = pendingY;
         const moved = (x !== lastFrameX) || (y !== lastFrameY);
 
-        // 1) 自动滚动：只在边缘带内动 scrollTop；容器矩形已在起拖时缓存
+        // 1) 自动滚动：只在边缘带内动 scrollTop；容器矩形已在起拖时缓存。
         let scrolled = false;
         if (allowScroll && scroller) {
             const viewH = viewBottom - viewTop;
@@ -191,17 +179,17 @@ export function attachSortableList(listContainer, options) {
         }
 
         // 2) 先读后写：先算目标位（读矩形），再写悬浮体位移。
-        //    反过来的话"写 transform 后再读矩形"会强制同步布局，逐帧掉性能。
+        //    反过来的话「写 transform 后再读矩形」会强制同步布局，逐帧掉性能。
         if (moved || scrolled) applyTarget(y);
 
-        // 3) 悬浮体跟随（transform，合成层，不触发重排）
+        // 3) 悬浮体跟随（transform，合成层，不触发重排）。
         if (moved) {
             lastFrameX = x;
             lastFrameY = y;
             if (clone) clone.style.transform = cloneTransform(x, y);
         }
 
-        // 指针停着但仍在滚动时需要继续跑帧，否则等下一次 pointermove 唤醒
+        // 指针停着但仍在滚动时需要继续跑帧，否则等下一次 pointermove 唤醒。
         if (reschedule && scrolled) scheduleFrame();
     }
 
@@ -210,12 +198,12 @@ export function attachSortableList(listContainer, options) {
         processFrame(true, true);
     }
 
-    // 依据光标位置把 source 移到目标槽位，并让被挤开的条目 FLIP 让位
+    // 依据光标位置把 source 移到目标槽位，并让被挤开的条目 FLIP 让位。
     function applyTarget(y) {
         const items = dragItems;
         if (!items.length) return;
 
-        // 单次读取：一次布局，把 N 个矩形全取出来，之后再统一写入
+        // 单次读取：一次布局，把 N 个矩形全取出来，之后再统一写入。
         const rects = [];
         for (let i = 0; i < items.length; i++) rects.push(items[i].getBoundingClientRect());
 
@@ -232,11 +220,11 @@ export function attachSortableList(listContainer, options) {
         if (target < items.length) {
             listContainer.insertBefore(source, items[target]);
         } else {
-            // 插到最后一个条目之后、尾部非条目节点（如清空按钮）之前
+            // 插到最后一个条目之后、尾部非条目节点（如清空按钮）之前。
             listContainer.insertBefore(source, items[items.length - 1].nextSibling);
         }
 
-        // FLIP：用写入前的矩形算位移。WAAPI 不受行上的 CSS transition 影响
+        // FLIP：用写入前的矩形算位移。WAAPI 不受行上的 CSS transition 影响。
         for (let i = 0; i < items.length; i++) {
             const el = items[i];
             const dy = rects[i].top - el.getBoundingClientRect().top;
@@ -267,7 +255,7 @@ export function attachSortableList(listContainer, options) {
     function onPointerUp(e) {
         if (e.pointerId !== pointerId) return;
         if (phase === 'dragging') {
-            // 拖动途中列表若被重渲染（source 已脱离），不要用失效的 DOM 提交
+            // 拖动途中列表若被重渲染（source 已脱离），不要用失效的 DOM 提交。
             if (!source.isConnected || source.parentNode !== listContainer) {
                 cancelDrag();
             } else {
@@ -304,7 +292,7 @@ export function attachSortableList(listContainer, options) {
         }
     }
 
-    // 松手：保持当前 DOM 顺序，提交，并播放克隆体归位动画
+    // 松手：保持当前 DOM 顺序，提交，并播放克隆体归位动画。
     function commit() {
         const items = getItems();
         const seq = dragSeq;
@@ -330,12 +318,12 @@ export function attachSortableList(listContainer, options) {
 
         const cleanup = () => {
             if (floatEl) floatEl.remove();
-            // 若期间已开始新拖动，body 上的 grabbing 光标留给新拖动
+            // 若期间已开始新拖动，body 上的 grabbing 光标留给新拖动。
             if (seq === dragSeq) document.body.classList.remove('sortable-active');
         };
 
         if (floatEl) {
-            // 从当前实际位移动画到落点，避免与上一帧不一致造成跳变
+            // 从当前实际位移动画到落点，避免与上一帧不一致造成跳变。
             const from = getComputedStyle(floatEl).transform;
             const to = 'translate3d(' + (dst.left - cloneBaseLeft) + 'px,' +
                 (dst.top - cloneBaseTop) + 'px,0) scale(1)';
@@ -351,7 +339,7 @@ export function attachSortableList(listContainer, options) {
         }
     }
 
-    // 取消：把 source 插回原位并清除所有临时状态
+    // 取消：把 source 插回原位并清除所有临时状态。
     function cancelDrag() {
         const srcEl = source;
         const floatEl = clone;
@@ -381,7 +369,7 @@ export function attachSortableList(listContainer, options) {
         }
     }
 
-    // 起拖前的清理（轻点/pointercancel 未构成拖动）
+    // 起拖前的清理（轻点/pointercancel 未构成拖动）。
     function reset() {
         detachListeners();
         if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
@@ -392,7 +380,7 @@ export function attachSortableList(listContainer, options) {
         dragItems = [];
     }
 
-    // 拖动结束后的尾随 click 会误触"点击编辑/删除"，在捕获阶段吞掉。
+    // 拖动结束后的尾随 click 会误触「点击编辑/删除」，在捕获阶段吞掉。
     // 监听器只在拖动结束后的抑制窗口内存在，避免面板反复开关时在 document 上堆积。
     function onClickCapture(e) {
         e.stopPropagation();

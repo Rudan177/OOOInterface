@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 书签导入：从 Chrome 书签树按全部或指定文件夹导入快速访问链接，支持去重与结果提示。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const BookmarkMixin = {
 toggleBookmarkImportDropdown (dropdown, folderSubmenu, anchorBtn) {
@@ -11,17 +12,17 @@ toggleBookmarkImportDropdown (dropdown, folderSubmenu, anchorBtn) {
         return;
     }
 
-    // 先渲染内容
+    // 先渲染内容。
     this.renderBookmarkImportDropdown(dropdown, folderSubmenu);
 
-    // 测量并定位到按钮上方
+    // 测量并定位到按钮上方。
     if (anchorBtn) {
         const rect = anchorBtn.getBoundingClientRect();
         const ddWidth = 200;
         let leftPos = Math.round(rect.left + rect.width / 2 - ddWidth / 2);
         if (leftPos < 8) leftPos = 8;
 
-        // 临时显示测量高度
+        // 临时显示测量高度。
         dropdown.style.left = leftPos + 'px';
         dropdown.style.top = '-999px';
         dropdown.style.opacity = '0';
@@ -33,7 +34,7 @@ toggleBookmarkImportDropdown (dropdown, folderSubmenu, anchorBtn) {
         let topPos = Math.round(rect.top - ddHeight - gap);
         if (topPos < 8) topPos = 8;
 
-        // 清除测量用内联样式
+        // 清除测量用内联样式。
         dropdown.style.top = topPos + 'px';
         dropdown.style.left = leftPos + 'px';
         dropdown.style.opacity = '';
@@ -43,7 +44,7 @@ toggleBookmarkImportDropdown (dropdown, folderSubmenu, anchorBtn) {
         dropdown._anchorRect = rect;
     }
 
-    // 显示弹窗（触发 CSS 动画）
+    // 显示弹窗（触发 CSS 动画）。
     requestAnimationFrame(() => {
         dropdown.classList.add('active');
     });
@@ -52,7 +53,7 @@ renderBookmarkImportDropdown (dropdown, folderSubmenu) {
     const self = this;
     dropdown.innerHTML = '';
 
-    // 全部导入
+    // 全部导入。
     const optionAll = document.createElement('div');
     optionAll.className = 'bookmark-import-option';
     optionAll.innerHTML = '<span class="bookmark-import-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span><span>全部导入</span>';
@@ -62,7 +63,7 @@ renderBookmarkImportDropdown (dropdown, folderSubmenu) {
     });
     dropdown.appendChild(optionAll);
 
-    // 指定文件夹
+    // 指定文件夹。
     const optionFolder = document.createElement('div');
     optionFolder.className = 'bookmark-import-option';
     optionFolder.innerHTML = '<span class="bookmark-import-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span><span>指定文件夹</span>';
@@ -72,7 +73,7 @@ renderBookmarkImportDropdown (dropdown, folderSubmenu) {
     });
     dropdown.appendChild(optionFolder);
 
-    // 去重（开关样式）
+    // 去重（开关样式）。
     const optionDedup = document.createElement('div');
     optionDedup.className = 'bookmark-import-option';
     optionDedup.style.justifyContent = 'space-between';
@@ -99,14 +100,14 @@ showBookmarkFolderSelection (folderSubmenu, dropdown) {
     dropdown.classList.remove('active');
     folderSubmenu.innerHTML = '';
 
-    // 定位文件夹子菜单位置
+    // 定位文件夹子菜单位置。
     const anchor = dropdown._anchorRect;
     if (anchor) {
         folderSubmenu.style.left = Math.round(anchor.left + anchor.width / 2 - 120) + 'px';
         folderSubmenu.style.top = Math.round(anchor.top - 8) + 'px';
     }
 
-    // 返回按钮
+    // 返回按钮。
     const backBtn = document.createElement('div');
     backBtn.className = 'bookmark-folder-back';
     backBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>返回</span>';
@@ -117,7 +118,7 @@ showBookmarkFolderSelection (folderSubmenu, dropdown) {
     });
     folderSubmenu.appendChild(backBtn);
 
-    // 加载中提示
+    // 加载中提示。
     const loadingMsg = document.createElement('div');
     loadingMsg.className = 'bookmark-import-option';
     loadingMsg.style.justifyContent = 'center';
@@ -126,13 +127,13 @@ showBookmarkFolderSelection (folderSubmenu, dropdown) {
     folderSubmenu.appendChild(loadingMsg);
     folderSubmenu.classList.add('active');
 
-    // 获取书签文件夹
+    // 获取书签文件夹。
     try {
         chrome.bookmarks.getTree(function (bookmarkTree) {
-            // 移除加载提示
+            // 移除加载提示。
             folderSubmenu.innerHTML = '';
 
-            // 重新添加返回按钮
+            // 重新添加返回按钮。
             const backBtn2 = document.createElement('div');
             backBtn2.className = 'bookmark-folder-back';
             backBtn2.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>返回</span>';
@@ -143,11 +144,11 @@ showBookmarkFolderSelection (folderSubmenu, dropdown) {
             });
             folderSubmenu.appendChild(backBtn2);
 
-            // 提取所有文件夹
+            // 提取所有文件夹。
             const folders = [];
             const extractFolders = (nodes, depth) => {
                 nodes.forEach(node => {
-                    // 是文件夹（有children且无url）
+                    // 有 children 且无 url 的节点视为文件夹。
                     if (node.children && !node.url) {
                         const bookmarkCount = node.children.filter(c => c.url).length;
                         folders.push({
@@ -162,7 +163,7 @@ showBookmarkFolderSelection (folderSubmenu, dropdown) {
                     }
                 });
             };
-            // 从根的子节点开始（跳过根节点本身）
+            // 从根节点的子节点开始遍历，跳过根节点本身。
             if (bookmarkTree && bookmarkTree[0] && bookmarkTree[0].children) {
                 extractFolders(bookmarkTree[0].children, 0);
             }
@@ -230,7 +231,7 @@ importBookmarksFromChrome (mode, folderId, dropdown, folderSubmenu) {
             let bookmarksToImport = [];
 
             if (mode === 'all') {
-                // 提取所有书签
+                // 提取所有书签。
                 const extractAll = (nodes) => {
                     nodes.forEach(node => {
                         if (node.url) {
@@ -246,7 +247,7 @@ importBookmarksFromChrome (mode, folderId, dropdown, folderSubmenu) {
                 };
                 extractAll(bookmarkTree);
             } else if (mode === 'folder' && folderId) {
-                // 查找指定文件夹
+                // 查找指定文件夹。
                 const findFolderAndExtract = (nodes) => {
                     for (const node of nodes) {
                         if (node.id === folderId && node.children) {
@@ -274,7 +275,7 @@ importBookmarksFromChrome (mode, folderId, dropdown, folderSubmenu) {
                 return;
             }
 
-            // 去重
+            // 去重。
             let imported = 0;
             let skipped = 0;
 
@@ -294,15 +295,15 @@ importBookmarksFromChrome (mode, folderId, dropdown, folderSubmenu) {
             });
 
             self.saveSettings();
-            // 更新侧边栏显示
+            // 更新侧边栏显示。
             self.applyQuickLinks();
-            // 查找当前活动的列表容器
+            // 查找当前活动的列表容器。
             const activeListContainer = document.querySelector('#right-panel-upper .quick-links-list-container');
             if (activeListContainer) {
                 self.updateQuickLinksListInMenu(activeListContainer);
             }
 
-            // 显示导入结果
+            // 显示导入结果。
             if (imported > 0) {
                 self.showNotification('成功导入 ' + imported + ' 个书签' + (skipped > 0 ? '，已跳过 ' + skipped + ' 个重复项' : ''));
             } else {

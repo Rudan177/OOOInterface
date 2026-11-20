@@ -1,12 +1,11 @@
 /**
- * OOOInterface 快速访问链接导出模块
- * 将快速访问链接导出为 JSON 文件并触发下载
+ * 快速访问链接的导入与导出：导出为 JSON 文件，导入时兼容 { links: [...] } 与纯数组两种结构。
  */
 export const QuickLinksExporter = (function () {
     'use strict';
 
     /**
-     * 构建导出数据（JSON 结构）
+     * 构建导出数据（JSON 结构）。
      * @param {Object} ooo OOOInterface 实例
      * @returns {Object} 导出数据对象
      */
@@ -30,7 +29,7 @@ export const QuickLinksExporter = (function () {
     }
 
     /**
-     * 生成导出文件名，如 OOOInterface-QuickLinks-20260806-153000.json
+     * 生成导出文件名，如 OOOInterface-QuickLinks-20260806-153000.json。
      */
     function buildFileName() {
         var now = new Date();
@@ -48,7 +47,7 @@ export const QuickLinksExporter = (function () {
     }
 
     /**
-     * 将数据对象以 JSON 格式下载
+     * 将数据对象以 JSON 格式下载。
      */
     function downloadJson(data, filename) {
         var json = JSON.stringify(data, null, 2);
@@ -70,7 +69,7 @@ export const QuickLinksExporter = (function () {
     }
 
     /**
-     * 导出当前快速访问链接
+     * 导出当前快速访问链接。
      * @param {Object} ooo OOOInterface 实例
      * @returns {boolean} 是否成功导出
      */
@@ -99,14 +98,13 @@ export const QuickLinksExporter = (function () {
 })();
 
 /**
- * OOOInterface 快速访问链接导入模块
- * 支持导入导出生成的 JSON 文件（含 { links: [...] } 结构）或纯链接数组
+ * 快速访问链接导入模块：支持导入导出生成的 JSON 文件（含 { links: [...] } 结构）或纯链接数组。
  */
 export const QuickLinksImporter = (function () {
     'use strict';
 
     /**
-     * 解析 JSON 文本，提取链接列表
+     * 解析 JSON 文本，提取链接列表。
      * @param {string} text JSON 文本
      * @returns {Array} [{name, url}] 列表，解析失败时抛出 Error
      */
@@ -142,7 +140,7 @@ export const QuickLinksImporter = (function () {
     }
 
     /**
-     * 将链接列表合并到现有快速访问链接（同名同址去重）
+     * 将链接列表合并到现有快速访问链接（同名同址去重）。
      * @param {Array} existing 现有链接列表
      * @param {Array} incoming 待导入链接列表
      * @returns {{added: Array, skipped: number}}
@@ -171,7 +169,7 @@ export const QuickLinksImporter = (function () {
     }
 
     /**
-     * 导入 JSON 文本到快速访问链接
+     * 导入 JSON 文本到快速访问链接。
      * @param {Object} ooo OOOInterface 实例
      * @param {string} text JSON 文本
      * @returns {boolean} 是否导入成功

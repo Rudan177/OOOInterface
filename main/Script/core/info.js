@@ -1,3 +1,8 @@
+/**
+ * 公告信息浮层：拉取远程 JSON 填充标题、正文与链接，并管理悬浮提示与关闭状态。
+ * 远程内容不可信，链接只允许 http/https，并通过 DOM API 构建。
+ */
+
 import { getColorConfig } from './color.js';
 import { afterFirstPaint } from './first-paint.js';
 
@@ -88,8 +93,7 @@ export class InfoManager {
     async loadInfoContent() {
         const remoteUrl = 'https://rudan177.github.io/OOOInterface/info/info-interface-5.3.json';
 
-        // 公告 json 是「锦上添花」，不挡界面。起跑推到首屏之后，别和首屏抢连接。
-        // 后面读 response / 隐藏容器 / 填内容的分支一律不动。
+        // 公告 JSON 是锦上添花，不挡界面；起跑推到首屏之后，避免和首屏抢连接。
         await afterFirstPaint();
 
         try {
@@ -123,7 +127,7 @@ export class InfoManager {
             if (spanElement && config.text) {
                 if (config.link) {
                     // 远程 JSON 内容不可信：用 DOM API 构建链接避免 XSS，
-                    // 且仅允许 http/https 协议，防止 javascript: 等危险链接
+                    // 且仅允许 http/https 协议，防止 javascript: 等危险链接。
                     spanElement.textContent = '';
                     const trimmedLink = config.link.trim();
                     const isSafeLink = /^https?:\/\//i.test(trimmedLink);

@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 重置流程：恢复默认设置、清空欢迎页标记，经两步确认与滑块验证后刷新页面。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const ResetMixin = {
     resetToDefaults() {
@@ -9,20 +10,20 @@ export const ResetMixin = {
         this.applySettings();
         this.saveSettings();
 
-        // 重置欢迎界面状态
+        // 重置欢迎界面状态。
         localStorage.removeItem('hasVisited');
         localStorage.removeItem('oooInterfaceFirstRun');
         localStorage.removeItem('welcVersion');
 
-        // 更新设置界面中的值（需在 reload 前执行，否则不会生效）
+        // 更新设置界面中的值（需在 reload 前执行，否则不会生效）。
         if (document.getElementById('settings-modal').classList.contains('show')) {
             this.updateSettingsUI();
         }
 
-        // 显示重置成功的提示（需在 reload 前执行，否则不会显示）
+        // 显示重置成功的提示（需在 reload 前执行，否则不会显示）。
         this.showNotification('已重置');
 
-        // 重置后刷新页面以显示欢迎页面
+        // 重置后刷新页面以显示欢迎页面。
         location.reload();
     },
     showResetConfirmation(onConfirm) {
@@ -40,7 +41,7 @@ export const ResetMixin = {
             }, 350);
         };
 
-        // ---- 第一步：红色警报确认 ----
+        // ---------- 第一步：红色警报确认 ----------
         overlay.innerHTML = `
             <div class="confirm-dialog" id="reset-confirm-dialog">
                 <div class="confirm-dialog-icon">

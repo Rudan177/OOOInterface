@@ -1,18 +1,12 @@
+/**
+ * 壁纸格式识别：按容器结构判定 HDR（HDR10 / HDR10+ / HDR Vivid / Dolby Vision / HLG / Ultra HDR）
+ * 与 Live 图（Apple 实况照片 / 华为动态照片 / 安卓系动态照片），只处理字节，不碰 DOM 与 chrome.*。
+ * 因扩展 CSP 禁止外部脚本与 WASM，这里不依赖第三方解码库，ZIP 解压用原生 DecompressionStream。
+ */
+
 'use strict';
 
-// 壁纸格式识别：HDR（HDR10 / HDR10+ / HDR Vivid / Dolby Vision / HLG / Ultra HDR）
-// 与 Live 图（Apple 实况照片 / 华为动态照片 / 安卓系动态照片）。
-//
-// 为什么不用现成的开源库：
-//   本插件是纯前端 MV3 扩展，manifest.json 的 CSP 是 `script-src 'self'`，
-//   既加载不了 CDN 脚本，也跑不了 WebAssembly（那需要额外开放 'wasm-unsafe-eval'）。
-//   libheif / heic2any / exifreader 这类库要么是 WASM，要么依赖打包流程，
-//   而本项目是没有构建步骤的裸 ES module 目录 —— 所以这里自己走容器格式。
-//
-// 本模块只吃字节、只吐描述：不碰 DOM、不碰 chrome.*，可以单独喂 fixture 测。
-// 唯一的外部 API 是 ZIP 解压用的 DecompressionStream（Chrome 103+ 原生，非 WASM）。
-
-// ============================ 字节小工具 ============================
+// ---------- 字节小工具 ----------
 
 function readU16(b, p) {
     return (b[p] << 8) | b[p + 1];
@@ -23,18 +17,18 @@ function readU32(b, p) {
 }
 
 function readU64(b, p) {
-    // 只用得到文件内偏移，超过 2^53 的交给浮点即可，不做 BigInt
+    // 只用得到文件内偏移，超过 2^53 的交给浮点即可，不做 BigInt。
     return readU32(b, p) * 4294967296 + readU32(b, p + 4);
 }
 
-// 大端、长度可变的整数（ISO-BMFF 的 iloc 用 4/8 字节长度字段）
+// 大端、长度可变的整数（ISO-BMFF 的 iloc 用 4/8 字节长度字段）。
 function readVarInt(b, p, size) {
     let v = 0;
     for (let i = 0; i < size; i++) v = v * 256 + b[p + i];
     return v;
 }
 
-// ZIP 是**小端**的（JPEG/ISO-BMFF 都是大端），别混用
+// ZIP 是小端的（JPEG / ISO-BMFF 都是大端），别混用。
 function readLE16(b, p) {
     return b[p] | (b[p + 1] << 8);
 }
@@ -80,13 +74,13 @@ function hasAscii(b, needle, from, to) {
     return indexOfAscii(b, needle, from, to) !== -1;
 }
 
-// 取 XMP / XML 里的 `name="value"` 属性，命名空间前缀原样保留（写成正则要转义冒号，不如纯扫）
+// 取 XMP / XML 里的 `name="value"` 属性，命名空间前缀原样保留（写成正则要转义冒号，不如纯扫）。
 const ATTR_CACHE = Object.create(null);
 
 function attr(text, name) {
     let re = ATTR_CACHE[name];
     if (!re) {
-        // 前缀里的 ':' 与 '-' 在正则里不需要转义，直接拼更省事
+        // 前缀里的 ':' 与 '-' 在正则里不需要转义，直接拼更省事。
         re = ATTR_CACHE[name] = new RegExp(name + '\\s*=\\s*"([^"]*)"');
     }
     const m = text.match(re);
@@ -100,7 +94,7 @@ function attrNumber(text, name) {
     return Number.isFinite(n) ? n : null;
 }
 
-// ============================ 容器嗅探 ============================
+// ---------- 容器嗅探 ----------
 
 const HEIF_BRANDS = ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'hevm', 'hevs', 'mif1', 'msf1'];
 const AVIF_BRANDS = ['avif', 'avis'];
@@ -110,14 +104,14 @@ export function sniffContainer(bytes) {
 
     if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return 'jpeg';
     if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return 'png';
-    // Apple 实况照片包 .livp 就是 ZIP（本地/中央目录头都以 PK 开头）
+    // Apple 实况照片包 .livp 就是 ZIP（本地/中央目录头都以 PK 开头）。
     if (bytes[0] === 0x50 && bytes[1] === 0x4B &&
         (bytes[2] === 0x03 || bytes[2] === 0x05 || bytes[2] === 0x07)) return 'zip';
     if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return 'gif';
     if (bytes[0] === 0x42 && bytes[1] === 0x4D) return 'bmp';
-    // WebP: RIFF....WEBP
+    // WebP：RIFF....WEBP。
     if (ascii(bytes, 0, 4) === 'RIFF' && ascii(bytes, 8, 4) === 'WEBP') return 'webp';
-    // JPEG XL 裸码流
+    // JPEG XL 裸码流。
     if (bytes[0] === 0xFF && bytes[1] === 0x0A) return 'jxl';
 
     if (ascii(bytes, 4, 4) === 'ftyp') {
@@ -138,8 +132,7 @@ function readFtypBrands(bytes) {
     return brands.filter(Boolean);
 }
 
-// ============================ 通用兜底扫描 ============================
-//
+// ---------- 通用兜底扫描 ----------
 // 各家的 XMP 写法差异很大（尤其华为），只按已知字段判定会漏掉真实文件。
 // 这里补两条与厂商无关的结构性判据。
 
@@ -161,7 +154,7 @@ export function findAppendedVideo(bytes) {
         if (box) return box;
     }
 
-    // 兜底：图片不是 JPEG（或视频前面还垫着别的数据）时，从尾部往前找 ftyp
+    // 兜底：图片不是 JPEG（或视频前面还垫着别的数据）时，从尾部往前找 ftyp。
     const from = Math.max(2, bytes.length - APPENDED_SCAN_LIMIT);
 
     for (let i = bytes.length - 12; i >= from; i--) {
@@ -175,7 +168,7 @@ export function findAppendedVideo(bytes) {
         if (VIDEO_BRANDS.indexOf(brand) < 0) continue;
 
         // 视频一定带 moov（mov/mp4 都一样），用它把图片数据里偶然出现的
-        // 「ftyp + 像样的 brand」这种巧合排掉
+        // 「ftyp + 像样的 brand」这种巧合排掉。
         if (indexOfAscii(bytes, 'moov', i, bytes.length) < 0) continue;
 
         return { offset: boxStart, length: bytes.length - boxStart, brand };
@@ -202,7 +195,7 @@ export function findJpegEnd(bytes) {
                 if (m === 0xD9) return p + 2;
                 if (m === 0x00 || (m >= 0xD0 && m <= 0xD7)) { p++; continue; }  // 填充字节 / 重启标记
                 // 别的标记：这一遍扫描到头了（多扫描的渐进式 JPEG 后面还有 SOS 和段），
-                // 交回外层按段结构继续走，别当成 EOI
+                // 交回外层按段结构继续走，别当成 EOI。
                 next = p;
                 break;
             }
@@ -218,7 +211,7 @@ export function findJpegEnd(bytes) {
     return 0;
 }
 
-// 紧跟图片字节的那段 ISO-BMFF 是不是一段视频（带 moov 才算，能播的才有）
+// 紧跟图片字节的那段 ISO-BMFF 是不是一段视频（带 moov 才算，能播的才有）。
 function appendedBoxAt(bytes, offset) {
     if (offset + 12 > bytes.length) return null;
     if (ascii(bytes, offset + 4, 4) !== 'ftyp') return null;
@@ -241,7 +234,7 @@ function scanMarkers(bytes, list, limit) {
     return list.some(m => head.indexOf(m) >= 0);
 }
 
-// ============================ JPEG ============================
+// ---------- JPEG ----------
 
 const XMP_SIG = 'http://ns.adobe.com/xap/1.0/';
 const XMP_EXT_SIG = 'http://ns.adobe.com/xmp/extension/';
@@ -251,7 +244,7 @@ const EXIF_SIG = 'Exif';
 const ISO_GAINMAP_SIG = 'urn:iso:std:iso:ts:21496';
 // ITU-T T.35 信令段（APP8）。HDR Vivid 用它声明静态/动态元数据的存在。
 const ITU_T35_SIG = 'ITUT35';
-// 华为 HDR Vivid 的 EXIF ImageDescription 标记（CUVA 联盟），逐字就这 5 个字符
+// 华为 HDR Vivid 的 EXIF ImageDescription 标记（CUVA 联盟），逐字就这 5 个字符。
 const CUVA_DESCRIPTION = '_cuva';
 
 // EXIF 的 ImageDescription（IFD0 tag 0x010E）。华为把 HDR Vivid 的标记写在这里，
@@ -305,7 +298,7 @@ export function readJpegSegments(bytes) {
             if (ascii(bytes, payloadStart, XMP_SIG.length) === XMP_SIG) {
                 out.xmp += readCString(bytes, payloadStart + XMP_SIG.length + 1, payloadEnd);
             } else if (ascii(bytes, payloadStart, XMP_EXT_SIG.length) === XMP_EXT_SIG) {
-                // 扩展 XMP：32 字节 GUID + 4 字节总长 + 4 字节偏移，按偏移顺序拼回
+                // 扩展 XMP：32 字节 GUID + 4 字节总长 + 4 字节偏移，按偏移顺序拼回。
                 let p = payloadStart + XMP_EXT_SIG.length + 1 + 32 + 4 + 4;
                 out.xmpChunks = out.xmpChunks || [];
                 out.xmpChunks.push(readCString(bytes, p, payloadEnd));
@@ -335,7 +328,7 @@ export function readJpegSegments(bytes) {
     return out;
 }
 
-// ============================ XMP 判读 ============================
+// ---------- XMP 判读 ----------
 
 // XMP 里 `Container:Directory` 的目录项。Ultra HDR 的增益图与新版安卓动态照片
 // 用的是同一套结构，只是 Item:Semantic 不同（GainMap / MotionPhoto / Primary）。
@@ -370,7 +363,7 @@ export function classifyLive(xmp, isobmff, bytes) {
         return { vendor: 'apple', mime: 'video/quicktime' };
     }
 
-    // 2) ISO-BMFF 里的内嵌视频 item —— 华为 / Google 的单文件 HEIC 动态照片走这条
+    // 2) ISO-BMFF 里的内嵌视频 item：华为 / Google 的单文件 HEIC 动态照片走这条。
     if (isobmff && isobmff.videoItem) {
         return { vendor: 'huawei', mime: isobmff.videoItem.contentType, item: isobmff.videoItem };
     }
@@ -387,7 +380,7 @@ export function classifyLive(xmp, isobmff, bytes) {
         return { vendor: 'huawei', mime: 'video/mp4', directoryItem: motionItem };
     }
 
-    // 4) 安卓系（Google / 三星 / 小米 / OPPO / vivo）：Google 的 MicroVideo 家族
+    // 4) 安卓系（Google / 三星 / 小米 / OPPO / vivo）：Google 的 MicroVideo 家族。
     const microOffset = attrNumber(xmp, 'GCamera:MicroVideoOffset');
     const cameraMicroOffset = attrNumber(xmp, 'Camera:MicroVideoOffset');
     const isMicroVideo = attr(xmp, 'GCamera:MicroVideo') === '1' || attr(xmp, 'Camera:MicroVideo') === '1';
@@ -397,7 +390,7 @@ export function classifyLive(xmp, isobmff, bytes) {
         return { vendor: 'android', mime: 'video/mp4', offsetFromEnd: fromEnd };
     }
 
-    // 5) 新版安卓：MotionPhoto 标志 + Container 目录（没有 MicroVideoOffset）
+    // 5) 新版安卓：MotionPhoto 标志 + Container 目录（没有 MicroVideoOffset）。
     if (attr(xmp, 'MotionPhoto') === '1' || attr(xmp, 'GCamera:MotionPhoto') === '1' || motionItem) {
         return { vendor: 'android', mime: 'video/mp4', directoryItem: motionItem };
     }
@@ -436,7 +429,7 @@ const HDR_STANDARD_DETAILS = {
 
 export { HDR_STANDARD_LABELS, HDR_STANDARD_DETAILS, LIVE_VENDOR_LABELS };
 
-// PQ / HLG 的 nclx 传输特性取值（ITU-T H.273）
+// PQ / HLG 的 nclx 传输特性取值（ITU-T H.273）。
 const TRANSFER_PQ = 16;
 const TRANSFER_HLG = 18;
 const PRIMARIES_BT2020 = 9;
@@ -473,8 +466,7 @@ function buildHdr(signals) {
         // 静态图容器里 HDR Vivid 与 HDR10 都是「BT.2020 + PQ」，靠厂商特征区分；
         // 判不出来就老实报 HDR10，不假装精确。PQ 配非 BT.2020 原色（如 DCI-P3）
         // 不属于任何一个具名标准，退到泛化的 HDR 标识。
-        //
-        // 注：mdcv + clli 是 HDR10 的静态元数据（ST 2086 / CTA-861.3），**不是** HDR10+ ——
+        // 注：mdcv + clli 是 HDR10 的静态元数据（ST 2086 / CTA-861.3），不是 HDR10+ ——
         // HDR10+ 的动态元数据逐帧存在 SEI 里，静态图容器没有可靠的判定依据，
         // 所以这里不用它去升级标准，只作为附加信息带出去。
         const bt2020 = signals.primaries === PRIMARIES_BT2020;
@@ -525,7 +517,7 @@ function buildHdr(signals) {
     return null;
 }
 
-// ============================ ISO-BMFF（HEIF / AVIF）============================
+// ---------- ISO-BMFF（HEIF / AVIF） ----------
 
 function walkBoxes(bytes, start, end, visit, depth) {
     let i = start;
@@ -576,7 +568,7 @@ export function readIsoBmff(bytes) {
     walkBoxes(bytes, 0, bytes.length, visit, 0);
     out.brands = readFtypBrands(bytes);
 
-    // 把 iloc 里的 extent 接到 iinf 的 item 上，找出内嵌视频
+    // 把 iloc 里的 extent 接到 iinf 的 item 上，找出内嵌视频。
     if (out.items.length && out.iloc) {
         for (const item of out.items) {
             if (item.contentType && item.contentType.indexOf('video/') === 0) {
@@ -611,8 +603,8 @@ function readIinf(bytes, start, end, out) {
 }
 
 // ISO/IEC 14496-12 ItemInfoEntry。注意两个易错点：
-//   · version 2 的 item_ID 是 16 位、version 3 是 32 位；
-//   · v2+ 里 `item_name` 在 `content_type` **之前**（v0/v1 才是反的）。
+// version 2 的 item_ID 是 16 位、version 3 是 32 位；
+// v2+ 里 `item_name` 在 `content_type` 之前（v0/v1 才是反的）。
 function readInfe(bytes, start, end) {
     const version = bytes[start];
     let p = start + 4;
@@ -698,14 +690,14 @@ function readColr(bytes, start, end, out) {
 
 function readDovi(bytes, start) {
     // dvcC/dvvC: FullBox(4) + dv_version_major(8) dv_version_minor(8)
-    //            + dv_profile(7) dv_level(6) rpu/el/bl 各 1 bit
+    //            + dv_profile(7) dv_level(6) rpu/el/bl 各 1 bit。
     const p = start + 4;
     const profile = (bytes[p + 2] >> 1) & 0x7F;
     const level = ((bytes[p + 2] & 0x01) << 5) | ((bytes[p + 3] >> 3) & 0x1F);
     return { profile, level };
 }
 
-// ============================ PNG ============================
+// ---------- PNG ----------
 
 const PNG_HDR_CHUNKS = ['cICP', 'mDCV', 'cLLI'];
 
@@ -736,10 +728,10 @@ export function readPngChunks(bytes) {
     return out;
 }
 
-// ============================ ZIP（Apple .livp）============================
+// ---------- ZIP（Apple .livp） ----------
 
 export function readZipEntries(bytes) {
-    // 从尾部找 EOCD（PK\x05\x06），前面最多 64KB 注释
+    // 从尾部找 EOCD（PK\x05\x06），前面最多 64KB 注释。
     const eocd = (() => {
         const from = Math.max(0, bytes.length - 66000);
         for (let i = bytes.length - 22; i >= from; i--) {
@@ -764,7 +756,7 @@ export function readZipEntries(bytes) {
         const localOffset = readLE32(bytes, p + 42);
         const name = ascii(bytes, p + 46, nameLen);
 
-        // 本地头的 extra 长度可能与中央目录不同，必须按本地头现读
+        // 本地头的 extra 长度可能与中央目录不同，必须按本地头现读。
         const localExtraLen = readLE16(bytes, localOffset + 28);
         const dataStart = localOffset + 30 + nameLen + localExtraLen;
 
@@ -784,9 +776,9 @@ export async function extractZipEntry(bytes, entry) {
     return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-// ============================ 主入口 ============================
+// ---------- 主入口 ----------
 
-// 识别规则的版本号。判据一变就 +1：用户库里**已经存了 format** 的壁纸要靠它触发重判，
+// 识别规则的版本号。判据一变就 +1：用户库里已经存了 format 的壁纸要靠它触发重判，
 // 否则老图永远停在旧判定的结果上 —— 华为 HDR 的方框一直不出现就是这么来的：
 // 文件在旧规则下被写成了 { hdr: null }，而「只在缺 format 时才补判」的回填会整个绕过它。
 export const FORMAT_RULE_VERSION = 2;
@@ -802,7 +794,7 @@ export function detectWallpaperFormat(bytes) {
 
     if (container === 'jpeg') {
         const seg = readJpegSegments(bytes);
-        // 兜底：XMP 可能藏在扩展段或厂商私有段里，直接在头部扫一遍关键串
+        // 兜底：XMP 可能藏在扩展段或厂商私有段里，直接在头部扫一遍关键串。
         const xmp = seg.xmp || ascii(bytes, 0, Math.min(bytes.length, 262144));
 
         const dir = parseContainerDirectory(xmp);
@@ -832,7 +824,7 @@ export function detectWallpaperFormat(bytes) {
         const box = readIsoBmff(bytes);
         const colr = box.colr[0] || null;
 
-        // HEIF/AVIF 的 XMP 也可能带厂商标记（华为动态照片就是写在这里的）
+        // HEIF/AVIF 的 XMP 也可能带厂商标记（华为动态照片就是写在这里的）。
         const xmpStart = indexOfAscii(bytes, '<x:xmpmeta');
         const xmp = xmpStart >= 0 ? ascii(bytes, xmpStart, Math.min(bytes.length, xmpStart + 262144)) : '';
         const dir = parseContainerDirectory(xmp);
@@ -851,7 +843,7 @@ export function detectWallpaperFormat(bytes) {
         if (rawLive) live = resolveLive(rawLive, bytes, dir);
 
     } else if (container === 'jxl') {
-        // JPEG XL 的容器形态也是 ISO-BMFF（裸码流没有元数据，读不到就算了）
+        // JPEG XL 的容器形态也是 ISO-BMFF（裸码流没有元数据，读不到就算了）。
         const box = readIsoBmff(bytes);
         const colr = box.colr[0] || null;
         hdr = buildHdr({
@@ -898,11 +890,11 @@ export function detectWallpaperFormat(bytes) {
         if (live.enabled === undefined) live.enabled = true;
         live.label = LIVE_VENDOR_LABELS[live.vendor] || '实况照片';
     }
-    // v 跟着结果一起落盘：它是「这份判定出自哪版规则」的凭据，回填靠它判断要不要重判
+    // v 跟着结果一起落盘：它是「这份判定出自哪版规则」的凭据，回填靠它判断要不要重判。
     return { container, hdr, live, v: FORMAT_RULE_VERSION };
 }
 
-// 开关状态的唯一读法：字段缺失一律视为「开」（老数据没有这个字段）
+// 开关状态的唯一读法：字段缺失一律视为「开」（老数据没有这个字段）。
 export function isHdrEnabled(format) {
     return !!(format && format.hdr && format.hdr.enabled !== false);
 }
@@ -911,11 +903,11 @@ export function isLiveEnabled(format) {
     return !!(format && format.live && format.live.enabled !== false);
 }
 
-// 把 classifyLive 给出的「厂商语义」落成具体的字节区间
+// 把 classifyLive 给出的「厂商语义」落成具体的字节区间。
 function resolveLive(raw, bytes, dir) {
     const base = { vendor: raw.vendor, mime: raw.mime || 'video/mp4' };
 
-    // 结构性定位（图片尾部那段 ISO-BMFF）：绝对偏移已经算好，最可靠
+    // 结构性定位（图片尾部那段 ISO-BMFF）：绝对偏移已经算好，最可靠。
     if (raw.appended) {
         return Object.assign(base, {
             source: 'embedded',
@@ -925,7 +917,7 @@ function resolveLive(raw, bytes, dir) {
         });
     }
 
-    // ISO-BMFF 内嵌视频 item：iloc 已经给出绝对偏移
+    // ISO-BMFF 内嵌视频 item：iloc 已经给出绝对偏移。
     if (raw.item && raw.item.offset !== undefined) {
         return Object.assign(base, {
             source: 'embedded',
@@ -935,7 +927,7 @@ function resolveLive(raw, bytes, dir) {
         });
     }
 
-    // Container:Directory 的 Item:Length —— 视频是文件末尾的 N 字节
+    // Container:Directory 的 Item:Length：视频是文件末尾的 N 字节。
     const item = raw.directoryItem || dir.find(it => it.semantic === 'MotionPhoto' || (it.mime && it.mime.indexOf('video/') === 0));
     if (item && item.length) {
         return Object.assign(base, {
@@ -947,7 +939,7 @@ function resolveLive(raw, bytes, dir) {
         });
     }
 
-    // 老的 GCamera:MicroVideoOffset —— 同样是从文件末尾算起
+    // 老的 GCamera:MicroVideoOffset：同样是从文件末尾算起。
     if (raw.offsetFromEnd !== undefined && raw.offsetFromEnd !== null) {
         return Object.assign(base, {
             source: 'embedded',
@@ -958,7 +950,7 @@ function resolveLive(raw, bytes, dir) {
     }
 
     // XMP 只给了厂商标记、没给长度或偏移（华为的私有写法就属于这种）：
-    // 先按结构去文件尾部找那段 ISO-BMFF，找到了照样能提取
+    // 先按结构去文件尾部找那段 ISO-BMFF，找到了照样能提取。
     const appended = findAppendedVideo(bytes);
     if (appended) {
         return Object.assign(base, {
@@ -973,7 +965,7 @@ function resolveLive(raw, bytes, dir) {
     return Object.assign(base, { source: 'marker-only', offset: null, length: null, offsetFromEnd: false });
 }
 
-// 从整份字节里切出内嵌视频
+// 从整份字节里切出内嵌视频。
 export function extractLiveVideo(bytes, live) {
     if (!live) return null;
     if (live.source === 'embedded' && live.length > 0) {
@@ -984,7 +976,7 @@ export function extractLiveVideo(bytes, live) {
     return null;
 }
 
-// 容器 → MIME。用来给 data URL 打标，不能用 file.type 顶替（.heic/.livp 常常是空串）。
+// 容器到 MIME 的映射：用来给 data URL 打标，不能用 file.type 顶替（.heic / .livp 常常是空串）。
 const CONTAINER_MIME = {
     jpeg: 'image/jpeg',
     png: 'image/png',
@@ -1019,6 +1011,6 @@ export function isSupportedWallpaperFile(file) {
     if (!file) return false;
     if (KNOWN_EXT.test(file.name || '')) return true;
     if (file.type && file.type.indexOf('image/') === 0) return true;
-    // .livp 走 ZIP 分支，是唯一一种「文件名必须认识」的形态
+    // .livp 走 ZIP 分支，是唯一一种「文件名必须认识」的形态。
     return LIVE_EXT.test(file.name || '');
 }

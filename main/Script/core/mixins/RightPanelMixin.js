@@ -1,15 +1,17 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 右侧面板设置菜单：渲染主题、Logo、字体、壁纸、代理、右键菜单与配色等子视图，
+ * 并处理视图切换、拖放导入、壁纸显示设置和配色方案编辑。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 import { COLOR_SCHEME_NAMES } from '../color.js';
 import { ProxyManager } from '../proxy.js';
 
 export const RightPanelMixin = {
-// 右侧面板内下钻视图的切换动画（iOS 式 push / pop）：
-//   push：当前视图向左推出，新视图从右推入
-//   pop ：子视图向右推出，父视图从左推入
-// 切换前把面板现有内容整体搬进一个脱离文档流的「幽灵层」——是直接搬移节点而非克隆，
+// 右侧面板内下钻视图的切换动画（iOS 式 push、pop）：
+//   push：当前视图向左推出，新视图从右推入。
+//   pop ：子视图向右推出，父视图从左推入。
+// 切换前把面板现有内容整体搬进一个脱离文档流的「幽灵层」，是直接搬移节点而非克隆，
 // 滚动位置与事件监听都留在原节点上；新视图照常渲染后与幽灵层同帧反向滑动，播完移除幽灵层。
 // render 由调用方提供，内部应以 skipAnimation = true 渲染，避免与这里的方向动画叠加。
 panelTransition (rightPanelUpper, direction, render) {
@@ -18,7 +20,7 @@ panelTransition (rightPanelUpper, direction, render) {
 
     const isPush = direction !== 'pop';
 
-    // 面板滚动位置归零：新视图与幽灵层都按内容顶部定位，退出时不会错位
+    // 面板滚动位置归零：新视图与幽灵层都按内容顶部定位，退出时不会错位。
     panel.scrollTop = 0;
 
     const ghost = document.createElement('div');
@@ -29,7 +31,7 @@ panelTransition (rightPanelUpper, direction, render) {
 
     const inClass = isPush ? 'panel-in-right' : 'panel-in-left';
     Array.from(panel.children).forEach(el => {
-        // 清掉渲染函数可能自带的滑入/滑出类，同一帧内完成替换，不会真的播出来
+        // 清掉渲染函数可能自带的滑入、滑出类，同一帧内完成替换，不会真的播出来。
         el.classList.remove('slide-in-right', 'slide-out-right', 'slide-in-left', 'slide-out-left');
         void el.offsetWidth;
         el.classList.add(inClass);
@@ -42,14 +44,14 @@ panelTransition (rightPanelUpper, direction, render) {
     ghost.classList.add(isPush ? 'panel-out-left' : 'panel-out-right');
     ghost.addEventListener('animationend', () => ghost.remove(), { once: true });
     panel.appendChild(ghost);
-    // 兜底：动画事件在后台标签页等场景可能不触发，避免幽灵层长期压在面板上
+    // 兜底：动画事件在后台标签页等场景可能不触发，避免幽灵层长期压在面板上。
     setTimeout(() => { if (ghost.parentNode) ghost.remove(); }, 600);
 },
 showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
     const self = this;
     const rightPanelUpper = document.getElementById('right-panel-upper');
     if (!rightPanelUpper) return;
-    // 离开侧边栏子视图时恢复数据交换
+    // 离开侧边栏子视图时恢复数据交换。
     this.exitSidePanelScope();
 
     let menuType = '';
@@ -77,13 +79,13 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
     delete rightPanelUpper.dataset.subView;
     rightPanelUpper.dataset.menuType = menuType;
 
-    // 底部铭牌功能：独立的三段式双选项视图，不走通用列表渲染
+    // 底部铭牌功能：独立的三段式双选项视图，不走通用列表渲染。
     if (menuType === 'badge-open-method') {
         this.renderBadgeConfigView(rightPanelUpper);
         return;
     }
 
-    // 侧边栏功能：独立配置视图（功能开关组），不走通用列表渲染
+    // 侧边栏功能：独立配置视图（功能开关组），不走通用列表渲染。
     if (menuType === 'side-panel') {
         this.renderSidePanelConfigView(rightPanelUpper);
         return;
@@ -95,11 +97,11 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
     const optionsList = document.createElement('div');
     optionsList.className = 'settings-menu-options';
 
-    // 主题菜单：特殊渲染（名称 + 版本 + 设计师），不走通用 select-item 遍历
+    // 主题菜单：特殊渲染（名称、版本、设计师），不走通用 select-item 遍历。
     if (menuType === 'theme') {
         const isCustomTheme = (key) => self.settings.customThemes && self.settings.customThemes.some(ct => ct.key === key);
 
-        // "不使用主题"选项：允许用户主动关闭主题功能
+        // 「不使用主题」选项：允许用户主动关闭主题功能。
         const offOption = document.createElement('div');
         offOption.className = 'settings-menu-option theme-menu-option';
         const offName = document.createElement('div');
@@ -170,13 +172,13 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     e.stopPropagation();
                     const idx = self.settings.customThemes.findIndex(ct => ct.key === key);
                     if (idx === -1) return;
-                    // 记录是否正在使用该主题
+                    // 记录是否正在使用该主题。
                     const wasActive = self.settings.themeEnabled && self.settings.theme === key;
                     const deletingTheme = self.themes[key];
                     self.settings.customThemes.splice(idx, 1);
                     delete self.themes[key];
                     if (wasActive) {
-                        // 删除的是当前正在使用的主题：彻底关闭主题并回退到默认外观
+                        // 删除的是当前正在使用的主题：彻底关闭主题并回退到默认外观。
                         self.deactivateTheme(deletingTheme, { notify: true });
                         self.applySettings();
                     } else {
@@ -204,7 +206,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                 option.appendChild(designerLine);
             }
 
-            // 高亮判定
+            // 高亮判定。
             if (self.settings.themeEnabled && self.settings.theme === key && !self.isThemeCustomized()) {
                 option.classList.add('selected');
             }
@@ -225,11 +227,11 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
 
         container.appendChild(optionsList);
 
-        // 底部按钮容器
+        // 底部按钮容器。
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'settings-menu-button-container';
 
-        // 主题商店按钮
+        // 主题商店按钮。
         const storeBtn = document.createElement('button');
         storeBtn.className = 'settings-import-btn';
         storeBtn.innerHTML = '<span class="material-icons">store</span>';
@@ -241,7 +243,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
         });
         buttonContainer.appendChild(storeBtn);
 
-        // "+" 按钮
+        // 「+」按钮。
         const plusBtn = document.createElement('button');
         plusBtn.className = 'upload-btn settings-plus-btn';
         plusBtn.textContent = '+';
@@ -254,7 +256,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
         buttonContainer.appendChild(plusBtn);
         container.appendChild(buttonContainer);
 
-        // 拖放导入支持
+        // 拖放导入支持。
         let dragCounter = 0;
         const showDropOverlay = () => {
             let overlay = rightPanelUpper.querySelector('.theme-drop-overlay');
@@ -308,7 +310,6 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
         return;
     }
 
-
     let colorSchemeGroup = null;
     let colorSchemeGroupList = null;
     let colorSchemeGroup2 = null;
@@ -316,7 +317,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
     let colorSchemeGroup3 = null;
     let colorSchemeGroupList3 = null;
     if (menuType === 'color-scheme') {
-        // 经典色组
+        // 经典色组。
         colorSchemeGroup = document.createElement('div');
         colorSchemeGroup.className = 'color-scheme-group';
 
@@ -333,7 +334,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
             colorSchemeGroup.scrollIntoView({ inline: 'center', behavior: 'smooth' });
         });
 
-        // 新星调组
+        // 新星调组。
         colorSchemeGroup2 = document.createElement('div');
         colorSchemeGroup2.className = 'color-scheme-group';
 
@@ -350,7 +351,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
             colorSchemeGroup2.scrollIntoView({ inline: 'center', behavior: 'smooth' });
         });
 
-        // 自定义组（默认隐藏，有自定义配色时显示）
+        // 自定义组（默认隐藏，有自定义配色时显示）。
         colorSchemeGroup3 = document.createElement('div');
         colorSchemeGroup3.className = 'color-scheme-group';
         colorSchemeGroup3.style.display = 'none';
@@ -375,18 +376,18 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
         option.className = 'settings-menu-option';
         option.setAttribute('data-value', originalItem.getAttribute('data-value'));
 
-        // 根据菜单类型处理
+        // 根据菜单类型处理。
         if (menuType === 'logo') {
-            // Logo菜单的特殊处理
+            // Logo 菜单的特殊处理。
             const isTextLogoOption = originalItem.getAttribute('data-value') === 'text-logo';
 
             if (isTextLogoOption) {
-                // 创建包含文字和输入框的结构
+                // 创建包含文字和输入框的结构。
                 const textSpan = document.createElement('span');
                 textSpan.textContent = '自定义文字Logo';
                 option.appendChild(textSpan);
 
-                // 创建输入框组
+                // 创建输入框组。
                 const inputGroup = document.createElement('div');
                 inputGroup.className = 'text-logo-inline-group';
                 inputGroup.style.display = 'none';
@@ -405,7 +406,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                 inputGroup.appendChild(btn);
                 option.appendChild(inputGroup);
 
-                // 计算字符长度（中文算2个字符）
+                // 计算字符长度（中文算 2 个字符）。
                 const getCharLength = (str) => {
                     let length = 0;
                     for (let i = 0; i < str.length; i++) {
@@ -419,7 +420,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     return length;
                 };
 
-                // 检查输入长度
+                // 检查输入长度。
                 const checkInputLength = () => {
                     const text = input.value;
                     const length = getCharLength(text);
@@ -437,7 +438,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     }
                 };
 
-                // 检查是否是当前选中的值
+                // 检查是否是当前选中的值。
                 if (self.settings.logo === 'text-logo') {
                     option.classList.add('selected');
                     inputGroup.style.display = 'flex';
@@ -445,20 +446,20 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     checkInputLength();
                 }
 
-                // 点击选项时显示输入框
+                // 点击选项时显示输入框。
                 option.addEventListener('click', (e) => {
-                    // 如果点击的是输入框或按钮，不处理
+                    // 如果点击的是输入框或按钮，不处理。
                     if (e.target === input || e.target === btn) {
                         return;
                     }
 
-                    // 显示输入框
+                    // 显示输入框。
                     inputGroup.style.display = 'flex';
                     option.classList.add('selected');
                     input.focus();
                 });
 
-                // 输入框事件
+                // 输入框事件。
                 input.addEventListener('click', (e) => {
                     e.stopPropagation();
                 });
@@ -473,7 +474,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     }
                 });
 
-                // 确定按钮事件
+                // 确定按钮事件。
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (btn.disabled) return;
@@ -496,15 +497,15 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     }
                 });
             } else {
-                // 检查是否是自定义Logo
+                // 检查是否是自定义 Logo。
                 const logoValue = originalItem.getAttribute('data-value');
                 const isCustomLogoClass = originalItem.classList.contains('select-item-custom-logo');
 
-                // 预设Logo列表
+                // 预设 Logo 列表。
                 const presetLogos = ['default', 'auto', 'Google', 'Microsoft', 'Bing', 'Baidu', 'DuckDuckGo', 'Sogou', '360', 'Yahoo', 'Yandex', 'Apple', 'HUAWEI', 'text-logo'];
                 const isPresetLogo = presetLogos.includes(logoValue);
 
-                // 如果是预设Logo，直接显示文本
+                // 如果是预设 Logo，直接显示文本。
                 if (isPresetLogo && !isCustomLogoClass) {
                     option.textContent = originalItem.textContent;
 
@@ -524,37 +525,37 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         self.closeSettingsMenuInRightPanel();
                     });
                 }
-                // 如果是自定义Logo（通过类名或不在预设列表中）
+                // 如果是自定义 Logo（通过类名或不在预设列表中）。
                 else if (isCustomLogoClass || !isPresetLogo) {
-                    // 直接从settings.customLogos中查找
+                    // 直接从 settings.customLogos 中查找。
                     const logoName = logoValue || originalItem.textContent.trim();
                     const customLogo = self.settings.customLogos.find(logo => logo.name === logoName);
 
                     if (customLogo) {
-                        // 创建包含Logo名称和上传暗色Logo按钮的结构
+                        // 创建包含 Logo 名称和上传暗色 Logo 按钮的结构。
                         const contentWrapper = document.createElement('div');
                         contentWrapper.className = 'custom-logo-option-wrapper';
 
                         const textSpan = document.createElement('span');
                         textSpan.className = 'custom-logo-name';
-                        // 显示Logo名称，过长时用省略号
+                        // 显示 Logo 名称，过长时用省略号。
                         const displayName = customLogo.name.length > 10 ? customLogo.name.substring(0, 10) + '...' : customLogo.name;
                         textSpan.textContent = displayName;
                         textSpan.title = customLogo.name;
                         contentWrapper.appendChild(textSpan);
 
-                        // 创建按钮容器
+                        // 创建按钮容器。
                         const btnContainer = document.createElement('div');
                         btnContainer.className = 'custom-logo-btn-container';
 
-                        // 创建上传暗色Logo按钮
+                        // 创建上传暗色 Logo 按钮。
                         const darkLogoBtn = document.createElement('button');
                         darkLogoBtn.className = 'dark-logo-upload-btn-inline';
                         darkLogoBtn.textContent = customLogo.darkData ? '更换暗色' : '上传暗色';
                         darkLogoBtn.title = customLogo.darkData ? '更换暗色Logo' : '上传暗色Logo';
                         btnContainer.appendChild(darkLogoBtn);
 
-                        // 创建删除按钮
+                        // 创建删除按钮。
                         const deleteBtn = document.createElement('button');
                         deleteBtn.className = 'custom-logo-delete-btn';
                         deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
@@ -565,24 +566,24 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
 
                         option.appendChild(contentWrapper);
 
-                        // 检查是否是当前选中的值
+                        // 检查是否是当前选中的值。
                         if (self.settings.logo === customLogo.name) {
                             option.classList.add('selected');
                         }
 
-                        // 点击选项时选中并应用
+                        // 点击选项时选中并应用。
                         option.addEventListener('click', (e) => {
                             if (e.target === darkLogoBtn || e.target === deleteBtn || e.target.closest('.custom-logo-delete-btn')) {
                                 return;
                             }
 
-                            // 移除其他选项的selected类
+                            // 移除其他选项的 selected 类。
                             optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                                 opt.classList.remove('selected');
                             });
                             option.classList.add('selected');
 
-                            // 应用Logo
+                            // 应用 Logo。
                             selected.textContent = displayName;
                             hiddenSelect.value = customLogo.name;
                             const event = new Event('change', { bubbles: true });
@@ -591,32 +592,32 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                             self.closeSettingsMenuInRightPanel();
                         });
 
-                        // 上传暗色Logo按钮点击事件
+                        // 上传暗色 Logo 按钮点击事件。
                         darkLogoBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            // 设置当前正在上传暗色Logo的目标
+                            // 设置当前正在上传暗色 Logo 的目标。
                             self._currentDarkLogoTarget = customLogo.name;
                             document.getElementById('dark-logo-upload').click();
                         });
 
-                        // 删除按钮点击事件
+                        // 删除按钮点击事件。
                         deleteBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            // 找到并删除这个Logo
+                            // 找到并删除这个 Logo。
                             const logoIndex = self.settings.customLogos.findIndex(logo => logo.name === customLogo.name);
                             if (logoIndex !== -1) {
                                 self.deleteCustomLogo(logoIndex);
-                                // 重新获取更新后的items
+                                // 重新获取更新后的 items。
                                 const updatedItems = document.getElementById('logo-select-items');
                                 self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect, true);
                             }
                         });
                     } else {
-                        // 如果在customLogos中找不到，可能是DOM残留，跳过
+                        // 如果在 customLogos 中找不到，可能是 DOM 残留，跳过。
                         return;
                     }
                 } else {
-                    // 其他情况，显示文本
+                    // 其他情况，显示文本。
                     option.textContent = originalItem.textContent;
 
                     if (self.settings.logo === logoValue) {
@@ -637,32 +638,32 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                 }
             }
         } else if (menuType === 'font') {
-            // 字体菜单的处理
+            // 字体菜单的处理。
             const fontValue = originalItem.getAttribute('data-value');
             const isCustomFontClass = originalItem.classList.contains('select-item-custom-font');
 
-            // 预设字体列表
+            // 预设字体列表。
             const presetFonts = ['Sans Flex', 'HMSC', 'Ginto', 'Josefin', 'Code'];
             const isPresetFont = presetFonts.includes(fontValue);
 
-            // 如果是自定义字体
+            // 如果是自定义字体。
             if (isCustomFontClass || !isPresetFont) {
                 const customFont = self.settings.customFonts.find(font => font.name === fontValue);
 
                 if (customFont) {
-                    // 创建包含字体名称和删除按钮的结构
+                    // 创建包含字体名称和删除按钮的结构。
                     const contentWrapper = document.createElement('div');
                     contentWrapper.className = 'custom-font-option-wrapper';
 
                     const textSpan = document.createElement('span');
                     textSpan.className = 'custom-font-name';
-                    // 显示字体名称，过长时用省略号
+                    // 显示字体名称，过长时用省略号。
                     const displayName = customFont.name.length > 15 ? customFont.name.substring(0, 15) + '...' : customFont.name;
                     textSpan.textContent = displayName;
                     textSpan.title = customFont.name;
                     contentWrapper.appendChild(textSpan);
 
-                    // 创建删除按钮
+                    // 创建删除按钮（字体）。
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'custom-font-delete-btn';
                     deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
@@ -671,28 +672,28 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
 
                     option.appendChild(contentWrapper);
 
-                    // 检查是否是当前选中的值
+                    // 检查是否是当前选中的值。
                     if (self.settings.font === customFont.name) {
-                        // 字体仍由主题接管时仅字体名匹配才高亮
+                        // 字体仍由主题接管时仅字体名匹配才高亮。
                         const themeInfo = self.getThemeDisplayInfo();
                         if (!themeInfo || !themeInfo.fontName || themeInfo.fontName === customFont.name) {
                             option.classList.add('selected');
                         }
                     }
 
-                    // 点击选项时选中并应用
+                    // 点击选项时选中并应用。
                     option.addEventListener('click', (e) => {
                         if (e.target === deleteBtn || e.target.closest('.custom-font-delete-btn')) {
                             return;
                         }
 
-                        // 移除其他选项的selected类
+                        // 移除其他选项的 selected 类。
                         optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                             opt.classList.remove('selected');
                         });
                         option.classList.add('selected');
 
-                        // 应用字体
+                        // 应用字体。
                         selected.textContent = displayName;
                         hiddenSelect.value = customFont.name;
                         const event = new Event('change', { bubbles: true });
@@ -701,28 +702,28 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         self.closeSettingsMenuInRightPanel();
                     });
 
-                    // 删除按钮点击事件
+                    // 删除按钮点击事件。
                     deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        // 找到并删除这个字体
+                        // 找到并删除这个字体。
                         const fontIndex = self.settings.customFonts.findIndex(font => font.name === customFont.name);
                         if (fontIndex !== -1) {
                             self.deleteCustomFont(fontIndex);
-                            // 重新获取更新后的items
+                            // 重新获取更新后的 items。
                             const updatedItems = document.getElementById('font-select-items');
                             self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect, true);
                         }
                     });
                 } else {
-                    // 如果在customFonts中找不到，可能是DOM残留，跳过
+                    // 如果在 customFonts 中找不到，可能是 DOM 残留，跳过。
                     return;
                 }
             } else {
-                // 预设字体，直接显示文本
+                // 预设字体，直接显示文本。
                 option.textContent = originalItem.textContent;
 
                 if (self.settings.font === fontValue) {
-                    // 字体仍由主题接管时仅字体名匹配预设才高亮（路径由 normalizeThemePaths 处理过，不做字符串对比）
+                    // 字体仍由主题接管时仅字体名匹配预设才高亮（路径由 normalizeThemePaths 处理过，不做字符串对比）。
                     const themeInfo = self.getThemeDisplayInfo();
                     if (!themeInfo || !themeInfo.fontName || themeInfo.fontName === fontValue) {
                         option.classList.add('selected');
@@ -742,7 +743,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                 });
             }
         } else if (menuType === 'wallpaper') {
-            // 壁纸菜单的处理
+            // 壁纸菜单的处理。
             //
             // 本次格式识别上线前上传的壁纸没有 format 字段，先补一次识别再渲染，
             // 否则老用户的壁纸库一个方框都不会显示（同步返回，无缺项时零开销）。
@@ -751,63 +752,63 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
             const wallpaperValue = originalItem.getAttribute('data-value');
             const isCustomWallpaperClass = originalItem.classList.contains('select-item-custom-wallpaper');
 
-            // 预设壁纸列表
+            // 预设壁纸列表。
             const presetWallpapers = ['default', 'bing', 'url'];
             const isPresetWallpaper = presetWallpapers.includes(wallpaperValue);
 
-            // 如果是自定义壁纸
+            // 如果是自定义壁纸。
             if (isCustomWallpaperClass || !isPresetWallpaper) {
                 const customWallpaper = self.settings.customWallpapers.find(wp => wp.name === wallpaperValue);
 
                 if (customWallpaper) {
-                    // 创建包含壁纸名称和删除按钮的结构
+                    // 创建包含壁纸名称和删除按钮的结构。
                     const contentWrapper = document.createElement('div');
                     contentWrapper.className = 'custom-wallpaper-option-wrapper';
 
                     const textSpan = document.createElement('span');
                     textSpan.className = 'custom-wallpaper-name';
-                    // 显示壁纸名称，过长时用省略号
+                    // 显示壁纸名称，过长时用省略号。
                     const displayName = customWallpaper.name.length > 15 ? customWallpaper.name.substring(0, 15) + '...' : customWallpaper.name;
                     textSpan.textContent = displayName;
                     textSpan.title = customWallpaper.name;
                     contentWrapper.appendChild(textSpan);
 
-                    // 创建删除按钮
+                    // 创建删除按钮（壁纸）。
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'custom-wallpaper-delete-btn';
                     deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
                     deleteBtn.title = '删除此壁纸';
                     contentWrapper.appendChild(deleteBtn);
 
-                    // HDR / 实况照片方框，放在删除按钮左侧
+                    // HDR、实况照片方框，放在删除按钮左侧。
                     const formatBadges = self.buildWallpaperFormatBadges(customWallpaper);
                     if (formatBadges) contentWrapper.insertBefore(formatBadges, deleteBtn);
 
                     option.appendChild(contentWrapper);
 
-                    // 检查是否是当前选中的值
+                    // 检查是否是当前选中的值。
                     if (self.settings.wallpaper === customWallpaper.data) {
                         option.classList.add('selected');
                     }
 
-                    // 点击选项时选中并应用
+                    // 点击选项时选中并应用。
                     option.addEventListener('click', (e) => {
                         if (e.target === deleteBtn || e.target.closest('.custom-wallpaper-delete-btn')) {
                             return;
                         }
                         // 格式方框是开关，点它不该等于选中这张壁纸（它自己已经 stopPropagation，
-                        // 这里再挡一道，免得以后方框挪出 wrapper 就漏了）
+                        // 这里再挡一道，免得以后方框挪出 wrapper 就漏了）。
                         if (e.target.closest && e.target.closest('.wallpaper-format-badge')) {
                             return;
                         }
 
-                        // 移除其他选项的selected类
+                        // 移除其他选项的 selected 类。
                         optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                             opt.classList.remove('selected');
                         });
                         option.classList.add('selected');
 
-                        // 应用壁纸
+                        // 应用壁纸。
                         selected.textContent = displayName;
                         hiddenSelect.value = customWallpaper.name;
                         const event = new Event('change', { bubbles: true });
@@ -816,26 +817,26 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         self.closeSettingsMenuInRightPanel();
                     });
 
-                    // 删除按钮点击事件
+                    // 删除按钮点击事件。
                     deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        // 找到并删除这个壁纸
+                        // 找到并删除这个壁纸。
                         const wallpaperIndex = self.settings.customWallpapers.findIndex(wp => wp.name === customWallpaper.name);
                         if (wallpaperIndex !== -1) {
                             self.deleteCustomWallpaper(wallpaperIndex);
-                            // 重新获取更新后的items
+                            // 重新获取更新后的 items。
                             const updatedItems = document.getElementById('wallpaper-select-items');
                             self.showSettingsMenuInRightPanel(updatedItems, selected, hiddenSelect, true);
                         }
                     });
                 } else {
-                    // 如果在customWallpapers中找不到，可能是DOM残留，跳过
+                    // 如果在 customWallpapers 中找不到，可能是 DOM 残留，跳过。
                     return;
                 }
             } else {
-                // 预设壁纸处理
+                // 预设壁纸处理。
                 if (wallpaperValue === 'bing') {
-                    // 必应壁纸特殊处理：显示文本、图标和配置
+                    // 必应壁纸特殊处理：显示文本、图标和配置。
                     option.style.flexDirection = 'column';
                     option.style.alignItems = 'stretch';
                     option.style.gap = '0';
@@ -864,7 +865,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
 
                     option.appendChild(contentWrapper);
 
-                    // 创建配置区域（参考代理配置样式）
+                    // 创建配置区域（参考代理配置样式）。
                     const configWrapper = document.createElement('div');
                     configWrapper.className = 'bing-config-wrapper';
                     configWrapper.style.display = 'none';
@@ -872,14 +873,14 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     configWrapper.style.paddingTop = '8px';
                     configWrapper.style.width = '100%';
 
-                    // 配置行：开关 + 输入框 + 确认按钮
+                    // 配置行：开关、输入框、确认按钮。
                     const configRow = document.createElement('div');
                     configRow.style.display = 'flex';
                     configRow.style.alignItems = 'center';
                     configRow.style.gap = '8px';
                     configRow.style.width = '100%';
 
-                    // 开关（与页面其他开关样式一致）
+                    // 开关（与页面其他开关样式一致）。
                     const switchToggle = document.createElement('label');
                     switchToggle.className = 'switch';
                     switchToggle.style.position = 'relative';
@@ -936,7 +937,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     switchToggle.appendChild(switchSlider);
                     configRow.appendChild(switchToggle);
 
-                    // 输入框
+                    // 输入框。
                     const intervalInput = document.createElement('input');
                     intervalInput.type = 'number';
                     intervalInput.className = 'bing-interval-input';
@@ -964,7 +965,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     }
                     configRow.appendChild(intervalInput);
 
-                    // 确认按钮
+                    // 确认按钮。
                     const confirmBtn = document.createElement('button');
                     confirmBtn.className = 'bing-interval-confirm-btn';
                     confirmBtn.disabled = self.settings.bingRefreshEveryTime;
@@ -990,13 +991,13 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     configWrapper.appendChild(configRow);
                     option.appendChild(configWrapper);
 
-                    // 开关事件
+                    // 开关事件。
                     switchInput.addEventListener('change', (e) => {
                         const isChecked = e.target.checked;
                         self.settings.bingRefreshEveryTime = isChecked;
                         intervalInput.disabled = isChecked;
                         confirmBtn.disabled = isChecked;
-                        // 开关两个分支共用同一套重置逻辑，仅透明度不同
+                        // 开关两个分支共用同一套重置逻辑，仅透明度不同。
                         self.settings.bingRefreshInterval = 0;
                         localStorage.removeItem('bingLastRefreshTime');
                         intervalInput.value = '';
@@ -1005,7 +1006,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         updateSwitchState();
                     });
 
-                    // 输入框焦点样式
+                    // 输入框焦点样式。
                     intervalInput.addEventListener('focus', () => {
                         intervalInput.style.borderColor = 'white';
                     });
@@ -1015,13 +1016,13 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     });
 
                     // 输入验证：不在输入过程中钳制下限（否则无法输入如 0.5 的中间态），
-                    // 下限由确认按钮统一校验；仅限制上限避免超大输入
+                    // 下限由确认按钮统一校验；仅限制上限避免超大输入。
                     intervalInput.addEventListener('input', (e) => {
                         const value = parseFloat(e.target.value);
                         if (!isNaN(value) && value > 9999) e.target.value = 9999;
                     });
 
-                    // 确认按钮事件
+                    // 确认按钮事件。
                     confirmBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const inputValue = intervalInput.value.trim();
@@ -1043,7 +1044,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         self.showNotification(`必应壁纸刷新间隔已设置为 ${value} 小时`);
                     });
 
-                    // 确认按钮悬停样式
+                    // 确认按钮悬停样式。
                     confirmBtn.addEventListener('mouseenter', () => {
                         if (!confirmBtn.disabled) {
                             confirmBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
@@ -1054,22 +1055,22 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         confirmBtn.style.backgroundColor = 'transparent';
                     });
 
-                    // 检查是否是当前选中的值
+                    // 检查是否是当前选中的值。
                     if (self.settings.wallpaper === 'bing') {
-                        // 壁纸仍由主题接管时不自动高亮
+                        // 壁纸仍由主题接管时不自动高亮。
                         if (!self.isThemeWallpaperActive()) {
                             option.classList.add('selected');
                             configWrapper.style.display = 'block';
                         }
                     }
 
-                    // 点击选项时显示/隐藏配置
+                    // 点击选项时显示、隐藏配置。
                     option.addEventListener('click', (e) => {
                         if (e.target === intervalInput || e.target === confirmBtn || e.target.closest('.switch')) {
                             return;
                         }
 
-                        // 移除其他选项的selected类
+                        // 移除其他选项的 selected 类。
                         optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                             opt.classList.remove('selected');
                         });
@@ -1081,14 +1082,14 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                             configWrapper.style.display = 'none';
                         }
 
-                        // 应用必应壁纸
+                        // 应用必应壁纸。
                         selected.textContent = '必应每日壁纸';
                         hiddenSelect.value = 'bing';
                         const event = new Event('change', { bubbles: true });
                         hiddenSelect.dispatchEvent(event);
                     });
                 } else if (wallpaperValue === 'url') {
-                    // URL壁纸特殊处理：参考必应壁纸样式优化布局
+                    // URL 壁纸特殊处理：参考必应壁纸样式优化布局。
                     option.style.flexDirection = 'column';
                     option.style.alignItems = 'stretch';
                     option.style.gap = '0';
@@ -1102,7 +1103,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     contentWrapper.appendChild(textSpan);
                     option.appendChild(contentWrapper);
 
-                    // 创建配置区域
+                    // 创建配置区域。
                     const configWrapper = document.createElement('div');
                     configWrapper.className = 'url-config-wrapper';
                     configWrapper.style.display = 'none';
@@ -1158,7 +1159,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     configWrapper.appendChild(inputRow);
                     option.appendChild(configWrapper);
 
-                    // 应用按钮事件
+                    // 应用按钮事件。
                     applyBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const url = urlInput.value.trim();
@@ -1181,7 +1182,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         self.closeSettingsMenuInRightPanel();
                     });
 
-                    // 输入框焦点样式
+                    // 输入框焦点样式。
                     urlInput.addEventListener('focus', () => {
                         urlInput.style.borderColor = 'white';
                     });
@@ -1189,7 +1190,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         urlInput.style.borderColor = 'rgba(255, 255, 255, 0.3)';
                     });
 
-                    // 确认按钮悬停样式
+                    // 确认按钮悬停样式。
                     applyBtn.addEventListener('mouseenter', () => {
                         applyBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
                     });
@@ -1197,29 +1198,29 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         applyBtn.style.backgroundColor = 'transparent';
                     });
 
-                    // 输入框回车事件
+                    // 输入框回车事件。
                     urlInput.addEventListener('keypress', (e) => {
                         if (e.key === 'Enter') {
                             applyBtn.click();
                         }
                     });
 
-                    // 检查是否是当前选中的值
+                    // 检查是否是当前选中的值。
                     if (self.settings.wallpaper === 'url') {
-                        // 壁纸仍由主题接管时不自动高亮
+                        // 壁纸仍由主题接管时不自动高亮。
                         if (!self.isThemeWallpaperActive()) {
                             option.classList.add('selected');
                             configWrapper.style.display = 'block';
                         }
                     }
 
-                    // 点击选项时显示/隐藏配置
+                    // 点击选项时显示、隐藏配置。
                     option.addEventListener('click', (e) => {
                         if (e.target === urlInput || e.target === applyBtn) {
                             return;
                         }
 
-                        // 移除其他选项的selected类
+                        // 移除其他选项的 selected 类。
                         optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                             opt.classList.remove('selected');
                         });
@@ -1233,12 +1234,12 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         }
                     });
                 } else {
-                    // 默认壁纸
+                    // 默认壁纸。
                     option.textContent = originalItem.textContent;
 
-                    // 检查是否是当前选中的值
+                    // 检查是否是当前选中的值。
                     if (self.settings.wallpaper === 'default' && wallpaperValue === 'default') {
-                        // 壁纸仍由主题接管时不自动高亮
+                        // 壁纸仍由主题接管时不自动高亮。
                         if (!self.isThemeWallpaperActive()) {
                             option.classList.add('selected');
                         }
@@ -1348,7 +1349,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                 });
             }
         } else if (menuType === 'context-menu') {
-            // 右键菜单样式选项
+            // 右键菜单样式选项。
             option.textContent = originalItem.textContent;
 
             const currentValue = originalItem.getAttribute('data-value');
@@ -1362,7 +1363,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                 selected.textContent = text;
                 hiddenSelect.value = value;
 
-                // 更新选中态
+                // 更新选中态。
                 optionsList.querySelectorAll('.settings-menu-option').forEach(opt => {
                     opt.classList.remove('selected');
                 });
@@ -1370,7 +1371,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
 
                 self.settings.contextMenuStyle = value;
 
-                // 实时切换设置图标显隐（需 important 覆盖 CSS）
+                // 实时切换设置图标显隐（需 important 覆盖 CSS）。
                 const btn = rightPanelUpper.querySelector('.upload-btn.settings-plus-btn');
                 if (btn) {
                     if (value === 'minimal') {
@@ -1380,7 +1381,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                     }
                 }
 
-                // 立即应用到右键菜单（添加/移除 compact/minimal 类）
+                // 立即应用到右键菜单（添加/移除 compact/minimal 类）。
                 self.applyContextMenuStyle();
 
                 self.closeSettingsMenuInRightPanel();
@@ -1398,7 +1399,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
 
             const currentValue = originalItem.getAttribute('data-value');
             if (hiddenSelect.value === currentValue) {
-                // 主题模式下若配色为 add 组（自定义配色方案），不高亮任何选项（配色被手动定制后不再抑制）
+                // 主题模式下若配色为 add 组（自定义配色方案），不高亮任何选项（配色被手动定制后不再抑制）。
                 const themeInfo = self.getThemeDisplayInfo();
                 const isAddGroup = themeInfo && themeInfo.colorName && self.themes[self.settings.theme]?.details?.color?.specialStyle?.colorGroup === 'add';
                 if (!isAddGroup) {
@@ -1410,7 +1411,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                 const value = option.getAttribute('data-value');
                 const text = textSpan.textContent;
 
-                // 自定义配色
+                // 自定义配色。
                 if (value === 'custom') {
                     const hasColor = self.settings.customPrimaryColor && self.settings.customPrimaryColor.trim();
                     if (hasColor) {
@@ -1425,7 +1426,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                         hiddenSelect.value = value;
                         const event = new Event('change', { bubbles: true });
                         hiddenSelect.dispatchEvent(event);
-                        // 立即更新左面板配色显示
+                        // 立即更新左面板配色显示。
                         self.updateColorSchemeSelectDisplay();
                     }
                     self.panelTransition(rightPanelUpper, 'push', () => self.showCustomColorEditorInPanel(rightPanelUpper, selected, hiddenSelect, text, optionsList));
@@ -1446,10 +1447,10 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
                 self.closeSettingsMenuInRightPanel();
             });
         } else {
-            // 其他菜单的通用处理
+            // 其他菜单的通用处理。
             option.textContent = originalItem.textContent;
 
-            // 检查是否是当前选中的值
+            // 检查是否是当前选中的值。
             const currentValue = originalItem.getAttribute('data-value');
             if (hiddenSelect.value === currentValue) {
                 option.classList.add('selected');
@@ -1482,7 +1483,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
         }
     });
 
-    // 渲染自定义配色方案选项
+    // 渲染自定义配色方案选项。
     function renderCustomOptions() {
         if (!colorSchemeGroupList3) return;
         colorSchemeGroupList3.innerHTML = '';
@@ -1513,7 +1514,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
             nameSpan.style.textOverflow = 'ellipsis';
             opt.appendChild(nameSpan);
 
-            // 编辑按钮（删除移入编辑界面内）
+            // 编辑按钮（删除移入编辑界面内）。
             const editBtn = document.createElement('button');
             editBtn.className = 'custom-color-edit-btn';
             editBtn.innerHTML = '<span class="material-icons">edit</span>';
@@ -1540,7 +1541,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
 
     renderCustomOptions();
 
-    // 自定义配色选项点击事件（事件委托，只需绑定一次）
+    // 自定义配色选项点击事件（事件委托，只需绑定一次）。
     if (menuType === 'color-scheme' && colorSchemeGroupList3 && !colorSchemeGroupList3._clickBound) {
         colorSchemeGroupList3._clickBound = true;
         colorSchemeGroupList3.addEventListener('click', (e) => {
@@ -1553,11 +1554,11 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
 
             self.settings.colorScheme = 'custom';
             self.settings.activeCustomColorIndex = idx;
-            // 手动改配色：解除主题对配色方面的接管
+            // 手动改配色：解除主题对配色方面的接管。
             self.checkThemeConsistency('colorScheme', 'custom');
             self.saveSettings();
             self.applyColorScheme();
-            // 立即更新左面板配色显示
+            // 立即更新左面板配色显示。
             self.updateColorSchemeSelectDisplay();
             self.closeSettingsMenuInRightPanel();
         });
@@ -1572,21 +1573,21 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
     if (colorSchemeGroup3) {
         optionsList.appendChild(colorSchemeGroup3);
     }
-    // 选中经典色时居中经典色组
+    // 选中经典色时居中经典色组。
     const classicSchemes = ['green', 'blue', 'black-white'];
     if (colorSchemeGroup && classicSchemes.includes(self.settings.colorScheme)) {
         requestAnimationFrame(() => {
             colorSchemeGroup.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
         });
     }
-    // 选中新星调时居中新星调组
+    // 选中新星调时居中新星调组。
     const newSchemes = ['tianyi-blue', 'vibrant-red', 'classic-gold', 'isolation'];
     if (colorSchemeGroup2 && newSchemes.includes(self.settings.colorScheme)) {
         requestAnimationFrame(() => {
             colorSchemeGroup2.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
         });
     }
-    // 选中自定义时居中自定义组
+    // 选中自定义时居中自定义组。
     if (colorSchemeGroup3 && self.settings.colorScheme === 'custom') {
         requestAnimationFrame(() => {
             colorSchemeGroup3.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
@@ -1660,7 +1661,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
         buttonContainer.appendChild(plusBtn);
 
         // 壁纸菜单：加号左边一枚设置齿轮（就用全站其它地方那枚 settings 字形，
-        // 不自绘 SVG —— 图标形状必须与「设置」按钮、右键菜单里的那枚逐像素一致），
+        // 不自绘 SVG，图标形状必须与「设置」按钮、右键菜单里的那枚逐像素一致），
         // 点开面板内的「壁纸显示设置」视图。
         // 原先铺在底栏的那颗「填满」药丸已收进该视图，底栏因此只剩 [齿轮][+]。
         if (menuType === 'wallpaper') {
@@ -1682,7 +1683,7 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
             buttonContainer.insertBefore(settingsEntry, plusBtn);
         }
 
-        // 一键清除按钮（超过5个自定义壁纸时显示）
+        // 一键清除按钮（超过 5 个自定义壁纸时显示）。
         if (menuType === 'wallpaper' && self.settings.customWallpapers.length > 5) {
             const clearAllBtn = document.createElement('button');
             clearAllBtn.className = 'quick-link-clear-all-btn';
@@ -1717,8 +1718,8 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
         buttonContainer.appendChild(plusBtn);
     }
 
-    // 字体 / Logo / 壁纸菜单：拖放导入
-    // 先清理旧拖拽监听器，避免残留影响其他菜单
+    // 字体、Logo、壁纸菜单：拖放导入。
+    // 先清理旧拖拽监听器，避免残留影响其他菜单。
     if (rightPanelUpper._dragCleanup) {
         if (rightPanelUpper._dragenter) rightPanelUpper.removeEventListener('dragenter', rightPanelUpper._dragenter);
         if (rightPanelUpper._dragover) rightPanelUpper.removeEventListener('dragover', rightPanelUpper._dragover);
@@ -1790,36 +1791,36 @@ showSettingsMenuInRightPanel (items, selected, hiddenSelect, skipAnimation) {
     document.getElementById('settings-modal').classList.add('right-panel-open');
 },
 // 壁纸菜单那枚齿轮点开的「壁纸显示设置」视图，三段的顺序是：
-//   ① 铺满            —— 壁纸是否填满全屏（原来底栏那颗药丸收进了这里）
-//   ② 是否显示对应角标 —— LIVE / HDR 两个总开关
-//   ③ 在哪显示角标     —— 一个「主页面显示」同时管两个格式（关掉 = 只在壁纸模式显示）
-// 段与段之间不额外留间距、也不写组名：一行行开关等距排下来，与设置主页面一致
-//（分组靠 .setting-group 的 14px 下边距，无分隔线、无组名）。
-// 各项都是改动即生效：保存 + 就地重算。角标只是显示开关，不调 applyWallpaper
-//（没理由顺带重设壁纸图层、重播一遍实况视频）；铺满要重排画面，必须走总入口。
+//   1. 铺满：壁纸是否填满全屏（原来底栏那颗药丸收进了这里）。
+//   2. 是否显示对应角标：LIVE、HDR 两个总开关。
+//   3. 在哪显示角标：一个「主页面显示」同时管两个格式（关掉 = 只在壁纸模式显示）。
+// 段与段之间不额外留间距、也不写组名：一行行开关等距排下来，与设置主页面一致。
+// （分组靠 .setting-group 的 14 px 下边距，无分隔线、无组名）。
+// 各项都是改动即生效：保存并就地重算。角标只是显示开关，不调 applyWallpaper
+// （没理由顺带重设壁纸图层、重播一遍实况视频）；铺满要重排画面，必须走总入口。
 renderWallpaperBadgeConfigView (rightPanelUpper, skipAnimation) {
     const self = this;
     if (!rightPanelUpper) return;
     rightPanelUpper.dataset.subView = 'wallpaper-badge-config';
 
     // 与侧边栏配置视图同款的两层结构（外层包裹 + 内层滚动容器），
-    // 内边距、滚动与滑入动画的作用对象才对得上
+    // 内边距、滚动与滑入动画的作用对象才对得上。
     const wrapper = document.createElement('div');
     wrapper.className = 'side-panel-config-view';
     const container = document.createElement('div');
     container.className = 'settings-menu-container' + (skipAnimation ? '' : ' slide-in-right');
 
-    // ① 铺满
-    // 沿用原来底栏那颗的 id：设置主页面的「应用」兜底同步与面板关闭时的回写都按 id 找它
+    // 1. 铺满。
+    // 沿用原来底栏那颗的 id：设置主页面的「应用」兜底同步与面板关闭时的回写都按 id 找它。
     const fillRow = this.spBuildSwitchRow('壁纸铺满全屏', this.settings.wallpaperFill !== false, (checked) => {
         self.settings.wallpaperFill = checked;
         self.saveSettings();
-        self.applyWallpaper();   // 铺满要重排画面，必须走总入口
+        self.applyWallpaper(); // 铺满要重排画面，必须走总入口
     });
     fillRow.querySelector('input').id = 'wallpaper-fill-toggle-panel';
     container.appendChild(fillRow);
 
-    // ② 是否显示对应角标（顺序：LIVE 在前、HDR 在后，与方框的排列一致）
+    // 2. 是否显示对应角标（顺序：LIVE 在前、HDR 在后，与方框的排列一致）。
     const kinds = [
         { on: 'wallpaperBadgeLive', label: 'LIVE 角标' },
         { on: 'wallpaperBadgeHdr', label: 'HDR 角标' }
@@ -1829,13 +1830,13 @@ renderWallpaperBadgeConfigView (rightPanelUpper, skipAnimation) {
             self.settings[item.on] = checked;
             self.saveSettings();
             self.updateWallpaperFormatCorner();
-            // 开关会决定第三段那行在不在，整视图重渲染一次最省事（同侧边栏主开关）
+            // 开关会决定第三段那行在不在，整视图重渲染一次最省事（同侧边栏主开关）。
             self.renderWallpaperBadgeConfigView(rightPanelUpper, true);
         }));
     });
 
-    // ③ 在哪显示角标：两个格式共用一个「主页面显示」，拨一下同时写两个键
-    //（两个键各自的意义不变，updateWallpaperFormatCorner 照旧分别读它们）。
+    // 3. 在哪显示角标：两个格式共用一个「主页面显示」，拨一下同时写两个键。
+    // （两个键各自的意义不变，updateWallpaperFormatCorner 照旧分别读它们）。
     // 两个总开关都没开时这行没有意义，整行不出现。
     if (this.settings.wallpaperBadgeLive || this.settings.wallpaperBadgeHdr) {
         const homeOn = this.settings.wallpaperBadgeLiveHomepage !== false
@@ -1870,7 +1871,7 @@ backToWallpaperMenu (rightPanelUpper) {
 showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, optionsList, editIndex) {
     const self = this;
 
-    // 编辑已有配色方案（editIndex 为 customColors 下标）时为编辑模式
+    // 编辑已有配色方案（editIndex 为 customColors 下标）时为编辑模式。
     const editing = (typeof editIndex === 'number' && editIndex >= 0
         && Array.isArray(self.settings.customColors) && !!self.settings.customColors[editIndex]);
     const existing = editing ? self.settings.customColors[editIndex] : null;
@@ -1881,7 +1882,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
     const container = document.createElement('div');
     container.className = 'settings-menu-container slide-in-right';
 
-    // 名称输入框
+    // 名称输入框。
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.placeholder = '自定义配色';
@@ -1900,7 +1901,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
         }
     };
 
-    // 临时保存编辑中的颜色值
+    // 临时保存编辑中的颜色值。
     const editData = {
         primaryColor: '',
         secondaryColor: '',
@@ -1909,7 +1910,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
         gradientEnd: 100
     };
 
-    // 主色
+    // 主色。
     const primaryRow = document.createElement('div');
     primaryRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;';
     const primaryLabel = document.createElement('span');
@@ -1932,7 +1933,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
     primaryRow.appendChild(primaryWrapper);
     container.appendChild(primaryRow);
 
-    // 副色
+    // 副色。
     const secondaryRow = document.createElement('div');
     secondaryRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;';
     const secondaryLabel = document.createElement('span');
@@ -1955,7 +1956,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
     secondaryRow.appendChild(secondaryWrapper);
     container.appendChild(secondaryRow);
 
-    // 渐变开关
+    // 渐变开关。
     const gradientRow = document.createElement('div');
     gradientRow.style.cssText = 'display:none;align-items:center;justify-content:space-between;margin-bottom:12px;';
     const gradientLabel = document.createElement('span');
@@ -1974,12 +1975,12 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
     gradientRow.appendChild(gradientSwitch);
     container.appendChild(gradientRow);
 
-    // 渐变位置控制（直接在渐变条上拖拽）
+    // 渐变位置控制（直接在渐变条上拖拽）。
     const gPosRow = document.createElement('div');
     gPosRow.style.cssText = 'display:none;margin-bottom:0;';
     gPosRow.id = 'gradient-position-row';
 
-    // 拖拽状态
+    // 拖拽状态。
     let dragging = null; // 'start' | 'end' | null
 
     const commitGradientPos = () => {
@@ -2037,7 +2038,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
         gPreview.style.background = 'linear-gradient(90deg, ' + p + ' 0%, ' + s + ' 100%)';
     };
 
-    // 渐变条（可拖拽）
+    // 渐变条（可拖拽）。
     const gPreview = document.createElement('div');
     gPreview.style.cssText = 'height:20px;border-radius:8px;margin:8px 0 12px;background:linear-gradient(90deg, #cccccc 0%, #cccccc 100%);border:1px solid var(--border-color);position:relative;cursor:grab;touch-action:none;';
     gPreview.addEventListener('pointerdown', onPointerDown);
@@ -2052,7 +2053,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
     gPreview.appendChild(gMarkerE);
     gPosRow.appendChild(gPreview);
 
-    // 数值输入行（左右对称带标签）
+    // 数值输入行（左右对称带标签）。
     const gInputRow = document.createElement('div');
     gInputRow.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:4px;';
 
@@ -2103,7 +2104,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
     updateGradientUI();
     container.appendChild(gPosRow);
 
-    // 渐变行可见性
+    // 渐变行可见性。
     const updateGradientRowVisibility = () => {
         const hasSec = secondaryHex.value.trim() ? true : false;
         gradientRow.style.display = hasSec ? 'flex' : 'none';
@@ -2111,7 +2112,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
     };
     updateGradientRowVisibility();
 
-    // 编辑模式：预填已有配色方案的数值
+    // 编辑模式：预填已有配色方案的数值。
     if (editing && existing) {
         nameInput.value = existing.name || '';
         primaryHex.value = existing.primaryColor || '';
@@ -2134,7 +2135,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
         return null;
     };
 
-    // 事件 - 仅更新 UI，不保存
+    // 事件 - 仅更新 UI，不保存。
     primaryHex.addEventListener('input', () => {
         updatePreview(primaryHex, primaryPreview);
         editData.primaryColor = parseHex(primaryHex.value) || primaryHex.value.trim();
@@ -2171,7 +2172,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
         }
     });
 
-    // 底部按钮容器
+    // 底部按钮容器。
     const btnRow = document.createElement('div');
     btnRow.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;margin-top:auto;padding-top:12px;border-top:1px solid var(--border-color);';
 
@@ -2185,7 +2186,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
     }
     cancelBtn.addEventListener('click', () => {
         if (editing) {
-            // 编辑模式：左侧按钮为"删除"，删除该配色方案
+            // 编辑模式：左侧按钮为「删除」，删除该配色方案。
             const arr = self.settings.customColors || [];
             const delIdx = editIndex;
             if (delIdx >= 0 && delIdx < arr.length) {
@@ -2197,7 +2198,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
                 } else if (self.settings.colorScheme === 'custom' && self.settings.activeCustomColorIndex > delIdx) {
                     self.settings.activeCustomColorIndex -= 1;
                 }
-                // 手动改配色：解除主题对配色方面的接管
+                // 手动改配色：解除主题对配色方面的接管。
                 self.checkThemeConsistency('colorScheme', self.settings.colorScheme);
                 self.saveSettings();
                 self.applyColorScheme();
@@ -2216,10 +2217,10 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
     confirmBtn.textContent = '确定';
     confirmBtn.style.cssText = 'padding:8px 20px;border:none;border-radius:12px;font-size:13px;color:#fff;background:var(--primary-color);cursor:pointer;';
     confirmBtn.addEventListener('click', () => {
-        // 验证名称
+        // 验证名称。
         let name = nameInput.value.trim();
         if (!name) name = editing ? (existing.name || '自定义配色') : '自定义配色';
-        // 验证主色
+        // 验证主色。
         const primaryParsed = parseHex(primaryHex.value);
         if (!primaryParsed) {
             self.showNotification('请输入有效的主色值');
@@ -2229,7 +2230,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
         const secondaryParsed = parseHex(secondaryHex.value);
         const gradientEnabled = gradientCheckbox.checked;
 
-        // 检查名称重复，生成唯一名称（编辑模式下保留自身原名不算重复）
+        // 检查名称重复，生成唯一名称（编辑模式下保留自身原名不算重复）。
         const existingNames = (self.settings.customColors || []).map((c, i) => (editing && i === editIndex) ? null : c.name).filter(Boolean);
         let finalName = name;
         if (existingNames.includes(finalName)) {
@@ -2241,7 +2242,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
         }
 
         if (editing) {
-            // 编辑模式：更新已有配色方案并激活
+            // 编辑模式：更新已有配色方案并激活。
             const arr = self.settings.customColors || [];
             if (editIndex >= 0 && editIndex < arr.length) {
                 arr[editIndex] = {
@@ -2256,15 +2257,15 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
                 self.settings.customColors = arr;
                 self.settings.activeCustomColorIndex = editIndex;
                 self.settings.colorScheme = 'custom';
-                // 手动改配色：解除主题对配色方面的接管
+                // 手动改配色：解除主题对配色方面的接管。
                 self.checkThemeConsistency('colorScheme', 'custom');
                 self.saveSettings();
                 self.applyColorScheme();
-                // 立即更新左面板配色显示
+                // 立即更新左面板配色显示。
                 self.updateColorSchemeSelectDisplay();
             }
         } else {
-            // 新建模式：保存到 customColors
+            // 新建模式：保存到 customColors。
             const newScheme = {
                 name: finalName,
                 primaryColor: primaryParsed,
@@ -2281,15 +2282,15 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
             const newIndex = self.settings.customColors.length - 1;
             self.settings.activeCustomColorIndex = newIndex;
             self.settings.colorScheme = 'custom';
-            // 手动改配色：解除主题对配色方面的接管
+            // 手动改配色：解除主题对配色方面的接管。
             self.checkThemeConsistency('colorScheme', 'custom');
             self.saveSettings();
             self.applyColorScheme();
-            // 立即更新左面板配色显示
+            // 立即更新左面板配色显示。
             self.updateColorSchemeSelectDisplay();
         }
 
-        // 重新渲染颜色方案列表并选中新创建的方案
+        // 重新渲染颜色方案列表并选中新创建的方案。
         delete rightPanelUpper.dataset.subView;
         const items = document.getElementById('color-scheme-select-items');
         if (items && selected && hiddenSelect) {
@@ -2301,7 +2302,7 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
 
     container.appendChild(btnRow);
     rightPanelUpper.appendChild(container);
-    // 强制限制容器高度，防止撑高弹窗
+    // 强制限制容器高度，防止撑高弹窗。
     const constrainHeight = () => {
         const parent = rightPanelUpper.parentElement;
         if (parent) {
@@ -2310,12 +2311,12 @@ showCustomColorEditorInPanel (rightPanelUpper, selected, hiddenSelect, text, opt
         }
     };
     constrainHeight();
-    // 窗口尺寸变化时重新计算
+    // 窗口尺寸变化时重新计算。
     const resizeHandler = () => constrainHeight();
     window.addEventListener('resize', resizeHandler);
-    // 清理监听器
+    // 清理监听器。
     const cleanup = () => window.removeEventListener('resize', resizeHandler);
-    // 观察面板隐藏时清理
+    // 观察面板隐藏时清理。
     const mo = new MutationObserver(() => {
         if (!rightPanelUpper.isConnected || rightPanelUpper.innerHTML === '') {
             cleanup();
@@ -2336,7 +2337,7 @@ _doBackToCustomColorView (rightPanelUpper) {
     const selected = document.getElementById('color-scheme-select-selected');
     const hiddenSelect = document.getElementById('color-scheme-select');
     if (!selected || !hiddenSelect) return;
-    // 配色编辑器向右推出、配色列表从左推入（iOS 式 pop）
+    // 配色编辑器向右推出、配色列表从左推入（iOS 式 pop）。
     this.panelTransition(rightPanelUpper, 'pop', () => {
         this.showSettingsMenuInRightPanel(items, selected, hiddenSelect, true);
     });
@@ -2354,7 +2355,7 @@ closeSettingsMenuInRightPanel () {
         this.showDefaultRightPanelContent(rightPanelUpper);
     });
 
-    // 清理 body 上的弹窗
+    // 清理 body 上的弹窗。
     const dd = document.querySelector('[data-import-dropdown]');
     if (dd) dd.remove();
     const fs = document.querySelector('[data-folder-submenu]');
@@ -2365,7 +2366,7 @@ confirmRightPanelChanges () {
     if (!rightPanelUpper) return;
     const menuType = rightPanelUpper.dataset.menuType;
 
-    // 保存文字Logo输入
+    // 保存文字 Logo 输入。
     if (menuType === 'logo') {
         const textLogoInput = document.getElementById('text-logo-input-panel');
         if (textLogoInput && textLogoInput.value.trim()) {
@@ -2399,7 +2400,7 @@ confirmRightPanelChanges () {
         }
     }
 
-    // 保存壁纸填满开关状态
+    // 保存壁纸填满开关状态。
     if (menuType === 'wallpaper') {
         const panelToggle = document.getElementById('wallpaper-fill-toggle-panel');
         if (panelToggle) {

@@ -1,20 +1,21 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 「禁止提示」开关：单击设为 7 天临时禁止，双击设为永久禁止，并同步标签与设置页状态。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const InfoPopupToggleMixin = {
     initHideInfoPopupToggle() {
         const toggle = document.getElementById('hide-info-popup-toggle');
         if (!toggle) return;
 
-        // 监听必须绑在外层label上:checkbox本身宽高为0不可见,双击的dblclick是物理事件,
-        // 只会派发在slider/label上,浏览器不会向input转发合成的dblclick
+        // 监听必须绑在外层 label 上：checkbox 本身宽高为 0 不可见，dblclick 是物理事件，
+        // 只会在 slider/label 上派发，浏览器不会向 input 转发合成的 dblclick。
         const switchLabel = toggle.closest('label');
         if (!switchLabel) return;
 
         const updateToggleState = () => {
             const isEnabled = this.settings.hideInfoPopup.enabled;
-            // 使用 requestAnimationFrame 确保DOM更新在浏览器的下一个渲染周期执行
+            // 用 requestAnimationFrame 把 DOM 更新放到下一个渲染周期。
             requestAnimationFrame(() => {
                 toggle.checked = isEnabled;
                 this.updateHideInfoPopupLabel();
@@ -26,14 +27,14 @@ export const InfoPopupToggleMixin = {
             this.applySettings();
             this.saveSettings();
             this.updateContextMenuIcons();
-            // 同步主开关派生状态与子开关组显隐
+            // 同步主开关派生状态与子开关组的显隐。
             this.syncSettingsPageToggles();
-            // 立即更新状态
+            // 立即更新状态。
             updateToggleState();
         };
 
-        // 单击:立即切换临时禁止(7天)。preventDefault阻止label向input转发合成click,避免一次点击触发两次。
-        // 双击时前两次click先开临时再切回,最终由dblclick设为永久
+        // 单击即切换 7 天临时禁止。preventDefault 阻止 label 向 input 转发合成 click，避免一次点击触发两次；
+        // 双击时前两次 click 先开临时再切回，最终由 dblclick 覆盖为永久。
         switchLabel.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -43,7 +44,7 @@ export const InfoPopupToggleMixin = {
                 : { enabled: true, type: 'temporary', timestamp: Date.now() });
         });
 
-        // 双击:浏览器原生双击判定,设为永久禁止(覆盖click产生的中间状态)
+        // 双击走浏览器原生判定，设为永久禁止（覆盖 click 产生的中间状态）。
         switchLabel.addEventListener('dblclick', (e) => {
             e.preventDefault();
             e.stopPropagation();

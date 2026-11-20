@@ -1,13 +1,14 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 设置管理：默认值合并与旧数据迁移、读写持久化、设置页开关同步与设置即时应用。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 import { ProxyManager } from '../proxy.js';
 import { SYNC_KEYS } from '../storage-sync.js';
 
 export const SettingsMixin = {
     syncSettingsPageToggles() {
-        // 主开关状态派生后再同步 UI
+        // 主开关状态派生后再同步 UI。
         this.syncSimpleVisualMode();
         const dyn = document.getElementById('dynamic-blur-toggle');
         if (dyn) dyn.checked = this.settings.dynamicBlur;
@@ -25,7 +26,7 @@ export const SettingsMixin = {
         if (sh) sh.checked = this.settings.searchHistory;
         const ss = document.getElementById('search-suggestions-toggle');
         if (ss) ss.checked = this.settings.searchSuggestions;
-        // 固定侧边栏主开关与两个子开关
+        // 固定侧边栏主开关与两个子开关。
         const fs = document.getElementById('fix-sidebar-toggle');
         if (fs) fs.checked = this.settings.fixSidebarEnabled;
         const fh = document.getElementById('fix-sidebar-homepage-toggle');
@@ -36,7 +37,7 @@ export const SettingsMixin = {
         if (fsHomepageGroup) fsHomepageGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
         const fsWallpaperGroup = document.getElementById('fix-wallpaper-group');
         if (fsWallpaperGroup) fsWallpaperGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
-        // 侧边栏功能：摘要文字与（如打开的）右面板配置视图
+        // 侧边栏功能：摘要文字与（如打开的）右面板配置视图。
         this.syncSidePanelSelectDisplay();
         const el = document.getElementById('engine-lock-toggle');
         if (el) el.checked = this.settings.engineLocked;
@@ -44,7 +45,7 @@ export const SettingsMixin = {
         if (hn) hn.checked = this.settings.hideNotifications;
         const hip = document.getElementById('hide-info-popup-toggle');
         if (hip) hip.checked = this.settings.hideInfoPopup.enabled;
-        // 简洁视觉效果主开关与三个子开关（主开关开启时才显示子开关）
+        // 简洁视觉效果主开关与三个子开关（主开关开启时才显示子开关）。
         const sv = document.getElementById('simple-visual-toggle');
         if (sv) sv.checked = this.settings.simpleVisualMode;
         const svSubGroups = [
@@ -68,7 +69,7 @@ export const SettingsMixin = {
         const isFirstRun = localStorage.getItem('oooInterfaceFirstRun');
 
         if (isFirstRun === null) {
-            // 首次运行，使用出厂预设
+            // 首次运行，使用出厂预设。
             this.isFirstRun = true;
             localStorage.setItem('oooInterfaceFirstRun', 'false');
             this.showWelcomeScreen();
@@ -76,7 +77,7 @@ export const SettingsMixin = {
             this.isFirstRun = false;
         }
 
-        // 优先从 chrome.storage.local 加载，回退到 localStorage（兼容旧版）
+        // 优先从 chrome.storage.local 加载，回退到 localStorage（兼容旧版）。
         let savedSettings = null;
         try {
             const result = await chrome.storage.local.get('oooInterfaceSettings');
@@ -89,7 +90,7 @@ export const SettingsMixin = {
             if (lsRaw) {
                 try {
                     savedSettings = JSON.parse(lsRaw);
-                    // 迁移到 chrome.storage.local
+                    // 迁移到 chrome.storage.local。
                     chrome.storage.local.set({ oooInterfaceSettings: savedSettings });
                 } catch (e) {
                     console.error('localStorage 解析失败:', e);
@@ -106,19 +107,19 @@ export const SettingsMixin = {
             }
         }
 
-        // 初始化高级视觉效果自动启用标志
+        // 初始化高级视觉效果自动启用标志。
         this._dynamicBlurAutoEnabled = this.settings.enhancedDisplay && this.settings.dynamicBlur;
 
-        // 绑定底部铭牌的双击/右键动作（依设置决定，幂等）
+        // 绑定底部铭牌的双击或右键动作（依设置决定，幂等）。
         this.setupBadgeOpenMethod();
 
-        // 绑定 OCP 播控的 hover 显隐与播放按钮（幂等）
+        // 绑定 OCP 播控的 hover 显隐与播放按钮（幂等）。
         this.setupOcpPlayer();
     },
     mergeSettings(savedSettings) {
         const result = JSON.parse(JSON.stringify(this.defaultSettings));
 
-        // 合并基础设置
+        // 合并基础设置。
         if (savedSettings.font) result.font = savedSettings.font;
         if (savedSettings.logo) result.logo = savedSettings.logo;
         if (savedSettings.logoType) result.logoType = savedSettings.logoType;
@@ -162,7 +163,7 @@ export const SettingsMixin = {
         if (savedSettings.customGradientEnd !== undefined) result.customGradientEnd = savedSettings.customGradientEnd;
         if (savedSettings.customColors !== undefined) result.customColors = savedSettings.customColors;
         if (savedSettings.activeCustomColorIndex !== undefined) result.activeCustomColorIndex = savedSettings.activeCustomColorIndex;
-        // 旧数据迁移：如果旧版有 customPrimaryColor 且 customColors 为空，迁移到 customColors[0]
+        // 旧数据迁移：如果旧版有 customPrimaryColor 且 customColors 为空，迁移到 customColors[0]。
         if (savedSettings.customPrimaryColor && savedSettings.customPrimaryColor.trim() && (!result.customColors || result.customColors.length === 0)) {
             result.customColors = [{
                 name: '我的配色',
@@ -182,7 +183,7 @@ export const SettingsMixin = {
         if (savedSettings.badgeContextMenuAction !== undefined) {
             result.badgeContextMenuAction = this.normalizeBadgeAction(savedSettings.badgeContextMenuAction);
         }
-        // 旧版 badgeOpenMethod 迁移：both / dblclick / contextmenu / none
+        // 旧版 badgeOpenMethod 迁移：both、dblclick、contextmenu、none。
         if (savedSettings.badgeDblClickAction === undefined && savedSettings.badgeContextMenuAction === undefined
             && savedSettings.badgeOpenMethod !== undefined) {
             const legacy = savedSettings.badgeOpenMethod;
@@ -201,7 +202,7 @@ export const SettingsMixin = {
         if (savedSettings.wallpaperBadgeLive !== undefined) result.wallpaperBadgeLive = savedSettings.wallpaperBadgeLive;
         if (savedSettings.wallpaperBadgeLiveHomepage !== undefined) result.wallpaperBadgeLiveHomepage = savedSettings.wallpaperBadgeLiveHomepage;
 
-        // 侧边栏面板功能
+        // 侧边栏面板功能。
         if (savedSettings.sidePanelEnabled !== undefined) result.sidePanelEnabled = savedSettings.sidePanelEnabled;
         if (savedSettings.sidePanelShowWidgets !== undefined) result.sidePanelShowWidgets = savedSettings.sidePanelShowWidgets;
         if (savedSettings.sidePanelShowQuickLinks !== undefined) result.sidePanelShowQuickLinks = savedSettings.sidePanelShowQuickLinks;
@@ -220,8 +221,8 @@ export const SettingsMixin = {
         if (savedSettings.hiddenBadge !== undefined) result.hiddenBadge = savedSettings.hiddenBadge;
         if (savedSettings.ocpPlayerEnabled !== undefined) result.ocpPlayerEnabled = savedSettings.ocpPlayerEnabled;
 
-        // 合并小组件面板配置
-        // enabled 字段已废弃（开关已移除，面板显示完全由列表是否为空决定），固定为 true
+        // 合并小组件面板配置。
+        // enabled 字段已废弃（开关已移除，面板显示完全由列表是否为空决定），固定为 true。
         if (savedSettings.widgetPanel && typeof savedSettings.widgetPanel === 'object') {
             result.widgetPanel = {
                 enabled: true,
@@ -242,53 +243,53 @@ export const SettingsMixin = {
             );
         }
 
-        // 合并主题相关字段
+        // 合并主题相关字段。
         if (savedSettings.theme !== undefined) result.theme = savedSettings.theme;
         if (savedSettings.themeEnabled !== undefined) result.themeEnabled = savedSettings.themeEnabled;
         if (savedSettings.themeColorScheme !== undefined) result.themeColorScheme = savedSettings.themeColorScheme;
         if (savedSettings.themeAspects !== undefined) result.themeAspects = savedSettings.themeAspects;
 
-        // 合并自定义Logo列表
+        // 合并自定义 Logo 列表。
         if (savedSettings.customLogos && Array.isArray(savedSettings.customLogos)) {
             result.customLogos = savedSettings.customLogos.filter(logo =>
                 logo && logo.name && logo.data
             );
         }
 
-        // 合并自定义字体列表
+        // 合并自定义字体列表。
         if (savedSettings.customFonts && Array.isArray(savedSettings.customFonts)) {
             result.customFonts = savedSettings.customFonts.filter(font =>
                 font && font.name && font.data
             );
         }
 
-        // 合并自定义壁纸列表
+        // 合并自定义壁纸列表。
         if (savedSettings.customWallpapers && Array.isArray(savedSettings.customWallpapers)) {
             result.customWallpapers = savedSettings.customWallpapers.filter(wp =>
                 wp && wp.name && wp.data
             );
         }
 
-        // 合并自定义主题列表
+        // 合并自定义主题列表。
         if (savedSettings.customThemes && Array.isArray(savedSettings.customThemes)) {
             result.customThemes = savedSettings.customThemes.filter(ct =>
                 ct && ct.key && ct.data && ct.data.info && ct.data.details
             );
         }
 
-        // 合并快速访问链接列表
+        // 合并快速访问链接列表。
         if (savedSettings.quickLinks && Array.isArray(savedSettings.quickLinks)) {
             result.quickLinks = savedSettings.quickLinks.filter(link =>
                 link && link.name && link.url
             );
         }
 
-        // 恢复用户更改Logo标记
+        // 恢复用户更改 Logo 标记。
         if (savedSettings.userChangedLogo !== undefined) {
             this.userChangedLogo = savedSettings.userChangedLogo;
         }
 
-        // 简洁视觉效果主开关由子开关状态派生（所有恢复完成后计算，兼容旧版本数据）
+        // 简洁视觉效果主开关由子开关状态派生（所有恢复完成后计算，兼容旧版本数据）。
         result.simpleVisualMode = !!(result.hideNotifications
             || (result.hideInfoPopup && result.hideInfoPopup.enabled)
             || result.hiddenBadge);
@@ -313,7 +314,7 @@ export const SettingsMixin = {
             userChangedLogo: this.userChangedLogo
         };
         // 侧边栏子视图数据交换期间：快照里把交换出去的键还原为原始引用，
-        // 避免把独立数据序列化进主槽位（内存引用在退出交换时本就会恢复）
+        // 避免把独立数据序列化进主槽位（内存引用在退出交换时本就会恢复）。
         if (this._spSwap) {
             if (this._spSwap.quickLinks !== undefined) settingsToSave.quickLinks = this._spSwap.quickLinks;
             if (this._spSwap.widgetPanel !== undefined) settingsToSave.widgetPanel = this._spSwap.widgetPanel;
@@ -347,7 +348,7 @@ export const SettingsMixin = {
         } catch (e) {
             return;
         }
-        // 触发重应用的门控键表：与侧边栏面板共用 storage-sync.js（Stage 9）。
+        // 触发重应用的门控键表：与侧边栏面板共用 storage-sync.js。
         // 其中 wallpaper / wallpaperUrl 是此前这里漏掉的，补上后主页面换壁纸
         // 也能触发侧边栏重应用。语义与并集理由见该模块头部说明。
 
@@ -365,9 +366,9 @@ export const SettingsMixin = {
             pendingValue = next;
             clearTimeout(syncTimer);
             syncTimer = setTimeout(() => {
-                // 完整回填：保留全部已存键（含壁纸/字体/小组件数据），仅用默认值补缺，避免丢设置
+                // 完整回填：保留全部已存键（含壁纸、字体、小组件数据），仅用默认值补缺，避免丢设置。
                 this.settings = Object.assign({}, this.defaultSettings, pendingValue);
-                // 侧边栏子视图交换期间：重挂交换，保证管理视图继续作用于独立数据
+                // 侧边栏子视图交换期间：重挂交换，保证管理视图继续作用于独立数据。
                 if (this._spSwap) {
                     if (this._spSwap.quickLinks !== undefined) this.settings.quickLinks = this.settings.sidePanelQuickLinks;
                     if (this._spSwap.widgetPanel !== undefined) this.settings.widgetPanel = this.settings.sidePanelWidgetPanel;
@@ -431,14 +432,14 @@ export const SettingsMixin = {
         this.applySettings();
         this.saveSettings();
         this.updateContextMenuIcons();
-        // 直接同步设置页复选框（移除监听器避免循环触发）
+        // 直接同步设置页复选框（移除监听器避免循环触发）。
         const cb = document.getElementById('enhanced-display-toggle');
         if (cb) {
             cb.removeEventListener('change', this._enhancedDisplayChangeHandler);
             cb.checked = this.settings.enhancedDisplay;
             cb.addEventListener('change', this._enhancedDisplayChangeHandler);
         }
-        // 同步动态模糊复选框和增强显示分组可见性
+        // 同步动态模糊复选框和增强显示分组可见性。
         const dyn = document.getElementById('dynamic-blur-toggle');
         if (dyn) dyn.checked = this.settings.dynamicBlur;
         const group = document.getElementById('enhanced-display-group');
@@ -452,93 +453,93 @@ export const SettingsMixin = {
 
         const modal = document.getElementById('settings-modal');
 
-        // 记录是否需要切换回常规模式
+        // 记录是否需要切换回常规模式。
         const needRestoreHomepage = this.isScrolled;
 
-        // 先设置display属性，让浏览器渲染元素
+        // 先设置 display 属性，让浏览器渲染元素。
         modal.style.display = 'flex';
         modal.style.alignItems = 'center';
         modal.style.justifyContent = 'center';
 
-        // 禁用主页面滚动
+        // 禁用主页面滚动。
         document.body.style.overflow = 'hidden';
 
-        // 清除上一次的来源标记类
+        // 清除上一次的来源标记类。
         modal.classList.remove('badge-source');
         modal.classList.remove('context-source');
 
-        // 如果开启了高级视效，给 modal 添加 blur-effect 类
+        // 如果开启了高级视效，给 modal 添加 blur-effect 类。
         if (this.settings.dynamicBlur) {
             modal.classList.add('blur-effect');
         } else {
             modal.classList.remove('blur-effect');
         }
 
-        // 添加鼠标滚轮事件监听器，阻止事件冒泡
+        // 添加鼠标滚轮事件监听器，阻止事件冒泡。
         this.modalScrollHandler = (e) => {
-            // 如果事件目标在模态框内，阻止事件传播到主页面
+            // 如果事件目标在模态框内，阻止事件传播到主页面。
             if (e.target.closest('.modal')) {
                 e.stopPropagation();
             }
         };
         document.addEventListener('wheel', this.modalScrollHandler, { passive: false });
 
-        // 更新设置界面
+        // 更新设置界面。
         this.updateSettingsUI();
 
-        // 更新自定义Logo列表
+        // 更新自定义 Logo 列表。
         this.updateCustomLogosList();
 
-        // 更新快速访问链接列表
+        // 更新快速访问链接列表。
         this.updateQuickLinksList();
 
-        // 更新开发者模式UI
+        // 更新开发者模式 UI。
         this.updateDeveloperModeUI();
 
-        // 根据dynamicBlur设置决定是否添加动画
+        // 根据 dynamicBlur 设置决定是否添加动画。
         const modalContent = modal.querySelector('.modal-content');
         if (this.settings.dynamicBlur) {
-            // 移除no-animation类，启用动画
+            // 移除 no-animation 类，启用动画。
             if (modalContent) modalContent.classList.remove('no-animation');
-            // 根据来源添加标识类，用于差异化动画
+            // 根据来源添加标识类，用于差异化动画。
             if (source === 'badge') {
                 modal.classList.add('badge-source');
             } else {
                 modal.classList.add('context-source');
             }
-            // 使用requestAnimationFrame确保动画在下一帧触发，更加流畅
+            // 使用 requestAnimationFrame 确保动画在下一帧触发，更加流畅。
             requestAnimationFrame(() => {
-                // 从铭牌打开：在渲染前计算铭牌相对弹窗的实际位置
+                // 从铭牌打开：在渲染前计算铭牌相对弹窗的实际位置。
                 if (source === 'badge') {
                     this.calculateBadgeOrigin(modal);
                 }
                 requestAnimationFrame(() => {
                     modal.classList.add('show');
 
-                    // 设置弹窗开始显示后，再切换回常规模式
+                    // 设置弹窗开始显示后，再切换回常规模式。
                     if (needRestoreHomepage) {
                         this.restoreHomepage(false);
                     }
                 });
             });
         } else {
-            // 添加no-animation类，禁用动画
+            // 添加 no-animation 类，禁用动画。
             if (modalContent) modalContent.classList.add('no-animation');
-            // 无动画时仍记录来源，供关闭动画使用
+            // 无动画时仍记录来源，供关闭动画使用。
             if (source === 'badge') {
                 modal.classList.add('badge-source');
                 this.calculateBadgeOrigin(modal);
             }
-            // 直接添加show类，无动画
+            // 直接添加 show 类，无动画。
             modal.classList.add('show');
 
-            // 立即切换回常规模式
+            // 立即切换回常规模式。
             if (needRestoreHomepage) {
                 this.restoreHomepage(true);
             }
         }
 
-        // 根据当前Logo类型显示/隐藏文字Logo输入框
+        // 根据当前 Logo 类型显示或隐藏文字 Logo 输入框。
         const textLogoItem = document.querySelector('.select-item-text-logo');
         if (this.settings.logo === 'text-logo') {
             document.getElementById('text-logo-inline-group').style.display = 'flex';
@@ -548,19 +549,19 @@ export const SettingsMixin = {
             if (textLogoItem) textLogoItem.classList.remove('selected');
         }
 
-        // 根据窗口宽度调整按钮位置
+        // 根据窗口宽度调整按钮位置。
         this.updateSettingsButtonsPosition();
     },
     updateSettingsUI() {
         const fontSelect = document.getElementById('font-select');
 
-        // 保存当前选中的字体值
+        // 保存当前选中的字体值。
         const selectedFont = this.settings.font;
 
-        // 设置选中的值
+        // 设置选中的值。
         fontSelect.value = selectedFont;
 
-        // 更新字体选择框的显示文本
+        // 更新字体选择框的显示文本。
         const fontSelectSelected = document.getElementById('font-select-selected');
         if (fontSelectSelected) {
             const themeInfo = this.getThemeDisplayInfo();
@@ -572,12 +573,12 @@ export const SettingsMixin = {
             }
         }
 
-        // 更新其他设置
+        // 更新其他设置。
         const logoSelect = document.getElementById('logo-select');
         logoSelect.value = this.settings.logo;
         document.getElementById('text-logo-input').value = this.settings.textLogo || '';
 
-        // 更新Logo选择框的显示文本
+        // 更新 Logo 选择框的显示文本。
         const logoSelectSelected = document.getElementById('logo-select-selected');
         if (logoSelectSelected) {
             const themeInfo = this.getThemeDisplayInfo();
@@ -589,14 +590,14 @@ export const SettingsMixin = {
             }
         }
 
-        // 更新壁纸选择
+        // 更新壁纸选择。
         let wallpaperValue = 'default';
         if (this.settings.wallpaper === 'url') {
             wallpaperValue = 'url';
         } else if (this.settings.wallpaper === 'bing') {
             wallpaperValue = 'bing';
         } else if (this.settings.wallpaper !== 'default') {
-            // 检查是否是自定义上传的壁纸
+            // 检查是否是自定义上传的壁纸。
             const customWallpaper = this.settings.customWallpapers.find(wp => wp.data === this.settings.wallpaper);
             if (customWallpaper) {
                 wallpaperValue = customWallpaper.name;
@@ -608,7 +609,7 @@ export const SettingsMixin = {
         const wallpaperSelect = document.getElementById('wallpaper-select');
         wallpaperSelect.value = wallpaperValue;
 
-        // 更新壁纸选择框的显示文本
+        // 更新壁纸选择框的显示文本。
         const wallpaperSelectSelected = document.getElementById('wallpaper-select-selected');
         if (wallpaperSelectSelected) {
             const themeInfo = this.getThemeDisplayInfo();
@@ -621,7 +622,7 @@ export const SettingsMixin = {
             } else if (wallpaperValue === 'url') {
                 wallpaperSelectSelected.textContent = 'URL链接';
             } else {
-                // 自定义壁纸
+                // 自定义壁纸。
                 const customWallpaper = this.settings.customWallpapers.find(wp => wp.name === wallpaperValue);
                 if (customWallpaper) {
                     wallpaperSelectSelected.textContent = customWallpaper.name;
@@ -629,13 +630,13 @@ export const SettingsMixin = {
             }
         }
 
-        // 更新右键菜单样式
+        // 更新右键菜单样式。
         document.getElementById('context-menu-style').value = this.settings.contextMenuStyle;
 
-        // 更新配色方案选择
+        // 更新配色方案选择。
         this.updateColorSchemeSelectDisplay();
 
-        // 更新新增的设置选项
+        // 更新新增的设置选项。
         document.getElementById('dynamic-blur-toggle').checked = this.settings.dynamicBlur;
         document.getElementById('enhanced-display-toggle').checked = this.settings.enhancedDisplay;
         document.getElementById('persistent-wallpaper-toggle').checked = this.settings.persistentWallpaper;
@@ -647,32 +648,32 @@ export const SettingsMixin = {
         document.getElementById('hide-info-popup-toggle').checked = this.settings.hideInfoPopup.enabled;
         document.getElementById('quick-access-sidebar-toggle').checked = this.settings.quickAccessSidebar;
         document.getElementById('hide-notifications-toggle').checked = this.settings.hideNotifications;
-        // 简洁视觉效果主开关与子开关（主开关开启时才显示子开关）
+        // 简洁视觉效果主开关与子开关（主开关开启时才显示子开关）。
         this.syncSimpleVisualMode();
         document.getElementById('simple-visual-toggle').checked = this.settings.simpleVisualMode;
         document.getElementById('hidden-badge-toggle').checked = this.settings.hiddenBadge;
         document.getElementById('ocp-player-toggle').checked = this.settings.ocpPlayerEnabled;
-        // 固定侧边栏主开关与两个子开关
+        // 固定侧边栏主开关与两个子开关。
         document.getElementById('fix-sidebar-toggle').checked = this.settings.fixSidebarEnabled;
         document.getElementById('fix-sidebar-homepage-toggle').checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage;
         document.getElementById('fix-sidebar-wallpaper-toggle').checked = this.settings.fixSidebarEnabled && this.settings.fixSidebarWallpaper;
-        // 侧边栏功能：左侧下拉摘要与右面板视图
+        // 侧边栏功能：左侧下拉摘要与右面板视图。
         this.syncSidePanelSelectDisplay();
         this.updateHideInfoPopupLabel();
 
-        // 根据动态模糊的状态显示/隐藏增强显示开关
+        // 根据动态模糊的状态显示或隐藏增强显示开关。
         const enhancedDisplayGroup = document.getElementById('enhanced-display-group');
         if (enhancedDisplayGroup) {
             enhancedDisplayGroup.style.display = this.settings.dynamicBlur ? 'block' : 'none';
         }
 
-        // 根据壁纸常显示的状态显示/隐藏壁纸缩放开关
+        // 根据壁纸常显示的状态显示或隐藏壁纸缩放开关。
         const wallpaperScaleGroup = document.getElementById('wallpaper-scale-group');
         if (wallpaperScaleGroup) {
             wallpaperScaleGroup.style.display = this.settings.persistentWallpaper ? 'block' : 'none';
         }
 
-        // 根据快速访问侧边栏开关状态显示/隐藏子开关
+        // 根据快速访问侧边栏开关状态显示或隐藏子开关。
         const iconsGroup = document.getElementById('show-quick-icons-group');
         const showIconsToggle = document.getElementById('show-quick-icons');
         if (iconsGroup && showIconsToggle) {
@@ -680,7 +681,7 @@ export const SettingsMixin = {
             showIconsToggle.checked = this.settings.quickAccessSidebar ? this.settings.showQuickLinkIcons : false;
         }
 
-        // 根据固定侧边栏主开关状态显示/隐藏子开关
+        // 根据固定侧边栏主开关状态显示或隐藏子开关。
         const fsHomepageGroup = document.getElementById('fix-homepage-group');
         const fsWallpaperGroup = document.getElementById('fix-wallpaper-group');
         if (fsHomepageGroup) {
@@ -690,7 +691,7 @@ export const SettingsMixin = {
             fsWallpaperGroup.style.display = this.settings.fixSidebarEnabled ? 'block' : 'none';
         }
 
-        // 根据简洁视觉效果主开关状态显示/隐藏子开关
+        // 根据简洁视觉效果主开关状态显示或隐藏子开关。
         const simpleVisualGroups = [
             document.getElementById('simple-notifications-group'),
             document.getElementById('simple-infopopup-group'),
@@ -702,10 +703,10 @@ export const SettingsMixin = {
 
         this.syncWidgetPanelUI();
 
-        // 更新底部铭牌功能（摘要文本 + 隐藏铭牌时隐藏该项）
+        // 更新底部铭牌功能（摘要文本，隐藏铭牌时隐藏该项）。
         this.syncBadgeOpenMethodUI();
 
-        // 更新自定义下拉菜单的显示文本
+        // 更新自定义下拉菜单的显示文本。
         const updateCustomSelectDisplay = (selectId, selectedValue) => {
             const select = document.getElementById(selectId);
             const customSelect = select.parentElement;
@@ -719,13 +720,13 @@ export const SettingsMixin = {
                 }
             }
 
-            // 更新下拉菜单选项
+            // 更新下拉菜单选项。
             if (selectItems) {
-                // 先清除所有自定义选项（支持两种标识符）
+                // 先清除所有自定义选项（支持两种标识符）。
                 const customItems = selectItems.querySelectorAll('.select-item[data-custom="true"], .select-item-custom-logo');
                 customItems.forEach(item => item.remove());
 
-                // 添加自定义选项（支持两种标识符）
+                // 添加自定义选项（支持两种标识符）。
                 const customOptions = select.querySelectorAll('option[data-custom="true"], option.custom-logo-option');
                 customOptions.forEach(option => {
                     const selectItem = document.createElement('div');
@@ -737,36 +738,36 @@ export const SettingsMixin = {
             }
         };
 
-        // 更新每个自定义下拉菜单
-        // font-select 由 updateCustomFontsList 处理
-        // logo-select 由 updateCustomLogosList 处理
-        // wallpaper-select 由 updateCustomWallpapersList 处理
+        // 更新每个自定义下拉菜单。
+        // font-select 由 updateCustomFontsList 处理。
+        // logo-select 由 updateCustomLogosList 处理。
+        // wallpaper-select 由 updateCustomWallpapersList 处理。
         updateCustomSelectDisplay('context-menu-style', this.settings.contextMenuStyle);
 
-        // 移除应用按钮的所有logo类，保持蓝色
+        // 移除应用按钮的所有 logo 类，保持蓝色。
         this.updateApplyButtonColor();
     },
     updateApplyButtonColor() {
         const applyBtn = document.getElementById('apply-settings');
 
-        // 移除所有logo类，确保应用按钮始终为蓝色
+        // 移除所有 logo 类，确保应用按钮始终为蓝色。
         const logoClasses = ['logo-google', 'logo-microsoft', 'logo-apple', 'logo-huawei', 'logo-custom', 'logo-text'];
         logoClasses.forEach(logoClass => {
             applyBtn.classList.remove(logoClass);
         });
 
-        // 应用按钮始终使用蓝色样式，不随Logo变化
+        // 应用按钮始终使用蓝色样式，不随 Logo 变化。
         applyBtn.style.backgroundColor = '';
         applyBtn.style.color = '';
         applyBtn.style.borderColor = '';
     },
     closeSettings() {
-        // 侧边栏子视图的数据交换随设置关闭而恢复
+        // 侧边栏子视图的数据交换随设置关闭而恢复。
         this.exitSidePanelScope();
         const modal = document.getElementById('settings-modal');
         const modalContent = modal.querySelector('.modal-content');
 
-        // 关闭前读取设置页的增强显示复选框，同步到 this.settings
+        // 关闭前读取设置页的增强显示复选框，同步到 this.settings。
         const enhBox = document.getElementById('enhanced-display-toggle');
         if (enhBox && this.settings.enhancedDisplay !== enhBox.checked) {
             this.settings.enhancedDisplay = enhBox.checked;
@@ -774,74 +775,74 @@ export const SettingsMixin = {
             this.saveSettings();
         }
 
-        // 根据dynamicBlur设置决定是否添加动画
+        // 根据 dynamicBlur 设置决定是否添加动画。
         if (!this.settings.dynamicBlur) {
-            // 添加no-animation类，禁用动画
+            // 添加 no-animation 类，禁用动画。
             if (modalContent) modalContent.classList.add('no-animation');
         }
 
-        // 添加退出动画 - 使用 hiding 类
+        // 添加退出动画：使用 hiding 类。
         modal.classList.remove('show');
         modal.classList.add('hiding');
 
-        // 根据dynamicBlur设置决定是否等待动画完成
+        // 根据 dynamicBlur 设置决定是否等待动画完成。
         if (this.settings.dynamicBlur) {
-            // 等待动画完成后再执行后续操作
+            // 等待动画完成后再执行后续操作。
             setTimeout(() => {
-                // 移除 hiding 类和 blur-effect 类
+                // 移除 hiding 类和 blur-effect 类。
                 modal.classList.remove('hiding');
                 modal.classList.remove('blur-effect');
                 modal.classList.remove('badge-source');
 
-                // 恢复主页面滚动
+                // 恢复主页面滚动。
                 document.body.style.overflow = '';
 
-                // 移除鼠标滚轮事件监听器
+                // 移除鼠标滚轮事件监听器。
                 if (this.modalScrollHandler) {
                     document.removeEventListener('wheel', this.modalScrollHandler);
                     this.modalScrollHandler = null;
                 }
 
-                // 隐藏快速访问链接输入区域
+                // 隐藏快速访问链接输入区域。
                 const quickLinksInputGroup = document.getElementById('quick-links-input-group');
                 if (quickLinksInputGroup) {
                     quickLinksInputGroup.style.display = 'none';
                 }
 
-                // 隐藏模态框
+                // 隐藏模态框。
                 modal.style.display = 'none';
 
-                // 重新读取设置状态，更新右键菜单图标
+                // 重新读取设置状态，更新右键菜单图标。
                 this.updateContextMenuIcons();
-            }, 400); // 等待动画完成，与CSS过渡时间匹配
+            }, 400); // 等待动画完成，与 CSS 过渡时间匹配
         } else {
-            // 直接执行后续操作，无动画
-            // 移除 hiding 类
+            // 直接执行后续操作，无动画。
+            // 移除 hiding 类。
             modal.classList.remove('hiding');
             modal.classList.remove('badge-source');
 
-            // 恢复主页面滚动
+            // 恢复主页面滚动。
             document.body.style.overflow = '';
 
-            // 移除 blur-effect 类
+            // 移除 blur-effect 类。
             modal.classList.remove('blur-effect');
 
-            // 移除鼠标滚轮事件监听器
+            // 移除鼠标滚轮事件监听器。
             if (this.modalScrollHandler) {
                 document.removeEventListener('wheel', this.modalScrollHandler);
                 this.modalScrollHandler = null;
             }
 
-            // 隐藏快速访问链接输入区域
+            // 隐藏快速访问链接输入区域。
             const quickLinksInputGroup = document.getElementById('quick-links-input-group');
             if (quickLinksInputGroup) {
                 quickLinksInputGroup.style.display = 'none';
             }
 
-            // 隐藏模态框
+            // 隐藏模态框。
             modal.style.display = 'none';
 
-            // 重新读取设置状态，更新右键菜单图标
+            // 重新读取设置状态，更新右键菜单图标。
             this.updateContextMenuIcons();
         }
     },
@@ -861,7 +862,7 @@ export const SettingsMixin = {
             contextFeedbackItem.style.display = this.settings.developerMode ? '' : 'none';
         }
 
-        // 仅开发者模式可见的导出/导入按钮
+        // 仅开发者模式可见的导出或导入按钮。
         document.querySelectorAll('.dev-only').forEach(btn => {
             btn.style.display = this.settings.developerMode ? '' : 'none';
         });
@@ -876,7 +877,7 @@ export const SettingsMixin = {
         }
         this.syncStatusBarUI();
 
-        // 快捷键开关独立于开发者模式
+        // 快捷键开关独立于开发者模式。
         const shortcutsToggle = document.getElementById('shortcuts-toggle');
         if (shortcutsToggle) {
             shortcutsToggle.checked = this.settings.shortcutsEnabled;
@@ -896,13 +897,13 @@ export const SettingsMixin = {
         }
     },
     applyWallpaperDim() {
-        // 暗色压暗壁纸：暗色模式下壁纸蒙版的开关（主页面与侧边栏面板共用设置键 wallpaperDarkDim）
+        // 暗色压暗壁纸：暗色模式下壁纸蒙版的开关（主页面与侧边栏面板共用设置键 wallpaperDarkDim）。
         document.body.classList.toggle('wallpaper-dim-off', !this.settings.wallpaperDarkDim);
     },
     applyDeveloperSettings() {
         const root = document.documentElement;
 
-        // 主题字体粗细/大小覆盖优先
+        // 主题字体粗细或大小覆盖优先。
         let fontSize = this.settings.fontSize;
         let fontWeight = this.settings.fontWeight;
         if (this.settings.themeEnabled && this.themeOverrides?.font) {
@@ -1005,7 +1006,7 @@ export const SettingsMixin = {
         }
     },
     applySettings() {
-        // 各应用分支独立容错：单个分支异常（如历史数据形态异常）不影响主页其余部分
+        // 各应用分支独立容错：单个分支异常（如历史数据形态异常）不影响主页其余部分。
         const safe = (name, fn) => {
             try { fn.call(this); } catch (error) { console.error('应用设置失败 [' + name + ']:', error); }
         };
@@ -1044,23 +1045,23 @@ export const SettingsMixin = {
         this.applyStatusBarSettings();
         this.applyColorScheme();
 
-        // 隐藏铭牌（简洁视觉效果子项）：隐藏主页面底部铭牌
+        // 隐藏铭牌（简洁视觉效果子项）：隐藏主页面底部铭牌。
         const badge = document.getElementById('ooo-badge');
         if (badge) {
             badge.style.display = this.settings.hiddenBadge ? 'none' : '';
         }
 
-        // 底部铭牌功能：动作绑定幂等；同步子项显隐与摘要，覆盖导入设置等整体替换路径
+        // 底部铭牌功能：动作绑定幂等；同步子项显隐与摘要，覆盖导入设置等整体替换路径。
         this.setupBadgeOpenMethod();
         this.syncBadgeOpenMethodUI();
 
-        // OCP 播控：绑定幂等；整体替换设置（导入等）后如已关闭则立即收起
+        // OCP 播控：绑定幂等；整体替换设置（导入等）后如已关闭则立即收起。
         this.setupOcpPlayer();
         if (!this.settings.ocpPlayerEnabled) {
             this.hideOcpPlayer();
         }
 
-        // 同步固定侧边栏状态（关闭时内部负责移除 sidebar-fixed 标记并恢复 hover 控制）
+        // 同步固定侧边栏状态（关闭时内部负责移除 sidebar-fixed 标记并恢复 hover 控制）。
         this.syncSidebarFixedState();
     },
 };

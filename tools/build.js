@@ -2,32 +2,11 @@
 'use strict';
 
 /**
- * OOOInterface 打包脚本（零依赖，只用 Node 内置模块）
- *
- * 为什么需要它：
- *   Chrome 读取 chrome-extension:// 资源时几乎不并行（实测 50 个文件：并发 58ms /
- *   串行 107ms，每文件约 1.2~2ms），而 ES 模块又是"边下载边发现"的：main.js 里那
- *   24 个 mixin 要等 main.js 下载+解析完才发出请求，再往下还有两层。结果就是主页启
- *   动要串行拉 70 个文件、其中 55 个是 JS，中间还夹着一段段没有请求发出的空窗期。
- *
- *   本脚本把整张静态 import 图按依赖顺序拼成一个文件，把"文件数"降下来。源码仍然
- *   按 mixin 拆分保留（可读性、可维护性不变），打包产物只是构建结果。
- *
- * 用法：
- *   node tools/build.js            # 构建（默认）
- *   node tools/build.js --watch    # 监听源码，改动后自动重建
- *   node tools/build.js --check    # 只校验产物是否为最新（不写文件），适合提交前/CI
- *   node tools/build.js --verbose  # 打印打包进去的模块清单
- *
- * 约定（重要）：
- *   1. 只打包 HTML 里 <script src> 指向的入口（产物以经典 defer 脚本引入，
- *      不用 type="module"：扩展页里模块脚本会被请求两次）；
- *   2. 只处理静态 import；动态 import()（如 Themes/*.js 主题文件）保持原样，
- *      仍然按需单独加载 —— 那是有意为之的运行时加载，不属于启动关键路径；
- *   3. 不支持 `export ... from`（re-export）；一旦出现会直接报错，不会静默产出错文件；
- *   4. 打包是"按依赖顺序拼接 + 去掉 import/export 关键字"，因此同一个 bundle 里
- *      顶层不能出现重名声明——脚本会检测并报错（这正是 mixin 拆分容易踩的坑）。
+ * OOOInterface 打包脚本（零依赖，只用 Node 内置模块）：按依赖顺序拼接静态 import 图，合并为单个经典 defer 脚本，减少扩展页串行加载模块的请求开销。
+ * 只处理静态 import，动态 import() 保持按需单独加载；不用 type="module"（扩展页里模块脚本会被请求两次）。
+ * 不支持默认导入、命名空间导入、re-export 与 export default，出现时直接报错。
  */
+// 用法：node tools/build.js [--watch] [--check] [--verbose]
 
 const fs = require('fs');
 const path = require('path');
@@ -36,8 +15,8 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 
-// ─────────────────────────── 配置 ───────────────────────────
-// 每个目标 = 一个入口 + 一个产物 + 对应页面里的 <script src>。
+// ---------- 配置 ----------
+// 每个目标包含一个入口、一个产物与对应页面里的 <script src>。
 const TARGETS = [
   {
     name: 'main',
@@ -53,7 +32,7 @@ const TARGETS = [
   },
 ];
 
-// ─────────────────────────── 工具 ───────────────────────────
+// ---------- 工具 ----------
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join('/');
 const log = (...a) => console.log(...a);
 
@@ -79,15 +58,15 @@ function snapshotMtimes(dirs, ignore = new Set()) {
 }
 
 /**
- * 把单个模块切成"正文 + 依赖列表"。
+ * 把单个模块切成“正文与依赖列表”。
  *
  * 处理三类语法：
- *   import ... from '...'   → 丢弃整条语句，记录依赖
- *   import '...'            → 丢弃整条语句，记录依赖
- *   export { a, b };        → 丢弃整条语句（只影响对外导出，拼接后不需要）
- *   export <声明>           → 去掉开头的 `export `，正文保留
+ *   import ... from '...'   丢弃整条语句，记录依赖
+ *   import '...'            丢弃整条语句，记录依赖
+ *   export { a, b };        丢弃整条语句（只影响对外导出，拼接后不需要）
+ *   export <声明>           去掉开头的 `export `，正文保留
  *
- * 语句边界用"以分号结尾"判定：本项目的 import/export 语句都写分号，一旦遇到
+ * 语句边界用“以分号结尾”判定：本项目的 import/export 语句都写分号，一旦遇到
  * 不带分号的会直接抛错，而不是猜一个边界把代码切坏。
  */
 function splitModule(src, absPath) {
@@ -98,7 +77,7 @@ function splitModule(src, absPath) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // 1) import：整条丢掉（要求 import 后跟空白/{/*/引号，避免误伤动态 import( 与 import.meta）
+    // 1) import：整条丢掉（要求 import 后跟空白/{/*/引号，避免误伤动态 import( 与 import.meta）。
     if (/^import[\s{*'"]/.test(line)) {
       let stmt = line;
       while (!/;\s*$/.test(stmt)) {
@@ -109,7 +88,7 @@ function splitModule(src, absPath) {
         stmt += '\n' + lines[i];
       }
 
-      // 裸导入 import 'x';
+      // 裸导入（如 import 'x';）整条丢弃。
       const bare = stmt.match(/^\s*import\s*['"]([^'"]+)['"]/);
       if (bare) {
         deps.push({ spec: bare[1] });
@@ -123,7 +102,7 @@ function splitModule(src, absPath) {
       const spec = m[2];
       deps.push({ spec });
 
-      // 默认导入 / 命名空间导入：需要重写绑定，本脚本不支持——报错而不是产出坏文件
+      // 默认导入或命名空间导入需要重写绑定，本脚本不支持，直接报错而不是产出坏文件。
       if (!clause.includes('{')) {
         throw new Error(
           `${rel(absPath)}: 不支持默认导入或命名空间导入（"${clause.trim()}"），请改用命名导入`
@@ -134,7 +113,7 @@ function splitModule(src, absPath) {
         throw new Error(`${rel(absPath)}: 不支持默认导入（"${defaultPart}"），请改用命名导入`);
       }
 
-      // 命名导入：`a` 直接用同名顶层声明；`a as b` 需要补一条改名绑定
+      // 命名导入：`a` 直接用同名顶层声明；`a as b` 需要补一条改名绑定。
       const named = clause.slice(clause.indexOf('{') + 1, clause.lastIndexOf('}'));
       let shims = 0;
       for (const part of named.split(',')) {
@@ -150,7 +129,7 @@ function splitModule(src, absPath) {
       continue;
     }
 
-    // 2) export 列表 / re-export：整条丢掉
+    // 2) export 列表或 re-export：整条丢掉。
     if (/^export[\s{*]/.test(line) && !/^export\s+(?:async\s+)?(?:function|class|const|let|var)\b/.test(line)) {
       let stmt = line;
       while (!/;\s*$/.test(stmt)) {
@@ -170,7 +149,7 @@ function splitModule(src, absPath) {
       continue;
     }
 
-    // 3) export 声明：去掉 export 前缀，正文保留
+    // 3) export 声明：去掉 export 前缀，正文保留。
     body.push(line.replace(/^export\s+(?=(?:async\s+)?(?:function|class|const|let|var)\b)/, ''));
   }
 
@@ -233,7 +212,7 @@ function buildBundle(target) {
     cycles.forEach((c) => log(`      ${c.join(' → ')}`));
   }
 
-  // 顶层重名检测：同名会让单文件版本直接语法报错，或者更糟——静默覆盖。
+  // 顶层重名检测：同名会让单文件版本直接语法报错，甚至静默覆盖。
   const owner = new Map();
   const collisions = [];
   for (const { absPath, body } of order) {
@@ -258,15 +237,15 @@ function buildBundle(target) {
     .digest('hex')
     .slice(0, 16);
   const header = [
-    '// ⚠️ 本文件由 tools/build.js 自动生成，请勿直接编辑。',
-    `// 源码指纹: ${fingerprint}    模块数: ${order.length}`,
-    `// 入口: ${target.entry}`,
+    '// 本文件由 tools/build.js 自动生成，请勿直接编辑。',
+    `// 源码指纹：${fingerprint}    模块数：${order.length}`,
+    `// 入口：${target.entry}`,
     '// 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：',
     '//     node tools/build.js          （或 node tools/build.js --watch）',
     '',
   ].join('\n');
 
-  const parts = order.map(({ absPath, body }) => `// ==== ${rel(absPath)} ====\n${body.trimEnd()}\n`);
+  const parts = order.map(({ absPath, body }) => `// ---------- ${rel(absPath)} ----------\n${body.trimEnd()}\n`);
   const text = header + parts.join('\n');
 
   return { text, order, entryAbs, stamp, fingerprint };
@@ -341,7 +320,7 @@ function runBuild({ check = false, verbose = false } = {}) {
   return failed;
 }
 
-// ─────────────────────────── CLI ───────────────────────────
+// ---------- CLI ----------
 function main() {
   const argv = process.argv.slice(2);
   const check = argv.includes('--check');
@@ -353,7 +332,7 @@ function main() {
 
   if (watch && !check) {
     const watchDirs = [...new Set(TARGETS.map((t) => path.dirname(path.resolve(ROOT, t.entry))))];
-    // 产物本身写在被监听的目录里，必须排除，否则每次构建都会触发下一轮监听
+    // 产物本身写在被监听的目录里，必须排除，否则每次构建都会触发下一轮监听。
     const ignore = new Set(TARGETS.map((t) => path.resolve(ROOT, t.out)));
     log(`\n监听中（${watchDirs.map(rel).join(', ')}）… Ctrl+C 退出`);
     let snap = snapshotMtimes(watchDirs, ignore);

@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 状态栏：日期时间文本与定时刷新，并按壁纸取样亮度自适应文字明暗。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const StatusBarMixin = {
     syncStatusBarUI() {
@@ -108,9 +109,9 @@ export const StatusBarMixin = {
 
             // data: URL 不走 <img>：<img> 是文档资源，在 load 之前起跑会把 window.load
             // 拖到它解码完（实测一张几 MB 的上传壁纸在这里再拖约 330ms）。
-            // 这条路径只要像素 —— ImageBitmap 一样能 drawImage、一样有 width/height，
-            // 而 fetch（含 data: URL）不占文档的 load。HTTP 壁纸仍走 <img>：
-            // 那条路要靠 crossOrigin='anonymous' 才能把像素读进 canvas。
+            // 这条路径只需要像素：ImageBitmap 一样能 drawImage、一样有 width/height，
+            // 而 fetch（含 data: URL）不占文档的 load。HTTP 壁纸仍走 <img>，
+            // 因为只有 crossOrigin='anonymous' 才能把像素读进 canvas。
             if (/^data:/i.test(url)) {
                 fetch(url)
                     .then((res) => res.blob())

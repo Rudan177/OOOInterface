@@ -1,11 +1,7 @@
-// 翻译语言表与解析函数：主页面与侧边栏面板共用（Stage 9）。
-//
-// 此前两侧各存一份表，注释都写着"与主页面保持一致"，实际已经漂移：
-// 侧边栏那份少了 es（西班牙语），导致面板里 /t es 解析不出来。
-// 这里以主页面那份（超集）为准，两侧从此同源。
-//
-// 表只是数据，两处的翻译引擎（Google / Microsoft 直连与代理回退）实现
-// 并不相同，本次**不合并**，仍各留各的。
+/**
+ * 翻译语言表与语言对解析函数，主页面与侧边栏面板共用同一份数据来源。
+ * 只共享语言数据；两侧的翻译引擎（Google / Microsoft 直连与代理回退）实现不同，仍各自保留。
+ */
 
 export const TRANSLATE_LANGUAGES = [
     { key: 'auto', label: '自动检测', aliases: ['auto', 'a', '自动'], g: 'auto', m: 'auto-detect' },
@@ -25,14 +21,14 @@ export const TRANSLATE_LANGUAGES = [
     { key: 'ar', label: '阿拉伯语', aliases: ['ar', '阿'], g: 'ar', m: 'ar' }
 ];;
 
-// 把 'sc' / 'zh-cn' / '简体' 之类的写法解析成语言表条目；认不出返回 null
+// 把 'sc' / 'zh-cn' / '简体' 之类的写法解析成语言表条目，认不出返回 null。
 export function resolveTranslateLanguage(rawCode) {
     const code = (rawCode || '').toLowerCase().trim();
     if (!code) return null;
     return TRANSLATE_LANGUAGES.find(entry => entry.key === code || entry.aliases.includes(code)) || null;
 }
 
-// 解析语言对文本：'sc-jp'（省略源语言则为 'jp'，默认源语言 auto）
+// 解析语言对文本：'sc-jp'（省略源语言则为 'jp'，默认源语言 auto）。
 export function resolveLanguagePair(pairText) {
     const parts = (pairText || '').toLowerCase().split('-').filter(Boolean);
     if (parts.length === 0) return null;

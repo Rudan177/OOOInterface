@@ -1,4 +1,6 @@
-// welc 页面核心文字内容配置
+/**
+ * 欢迎页面的核心文字内容配置。
+ */
 var WELC_CONTENT = {
     // 闪屏
     splashTitle: 'OOOInterface',

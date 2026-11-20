@@ -27,7 +27,7 @@
 
         <!-- 小组件（与主页面小组件面板同一套组件与配置）。
              内层 qa-panel-widgets-scroll 负责滚动：外层保留 10px 内边距，
-             使滚动裁切始终发生在距底边 10px 处——下边距在任何滚动位置都恒定 -->
+             使滚动裁切始终发生在距底边 10px 处——下边距在任何滚动位置都恒定。 -->
         <div class="qa-panel-widgets" id="qa-panel-widgets">
             <div class="qa-panel-widgets-scroll" id="qa-widgets-scroll">
                 <div class="widget-panel-grid" id="qa-widgets-grid"></div>
@@ -50,7 +50,7 @@
 
         <!-- 内置页浏览器：开启「内置页打开」后，搜索/访问的网页在此以 iframe 展示。
              顶部为操作控件（Home / Back / Next / 网址栏），下方为圆角浮动卡片，
-             开启时替代原本的小组件 / 快速访问链接区域 -->
+             开启时替代原本的小组件 / 快速访问链接区域。 -->
         <div class="qa-panel-browser" id="qa-panel-browser" aria-hidden="true">
             <div class="qa-browser-toolbar" id="qa-browser-toolbar">
                 <button class="qa-browser-btn" id="qa-browser-home" type="button" title="返回默认视图">
@@ -76,7 +76,7 @@
             <div class="qa-browser-card" id="qa-browser-card">
                 <!-- sandbox 有意省略 allow-top-navigation：阻止站点用 JS 帧破坏脚本
                      （top.location = self.location）把整个侧边栏劫持跳转；
-                     其余令牌尽量放开以保证页面功能正常 -->
+                     其余令牌尽量放开以保证页面功能正常。 -->
                 <iframe id="qa-browser-frame" class="qa-browser-frame" src="about:blank"
                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock allow-presentation allow-storage-access-by-user-activation"
                     title="内置页浏览器"></iframe>

@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 搜索框翻译：语言对与历史解析、`/t` 与 `/w` 命令、Google/Bing 请求及代理回退。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 import { ProxyManager } from '../proxy.js';
 import { TRANSLATE_LANGUAGES } from '../translate-shared.js';
@@ -234,7 +235,7 @@ export const TranslateMixin = {
         const code = (rawCode || '').toLowerCase().trim();
         if (!code) return null;
 
-        // 语言表已提取到 translate-shared.js，与侧边栏面板共用（Stage 9）
+        // 语言表在 translate-shared.js 中定义，与侧边栏面板共用。
         return TRANSLATE_LANGUAGES.find(entry => entry.key === code || entry.aliases.includes(code)) || null;
     },
     async translateText(text, fromEntry, toEntry) {
@@ -326,7 +327,7 @@ export const TranslateMixin = {
             }
             throw new Error('Microsoft 翻译结果解析失败');
         } catch (err) {
-            // 凭证失效等情况：强制刷新一次后重试
+            // 凭证失效等情况：强制刷新一次后重试。
             if (!forceNewAuth) {
                 return await this.fetchBingTranslate(text, fromCode, toCode, true);
             }

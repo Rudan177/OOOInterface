@@ -16,7 +16,7 @@
     <!-- 图标字体（Material Icons / Material Symbols）不在这里写死：
          它们是渲染阻塞资源，字体 CDN 一慢整页零绘制（实测拖 5 秒 → 3 秒内连
          DOMContentLoaded 都到不了）。改由上面那行 font-loader.js 在解析到这附近时
-         用 appendChild 插进来 —— 脚本插入的样式表**不参与渲染阻塞**，首屏不等它，
+         用 appendChild 插进来 —— 脚本插入的样式表不参与渲染阻塞，首屏不等它，
          而请求该什么时候发还是什么时候发（实测解析到脚本标签即发出，t≈40ms，
          与原来那条阻塞 <link> 一样早、同为 VeryHigh 优先级）。
          字形到位前由 styles.css 里那条 html:not(.icons-ready) 规则留白。 -->
@@ -28,7 +28,7 @@
     <div id="status-bar-blur" class="status-bar-blur"></div>
 
     <!-- 当前壁纸的格式角标（HDR / 实况照片），内容由 updateWallpaperFormatCorner() 填。
-         必须是 body 的直接子元素：position: fixed 一旦被带 transform/filter 的祖先包住就退化 -->
+         必须是 body 的直接子元素：position: fixed 一旦被带 transform/filter 的祖先包住就退化。 -->
     <div id="wallpaper-format-corner" class="wallpaper-format-corner"></div>
 
     <div class="container">
@@ -89,7 +89,7 @@
                 <div id="info-indicator" class="info-indicator"></div>
             </div>
 
-            <!-- OCP 播控：hover 底部铭牌时显示的媒体播控（需在设置开启“OCP播控”，且 OCP 已开始播放）。
+            <!-- OCP 播控：hover 底部铭牌时显示的媒体播控（需在设置开启“OCP 播控”，且 OCP 已开始播放）。
                  定位壳常驻不拦截指针，卡片显隐由 .show 类驱动；不可放进铭牌内部（铭牌文本切换会重建 innerHTML）。
                  封面 / 曲名 / 艺术家均取自音源文件（见 loadOcpTrackMeta），此处文案只是读取完成前的占位。 -->
             <div id="ocp-player-popover" class="ocp-player-popover" aria-hidden="true">
@@ -442,8 +442,6 @@
                             </div>
                         </div>
 
-
-
                         <div class="setting-group">
                             <div class="switch-label">
                                 <span class="setting-label">固定侧边栏</span>
@@ -723,7 +721,7 @@
                     </div>
                 </div>
                 </div>
-                <!-- 手机端专用按钮容器（JS动态移入） -->
+                <!-- 手机端专用按钮容器（JS 动态移入） -->
                 <div id="mobile-buttons-container"></div>
             </div>
         </div>

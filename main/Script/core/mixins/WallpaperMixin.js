@@ -1,6 +1,8 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 壁纸系统：上传与格式识别（HDR、实况照片）、存储压缩、主页面与壁纸模式的渲染切换，
+ * 以及必应壁纸与在线高清版探测。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 import { ProxyManager } from '../proxy.js';
 import { afterLoad, afterIdle } from '../first-paint.js';
@@ -18,24 +20,24 @@ import {
     FORMAT_RULE_VERSION,
 } from '../wallpaper-formats.js';
 
-// 普通图片会被压缩到 1280px/q0.5，10MB 进去也够用；
+// 普通图片会被压缩到 1280px/q0.5，10 MB 进去也够用；
 // HDR 与实况照片要原样保留（重编码会抹掉增益图、10bit 色彩和内嵌视频），
-// 体积没法指望压缩兜底，上限放宽到 24MB。
+// 体积没法指望压缩兜底，上限放宽到 24 MB。
 const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_PRESERVE_FILE_SIZE = 24 * 1024 * 1024;
 
-// 存库前把普通图片压到这一档。单张上传此前是**原样存文件字节**：一张 2606x1440 的
-// PNG 进去就是 4.72MB base64。而整份 settings 是单一的 chrome.storage.local 键，
-// 于是读（6ms/MB）、结构化克隆（2ms/MB）、以及把当前壁纸当背景画出来（19ms/MB）
+// 存库前把普通图片压到这一档。单张上传此前是原样存文件字节：一张 2606x1440 的
+// PNG 进去就是 4.72 MB 的 base64。而整份 settings 是单一的 chrome.storage.local 键，
+// 于是读（6 ms/MB）、结构化克隆（2 ms/MB）、以及把当前壁纸当背景画出来（19 ms/MB）
 // 全都随壁纸库体积线性变慢。
-// 实测同一张真照片：原样 4.72MB → 2560px/q0.85 是 0.38MB（12×），满屏铺开看不出差别；
-// 3 张的库启动 load 从 832ms 掉到 ~350ms 档。
+// 实测同一张真照片：原样 4.72 MB → 2560px/q0.85 是 0.38 MB（12×），满屏铺开看不出差别；
+// 3 张的库启动 load 从 832 ms 掉到 ~350 ms 档。
 // 系列导入仍走 1280px/q0.5（见 prepareSeriesWallpaper）：那是一次几十张的批量导入，
 // 体积优先。两条路用途不同，参数也就不同。
 const WALLPAPER_MAX_DIMENSION = 2560;
 const WALLPAPER_COMPRESS_QUALITY = 0.85;
 
-// 小于这个体积（data URL 字符数）的壁纸不值得重编码一次 —— 省不下多少，
+// 小于这个体积（data URL 字符数）的壁纸不值得重编码一次，省不下多少，
 // 还可能压完反而更大。
 const WALLPAPER_SHRINK_MIN_CHARS = 700 * 1024;
 
@@ -49,7 +51,7 @@ const WALLPAPER_COMPRESS_VERSION = 1;
 const SHRINK_DECLINE_KEY = 'oooWallpaperShrinkDeclined';
 
 // Chrome 桌面端能直接塞进 background-image 的容器。
-// HEIC/HEIF 不在其中 —— 苹果与华为的 HDR 照片大多就是这个容器，
+// HEIC/HEIF 不在其中，苹果与华为的 HDR 照片大多就是这个容器，
 // 没有 WASM 解码器（manifest CSP 是 script-src 'self'）只能识别不能渲染。
 const RENDERABLE_CONTAINERS = ['jpeg', 'png', 'webp', 'gif', 'bmp', 'avif'];
 
@@ -78,10 +80,10 @@ function isAnimatedContainer(bytes, container) {
     return false;
 }
 
-// 方框的 tooltip：写清楚是哪家的实况照片、视频是内嵌还是另存
+// 方框的 tooltip：写清楚是哪家的实况照片、视频是内嵌还是另存。
 function describeLiveFormat(live) {
     // generic 是「认不出厂商但结构上确实带一段内嵌视频」，短码留空，
-    // 拼出来就是干净的「实况照片」而不是「实况照片实况照片」
+    // 拼出来就是干净的「实况照片」而不是「实况照片实况照片」。
     const parts = [(LIVE_VENDOR_SHORT[live.vendor] || '') + '实况照片'];
     if (live.source === 'external') parts.push('视频单独存储');
     else if (live.source === 'embedded') parts.push('视频内嵌于原图');
@@ -91,7 +93,7 @@ function describeLiveFormat(live) {
 }
 
 // 上传成功后的通知后缀，如「（HDR10 · 安卓实况照片）」。
-// 用方框上的短码而不是 hdr.detail —— detail 自己带全角括号，
+// 用方框上的短码而不是 hdr.detail，detail 自己带全角括号，
 // 套进这里的括号会变成「（HDR10（BT.2020 + PQ））」这种双层括号。
 // 完整说明在方框的 tooltip 里，通知只报「是什么」。
 function describeWallpaperFormat(format) {
@@ -102,16 +104,16 @@ function describeWallpaperFormat(format) {
     return tags.length ? `（${tags.join(' · ')}）` : '';
 }
 
-// ==================== 方框上的 Material 图标 ====================
+// ---------- 方框上的 Material 图标 ----------
 //
 // 取自 Material Symbols Rounded（Apache-2.0）。CSP 是 script-src 'self'，
 // 引不了 CDN；图标字体要多挂一次网络请求、还得处理字形没到时的空白，
-// 而这里只要 4 个字形，直接把 path 内联进 DOM 最省事 —— <svg>/<path> 是
+// 而这里只要 4 个字形，直接把 path 内联进 DOM 最省事，<svg>/<path> 是
 // 普通元素不是脚本，不受 CSP 限制。
 // viewBox 是 Material Symbols 的 960 网格（不是老 Material Icons 的 24 网格）。
 const MD_ICON_VIEWBOX = '0 -960 960 960';
 const MD_ICON_PATHS = {
-    // 开：hdr_on / motion_photos_on；关：hdr_off / motion_photos_off（带斜杠划掉）
+    // 开：hdr_on、motion_photos_on；关：hdr_off、motion_photos_off（带斜杠划掉）。
     hdr: {
         on: 'M640-390v-180q0-13 8.5-21.5T670-600h110q24 0 42 18t18 42v40q0 23-10.5 35.5T804-444l20 46q6 14-2 26t-24 12q-8 0-15-4t-10-12l-29-64h-44v50q0 13-8.5 21.5T670-360q-13 0-21.5-8.5T640-390Zm60-110h80v-40h-80v40Zm-520 40v70q0 13-8.5 21.5T150-360q-13 0-21.5-8.5T120-390v-180q0-13 8.5-21.5T150-600q13 0 21.5 8.5T180-570v50h80v-50q0-13 8.5-21.5T290-600q13 0 21.5 8.5T320-570v180q0 13-8.5 21.5T290-360q-13 0-21.5-8.5T260-390v-70h-80Zm340 100H410q-13 0-21.5-8.5T380-390v-180q0-13 8.5-21.5T410-600h110q24 0 42 18t18 42v120q0 24-18 42t-42 18Zm-80-60h80v-120h-80v120Z',
         off: 'M763-85 84-764q-11-11-11.5-27.5T84-820q11-11 28-11t28 11l680 678q12 12 11.5 28T820-86q-12 12-28.5 12.5T763-85Zm-63-355v66l-60-60v-136q0-13 8.5-21.5T670-600h110q24 0 42 18t18 42v40q0 18-10.5 32.5T804-444l20 46q6 14-2 26t-24 12q-8 0-15-4t-10-12l-29-64h-44Zm0-60h80v-40h-80v40Zm-120 6L474-600h46q24 0 42 18t18 42v46Zm-400 34v70q0 13-8.5 21.5T150-360q-13 0-21.5-8.5T120-390v-180q0-13 8.5-21.5T150-600q13 0 21.5 8.5T180-570v50h80v-50q0-13 8.5-21.5T290-600q13 0 21.5 8.5T320-570v180q0 13-8.5 21.5T290-360q-13 0-21.5-8.5T260-390v-70h-80Zm200-64 60 60v44h45l55 56q-5 2-10 3t-10 1H410q-13 0-21.5-8.5T380-390v-134Z',
@@ -137,11 +139,11 @@ function buildMdIcon(kind, enabled) {
     return svg;
 }
 
-// 纯图标方框的读屏名
+// 纯图标方框的读屏名。
 const FORMAT_BADGE_LABELS = { hdr: 'HDR 兼容', live: '实况照片播放' };
 
-// 方框本体：一枚纯图标开关按钮，开/关两态都从 enabled 现算。
-// 方框上不放文字（省下横向空间给壁纸名），也不放 title —— 悬停弹出的
+// 方框本体：一枚纯图标开关按钮，开、关两态都从 enabled 现算。
+// 方框上不放文字（省下横向空间给壁纸名），也不放 title，悬停弹出的
 // 那串说明文字是浏览器系统级提示，按需求一律不要。
 // 语义只剩 aria-label（读屏短名）：图标没了文字，读屏就再也读不出它是什么。
 function buildFormatBadge(kind, format) {
@@ -156,7 +158,7 @@ function buildFormatBadge(kind, format) {
     return btn;
 }
 
-// 就地翻状态，不重建整个菜单 —— 菜单是同步渲染的，重建会顺带把滚动位置丢掉
+// 就地翻状态，不重建整个菜单，菜单是同步渲染的，重建会顺带把滚动位置丢掉。
 function syncFormatBadge(btn, kind, enabled) {
     btn.classList.toggle('off', !enabled);
     btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
@@ -168,7 +170,7 @@ export const WallpaperMixin = {
     async handleWallpaperUpload(file) {
         if (!file) return;
 
-        // 不信 file.type：Chrome 对 .heic / .livp 给不出可靠 MIME，
+        // 不信 file.type：Chrome 对 .heic、.livp 给不出可靠 MIME，
         // 而这两个恰好是本次要兼容的主力容器。改按扩展名 + 容器魔数判。
         if (!isSupportedWallpaperFile(file)) {
             this.showNotification('请上传图片文件');
@@ -240,7 +242,7 @@ export const WallpaperMixin = {
         this.settings.persistentWallpaper = true;
 
         // 先更新自定义壁纸列表（创建 option），再设置选中值，
-        // 否则 option 尚不存在，赋值不会生效
+        // 否则 option 尚不存在，赋值不会生效。
         this.updateCustomWallpapersList();
 
         const wallpaperSelect = document.getElementById('wallpaper-select');
@@ -248,14 +250,14 @@ export const WallpaperMixin = {
             wallpaperSelect.value = wallpaperName;
         }
 
-        // 自定义壁纸上传必然与主题壁纸不一致
+        // 自定义壁纸上传必然与主题壁纸不一致。
         this.checkThemeConsistency('wallpaper', wallpaperData);
 
         this.applySettings();
         this.saveSettings();
         this.showNotification(`壁纸"${wallpaperName}"上传${describeWallpaperFormat(format)}`);
 
-        // 刷新右侧面板菜单（如果打开）
+        // 刷新右侧面板菜单（如果打开）。
         const rightPanelUpper = document.getElementById('right-panel-upper');
         if (rightPanelUpper && rightPanelUpper.querySelector('.settings-menu-container')) {
             const selected = document.getElementById('wallpaper-select-selected');
@@ -264,17 +266,17 @@ export const WallpaperMixin = {
             this.showSettingsMenuInRightPanel(items, selected, hiddenSelect);
         }
     },
-    // ==================== 壁纸格式（HDR / 实况照片）====================
+    // ---------- 壁纸格式（HDR、实况照片） ----------
     //
     // 判定在 main/Script/core/wallpaper-formats.js 里做（纯字节解析），
-    // 这里只负责把判定结果接进「存储 / 渲染 / 界面」三条链。
+    // 这里只负责把判定结果接进「存储、渲染、界面」三条链。
 
     // 存库前的压缩。返回可直接落盘的 data URL。
-    // 三种情况原样存：
-    //   1. HDR / 实况照片 —— canvas 重编码会把增益图、10bit 色彩和内嵌视频一起抹掉；
-    //   2. Chrome 渲染不了的容器（HEIC 等）—— 没得压，只能原样留着（现状行为）；
-    //   3. 会动的（GIF / 动态 WebP / 动态 AVIF）—— canvas 只画第一帧，压完动画就没了；
-    //   4. 压完反而更大 —— 本来就很小的图不该被重新编码一遍。
+    // 四种情况原样存：
+    //   1. HDR、实况照片，canvas 重编码会把增益图、10bit 色彩和内嵌视频一起抹掉；
+    //   2. Chrome 渲染不了的容器（HEIC 等），没得压，只能原样留着（现状行为）；
+    //   3. 会动的（GIF、动态 WebP、动态 AVIF），canvas 只画第一帧，压完动画就没了；
+    //   4. 压完反而更大，本来就很小的图不该被重新编码一遍。
     async shrinkWallpaperForStorage(bytes, format) {
         const container = sniffContainer(bytes);
         const mime = mimeForContainer(container);
@@ -323,9 +325,9 @@ export const WallpaperMixin = {
         }
     },
 
-    // data URL 整段解成字节。回填识别走这里（不再有「只解头部 128KB」那条快路径：
+    // data URL 整段解成字节。回填识别走这里（不再有「只解头部 128 KB」那条快路径：
     // base64 每 3 字节编成 4 个字符，切一段出来还要对齐 4 的整数倍，而手机厂商的判据
-    // 完全可能落在尾部 —— 省下的那几毫秒不值得拿「判错并永久冻住」去换）。
+    // 完全可能落在尾部，省下的那几毫秒不值得拿「判错并永久冻住」去换）。
     dataUrlBytes(dataUrl) {
         if (typeof dataUrl !== 'string') return null;
         const comma = dataUrl.indexOf(',');
@@ -343,19 +345,19 @@ export const WallpaperMixin = {
 
     // 这张壁纸要不要（重新）识别格式。两类要：从没识别过的；识别过但什么都没认出来、
     // 而且是旧规则判的（缺 v 或 v 落后于当前 FORMAT_RULE_VERSION）。
-    // 用户手动关掉方框**不算**「没认出来」：那种条目的 hdr / live 仍在，不会走到这里，
+    // 用户手动关掉方框不算「没认出来」：那种条目的 hdr、live 仍在，不会走到这里，
     // 重判也就不会把开关掰回开启。
     wallpaperFormatNeedsDetect(wp) {
         if (!wp || !wp.data) return false;
         const f = wp.format;
         if (!f) return true;
-        // 已经认出东西的，尊重现有判定：开关（enabled）是用户意图，不能被重判抹掉
+        // 已经认出东西的，尊重现有判定：开关（enabled）是用户意图，不能被重判抹掉。
         if (f.hdr || f.live) return false;
         return f.v !== FORMAT_RULE_VERSION;
     },
 
     // Apple .livp：包内一对 heic + mov。静帧是 HEIC，Chrome 桌面端渲染不了，
-    // 而实况视频本身是可解码的 —— 退一步用视频首帧当底图。
+    // 而实况视频本身是可解码的，退一步用视频首帧当底图。
     async unpackLivePhoto(bytes, format) {
         const entries = readZipEntries(bytes);
         const movEntry = entries.find(e => /\.(mov|mp4)$/i.test(e.name));
@@ -411,8 +413,8 @@ export const WallpaperMixin = {
         format.live.length = null;
     },
 
-    // 系列导入的单张处理。普通图沿用 1280px / q0.5 压缩；
-    // HDR 与实况照片原样保留 —— canvas 重编码会把增益图、10bit 色彩和内嵌视频全抹掉。
+    // 系列导入的单张处理。普通图沿用 1280px、q0.5 压缩；
+    // HDR 与实况照片原样保留，canvas 重编码会把增益图、10bit 色彩和内嵌视频全抹掉。
     async prepareSeriesWallpaper(file, name, maxDim, quality) {
         const bytes = new Uint8Array(await file.arrayBuffer());
         const format = detectWallpaperFormat(bytes);
@@ -469,7 +471,7 @@ export const WallpaperMixin = {
         });
     },
 
-    // 右侧面板壁纸条目里、删除按钮左侧的那两个方框（可点击的兼容开关）
+    // 右侧面板壁纸条目里、删除按钮左侧的那两个方框（可点击的兼容开关）。
     buildWallpaperFormatBadges(wp) {
         const format = wp && wp.format;
         if (!format) return null;
@@ -496,7 +498,7 @@ export const WallpaperMixin = {
 
     // 右上角的当前壁纸格式角标（主页面与壁纸模式都看得到）。
     //
-    // 它是指示灯不是开关 —— 开关在壁纸列表的方框上，所以这里既不响应点击也不改字节。
+    // 它是指示灯不是开关，开关在壁纸列表的方框上，所以这里既不响应点击也不改字节。
     // 显隐全交给 CSS：这里只写每枚图标该在哪个范围出现（data-scope），
     // body.scrolled 的进/出因此不必在每条路径上重算，CSS 自己就跟上了。
     updateWallpaperFormatCorner() {
@@ -504,20 +506,20 @@ export const WallpaperMixin = {
         if (!box) return;
         box.innerHTML = '';
 
-        // 只报「当前正在用的这张」：默认 / 必应 / URL 壁纸都没有 format，自然什么都不显示
+        // 只报「当前正在用的这张」：默认、必应、URL 壁纸都没有 format，自然什么都不显示。
         const wp = (this.settings.customWallpapers || []).find(w => w.data === this.settings.wallpaper);
         const format = wp && wp.format;
         if (!format) return;
 
         const add = (kind, on, onHomepage) => {
-            // 总开关关掉 → 不出现；这张壁纸的方框被用户关过（isHdrEnabled / isLiveEnabled）
-            // → 也不出现：角标不能声称一件已经关掉的事
+            // 总开关关掉 → 不出现；这张壁纸的方框被用户关过（isHdrEnabled、isLiveEnabled）
+            // → 也不出现：角标不能声称一件已经关掉的事。
             if (!on) return;
             if (kind === 'hdr' ? !isHdrEnabled(format) : !isLiveEnabled(format)) return;
 
             const chip = document.createElement('span');
             chip.className = 'wallpaper-format-corner-badge ' + kind;
-            // home = 主页面与壁纸模式都显示；wallpaper = 只在壁纸模式（body.scrolled）显示
+            // home = 主页面与壁纸模式都显示；wallpaper = 只在壁纸模式（body.scrolled）显示。
             chip.dataset.scope = onHomepage ? 'home' : 'wallpaper';
             chip.setAttribute('role', 'img');
             chip.setAttribute('aria-label', kind === 'hdr' ? '当前壁纸支持 HDR' : '当前壁纸是实况照片');
@@ -533,7 +535,7 @@ export const WallpaperMixin = {
     //
     // 关掉 HDR 必须真的做点什么：判定是在导入那一刻现算的（detectWallpaperFormat 每次
     // 对新文件重新跑，认不出「这张图的开关被关过」），光记一个 enabled=false 的话
-    // 用户点了方框什么都看不到。所以这里直接把这张壁纸转存成普通 SDR 图 ——
+    // 用户点了方框什么都看不到。所以这里直接把这张壁纸转存成普通 SDR 图，
     // 也顺手给了「HDR 图在我这块屏上发灰」一条出路。原件留在 format.hdr.sourceData，
     // 再点一次原样还原，不可逆的事一件都不做。
     async toggleWallpaperFormat(wp, kind, btn) {
@@ -552,7 +554,7 @@ export const WallpaperMixin = {
                 if (btn) btn.disabled = false;
             }
             if (!changed) {
-                // 转不了（HEIC 这类 Chrome 自己解不开的容器）就原样不动，开关回滚
+                // 转不了（HEIC 这类 Chrome 自己解不开的容器）就原样不动，开关回滚。
                 if (btn) syncFormatBadge(btn, 'hdr', isHdrEnabled(format));
                 this.showNotification(`"${name}"无法转成 SDR，HDR 兼容保持开启`);
                 return;
@@ -563,7 +565,7 @@ export const WallpaperMixin = {
 
         if (kind === 'live') {
             if (!enabled) {
-                // 只收「当前正在放的这张」；在别人的菜单项上点关闭不该打断正在放的实况
+                // 只收「当前正在放的这张」；在别人的菜单项上点关闭不该打断正在放的实况。
                 if (this.settings.wallpaper === wp.data) this.stopLiveWallpaper();
             } else if (this.settings.wallpaper === wp.data) {
                 this.playLiveWallpaper(wp);
@@ -572,7 +574,7 @@ export const WallpaperMixin = {
 
         if (btn) syncFormatBadge(btn, kind, enabled);
         this.saveSettings();
-        // 方框关掉/开回会改变「当前壁纸是不是 HDR / 实况」，右上角角标要跟着
+        // 方框关掉或开回会改变「当前壁纸是不是 HDR、实况」，右上角角标要跟着。
         this.updateWallpaperFormatCorner();
 
         if (kind === 'live') this.showNotification(`已${enabled ? '开启' : '关闭'}"${name}"的实况播放`);
@@ -580,7 +582,7 @@ export const WallpaperMixin = {
         else this.showNotification(`已将"${name}"转存为普通 SDR 图（原图已保留）`);
     },
 
-    // HDR 关：canvas 重编码成 8bit JPEG。尺寸不缩 —— 这毕竟是张壁纸，
+    // HDR 关：canvas 重编码成 8bit JPEG。尺寸不缩，这毕竟是张壁纸，
     // 只是不要 HDR，不该顺带降分辨率。
     async convertWallpaperToSdr(wp) {
         const format = wp.format;
@@ -595,13 +597,13 @@ export const WallpaperMixin = {
                 new File([bytes], (wp.name || 'wallpaper') + '.jpg', { type: 'image/jpeg' }),
                 100000, 100000, 0.92);
         } catch (e) {
-            // Chrome 解不开这个容器（HEIC/HEIF），没法转
+            // Chrome 解不开这个容器（HEIC、HEIF），没法转。
             return false;
         }
         if (!sdrData || sdrData === oldData) return false;
 
         // 重编码会把「图片字节后面接着的那段实况视频」一起抹掉，先单独切出来另存，
-        // 否则关掉 HDR 会把同一张图上的实况一起弄没
+        // 否则关掉 HDR 会把同一张图上的实况一起弄没。
         if (format.live && format.live.source === 'embedded') {
             const videoBytes = extractLiveVideo(this.dataUrlToBytes(oldData), format.live);
             if (videoBytes && videoBytes.length) {
@@ -638,10 +640,10 @@ export const WallpaperMixin = {
         }
     },
 
-    // ==================== 存量库的一次性重编码 ====================
+    // ---------- 存量库的一次性重编码 ----------
     //
-    // 老用户的库里存的还是**原图字节**（一张 2606x1440 的 PNG 就是 4.72MB base64）。
-    // 光改上传路径对他们毫无作用 —— 而「加载慢」的正是这批人。用
+    // 老用户的库里存的还是原图字节（一张 2606x1440 的 PNG 就是 4.72 MB base64）。
+    // 光改上传路径对他们毫无作用，而「加载慢」的正是这批人。用
     // WALLPAPER_COMPRESS_VERSION 当凭据，改参数 bump 一下就重跑。
     //
     // 挂在 afterLoad 之后、一条一条地跑：这条路要解码几十 MB 的图再重编码，
@@ -654,11 +656,11 @@ export const WallpaperMixin = {
         if (String(declined) === String(WALLPAPER_COMPRESS_VERSION)) return;
 
         // 两层推迟：先等 load，再等浏览器真有空。这段要解每张大壁纸的字节去判格式，
-        // 是纯维护性开销 —— 实测它值 200ms 左右的主线程长任务，压在启动那段最亏。
+        // 是纯维护性开销，实测它值 200 ms 左右的主线程长任务，压在启动那段最亏。
         afterLoad(() => afterIdle(async () => {
             const pending = await this.shrinkCandidates();
             if (!pending.length) {
-                // 没得压也把版本号记上，免得每次启动都白跑一遍扫描
+                // 没得压也把版本号记上，免得每次启动都白跑一遍扫描。
                 this.settings.wallpaperCompressVersion = WALLPAPER_COMPRESS_VERSION;
                 this.saveSettings();
                 return;
@@ -668,18 +670,18 @@ export const WallpaperMixin = {
         }, 4000));
     },
 
-    // 会被压的条目：体积够大、而且不是 HDR / 实况照片。
-    // HDR / 实况那两张的重编码是不可逆的损失（增益图、10bit 色彩、内嵌视频），
+    // 会被压的条目：体积够大、而且不是 HDR、实况照片。
+    // HDR、实况那两张的重编码是不可逆的损失（增益图、10bit 色彩、内嵌视频），
     // 所以既不能压、也不该算进「会省下多少」里，否则用户以为原图没了。
     async shrinkCandidates() {
         const out = [];
         for (const wp of (this.settings.customWallpapers || [])) {
             if (!wp || !wp.data || wp.data.length < WALLPAPER_SHRINK_MIN_CHARS) continue;
             if (mustPreserveBytes(wp.format)) continue;
-            // format 可能还没判过（回填只在打开壁纸菜单时才跑）。这里判一次 ——
+            // format 可能还没判过（回填只在打开壁纸菜单时才跑）。这里判一次，
             // 不判就压，等于把一张还没认出来的 HDR 原图直接重编码了。
-            // 解码走异步那条（见 dataUrlBytesAsync）：atob 一张 13MB 的 data URL
-            // 实测要 ~150ms 且全堵在主线程上，而这里可能一次要判好几张。
+            // 解码走异步那条（见 dataUrlBytesAsync）：atob 一张 13 MB 的 data URL
+            // 实测要 ~150 ms 且全堵在主线程上，而这里可能一次要判好几张。
             if (this.wallpaperFormatNeedsDetect(wp)) {
                 const bytes = await this.dataUrlBytesAsync(wp.data);
                 if (bytes) {
@@ -693,8 +695,8 @@ export const WallpaperMixin = {
         return out;
     },
 
-    // data URL → 字节，且**不在主线程上解 base64**。
-    // 迁移和格式判定都要这份字节，而 atob(13MB) 再加一趟逐字符搬进 Uint8Array 是两次
+    // data URL → 字节，而且不在主线程上解 base64。
+    // 迁移和格式判定都要这份字节，而 atob(13 MB) 再加一趟逐字符搬进 Uint8Array 是两次
     // 全量遍历。fetch 一条 data: URL 会把解码交给浏览器自己的网络栈，主线程只等结果。
     // 拿不到（理论上不会）就退回原来那条同步的路。
     async dataUrlBytesAsync(dataUrl) {
@@ -708,7 +710,7 @@ export const WallpaperMixin = {
     },
 
     // 不可逆（原图只剩压缩后的版本），所以先问一次。用的是设置页那套
-    // .confirm-overlay / .confirm-dialog 的样式，不自造一套。
+    // .confirm-overlay、.confirm-dialog 的样式，不自造一套。
     showShrinkConfirmation(count, chars, onConfirm) {
         const overlay = document.createElement('div');
         overlay.className = 'confirm-overlay';
@@ -748,8 +750,8 @@ export const WallpaperMixin = {
         document.body.appendChild(overlay);
         requestAnimationFrame(() => overlay.classList.add('show'));
 
-        // 点空白处也算「现在不做」，同样要记下来。不记的话这次询问会**在每个新标签页
-        // 重来一次**：一个全屏 .confirm-overlay（开了动态模糊时还挂 backdrop-filter）
+        // 点空白处也算「现在不做」，同样要记下来。不记的话这次询问会在每个新标签页
+        // 重来一次：一个全屏 .confirm-overlay（开了动态模糊时还挂 backdrop-filter）
         // 盖着整页，而它前面的 shrinkCandidates() 还要把每张大壁纸的 base64 解一遍。
         // 用户会看到的现象就是「每开一个新标签页都慢、都糊一下」。
         overlay.addEventListener('click', (e) => {
@@ -787,7 +789,7 @@ export const WallpaperMixin = {
                     after = await this.shrinkWallpaperForStorage(bytes, wp.format);
                 }
             } catch (e) {
-                after = null;   // 单张失败不影响其余
+                after = null; // 单张失败不影响其余
             }
             if (after && after.length < wp.data.length) {
                 // 活动壁纸存的就是同一条数据（settings.wallpaper 对自定义壁纸直接存
@@ -799,7 +801,7 @@ export const WallpaperMixin = {
                 wp.data = after;
                 shrunkCount++;
             }
-            // 每张之间让出主线程，而且要真的让出**一段空闲**：setTimeout(0) 只是把任务
+            // 每张之间让出主线程，而且要真的让出一段空闲：setTimeout(0) 只是把任务
             // 排到队列尾部，紧接着又是一条几百毫秒的长任务，中间那一下用户什么也做不了。
             // requestIdleCallback 会把这一张和下一张之间的间隙还给浏览器。
             await new Promise((r) => {
@@ -822,22 +824,22 @@ export const WallpaperMixin = {
     },
 
     // 打开壁纸菜单时把该重判的条目重判一遍。两类会走到这里：
-    //   1）本次改动之前上传的、压根没有 format 字段的老壁纸；
-    //   2）识别规则升级（FORMAT_RULE_VERSION 变了）之前判过、而且当时什么都没认出来的 ——
+    //   1. 本次改动之前上传的、压根没有 format 字段的老壁纸；
+    //   2. 识别规则升级（FORMAT_RULE_VERSION 变了）之前判过、而且当时什么都没认出来的，
     //      华为 HDR 就是这么漏的：旧规则只认 XMP，那个文件通篇没 XMP，被判成 { hdr: null }，
     //      而「只在缺 format 时才补判」的写法会整个绕过它，于是方框永远不出现。
-    // 已经认出 hdr / live 的条目一律不重判，方框上的开关（用户意图）因此不会被覆盖。
+    // 已经认出 hdr、live 的条目一律不重判，方框上的开关（用户意图）因此不会被覆盖。
     // 刻意做成同步的：菜单渲染是同步的，异步回填要么闪烁要么得处理重入。
-    // 落盘则推迟到菜单画完之后（见 scheduleWallpaperFormatSave）——那一步才是真正的大头。
+    // 落盘则推迟到菜单画完之后（见 scheduleWallpaperFormatSave），那一步才是真正的大头。
     backfillWallpaperFormats() {
         const pending = (this.settings.customWallpapers || []).filter(wp => this.wallpaperFormatNeedsDetect(wp));
         if (!pending.length) return;
 
         let changed = false;
         for (const wp of pending) {
-            // 整段判，不做「先切 128KB 头部试试」那种省法：厂商的判据可能整段落在尾部
+            // 整段判，不做「先切 128 KB 头部试试」那种省法：厂商的判据可能整段落在尾部
             // （华为动图的视频线索、.livp 的 ZIP 中央目录都在文件末尾），只看头部会得出
-            // marker-only 甚至「没有实况」，而结论一旦落盘就带着规则版本号不会再重判 ——
+            // marker-only 甚至「没有实况」，而结论一旦落盘就带着规则版本号不会再重判，
             // 于是一张本来能播的实况照片被永久冻住。
             const bytes = this.dataUrlBytes(wp.data);
             if (!bytes) continue;
@@ -845,14 +847,14 @@ export const WallpaperMixin = {
                 wp.format = detectWallpaperFormat(bytes);
                 changed = true;
             } catch (e) {
-                // 单张解析失败不影响其余壁纸
+                // 单张解析失败不影响其余壁纸。
             }
         }
         if (changed) this.scheduleWallpaperFormatSave();
     },
 
-    // 回填跑在菜单渲染的同步路径上，而 saveSettings 每次都会把整份 settings 序列化一遍 ——
-    // 壁纸的 data URL 全在里面，库里只有一张 10MB 的图时这一步实测就要 360ms（几十 MB 的库更久）。
+    // 回填跑在菜单渲染的同步路径上，而 saveSettings 每次都会把整份 settings 序列化一遍，
+    // 壁纸的 data URL 全在里面，库里只有一张 10 MB 的图时这一步实测就要 360 ms（几十 MB 的库更久）。
     // 判定结果这一帧渲染就要用，落盘不用：推迟到菜单画出来之后再写，点开菜单才不会先卡住。
     // 一屏多张时也只挂一个定时器，只落盘一次。
     scheduleWallpaperFormatSave() {
@@ -862,16 +864,16 @@ export const WallpaperMixin = {
             try {
                 this.saveSettings();
             } catch (e) {
-                // 落盘失败就下次开菜单再判一遍，不值得打断用户
+                // 落盘失败就下次开菜单再判一遍，不值得打断用户。
             }
         }, 0);
     },
 
     // Live 图作为壁纸出现时播放一遍内嵌视频，播完淡出、露出下面的静帧。
-    // 只在 applyWallpaper 这一个入口调用，避免 scrolled / 重设壁纸时反复重播。
+    // 只在 applyWallpaper 这一个入口调用，避免 scrolled、重设壁纸时反复重播。
     maybePlayLiveWallpaper() {
         const wp = (this.settings.customWallpapers || []).find(w => w.data === this.settings.wallpaper);
-        // 方框上的 LIVE 开关关掉之后，这张图就当普通静帧壁纸，不再播内嵌视频
+        // 方框上的 LIVE 开关关掉之后，这张图就当普通静帧壁纸，不再播内嵌视频。
         const isLive = !!(wp && wp.format && wp.format.live) && isLiveEnabled(wp.format);
 
         // 「本张已播过」时既不能重播、也不能收。一次上传会连着走两遍 applyWallpaper
@@ -889,10 +891,10 @@ export const WallpaperMixin = {
         if (!video || live.source === 'marker-only') return;
         if (!isLiveEnabled(wp.format)) return;
 
-        // 系统开了「减弱动态效果」就不播
+        // 系统开了「减弱动态效果」就不播。
         if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-        // 换到另一张实况图时先把上一条收干净，否则旧 blob URL 会一直挂着
+        // 换到另一张实况图时先把上一条收干净，否则旧 blob URL 会一直挂着。
         if (video.src) this.stopLiveWallpaper();
 
         this._livePlayedFor = wp.data;
@@ -925,7 +927,7 @@ export const WallpaperMixin = {
             await video.play();
             video.classList.add('active');
         } catch (e) {
-            // 自动播放被拒（或格式解不了）就干脆留在静帧，不弹错
+            // 自动播放被拒（或格式解不了）就干脆留在静帧，不弹错。
             cleanup();
         }
     },
@@ -1378,7 +1380,7 @@ export const WallpaperMixin = {
             this.settings.wallpaper = seriesWallpapers[0].data;
             this.settings.persistentWallpaper = true;
 
-            // 系列壁纸导入即应用，解除主题对壁纸方面的接管
+            // 系列壁纸导入即应用，解除主题对壁纸方面的接管。
             this.checkThemeConsistency('wallpaper', this.settings.wallpaper);
 
             try {
@@ -1417,14 +1419,14 @@ export const WallpaperMixin = {
             this.settings.wallpaper = 'default';
         } else if (wallpaper === 'bing') {
             this.settings.wallpaper = 'bing';
-            this.settings.wallpaperUrl = '';  // 清空旧URL，避免异步获取前显示主题壁纸残留
+            this.settings.wallpaperUrl = ''; // 清空旧 URL，避免异步获取前显示主题壁纸残留
             this.fetchBingWallpaper();
         } else if (wallpaper === 'url') {
             if (!this.settings.wallpaperUrl) {
                 this.settings.wallpaper = 'url';
             }
         } else {
-            // 处理自定义上传的壁纸
+            // 处理自定义上传的壁纸。
             const customWallpaper = this.settings.customWallpapers.find(wp => wp.name === wallpaper);
             if (customWallpaper) {
                 this.settings.wallpaper = customWallpaper.data;
@@ -1432,7 +1434,7 @@ export const WallpaperMixin = {
             }
         }
 
-        // 一致性检测：主题壁纸用 location 标识，此处用实际生效的壁纸值对比
+        // 一致性检测：主题壁纸用 location 标识，此处用实际生效的壁纸值对比。
         const theme = this.themes[this.settings.theme];
         const expectedWp = theme?.details?.wallpaper?.location;
         let actualWp = wallpaper;
@@ -1445,43 +1447,43 @@ export const WallpaperMixin = {
         this.applyWallpaper();
     },
     checkAndFetchBingWallpaper() {
-        // 如果开关打开，每次刷新都更新壁纸
+        // 如果开关打开，每次刷新都更新壁纸。
         if (this.settings.bingRefreshEveryTime) {
             this.fetchBingWallpaper();
             return;
         }
 
-        // 如果开关关闭且刷新间隔为0，不自动刷新
+        // 如果开关关闭且刷新间隔为 0，不自动刷新。
         if (this.settings.bingRefreshInterval === 0) {
-            // 如果已有壁纸URL，直接使用
+            // 如果已有壁纸 URL，直接使用。
             if (this.settings.wallpaperUrl) {
                 this.applySettings();
             } else {
-                // 如果没有壁纸URL，获取一次
+                // 如果没有壁纸 URL，获取一次。
                 this.fetchBingWallpaper();
             }
             return;
         }
 
-        // 如果设置了刷新间隔，检查是否需要刷新
+        // 如果设置了刷新间隔，检查是否需要刷新。
         const lastRefreshTime = localStorage.getItem('bingLastRefreshTime');
         const now = Date.now();
         const intervalMs = this.settings.bingRefreshInterval * 60 * 60 * 1000; // 小时转毫秒
 
         if (!lastRefreshTime || (now - parseInt(lastRefreshTime)) >= intervalMs) {
             // 需要刷新：只有在获取成功后才记录刷新时间，
-            // 否则失败也会被记为已刷新，导致间隔内不再重试
+            // 否则失败也会被记为已刷新，导致间隔内不再重试。
             this.fetchBingWallpaper().then(success => {
                 if (success) {
                     localStorage.setItem('bingLastRefreshTime', Date.now().toString());
                 }
             });
         } else {
-            // 不需要刷新，使用现有壁纸
+            // 不需要刷新，使用现有壁纸。
             if (this.settings.wallpaperUrl) {
                 this.applySettings();
             } else {
-                // 如果没有壁纸URL，获取一次
+                // 如果没有壁纸 URL，获取一次。
                 this.fetchBingWallpaper();
             }
         }
@@ -1510,10 +1512,10 @@ export const WallpaperMixin = {
         function tryApply(data) {
             var imageUrl = null;
             if (data && data.images && data.images.length > 0 && data.images[0].url) {
-                // 官方接口返回相对路径（/th?id=...），拼接到 www.bing.com
+                // 官方接口返回相对路径（/th?id=...），拼接到 www.bing.com。
                 imageUrl = 'https://www.bing.com' + data.images[0].url;
             } else if (data && data.url) {
-                // biturl 镜像返回绝对地址
+                // biturl 镜像返回绝对地址。
                 imageUrl = data.url;
             }
             if (imageUrl) {
@@ -1620,16 +1622,16 @@ export const WallpaperMixin = {
         const wallpaperName = this.settings.customWallpapers[index].name;
         const wallpaperData = this.settings.customWallpapers[index].data;
 
-        // 从设置中移除
+        // 从设置中移除。
         this.settings.customWallpapers.splice(index, 1);
 
-        // 如果当前使用的是被删除的壁纸，则切换回默认壁纸
+        // 如果当前使用的是被删除的壁纸，则切换回默认壁纸。
         if (this.settings.wallpaper === wallpaperData) {
             this.settings.wallpaper = 'default';
             this.applyWallpaper();
         }
 
-        // 更新自定义壁纸列表显示
+        // 更新自定义壁纸列表显示。
         this.updateCustomWallpapersList();
         this.saveSettings();
         this.showNotification('壁纸：删除');
@@ -1641,23 +1643,23 @@ export const WallpaperMixin = {
 
         if (!wallpaperSelectItems || !wallpaperSelect) return;
 
-        // 移除已有的自定义壁纸选项（支持多种标识符）
+        // 移除已有的自定义壁纸选项（支持多种标识符）。
         const existingCustomItems = wallpaperSelectItems.querySelectorAll('.select-item-custom-wallpaper, .select-item[data-custom="true"]');
         existingCustomItems.forEach(item => item.remove());
 
         const existingCustomOptions = wallpaperSelect.querySelectorAll('option.custom-wallpaper-option, option[data-custom="true"]');
         existingCustomOptions.forEach(option => option.remove());
 
-        // 添加自定义壁纸选项
+        // 添加自定义壁纸选项。
         this.settings.customWallpapers.forEach(wp => {
-            // 添加到下拉菜单
+            // 添加到下拉菜单。
             const selectItem = document.createElement('div');
             selectItem.className = 'select-item select-item-custom-wallpaper';
             selectItem.setAttribute('data-value', wp.name);
             selectItem.textContent = wp.name;
             wallpaperSelectItems.appendChild(selectItem);
 
-            // 添加到隐藏的select
+            // 添加到隐藏的 select。
             const option = document.createElement('option');
             option.value = wp.name;
             option.textContent = wp.name;
@@ -1665,11 +1667,11 @@ export const WallpaperMixin = {
             wallpaperSelect.appendChild(option);
         });
 
-        // 更新显示的文本
+        // 更新显示的文本。
         if (wallpaperSelectSelected) {
             const themeInfo = this.getThemeDisplayInfo();
             if (!themeInfo || !themeInfo.wallpaperName) {
-                // settings.wallpaper 可能存的是 data URL，需先映射回壁纸名称再查找 option
+                // settings.wallpaper 可能存的是 data URL，需先映射回壁纸名称再查找 option。
                 const currentWp = this.settings.customWallpapers.find(wp => wp.data === this.settings.wallpaper);
                 const lookupValue = currentWp ? currentWp.name : this.settings.wallpaper;
                 const selectedOption = wallpaperSelect.querySelector(`option[value="${CSS.escape(lookupValue)}"]`);
@@ -1683,25 +1685,25 @@ export const WallpaperMixin = {
         const wallpaperUrl = this.getWallpaperUrl();
 
         if (wallpaperUrl) {
-            // 尽早开始探测在线版，用户滚动进壁纸模式时可直接用在线版
+            // 尽早开始探测在线版，用户滚动进壁纸模式时可直接用在线版。
             this.probeOnlineWallpaper(wallpaperUrl);
 
             // 这里原先还有一次「预加载」：`const img = new Image(); img.src = wallpaperUrl`。
-            // 但紧接着的 setWallpaperOnLayers() 会把**同一个 URL**贴到两层上，浏览器本来
-            // 就会发起同一个请求 —— 那次 new Image() 是纯粹的重复：实测本地 back.png 在
+            // 但紧接着的 setWallpaperOnLayers() 会把同一个 URL 贴到两层上，浏览器本来
+            // 就会发起同一个请求，那次 new Image() 是纯粹的重复：实测本地 back.png 在
             // 瀑布上出现 2~3 次，其中一次就是它。去掉后请求仍由下面的背景图发出，
             // URL 完全一致，行为不变。
-            // 顺带：<img> 是文档资源，非 data: 的壁纸（自定义 URL / Bing）在 load 之前
+            // 顺带：<img> 是文档资源，非 data: 的壁纸（自定义 URL、Bing）在 load 之前
             // 起跑会把 window.load 一直拖到它下完，去掉后 load 不再被壁纸拖住。
             // data: URL 那几 MB 的解码代价、以及在线高清版推迟到 load 之后，
             // 都见 probeOnlineWallpaper 里的注释。
 
-            // 在两层的 blur 层和 main 层上设置背景图
+            // 在两层的 blur 层和 main 层上设置背景图。
             this.setWallpaperOnLayers(wallpaperUrl);
-            // body上不设背景图（避免CSS类冲突和黑边）
+            // body 上不设背景图（避免 CSS 类冲突和黑边）。
             document.body.style.backgroundImage = 'none';
 
-            // 如果没有开启壁纸常显，并且不在壁纸模式，立即隐藏层
+            // 如果没有开启壁纸常显，并且不在壁纸模式，立即隐藏层。
             if (!this.settings.persistentWallpaper && !this.isScrolled) {
                 setTimeout(() => {
                     this.clearWallpaperLayers();
@@ -1711,7 +1713,7 @@ export const WallpaperMixin = {
         }
     },
     showWallpaper() {
-        // 如果启用了壁纸常显功能且已经显示壁纸，则直接返回
+        // 如果启用了壁纸常显功能且已经显示壁纸，则直接返回。
         if (this.settings.persistentWallpaper && this.isScrolled && document.body.classList.contains('user-scrolled')) {
             if (this.settings.dynamicBlur) {
                 document.body.classList.add('dynamic-blur');
@@ -1727,18 +1729,18 @@ export const WallpaperMixin = {
         // 当前 hover 推入状态立即作废。必须在后面的 transform 计算之前清掉，
         // 否则壁纸会带着一次已经失效的侧边栏偏移进入壁纸模式。
         this.setSidebarWallpaperPush(false, { apply: false });
-        // 模式已切换，滚动手势的累计作废（避免切换前攒下的位移带进下一次滑动）
+        // 模式已切换，滚动手势的累计作废（避免切换前攒下的位移带进下一次滑动）。
         this._scrollGesture = null;
 
-        // 进入壁纸模式后铭牌不可交互，立即收起 OCP 播控，避免残留悬空
+        // 进入壁纸模式后铭牌不可交互，立即收起 OCP 播控，避免残留悬空。
         this.hideOcpPlayer();
 
-        // 先添加退出动画类（确保从当前状态开始动画）
+        // 先添加退出动画类（确保从当前状态开始动画）。
         document.body.classList.add('exit-animation');
 
-        // 使用requestAnimationFrame确保浏览器已渲染初始状态
+        // 使用 requestAnimationFrame 确保浏览器已渲染初始状态。
         requestAnimationFrame(() => {
-            // 下一帧再修改其他class，触发CSS transition
+            // 下一帧再修改其他 class，触发 CSS transition。
             document.body.classList.add('scrolled');
             document.body.classList.remove('homepage-wallpaper');
 
@@ -1746,11 +1748,11 @@ export const WallpaperMixin = {
                 document.body.classList.add('user-scrolled');
             }
 
-            // 壁纸模式下常显示侧边栏与小组件面板（清除 hiding 残留状态）
-            // isScrolled 已在进入壁纸模式时置为 true，固定侧边栏按"壁纸模式固定"生效
+            // 壁纸模式下常显示侧边栏与小组件面板（清除 hiding 残留状态）。
+            // isScrolled 已在进入壁纸模式时置为 true，固定侧边栏按「壁纸模式固定」生效。
             this.syncWidgetPanelsForWallpaper(true);
 
-            // 动画完成后移除退出动画类（350ms + 缓冲）
+            // 动画完成后移除退出动画类（350 ms + 缓冲）。
             setTimeout(() => {
                 document.body.classList.remove('exit-animation');
             }, 400);
@@ -1763,25 +1765,25 @@ export const WallpaperMixin = {
             document.body.classList.remove('dynamic-blur');
         }
 
-        // 同步应用壁纸（使用模糊填充层，无黑边）
+        // 同步应用壁纸（使用模糊填充层，无黑边）。
         const url = this.getWallpaperUrl();
         if (url) {
             this.setWallpaperOnLayers(url);
-            // 冷启动未走 applyWallpaper 时补一次在线版探测
+            // 冷启动未走 applyWallpaper 时补一次在线版探测。
             this.probeOnlineWallpaper(url);
         }
         document.body.style.backgroundImage = 'none';
 
         document.body.style.transition = 'none';
 
-        // 壁纸缩放动画：根据填充模式选择不同动画方式
+        // 壁纸缩放动画：根据填充模式选择不同动画方式。
         if (this.settings.persistentWallpaper && this.settings.wallpaperScale && this.wallpaperMain) {
             this.wallpaperMain.style.transition = 'none';
-            // 两种模式统一使用 transform scale 做缩放动画
-            // 填满模式：background-size: cover；适配模式：background-size: contain（CSS控制）
+            // 两种模式统一使用 transform scale 做缩放动画。
+            // 填满模式：background-size: cover；适配模式：background-size: contain（CSS 控制）。
             this.wallpaperMain.style.backgroundSize = '';
             this.wallpaperMain.style.backgroundPosition = '';
-            // 不在此处设置 transform，保持当前状态作为动画起点
+            // 不在此处设置 transform，保持当前状态作为动画起点。
         } else if (this.wallpaperMain) {
             this.wallpaperMain.style.backgroundSize = '';
             this.wallpaperMain.style.backgroundPosition = '';
@@ -1806,8 +1808,8 @@ export const WallpaperMixin = {
             quickAccessLinks.style.pointerEvents = '';
         }
 
-        // 壁纸缩放动画：仅在常显示模式下对主层进行连贯放大和偏移
-        // 两种模式统一使用 transform scale 实现缩放，background-size 由 CSS fill-mode 类控制
+        // 壁纸缩放动画：仅在常显示模式下对主层进行连贯放大和偏移。
+        // 两种模式统一使用 transform scale 实现缩放，background-size 由 CSS fill-mode 类控制。
         if (this.settings.persistentWallpaper && this.settings.wallpaperScale && this.wallpaperMain) {
             void this.wallpaperMain.offsetHeight;
             this.wallpaperMain.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
@@ -1828,7 +1830,7 @@ export const WallpaperMixin = {
         }
     },
     restoreHomepage(immediate = false) {
-        // 不停止高级视觉效果，让它在后台继续运行，下次进入更流畅
+        // 不停止高级视觉效果，让它在后台继续运行，下次进入更流畅。
 
         if (this.settings.dynamicBlur) {
             document.body.classList.add('dynamic-blur');
@@ -1849,7 +1851,7 @@ export const WallpaperMixin = {
 
         document.body.classList.remove('scrolled');
 
-        // 退出壁纸模式：恢复侧边栏与小组件面板由 hover 控制
+        // 退出壁纸模式：恢复侧边栏与小组件面板由 hover 控制。
         this.syncWidgetPanelsForWallpaper(false);
         document.body.classList.remove('user-scrolled');
 
@@ -1857,17 +1859,17 @@ export const WallpaperMixin = {
             document.body.classList.add('homepage-wallpaper');
         }
 
-        // 同步移除壁纸（使用层系统，模糊层始终覆盖无黑边）
+        // 同步移除壁纸（使用层系统，模糊层始终覆盖无黑边）。
         if (this.settings.persistentWallpaper) {
-            // 壁纸常显模式下保持壁纸，但处理缩放动画
+            // 壁纸常显模式下保持壁纸，但处理缩放动画。
             if (this.settings.wallpaperScale && this.wallpaperMain) {
                 void this.wallpaperMain.offsetHeight;
-                // 两种模式统一使用 transform scale 回缩
+                // 两种模式统一使用 transform scale 回缩。
                 this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
                 this.applyWallpaperTransform();
                 setTimeout(() => {
                     if (this.wallpaperMain) {
-                        // 动画结束后若没有侧边栏推入，清除空变换
+                        // 动画结束后若没有侧边栏推入，清除空变换。
                         if (!this._sidebarPushing) {
                             this.wallpaperMain.style.transform = '';
                         }
@@ -1914,18 +1916,18 @@ export const WallpaperMixin = {
         // 否则后面贴同一张图时会走「URL 没变」的短路，图根本贴不上去。
         this._appliedWallpaperUrl = null;
 
-        // 创建模糊填充层
+        // 创建模糊填充层。
         this.wallpaperBlur = document.createElement('div');
         this.wallpaperBlur.id = 'wallpaper-blur';
         document.body.insertBefore(this.wallpaperBlur, document.body.firstChild);
 
-        // 创建清晰主层
+        // 创建清晰主层。
         this.wallpaperMain = document.createElement('div');
         this.wallpaperMain.id = 'wallpaper-main';
         document.body.insertBefore(this.wallpaperMain, document.body.firstChild);
 
         // Live 图专用层：静帧之上再叠一层视频，播放期间盖住静帧，播完淡出。
-        // 插在模糊层之后 —— 它和 #wallpaper-main 同为 z-index:-1，
+        // 插在模糊层之后，它和 #wallpaper-main 同为 z-index:-1，
         // 同层级下由 DOM 顺序决定谁盖谁，必须排在 main 后面才能压住静帧。
         this.wallpaperLive = document.createElement('video');
         this.wallpaperLive.id = 'wallpaper-live';
@@ -1935,10 +1937,10 @@ export const WallpaperMixin = {
         this.wallpaperLive.preload = 'metadata';
         document.body.insertBefore(this.wallpaperLive, this.wallpaperBlur.nextSibling);
 
-        // 标记body，CSS层面覆盖自带的背景图
+        // 标记 body，CSS 层面覆盖自带的背景图。
         document.body.classList.add('wallpaper-layers-ready');
 
-        // 如果没有启用壁纸，隐藏两层
+        // 如果没有启用壁纸，隐藏两层。
         if (!this.settings.persistentWallpaper && !this.isScrolled) {
             this.wallpaperBlur.classList.remove('active');
             this.wallpaperMain.classList.remove('active');
@@ -1956,7 +1958,7 @@ export const WallpaperMixin = {
             url = this.settings.wallpaper; // 自定义上传壁纸 data URL
         }
         if (!url) return null;
-        // 已探测成功的在线版直接返回，避免每次重设壁纸都先退回本地再异步升级
+        // 已探测成功的在线版直接返回，避免每次重设壁纸都先退回本地再异步升级。
         return this.onlineWallpaperMap[url] || url;
     },
     // 默认壁纸与主题壁纸都是同一张图的「本地路径 + 在线路径」两份（在线为高清版）：
@@ -1981,9 +1983,9 @@ export const WallpaperMixin = {
 
         this._onlineWallpaperProbes[localUrl] = true;
         // 在线高清版探测是「锦上添花」：本地图已经在显示（images/back.png 就在扩展里）。
-        // 起跑推到 **load 之后** —— 这个 new Image() 若在 load 之前开始加载，会把
-        // window.load 一起拖到它下完（线上这张 3.7MB，实测 3.6 秒，是整页 load 的头号大户）。
-        // 占位标记（上面那行）仍然同步打上 —— 它在这段窗口里就是去重键，
+        // 起跑推到 load 之后，这个 new Image() 若在 load 之前开始加载，会把
+        // window.load 一起拖到它下完（线上这张 3.7 MB，实测 3.6 秒，是整页 load 的头号大户）。
+        // 占位标记（上面那行）仍然同步打上，它在这段窗口里就是去重键，
         // 晚打会让同一次加载里的多次调用各起一个探测。
         // onload 里的「仅在仍指向同一张在线版且壁纸应显示时才升级」守卫一律不动。
         afterLoad(() => {
@@ -1991,7 +1993,7 @@ export const WallpaperMixin = {
             testImg.onload = () => {
                 delete this._onlineWallpaperProbes[localUrl];
                 this.onlineWallpaperMap[localUrl] = onlineUrl;
-                // 探测期间壁纸可能已被切走或关闭：仅在仍指向同一张在线版且壁纸应显示时升级
+                // 探测期间壁纸可能已被切走或关闭：仅在仍指向同一张在线版且壁纸应显示时升级。
                 if (this.getOnlineWallpaperUrl(localUrl) === onlineUrl
                     && (this.settings.persistentWallpaper
                         || this.isScrolled
@@ -2012,14 +2014,14 @@ export const WallpaperMixin = {
         }
 
         // 同一个 URL 不重贴。给层赋 backgroundImage 会让浏览器重新解码 + 光栅化这张图，
-        // 实测单次 44~59ms（4032×3024 的壁纸）。启动路径上 preloadWallpaper、壁纸常显开关、
-        // applySettings 会把同一张图先后贴 4 遍 —— 实测 setWallpaperOnLayers ×4 = 193ms，
+        // 实测单次 44~59 ms（4032×3024 的壁纸）。启动路径上 preloadWallpaper、壁纸常显开关、
+        // applySettings 会把同一张图先后贴 4 遍，实测 setWallpaperOnLayers ×4 = 193 ms，
         // 正是首屏画出来之后那三段长任务的主体。URL 没变时只补类名，不碰 backgroundImage。
         // 副作用只剩状态栏文字明暗，见下面那个 active 翻转判据。
         if (this._appliedWallpaperUrl === url) {
             // 状态栏文字的明暗只由 wallpaperMain 的 active 类决定，其余输入都没变。
-            // 所以只有 active 真的翻转时才重算 —— updateStatusBarTextContrast() 每次
-            // 要把壁纸画进一张全屏 canvas 采样亮度，实测 ~10ms，不能白跑。
+            // 所以只有 active 真的翻转时才重算，updateStatusBarTextContrast() 每次
+            // 要把壁纸画进一张全屏 canvas 采样亮度，实测 ~10 ms，不能白跑。
             const wasActive = !!(this.wallpaperMain && this.wallpaperMain.classList.contains('active'));
             if (this.wallpaperBlur) {
                 this.wallpaperBlur.classList.add('active');
@@ -2036,13 +2038,13 @@ export const WallpaperMixin = {
 
         if (this.wallpaperBlur) {
             this.wallpaperBlur.style.backgroundImage = `url('${url}')`;
-            // 填充模式下模糊层由CSS控制隐藏，适配模式下显示
+            // 填充模式下模糊层由 CSS 控制隐藏，适配模式下显示。
             this.wallpaperBlur.classList.add('active');
         }
         if (this.wallpaperMain) {
             this.wallpaperMain.style.backgroundImage = `url('${url}')`;
             this.wallpaperMain.classList.add('active');
-            // 根据 wallpaperFill 设置填充/适配模式
+            // 根据 wallpaperFill 设置填充、适配模式。
             this.wallpaperMain.classList.toggle('fill-mode', this.settings.wallpaperFill === true);
         }
 
@@ -2064,7 +2066,7 @@ export const WallpaperMixin = {
             this.wallpaperMain.style.transform = '';
             this.wallpaperMain.style.transition = '';
         }
-        // 实况视频也要一起收掉，否则它会盖在下一张壁纸上
+        // 实况视频也要一起收掉，否则它会盖在下一张壁纸上。
         this.stopLiveWallpaper();
 
         this.wallpaperAnalysisImage = null;
@@ -2075,7 +2077,7 @@ export const WallpaperMixin = {
     // 侧边栏推入壁纸的唯一入口：hover、径向菜单、Esc、设置开关、模式切换都从这里改状态，
     // 避免 _sidebarPushing 与侧边栏实际显隐分叉（出现「壁纸被推开但侧边栏已收起」，
     // 或反过来「侧边栏还在但壁纸没让位」）。
-    //   apply=false  只更新状态、不立即写 transform —— 模式切换动画由调用方按自己的时序应用；
+    //   apply=false  只更新状态、不立即写 transform，模式切换动画由调用方按自己的时序应用；
     //   force=true   状态没变也重算一次（窗口尺寸变化会改变主页推入所需的缩放比例）。
     setSidebarWallpaperPush(pushIn, { animate = true, apply = true, force = false } = {}) {
         const pushing = !!pushIn && window.innerWidth >= 750;
@@ -2084,12 +2086,12 @@ export const WallpaperMixin = {
 
         if (!apply) return;
         if (!this.wallpaperMain || !this.settings.wallpaperScale) return;
-        // 非常显壁纸在主页没有可位移的层；它的显示/缩放由 showWallpaper/restoreHomepage 接管
+        // 非常显壁纸在主页没有可位移的层；它的显示、缩放由 showWallpaper、restoreHomepage 接管。
         if (!this.settings.persistentWallpaper && !this.isScrolled) return;
         if (!changed && !force) return;
 
         if (animate) {
-            // 与侧边栏自身 0.4s 的回弹缓动对齐（styles.css / dynamic-blur.css），
+            // 与侧边栏自身 0.4s 的回弹缓动对齐（styles.css、dynamic-blur.css），
             // 两者同时开始、同时到位，不会一个先到、一个还在滑。
             this.wallpaperMain.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)';
         }
@@ -2101,26 +2103,26 @@ export const WallpaperMixin = {
 
         let transform = '';
 
-        // 基础缩放：壁纸模式 scale(1.4)，主页模式不缩放
+        // 基础缩放：壁纸模式 scale(1.4)，主页模式不缩放。
         if (this.isScrolled) {
             transform = 'scale(1.4)';
         }
 
-        // 侧边栏推入：叠加偏移和额外缩放（仅在主页模式需要补偿）
+        // 侧边栏推入：叠加偏移和额外缩放（仅在主页模式需要补偿）。
         if (this._sidebarPushing) {
             if (transform) {
-                // 壁纸模式：已有 scale(1.4) 覆盖边缘，只需偏移
+                // 壁纸模式：已有 scale(1.4) 覆盖边缘，只需偏移。
                 transform += ' translateX(-80px)';
             } else {
-                // 主页模式：根据屏幕宽度动态计算缩放和偏移，确保不露黑边
+                // 主页模式：根据屏幕宽度动态计算缩放和偏移，确保不露黑边。
                 const vw = window.innerWidth;
-                // 大屏固定偏移80px，窄屏按比例缩小偏移
+                // 大屏固定偏移 80 px，窄屏按比例缩小偏移。
                 const pushPx = Math.min(80, vw * 0.1);
-                // CSS transform 从右到左执行: scale(S) translateX(T) → 先平移再缩放
-                // 缩放原点在中心: 右边缘最终位置 = vw/2 + (vw/2 + T) * S
-                // 要求 >= vw → S >= vw / (vw + 2T), T = -pushPx
+                // CSS transform 从右到左执行：scale(S) translateX(T) → 先平移再缩放。
+                // 缩放原点在中心：右边缘最终位置 = vw/2 + (vw/2 + T) * S。
+                // 要求 >= vw → S >= vw / (vw + 2T), T = -pushPx。
                 const neededScale = vw / (vw - 2 * pushPx);
-                // 取整到小数点后3位，加 10% 余量确保无黑边
+                // 取整到小数点后 3 位，加 10% 余量确保无黑边。
                 const scale = Math.min(Math.max(Math.round(neededScale * 1.10 * 1000) / 1000, 1.16), 1.6);
                 transform = 'scale(' + scale + ') translateX(-' + pushPx + 'px)';
             }
@@ -2130,7 +2132,7 @@ export const WallpaperMixin = {
         this.updateStatusBarTextContrast();
     },
     applyDefaultWallpaper() {
-        // 使用层系统，body上不设背景图；本地优先，异步升级到在线
+        // 使用层系统，body 上不设背景图；本地优先，异步升级到在线。
         const url = this.getWallpaperUrl();
         this.setWallpaperOnLayers(url);
         document.body.style.backgroundImage = 'none';
@@ -2138,19 +2140,19 @@ export const WallpaperMixin = {
     },
     applyWallpaper() {
         // 壁纸视觉状态的唯一总入口：切壁纸、应用设置、壁纸常显示开关、重置、启动都走这里，
-        // 右上角角标挂在开头最省心（那时 settings.wallpaper 已是新值）
+        // 右上角角标挂在开头最省心（那时 settings.wallpaper 已是新值）。
         this.updateWallpaperFormatCorner();
         if (this.settings.persistentWallpaper || document.body.classList.contains('scrolled')) {
             const url = this.getWallpaperUrl();
             if (url) {
                 this.setWallpaperOnLayers(url);
-                // body上不设背景图，避免与CSS类冲突和黑边
+                // body 上不设背景图，避免与 CSS 类冲突和黑边。
                 document.body.style.backgroundImage = 'none';
 
-                // 本地优先、在线升级：探测结果会被记住，后续重设壁纸直接给在线版
+                // 本地优先、在线升级：探测结果会被记住，后续重设壁纸直接给在线版。
                 this.probeOnlineWallpaper(url);
 
-                // 实况照片：壁纸就位后播一遍内嵌视频（非实况则顺手收掉上一个）
+                // 实况照片：壁纸就位后播一遍内嵌视频（非实况则顺手收掉上一个）。
                 this.maybePlayLiveWallpaper();
             }
         } else {

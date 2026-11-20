@@ -1,3 +1,7 @@
+/**
+ * 本地开发用代理服务（Node.js）：转发 HTTP(S) 请求并绕过浏览器 CORS 限制。
+ * 仅监听 127.0.0.1，拒绝内网与回环目标，防止被本机网页当作开放代理探测内网。
+ */
 var http = require('http');
 var https = require('https');
 var url = require('url');
@@ -5,7 +9,7 @@ var url = require('url');
 var SERVER_PORT = 8899;
 
 // 校验目标 URL：仅允许 http/https，且禁止指向内网/回环地址（防 SSRF，
-// 避免本机恶意网页借助本服务探测内网）
+// 避免本机恶意网页借助本服务探测内网）。
 function isAllowedTarget(targetUrl) {
     var parsed;
     try {
@@ -46,7 +50,7 @@ function fetchDirect(targetUrl, res) {
     var parsed = new URL(targetUrl);
     var mod = parsed.protocol === 'https:' ? https : http;
 
-    // 统一的错误响应：若响应头已写出则不再 writeHead，避免抛错
+    // 统一的错误响应：若响应头已写出则不再 writeHead，避免抛错。
     var sendError = function (status, message) {
         if (res.headersSent) {
             try { res.end(); } catch (e) { /* 忽略已关闭的连接 */ }
@@ -102,7 +106,7 @@ var server = http.createServer(function (req, res) {
             return;
         }
 
-        // 拒绝内网/非法协议目标，防止被用作开放代理探测内网
+        // 拒绝内网/非法协议目标，防止被用作开放代理探测内网。
         if (!isAllowedTarget(targetUrl)) {
             res.writeHead(403, { 'Content-Type': 'text/plain' });
             res.end('Target not allowed');

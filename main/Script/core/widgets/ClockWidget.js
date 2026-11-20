@@ -1,8 +1,6 @@
 /**
- * 大时钟小组件
- * 纯客户端，本地时间，每秒刷新
- * - 正方形：垂直布局（时间在上，日期在下）
- * - 长方形：横向布局（时间在左，日期在右）
+ * 大时钟小组件：纯客户端，使用本地时间，每秒刷新。
+ * 正方形为垂直布局，长方形为横向布局。
  */
 import { WidgetBase } from './WidgetBase.js';
 
@@ -40,7 +38,7 @@ export class ClockWidget extends WidgetBase {
         const dateText = weekdays[now.getDay()] + ' ' + (now.getMonth() + 1) + '月' + now.getDate() + '日';
 
         if (this.isRect) {
-            // 长方形：时间 + 秒
+            // 长方形布局额外显示秒。
             const ss = String(now.getSeconds()).padStart(2, '0');
             this.timeEl.textContent = hh + ':' + mm + ':' + ss;
         } else {

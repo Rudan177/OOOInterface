@@ -1,5 +1,5 @@
 /**
- * 任务小组件（仅本地 localStorage）
+ * 任务小组件：数据仅保存在本地 localStorage。
  */
 import { WidgetBase } from './WidgetBase.js';
 
@@ -52,7 +52,7 @@ export class TasksWidget extends WidgetBase {
     }
 
     afterMount() {
-        // 在 header 右侧插入导出 / 导入按钮
+        // 在头部右侧插入导出与导入按钮。
         this._addHeaderActions();
     }
 
@@ -168,7 +168,7 @@ export class TasksWidget extends WidgetBase {
         input.click();
     }
 
-    // ─── 任务操作 ───
+    // ---------- 任务操作 ----------
 
     addTask() {
         const text = this.inputEl.value.trim();
@@ -196,7 +196,7 @@ export class TasksWidget extends WidgetBase {
         this.renderList();
     }
 
-    // ─── 渲染 ───
+    // ---------- 渲染 ----------
 
     renderList() {
         const done = this.tasks.filter(t => t.done).length;

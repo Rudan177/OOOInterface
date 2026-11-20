@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 铭牌行为：双击/右键动作映射、OCP 播控联动与铭牌可见性同步。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const BadgeMixin = {
     normalizeBadgeAction(value) {
@@ -19,7 +20,7 @@ export const BadgeMixin = {
         if (group) {
             group.style.display = this.settings.hiddenBadge ? 'none' : '';
         }
-        // OCP 播控依附于铭牌 hover，铭牌隐藏时一并隐藏设置项与已展开的播控
+        // OCP 播控依附于铭牌 hover，铭牌隐藏时一并隐藏设置项与已展开的播控。
         const ocpGroup = document.getElementById('ocp-player-group');
         if (ocpGroup) {
             ocpGroup.style.display = this.settings.hiddenBadge ? 'none' : '';
@@ -31,12 +32,12 @@ export const BadgeMixin = {
         if (selectedDisplay) {
             selectedDisplay.textContent = this.getBadgeActionSummary();
         }
-        // 铭牌已隐藏时，若右面板仍停留在该设置视图则退回占位内容，避免展示失效设置
+        // 铭牌已隐藏时，若右面板仍停留在该设置视图则退回占位内容，避免展示失效设置。
         const rpu = document.getElementById('right-panel-upper');
         if (this.settings.hiddenBadge && rpu && rpu.dataset.menuType === 'badge-open-method') {
             this.closeSettingsMenuInRightPanel();
         }
-        // 铭牌隐藏后停止音效与光效，避免在不可见元素上继续播放
+        // 铭牌隐藏后停止音效与光效，避免在不可见元素上继续播放。
         if (this.settings.hiddenBadge) {
             this.stopBadgeAudio();
         }
@@ -52,8 +53,7 @@ export const BadgeMixin = {
         const badge = document.getElementById('ooo-badge');
         if (!badge) return;
 
-        // 通过引用移除之前绑定的监听器，避免克隆替换元素导致
-        // 其他监听器（10次点击彩蛋、悬停弹窗等）丢失
+        // 通过引用移除旧监听器，避免克隆替换元素导致其他监听器（10 次点击彩蛋、悬停弹窗等）丢失。
         if (this._badgeToggleHandler) {
             badge.removeEventListener('click', this._badgeToggleHandler);
         }
@@ -64,14 +64,14 @@ export const BadgeMixin = {
             badge.removeEventListener('contextmenu', this._badgeContextMenuHandler);
         }
 
-        // 重新绑定点击事件（用于切换文本）
+        // 重新绑定点击事件（用于切换文本）。
         this._badgeToggleHandler = () => this.toggleBadgeText();
         badge.addEventListener('click', this._badgeToggleHandler);
 
         const dblAction = this.normalizeBadgeAction(this.settings.badgeDblClickAction);
         const ctxAction = this.normalizeBadgeAction(this.settings.badgeContextMenuAction);
 
-        // 当前配置已不再需要音效时，停掉可能在播的音频并收起光效
+        // 当前配置已不再需要音效时，停掉可能在播的音频并收起光效。
         if (dblAction !== 'audio' && ctxAction !== 'audio') {
             this.stopBadgeAudio();
         }
@@ -93,8 +93,8 @@ export const BadgeMixin = {
         const badge = document.getElementById('ooo-badge');
         const hasAnimation = this.settings.dynamicBlur || this.settings.enhancedDisplay;
 
-        // 复用现有的 info-indicator 节点，避免 innerHTML 重建导致
-        // InfoManager 持有的旧引用失效（颜色/显示状态无法更新）
+        // 复用现有 info-indicator 节点，避免 innerHTML 重建导致
+        // InfoManager 持有的旧引用失效（颜色与显示状态无法更新）。
         const rebuildBadgeContent = () => {
             let indicator = document.getElementById('info-indicator');
             if (!indicator) {
@@ -110,7 +110,7 @@ export const BadgeMixin = {
             }
             badge.appendChild(indicator);
 
-            // 同步指示器颜色与可见状态
+            // 同步指示器颜色与可见状态。
             if (this.infoManager && typeof this.infoManager.refreshInfoIndicator === 'function') {
                 this.infoManager.refreshInfoIndicator();
             }
@@ -143,7 +143,7 @@ export const BadgeMixin = {
         const badgeCenterX = badgeRect.left + badgeRect.width / 2;
         const badgeCenterY = badgeRect.top + badgeRect.height / 2;
 
-        // 临时候获取内容区未变换的尺寸（同在 rAF 内，不会触发重绘）
+        // 临时取内容区未变换的尺寸（同在 rAF 内，不触发重绘）。
         const origTransform = content.style.transform;
         content.style.transform = 'none';
         const contentRect = content.getBoundingClientRect();
@@ -204,13 +204,13 @@ renderBadgeConfigView (rightPanelUpper) {
                 if (self.settings[key] === opt.value) return;
                 const value = self.normalizeBadgeAction(opt.value);
                 self.settings[key] = value;
-                // 移动滑块并更新高亮
+                // 移动滑块并更新高亮。
                 seg.classList.remove('pos-0', 'pos-1', 'pos-2');
                 seg.classList.add('pos-' + idx);
                 seg.querySelectorAll('.badge-action-label').forEach((el, i) => {
                     el.classList.toggle('active', i === idx);
                 });
-                // 立即生效并持久化（与其他右面板选择器一致，不弹提示）
+                // 立即生效并持久化（与其他右面板选择器一致，不弹提示）。
                 self.setupBadgeOpenMethod();
                 self.syncBadgeOpenMethodUI();
                 self.saveSettings();

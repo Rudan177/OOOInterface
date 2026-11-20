@@ -1,6 +1,5 @@
 /**
- * OOOInterface 小组件基类
- * 所有小组件继承此基类，实现 render() 与 destroy()
+ * OOOInterface 小组件基类：所有小组件继承此基类，实现 render() 与 destroy()。
  */
 import { ProxyManager } from '../proxy.js';
 
@@ -62,7 +61,7 @@ export class WidgetBase {
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
             return resp;
         } catch (err) {
-            // 直连失败（CORS 拦截/网络错误）时，若已配置代理则走代理
+            // 直连失败（CORS 拦截/网络错误）时，若已配置代理则走代理。
             if (typeof ProxyManager !== 'undefined' && ProxyManager.isProxyEnabled()) {
                 const proxied = await ProxyManager.proxiedFetch(url, options);
                 if (!proxied.ok) throw new Error('HTTP ' + proxied.status);

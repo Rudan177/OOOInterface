@@ -1,19 +1,20 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 铭牌音频与 OCP 播控：播放状态、进度光带、hover 播控与系统媒体会话联动。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const BadgeAudioMixin = {
     getBadgeAudio() {
         if (!this._badgeAudio) {
             const audio = new Audio(this.ocpAudioUrl);
             audio.addEventListener('play', () => {
-                // OCP 已开始播放：此后 hover 铭牌才允许呼出播控；同时惰性读取曲目元数据
+                // OCP 已开始播放：此后 hover 铭牌才允许呼出播控；同时惰性读取曲目元数据。
                 this._ocpHasStarted = true;
                 this.loadOcpTrackMeta();
                 this.setBadgeAudioGlow(true);
                 this.syncOcpPlayerState();
                 this.updateBadgeAudioProgress();
-                // 先用占位文案顶上，读到音源标签后再刷新为真实曲目信息
+                // 先用占位文案顶上，读到音源标签后再刷新为真实曲目信息。
                 this.updateOcpMediaSessionMeta();
                 this.updateOcpMediaSessionState();
             });
@@ -33,11 +34,11 @@ export const BadgeAudioMixin = {
                 this.syncOcpPlayerState();
                 this.updateOcpMediaSessionState();
             });
-            // 进度光带长度跟随播放进度
+            // 进度光带长度跟随播放进度。
             audio.addEventListener('timeupdate', () => this.updateBadgeAudioProgress());
             audio.addEventListener('loadedmetadata', () => this.updateBadgeAudioProgress());
             this._badgeAudio = audio;
-            // 交给浏览器媒体播控（系统媒体面板 / 媒体键）接管
+            // 交给浏览器媒体播控（系统媒体面板 / 媒体键）接管。
             this.setupOcpMediaSession();
             this.updateOcpMediaSessionState();
         }
@@ -64,7 +65,7 @@ export const BadgeAudioMixin = {
                 audio.pause();
                 return;
             }
-            // 播完后再次触发：从头播放
+            // 播完后再次触发：从头播放。
             if (audio.ended) audio.currentTime = 0;
             audio.play().catch(err => {
                 this.setBadgeAudioGlow(false);
@@ -105,7 +106,7 @@ export const BadgeAudioMixin = {
         if (!badge || !popover) return;
         this._ocpPlayerBound = true;
 
-        // 播放按钮与铭牌双击/右键共用同一切换逻辑（播放中→暂停，暂停/播完→播放）
+        // 播放按钮与铭牌双击/右键共用同一切换逻辑（播放中→暂停，暂停/播完→播放）。
         const playBtn = document.getElementById('ocp-play-btn');
         if (playBtn) {
             playBtn.addEventListener('click', (e) => {
@@ -114,7 +115,7 @@ export const BadgeAudioMixin = {
             });
         }
 
-        // 点击封面：新标签页打开在线播放器（保留当前新标签页）
+        // 点击封面：新标签页打开在线播放器（保留当前新标签页）。
         const coverBtn = document.getElementById('ocp-cover-btn');
         if (coverBtn) {
             coverBtn.addEventListener('click', (e) => {
@@ -123,13 +124,13 @@ export const BadgeAudioMixin = {
             });
         }
 
-        // hover 铭牌显示；移出铭牌/播控延迟隐藏，跨越两者间隙时取消隐藏
+        // hover 铭牌时显示；移出铭牌或播控时延迟隐藏，跨越两者间隙时取消隐藏。
         badge.addEventListener('mouseenter', () => this.showOcpPlayer());
         badge.addEventListener('mouseleave', () => this.scheduleHideOcpPlayer());
         popover.addEventListener('mouseenter', () => this.cancelHideOcpPlayer());
         popover.addEventListener('mouseleave', () => this.scheduleHideOcpPlayer());
 
-        // 兜底：点击页面其他位置（含滚动进入壁纸模式前的点击）时收起播控
+        // 兜底：点击页面其他位置（含滚动进入壁纸模式前的点击）时收起播控。
         document.addEventListener('click', (e) => {
             if (!popover.classList.contains('show')) return;
             if (popover.contains(e.target) || badge.contains(e.target)) return;
@@ -138,7 +139,7 @@ export const BadgeAudioMixin = {
     },
     isOcpPlayerAvailable() {
         if (!this.settings.ocpPlayerEnabled || !this._ocpHasStarted) return false;
-        // 铭牌被隐藏（隐藏铭牌开关等）时不可呼出；壁纸模式由 pointer-events:none 天然拦截
+        // 铭牌被隐藏（隐藏铭牌开关等）时不可呼出；壁纸模式由 pointer-events:none 天然拦截。
         const badge = document.getElementById('ooo-badge');
         return !!(badge && badge.offsetParent !== null);
     },
@@ -194,7 +195,7 @@ export const BadgeAudioMixin = {
         };
         bind('play', () => this.resumeBadgeAudio());
         bind('pause', () => this.pauseBadgeAudio());
-        // 系统面板的进度拖拽（单曲场景只做 seek，不提供上一首/下一首）
+        // 系统面板的进度拖拽（单曲场景只做 seek，不提供上一首/下一首）。
         bind('seekto', (details) => this.seekBadgeAudio(details && details.seekTime));
     },
     updateOcpMediaSessionMeta() {
@@ -267,7 +268,7 @@ export const BadgeAudioMixin = {
         if (this._ocpMetaPromise) return this._ocpMetaPromise;
         this._ocpMetaPromise = (async () => {
             try {
-                // 1) ID3v2：先取 10 字节标签头拿到标签长度，再按长度取标签本体
+                // 1. ID3v2：先取 10 字节标签头拿到标签长度，再按长度取标签本体。
                 let meta = null;
                 const head = await this.readOcpSourceRange('0-9');
                 if (head && this.isId3v2Tag(head)) {
@@ -275,7 +276,7 @@ export const BadgeAudioMixin = {
                     const tag = tagSize > 0 ? await this.readOcpSourceRange(this.ocpHeadRange(tagSize + 9)) : null;
                     if (tag) meta = this.parseId3v2(tag);
                 }
-                // 2) 头部信息不全时，再读文件尾部 ID3v1 兜底
+                // 2. 头部信息不全时，再读文件尾部 ID3v1 兜底。
                 if (!meta || !meta.title || !meta.artist) {
                     const tail = await this.readOcpSourceRange(this.ocpTailRange(128));
                     if (tail) {
@@ -310,7 +311,7 @@ export const BadgeAudioMixin = {
                 });
                 if (!res.ok) return null;
                 // 206 的 Content-Range（bytes 0-9/12375550）顺带给出文件总长，
-                // 省掉一次 HEAD 请求；跨域未暴露该响应头时退化为「拿到多少算多少」
+                // 省掉一次 HEAD 请求；跨域未暴露该响应头时退化为「拿到多少算多少」。
                 const contentRange = res.headers.get('Content-Range');
                 if (contentRange) {
                     const total = /\/(\d+)\s*$/.exec(contentRange);
@@ -357,7 +358,7 @@ export const BadgeAudioMixin = {
         const major = bytes[3];
         if (major !== 3 && major !== 4) return null;
         const flags = bytes[5];
-        // v2.4 帧长为 syncsafe（每字节 7 位），v2.3 为普通大端 uint32
+        // v2.4 帧长为 syncsafe（每字节 7 位），v2.3 为普通大端 uint32。
         const syncsafe = (b, o) => this.readId3Size(b, o);
         const uint32 = (b, o) => (b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3];
         const tagSize = syncsafe(bytes, 6);
@@ -383,7 +384,7 @@ export const BadgeAudioMixin = {
                 let p = 1;
                 while (p < body.length && body[p] !== 0) p++; // MIME（latin1，0x00 结尾）
                 const mime = new TextDecoder('windows-1252').decode(body.subarray(1, p)) || 'image/jpeg';
-                p += 2; // 跳过 MIME 终止符 + 图片类型字节
+                p += 2; // 跳过 MIME 终止符与图片类型字节
                 const desc = this.readId3String(body, p, enc);
                 p = desc.next;
                 if (p < body.length) {
@@ -441,7 +442,7 @@ export const BadgeAudioMixin = {
             track.coverType = meta.coverBlob.type || null;
             this.applyOcpCover(meta.coverBlob);
         }
-        // 曲目信息变了就刷新媒体播控（封面尺寸要等图片解码后才拿得到）
+        // 曲目信息变了就刷新媒体播控（封面尺寸要等图片解码后才拿得到）。
         this.updateOcpMediaSessionMeta();
     },
     applyOcpCover(blob) {
@@ -456,12 +457,12 @@ export const BadgeAudioMixin = {
         }
         const probe = new Image();
         probe.onload = () => {
-            // 期间可能已换成更新的封面：此时旧 URL 直接释放
+            // 期间可能已换成更新的封面：此时旧 URL 直接释放。
             if (this._ocpCoverUrl) URL.revokeObjectURL(this._ocpCoverUrl);
             this._ocpCoverUrl = url;
             cover.classList.add('has-art');
             cover.style.backgroundImage = `url("${url}")`;
-            // 图片解码后才有真实尺寸，媒体播控的 artwork 尺寸声明在此补上
+            // 图片解码后才有真实尺寸，媒体播控的 artwork 尺寸声明在此补上。
             const track = this.getOcpTrackMeta();
             if (probe.naturalWidth && probe.naturalHeight) {
                 track.coverSizes = `${probe.naturalWidth}x${probe.naturalHeight}`;

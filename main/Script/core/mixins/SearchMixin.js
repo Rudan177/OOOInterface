@@ -1,8 +1,9 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 搜索系统：执行搜索、斜杠命令模式、搜索历史与热搜建议。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
-// 壁纸模式进退的滚动手势判定（触摸板/滚轮共用）。
+// 壁纸模式进退的滚动手势判定（触摸板或滚轮共用）。
 // 触摸板一次滑动会连续发几十个 1~3px 的 wheel 事件，滑停时还常带一点反向抖动；
 // 过去按单个事件的 deltaY 正负直接切换模式，这点抖动就能把用户刚滑进去的壁纸模式弹回主页。
 // 现在按「同一方向累计位移」判定：方向一反转就清零，累计超过阈值才切换。
@@ -50,9 +51,9 @@ export const SearchMixin = {
             return;
         }
 
-        // Info框打开时，完全禁用滚动检测（避免误触壁纸模式）
+        // Info 框打开时，完全禁用滚动检测（避免误触壁纸模式）
         if (this.infoPopupOpen) {
-            // 自动恢复：如果弹窗DOM已被外部移除，重置标志位
+            // 自动恢复：如果弹窗 DOM 已被外部移除，重置标志位
             if (!document.querySelector('.ooo-info-popup')) {
                 this.infoPopupOpen = false;
             } else {
@@ -82,7 +83,7 @@ export const SearchMixin = {
         if (!dy0) return;
         if (Math.abs(e.deltaX || 0) > Math.abs(dy0)) return;
 
-        // deltaMode: 0=像素 1=行 2=页，统一换算成像素再累计
+        // deltaMode：0=像素，1=行，2=页，统一换算成像素再累计
         let dy = dy0;
         if (e.deltaMode === 1) dy *= 16;
         else if (e.deltaMode === 2) dy *= window.innerHeight || 800;
@@ -100,7 +101,7 @@ export const SearchMixin = {
         gesture.last = now;
         gesture.dist += Math.abs(dy);
 
-        // 传统滚轮一格带 wheelDeltaY=±120，触摸板/精确滚动只有小数值。
+        // 传统滚轮一格带 wheelDeltaY=±120，触摸板或精确滚动只有小数值。
         // 各平台 deltaY 的像素尺度并不一致（有的鼠标一格只有几 px），
         // 用这个非标准字段保住「鼠标一格即切换」的手感。
         const wheelTick = Math.abs(
@@ -128,7 +129,7 @@ export const SearchMixin = {
     },
     switchEngine(engine) {
         this.currentEngine = engine;
-        // 引擎切换后建议来源改变,作废旧缓存
+        // 引擎切换后建议来源改变，作废旧缓存。
         this._suggestCache = null;
 
         // 更新按钮状态
@@ -150,16 +151,16 @@ export const SearchMixin = {
             this.applyLogo();
             this.saveSettings();
         } else if (this.settings.logo === 'auto') {
-            // 自动模式下切换引擎时更新Logo
+            // 自动模式下切换引擎时更新 Logo。
             this.applyLogo();
         }
 
-        // 如果引擎锁定，保存到localStorage
+        // 如果引擎锁定，保存到 localStorage。
         if (this.settings.engineLocked) {
             localStorage.setItem('oooEngineLocked', engine);
         }
 
-        // 为按钮添加logo类名
+        // 为按钮添加 logo 类名。
         this.updateEngineButtonClasses();
 
         // 如果有搜索文字，立即搜索
@@ -188,7 +189,7 @@ export const SearchMixin = {
             return;
         }
 
-        // “/” 命令语法兜底路径（正常流程中前缀在输入空格时已被替换）：不进入搜索历史
+        // 「/」命令语法兜底路径（正常流程中前缀在输入空格时已被替换）：不进入搜索历史。
         if (trimmedQuery.startsWith('/')) {
             this.executeSlashCommand(trimmedQuery);
             this.hideSearchCommandList();
@@ -266,7 +267,7 @@ export const SearchMixin = {
         if (value.startsWith('/')) {
             this.hideSearchHistory();
 
-            // “/别名 + 空格”：把前缀替换为左侧 chip，剩余文本作为参数继续输入
+            // 「/别名 + 空格」：把前缀替换为左侧 chip，剩余文本作为参数继续输入。
             const entered = value.match(/^\/(\S+)\s([\s\S]*)$/);
             if (entered && (this.isWebCommand(entered[1]) || this.isTranslateCommand(entered[1]))) {
                 const mode = this.isWebCommand(entered[1]) ? 'web' : 'translate';
@@ -296,9 +297,9 @@ export const SearchMixin = {
         this.hideSearchCommandList();
         this.updateSearchModeChip();
 
-        // 输入有效长度超过 4 且开启"热搜词建议":先同步展示历史作即时反馈,再调度拉取热搜
-        // 中文每个字算 2 个有效字符(3-4 字即可触发),英文每字母算 1(5-6 字母触发)
-        // 其余情况(≤4 字符或开关关闭)维持原有搜索历史逻辑
+        // 输入有效长度超过 4 且开启「热搜词建议」：先同步展示历史作即时反馈，再调度拉取热搜。
+        // 中文每个字算 2 个有效字符（3-4 字即可触发），英文每字母算 1（5-6 字母触发）。
+        // 其余情况（≤4 字符或开关关闭）维持原有搜索历史逻辑。
         const trimmedValue = value.trim();
         if (this.settings.searchSuggestions && this._effectiveLength(trimmedValue) > 4) {
             this.renderSearchSuggestions(trimmedValue, null);
@@ -609,7 +610,7 @@ export const SearchMixin = {
     removeFromSearchHistory(query) {
         this.settings.searchHistoryItems = this.settings.searchHistoryItems.filter(item => item !== query);
         this.saveSettings();
-        // 走统一入口重渲染,使"历史 + 热搜"合并列表保持一致
+        // 走统一入口重渲染，使「历史 + 热搜」合并列表保持一致。
         this.syncSearchAssistantUI(document.getElementById('search-input').value);
     },
     calculateRelevance(text, query) {
@@ -683,7 +684,7 @@ export const SearchMixin = {
                 return;
             }
 
-            // 同引擎同查询 60 秒内直接复用缓存,避免聚焦/重复输入造成无谓请求
+            // 同引擎同查询 60 秒内直接复用缓存，避免聚焦或重复输入造成无谓请求。
             let suggestions = null;
             const cache = this._suggestCache;
             if (cache && cache.engine === this.currentEngine && cache.query === query && (Date.now() - cache.ts < 60000)) {
@@ -702,7 +703,7 @@ export const SearchMixin = {
             if (document.body.classList.contains('scrolled') || !container) {
                 return;
             }
-            // 用户已点击外部关闭或移开焦点:本次下拉不应被异步结果重新打开
+            // 用户已点击外部关闭或移开焦点：本次下拉不应被异步结果重新打开。
             const stillOpen = container.classList.contains('show');
             const inputFocused = document.activeElement === document.getElementById('search-input');
             if (!stillOpen && !inputFocused) {
@@ -774,7 +775,7 @@ export const SearchMixin = {
         const q = String(query || '').trim();
         const rows = [];
 
-        // 历史项:仅搜索历史开关开启时混入(搜索历史本身已保证去重,无需额外检查)
+        // 历史项：仅搜索历史开关开启时混入（搜索历史本身已保证去重，无需额外检查）。
         if (this.settings.searchHistory && Array.isArray(this.settings.searchHistoryItems)) {
             this.settings.searchHistoryItems.forEach(raw => {
                 const text = String(raw || '').trim();
@@ -783,7 +784,7 @@ export const SearchMixin = {
             });
         }
 
-        // 热搜建议项:与历史同词的项也保留,由排序规则决定先后(同词历史 +100 分必排最上)
+        // 热搜建议项：与历史同词的项也保留，由排序规则决定先后（同词历史 +100 分必排最上）。
         if (Array.isArray(suggestions) && this.settings.searchSuggestions) {
             suggestions.forEach(raw => {
                 const text = String(raw || '').trim();
@@ -837,13 +838,13 @@ export const SearchMixin = {
             quickAccessLinks.style.pointerEvents = 'none';
         }
     },
-        escapeHtml(text) {
+    escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     },
     updateEngineButtonClasses() {
-        // 移除所有logo类名
+        // 移除所有 logo 类名。
         const googleBtn = document.getElementById('google-engine');
         const bingBtn = document.getElementById('bing-engine');
 
@@ -853,7 +854,7 @@ export const SearchMixin = {
             bingBtn.classList.remove(logoClass);
         });
 
-        // 添加当前logo类名
+        // 添加当前 logo 类名。
         let logoClass;
         if (this.settings.logo === 'text-logo') {
             logoClass = 'logo-text';
@@ -862,7 +863,7 @@ export const SearchMixin = {
         } else if (this.settings.logo === 'default') {
             logoClass = 'logo-default';
         } else if (this.settings.logo === 'auto') {
-            // 自动模式下使用Google的样式
+            // 自动模式下使用 Google 的样式。
             logoClass = 'logo-google';
         } else {
             logoClass = `logo-${this.settings.logo.toLowerCase()}`;
@@ -871,7 +872,7 @@ export const SearchMixin = {
         googleBtn.classList.add(logoClass);
         bingBtn.classList.add(logoClass);
 
-        // 确保按钮状态正确
+        // 确保按钮状态正确。
         googleBtn.classList.toggle('active', this.currentEngine === 'google');
         bingBtn.classList.toggle('active', this.currentEngine === 'bing');
     },

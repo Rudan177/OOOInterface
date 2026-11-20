@@ -1,7 +1,7 @@
-/* ============================================
-   OOOInterface 小组件面板（Widget Panel）
-   设计风格完全参照 OOOInterface 主界面
-   ============================================ */
+/**
+ * OOOInterface 小组件面板（Widget Panel）。
+ * 设计风格参照 OOOInterface 主界面。
+ */
 
 /* ---------- 面板外壳 ---------- */
 
@@ -90,7 +90,7 @@
 
 /* ---------- 小组件卡片 ---------- */
 
-/* 所有小组件卡片：正方形宽=高；长方形高度=正方形宽度，面板上下滚动查看 */
+/* 所有小组件卡片：正方形宽=高；长方形高度=正方形宽度，面板上下滚动查看。 */
 .widget-card {
     border-radius: 14px;
     padding: 10px;
@@ -105,7 +105,6 @@
     user-select: none;
     -webkit-user-select: none;
 }
-
 
 /* 正方形：占 1 列，宽=高=列宽（行高由 JS 控制） */
 .widget-card.square {
@@ -185,7 +184,7 @@ body.dynamic-blur .widget-card {
 }
 
 /* 仅开启高级视觉效果时：面板显示卡片依次滑入（阶梯延迟）
-   普通 hover 呼出（.visible）与壁纸模式常显示（body.scrolled）均触发 */
+   普通 hover 呼出（.visible）与壁纸模式常显示（body.scrolled）均触发。 */
 body.dynamic-blur .widget-panel-container.visible .widget-card,
 body.dynamic-blur.scrolled .widget-panel-container .widget-card {
     animation: widgetCardIn 0.32s cubic-bezier(0.4, 0, 0.2, 1) backwards;
@@ -217,7 +216,6 @@ body.dynamic-blur.scrolled .widget-panel-container .widget-card:nth-child(n+7) {
     }
 }
 
-
 /* 壁纸滚动模式下小组件面板常显示 */
 body.scrolled .widget-panel-container,
 body.scrolled .widget-panel-container.visible {
@@ -225,19 +223,19 @@ body.scrolled .widget-panel-container.visible {
     opacity: 1;
 }
 
-/* 固定侧边栏：壁纸模式下未勾选"壁纸模式固定"时，覆盖 body.scrolled 的常显示规则，保持隐藏 */
+/* 固定侧边栏：壁纸模式下未勾选“壁纸模式固定”时，覆盖 body.scrolled 的常显示规则，保持隐藏。 */
 body.scrolled.sidebar-fixed .widget-panel-container.hiding {
     transform: translateX(calc(-100% - 20px));
     opacity: 0;
 }
 
-/* 固定侧边栏：壁纸模式下未勾选"壁纸模式固定"时，dynamic-blur 下同样保持隐藏 */
+/* 固定侧边栏：壁纸模式下未勾选“壁纸模式固定”时，dynamic-blur 下同样保持隐藏。 */
 body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     transform: translateX(calc(-100% - 20px));
     opacity: 0;
 }
 
-/* 窄屏（<750px）面板推出不推动其他元素 */
+/* 窄屏（<750px）面板推出不推动其他元素。 */
 @media (max-width: 749px) {
     body.widget-panel-open .container {
         transform: none;
@@ -1631,7 +1629,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 .widget-size-segmented.no-square .widget-size-seg-label-rect { left: 0; }
 .widget-size-segmented.no-square .widget-size-seg-label-super { left: 50%; }
 
-/* 无小尺寸时：大=第1段（thumb 不移动），超大=第2段 */
+/* 无小尺寸时：大 = 第 1 段（thumb 不移动），超大 = 第 2 段。 */
 .widget-size-segmented.no-square.rect .widget-size-seg-thumb { transform: none; }
 .widget-size-segmented.no-square.super .widget-size-seg-thumb { transform: translateX(calc(100% + 6px)); }
 
@@ -1740,9 +1738,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     transform: scale(1.1);
 }
 
-/* ============================================
-   设置页小组件视觉优化
-   ============================================ */
+/* ---------- 设置页小组件视觉优化 ---------- */
 
 /* 列表容器 — 与快速访问链接完全一致 */
 .widget-panel-list-container {
@@ -1866,7 +1862,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     white-space: nowrap;
 }
 
-/* ========== 内联输入+按钮行 [input [button]] ========== */
+/* ---------- 内联输入 + 按钮行 [input [button]] ---------- */
 
 .widget-input-row {
     display: flex;
@@ -1994,7 +1990,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     padding: 0 4px;
 }
 
-/* ========== 分段切换器 ========== */
+/* ---------- 分段切换器 ---------- */
 
 .widget-size-row {
     display: flex;
@@ -2077,7 +2073,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
 .widget-size-segmented.no-square .widget-size-seg-label-rect { left: 0; }
 .widget-size-segmented.no-square .widget-size-seg-label-super { left: 50%; }
 
-/* 无小尺寸时：大=第1段（thumb 不移动），超大=第2段 */
+/* 无小尺寸时：大 = 第 1 段（thumb 不移动），超大 = 第 2 段。 */
 .widget-size-segmented.no-square.rect .widget-size-seg-thumb { transform: none; }
 .widget-size-segmented.no-square.super .widget-size-seg-thumb { transform: translateX(calc(100% + 4px)); }
 
@@ -2110,7 +2106,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     cursor: not-allowed;
 }
 
-/* ========== 底部按钮 ========== */
+/* ---------- 底部按钮 ---------- */
 
 .widget-form-bottom-buttons {
     display: flex;
@@ -2168,7 +2164,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     background: rgba(var(--surface-color-rgb), 0.9);
 }
 
-/* ========== Google Tasks 连接面板 ========== */
+/* ---------- Google Tasks 连接面板 ---------- */
 
 .widget-google-tasks-panel {
     flex-direction: column;
@@ -2231,7 +2227,6 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     word-break: break-all;
 }
 
-
 .widget-google-tasks-panel .gtasks-input-row {
     display: flex;
     align-items: center;
@@ -2283,7 +2278,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     border: none;
 }
 
-/* ========== 动画 ========== */
+/* ---------- 动画 ---------- */
 
 .widget-form-view {
     display: flex;
@@ -2322,9 +2317,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     }
 }
 
-/* ============================================
-   深色模式适配
-   ============================================ */
+/* ---------- 深色模式适配 ---------- */
 
 @media (prefers-color-scheme: dark) {
     .widget-menu-item:hover {
@@ -2366,9 +2359,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .widget-panel-container.hiding {
     }
 }
 
-/* ============================================
-   高级视觉效果 - 小组件设置页毛玻璃适配
-   ============================================ */
+/* ---------- 高级视觉效果 - 小组件设置页毛玻璃适配 ---------- */
 
 body.dynamic-blur .right-panel-upper .widget-panel-list-container {
     background: transparent !important;

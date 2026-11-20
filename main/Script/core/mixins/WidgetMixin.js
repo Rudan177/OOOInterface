@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 小组件面板：渲染与管理、卡片尺寸与固定侧边栏联动，以及类型选择与配置表单。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 import { ClockWidget } from '../widgets/ClockWidget.js';
 import { CalendarWidget } from '../widgets/CalendarWidget.js';
@@ -9,7 +10,7 @@ import { TasksWidget } from '../widgets/TasksWidget.js';
 import { AiAgentWidget } from '../widgets/AiAgentWidget.js';
 import { EmailWidget } from '../widgets/EmailWidget.js';
 import { UpgradeToolWidget } from '../widgets/UpgradeToolWidget.js';
-// 类型表与尺寸辅助函数与侧边栏面板共用（Stage 9）。函数以别名导入，
+// 类型表与尺寸辅助函数与侧边栏面板共用。函数以别名导入，
 // 避免与下面同名的委托方法在阅读时混淆。
 import {
     WIDGET_TYPES,
@@ -56,10 +57,10 @@ createWidgetInstance (config) {
 renderWidgetPanel () {
     const grid = document.getElementById('widget-panel-grid');
     if (!grid) return;
-    // 侧边栏小组件子视图交换期间挂起，避免主页面网格渲染侧边栏数据
+    // 侧边栏小组件子视图交换期间挂起，避免主页面网格渲染侧边栏数据。
     if (this._spSwap && this._spSwap.widgetPanel !== undefined) return;
 
-    // 销毁旧实例
+    // 销毁旧实例。
     if (this.widgetInstances) {
         this.widgetInstances.forEach(w => {
             try { w.destroy(); } catch (e) { /* 忽略 */ }
@@ -92,22 +93,22 @@ renderWidgetPanel () {
 
     this.updateWidgetPanelVisibility();
 
-    // 长方形高度 = 正方形宽度（列宽），通过 JS 计算确保与正方形完全一致
+    // 长方形高度 = 正方形宽度（列宽），通过 JS 计算确保与正方形完全一致。
     this.syncWidgetCardHeights();
 },
 syncWidgetCardHeights () {
     const grid = document.getElementById('widget-panel-grid');
     if (!grid) return;
 
-    // 等待布局完成后再测量
+    // 等待布局完成后再测量。
     requestAnimationFrame(() => {
         if (!grid.isConnected) return;
         const gap = 8; // grid gap（与 CSS 一致）
         const colWidth = (grid.clientWidth - gap) / 2;
         if (!(colWidth > 0)) return;
 
-        // 设置 grid 行高 = 正方形宽度（列宽）
-        // 正方形（1列）与长方形（2列）均被 stretch 填满行高，两者高度完全一致
+        // 设置 grid 行高 = 正方形宽度（列宽）。
+        // 正方形（1 列）与长方形（2 列）均被 stretch 填满行高，两者高度完全一致。
         grid.style.gridAutoRows = colWidth + 'px';
     });
 },
@@ -123,12 +124,12 @@ updateWidgetPanelVisibility () {
     const enabled = this.isWidgetPanelActive();
     if (enabled) {
         panel.classList.add('active');
-        // 重新初始化交互（处理"先禁用再启用"的情况，确保 mousemove 监听器已绑定）
+        // 重新初始化交互（处理「先禁用再启用」的情况，确保 mousemove 监听器已绑定）。
         if (!this._widgetPanelMouseMoveHandler) {
             this.initWidgetPanel();
             return;
         }
-        // 当前视图处于固定状态时，面板显隐由固定配置接管
+        // 当前视图处于固定状态时，面板显隐由固定配置接管。
         const fixed = this.isScrolled
             ? this.settings.fixSidebarWallpaper
             : (this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage);
@@ -136,14 +137,14 @@ updateWidgetPanelVisibility () {
             this.syncSidebarFixedState();
             return;
         }
-        // 确保容器初始为隐藏状态（与侧边栏保持一致）
+        // 确保容器初始为隐藏状态（与侧边栏保持一致）。
         if (container) {
             container.classList.remove('visible');
             container.classList.add('hiding');
         }
     } else {
         panel.classList.remove('active');
-        // 无小组件时始终隐藏面板容器（不显示空面板）
+        // 无小组件时始终隐藏面板容器（不显示空面板）。
         if (container) {
             container.classList.remove('visible');
             container.classList.add('hiding');
@@ -153,19 +154,19 @@ updateWidgetPanelVisibility () {
     }
 },
 syncWidgetPanelsForWallpaper (wallpaperMode) {
-    // 进入壁纸模式：壁纸模式固定独立生效，一律由固定配置接管
+    // 进入壁纸模式：壁纸模式固定独立生效，一律由固定配置接管。
     if (wallpaperMode) {
         this.syncSidebarFixedState();
         return;
     }
 
-    // 退出壁纸模式：主开关开启时由固定配置接管（主页面固定）
+    // 退出壁纸模式：主开关开启时由固定配置接管（主页面固定）。
     if (this.settings.fixSidebarEnabled) {
         this.syncSidebarFixedState();
         return;
     }
 
-    // 恢复 hover 控制：清除 visible 与推动残留（widget-panel-open / sidebar-visible）
+    // 恢复 hover 控制：清除 visible 与推动残留（widget-panel-open、sidebar-visible）。
     const sidebarContainer = document.getElementById('quick-access-sidebar-container');
     const widgetContainer = document.getElementById('widget-panel-container');
     document.body.classList.remove('widget-panel-open');
@@ -177,25 +178,25 @@ syncWidgetPanelsForWallpaper (wallpaperMode) {
         container.classList.add('hiding');
     });
     // 侧边栏已回到隐藏态：壁纸偏移一起撤销（非常显壁纸在主页本就没有偏移，
-    // 常显壁纸则要等 restoreHomepage 随后的 transform 一起回缩）
+    // 常显壁纸则要等 restoreHomepage 随后的 transform 一起回缩）。
     this.setSidebarWallpaperPush(false);
 },
 syncSidebarFixedState () {
     const sidebarContainer = document.getElementById('quick-access-sidebar-container');
     const widgetContainer = document.getElementById('widget-panel-container');
-    // sidebar-fixed 标记：主开关开启或壁纸模式固定关闭时需要（后者用于 CSS 覆盖 body.scrolled 的常显示规则）
+    // sidebar-fixed 标记：主开关开启或壁纸模式固定关闭时需要（后者用于 CSS 覆盖 body.scrolled 的常显示规则）。
     document.body.classList.toggle('sidebar-fixed', !!this.settings.fixSidebarEnabled || !this.settings.fixSidebarWallpaper);
 
-    // 当前视图是否固定显示（壁纸模式固定独立生效）
+    // 当前视图是否固定显示（壁纸模式固定独立生效）。
     const fixed = this.isScrolled
         ? this.settings.fixSidebarWallpaper
         : (this.settings.fixSidebarEnabled && this.settings.fixSidebarHomepage);
-    // 侧边栏固定还需快速访问侧边栏功能开启；小组件面板固定还需面板有内容
+    // 侧边栏固定还需快速访问侧边栏功能开启；小组件面板固定还需面板有内容。
     const sidebarFixed = fixed && this.settings.quickAccessSidebar;
     const widgetFixed = fixed && this.isWidgetPanelActive();
 
     if (sidebarFixed) {
-        // 固定显示：清除 hiding 残留，确保可见
+        // 固定显示：清除 hiding 残留，确保可见。
         sidebarContainer.classList.remove('hiding');
         if (!sidebarContainer.classList.contains('visible')) {
             sidebarContainer.classList.add('visible');
@@ -206,7 +207,7 @@ syncSidebarFixedState () {
     }
 
     if (widgetFixed) {
-        // 固定显示：清除 hiding 残留，确保可见
+        // 固定显示：清除 hiding 残留，确保可见。
         widgetContainer.classList.remove('hiding');
         if (!widgetContainer.classList.contains('visible')) {
             widgetContainer.classList.add('visible');
@@ -216,7 +217,7 @@ syncSidebarFixedState () {
         widgetContainer.classList.add('hiding');
     }
 
-    // 清除推动残留（widget-panel-open / sidebar-visible），避免固定状态误触发推挤
+    // 清除推动残留（widget-panel-open、sidebar-visible），避免固定状态误触发推挤。
     document.body.classList.remove('widget-panel-open');
     document.body.classList.remove('sidebar-visible');
     // 固定侧边栏不是「临时推入」：同步撤销壁纸偏移，否则 hover 退出后
@@ -224,7 +225,7 @@ syncSidebarFixedState () {
     this.setSidebarWallpaperPush(false);
 },
 initWidgetPanel () {
-    // 幂等：若 mousemove 监听器已绑定（非首次调用），跳过
+    // 幂等：若 mousemove 监听器已绑定（非首次调用），跳过。
     if (this._widgetPanelMouseMoveHandler) return;
     const container = document.getElementById('widget-panel-container');
     const panel = document.getElementById('widget-panel');
@@ -249,7 +250,7 @@ initWidgetPanel () {
             container.classList.remove('hiding');
             container.classList.add('visible');
             document.body.classList.add('widget-panel-open');
-            // 面板可见后重新同步卡片高度（隐藏时无法测量宽度）
+            // 面板可见后重新同步卡片高度（隐藏时无法测量宽度）。
             this.syncWidgetCardHeights();
         }
     };
@@ -258,9 +259,9 @@ initWidgetPanel () {
         if (hideTimeout) clearTimeout(hideTimeout);
         hideTimeout = setTimeout(() => {
             if (!isVisible) return;
-            // 当前视图处于固定模式时，不被 hover 隐藏
+            // 当前视图处于固定模式时，不被 hover 隐藏。
             if (this.isSidebarFixed()) return;
-            // HIDE_DELAY=0 提供一帧窗口：若鼠标仍在面板上，下一帧 mousemove 会触发 showPanel 清除此回调
+            // HIDE_DELAY=0 提供一帧窗口：若鼠标仍在面板上，下一帧 mousemove 会触发 showPanel 清除此回调。
             isVisible = false;
             container.classList.remove('visible');
             container.classList.add('hiding');
@@ -269,7 +270,7 @@ initWidgetPanel () {
         }, HIDE_DELAY);
     };
 
-    // 全局鼠标移动检测：触发区显示面板，鼠标进入面板范围维持显示，离开则关闭
+    // 全局鼠标移动检测：触发区显示面板，鼠标进入面板范围维持显示，离开则关闭。
     const widgetPanelMouseMoveHandler = (e) => {
         if (!this.isWidgetPanelActive()) return;
         const modal = document.getElementById('settings-modal');
@@ -277,7 +278,7 @@ initWidgetPanel () {
         const mouseX = e.clientX;
 
         if (mouseX <= TRIGGER_ZONE_WIDTH) {
-            // 当前视图处于固定模式时，无需 hover 触发
+            // 当前视图处于固定模式时，无需 hover 触发。
             if (this.isSidebarFixed()) return;
             showPanel();
         } else if (!this.isSidebarFixed()) {
@@ -299,7 +300,7 @@ initWidgetPanel () {
     document.addEventListener('mousemove', widgetPanelMouseMoveHandler);
 
     // 面板滚轮：内容溢出时拦截（只滚动面板内容，不触发壁纸模式进退）；
-    // 内容不溢出时放行（交给页面滚动处理）
+    // 内容不溢出时放行（交给页面滚动处理）。
     const panelWheelHandler = (e) => {
         const maxScroll = container.scrollHeight - container.clientHeight;
         if (maxScroll <= 0) return; // 内容不溢出，放行
@@ -325,7 +326,7 @@ cleanupWidgetPanel () {
 syncWidgetPanelUI () {
     const manageGroup = document.getElementById('widget-panel-manage-group');
     if (!manageGroup) return;
-    // 始终显示，列表为空时由管理界面提示"暂无小组件"
+    // 始终显示，列表为空时由管理界面提示「暂无小组件」。
     manageGroup.style.display = 'block';
 },
 saveWidgetSettings () {
@@ -344,7 +345,7 @@ openWidgetSettings (widgetId) {
     this.openSettings('badge');
     setTimeout(() => {
         this.showWidgetPanelMenuInRightPanel();
-        // 尝试滚动到指定小组件
+        // 尝试滚动到指定小组件。
         if (widgetId) {
             setTimeout(() => {
                 const item = document.querySelector(`.widget-menu-item[data-widget-id="${widgetId}"]`);
@@ -377,13 +378,13 @@ showWidgetPanelMenuInRightPanel (skipAnimation) {
     plusBtn.textContent = '+';
     plusBtn.title = '添加小组件';
 
-    // 导出按钮
+    // 导出按钮。
     const exportBtn = document.createElement('button');
     exportBtn.className = 'settings-import-btn settings-export-btn';
     exportBtn.title = '导出小组件配置为 JSON';
     exportBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
 
-    // 导入按钮
+    // 导入按钮。
     const importBtn = document.createElement('button');
     importBtn.className = 'settings-import-btn';
     importBtn.title = '导入小组件配置';
@@ -402,21 +403,21 @@ showWidgetPanelMenuInRightPanel (skipAnimation) {
 
     this.updateWidgetPanelListInMenu(listContainer);
 
-    // "+" 按钮：显示类型选择器
+    // 「+」按钮：显示类型选择器。
     plusBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
         self.showWidgetTypePicker(container, listContainer, buttonContainer);
     });
 
-    // 导出
+    // 导出。
     exportBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
         self.exportWidgets();
     });
 
-    // 导入
+    // 导入。
     importBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -450,7 +451,7 @@ updateWidgetPanelListInMenu (listContainer) {
         return;
     }
 
-    // 使用 DocumentFragment 批量构建条目
+    // 使用 DocumentFragment 批量构建条目。
     const fragment = document.createDocumentFragment();
 
     widgets.forEach((widget, index) => {
@@ -460,10 +461,10 @@ updateWidgetPanelListInMenu (listContainer) {
         item.className = 'widget-menu-item';
         item.setAttribute('data-index', index);
         item.setAttribute('data-widget-id', widget.id);
-        // 保存对 settings 对象的引用：拖动提交时按此重排，保留 data/size 等配置
+        // 保存对 settings 对象的引用：拖动提交时按此重排，保留 data、size 等配置。
         item._sortRef = widget;
 
-        // 拖拽手柄（复用快速访问链接样式）
+        // 拖拽手柄（复用快速访问链接样式）。
         const dragHandle = document.createElement('div');
         dragHandle.className = 'quick-link-drag-handle';
         dragHandle.innerHTML = '<span></span><span></span>';
@@ -491,7 +492,7 @@ updateWidgetPanelListInMenu (listContainer) {
 
         const subText = self.getWidgetSubtitle(widget);
         info.appendChild(nameRow);
-        // 无实际配置信息时不生成第二行，条目保持单行紧凑
+        // 无实际配置信息时不生成第二行，条目保持单行紧凑。
         if (subText) {
             const sub = document.createElement('div');
             sub.className = 'widget-menu-sub';
@@ -499,7 +500,7 @@ updateWidgetPanelListInMenu (listContainer) {
             info.appendChild(sub);
         }
 
-        // 点击条目编辑（参考快速访问链接）
+        // 点击条目编辑（参考快速访问链接）。
         info.addEventListener('click', (e) => {
             e.stopPropagation();
             const container = listContainer.closest('.settings-menu-container');
@@ -536,11 +537,11 @@ updateWidgetPanelListInMenu (listContainer) {
 
     listContainer.appendChild(fragment);
 
-    // 接管拖动排序（整行可拖，移动超过阈值才算拖动；轻点仍进入编辑）
+    // 接管拖动排序（整行可拖，移动超过阈值才算拖动；轻点仍进入编辑）。
     listContainer._sortable = attachSortableList(listContainer, {
         itemSelector: '.widget-menu-item',
         onCommit: (items) => {
-            // 按新 DOM 顺序重排同一批对象引用，保留 data/size 等配置
+            // 按新 DOM 顺序重排同一批对象引用，保留 data、size 等配置。
             self.settings.widgetPanel.widgets = items.map(el => el._sortRef);
             items.forEach((el, i) => el.setAttribute('data-index', i));
             self.saveWidgetSettings();
@@ -559,18 +560,18 @@ getWidgetSubtitle (widget) {
             const n = Array.isArray(data.items) ? data.items.length : 0;
             return '任务' + (n ? ' · ' + n + ' 个' : '');
         }
-        // 时钟 / 日历的第二行只是复述类型名，无实际配置信息，交由调用方收起该行
+        // 时钟或日历的第二行只是复述类型名，无实际配置信息，交由调用方收起该行。
         default: return '';
     }
 },
 showWidgetTypePicker (container, listContainer, buttonContainer) {
     const self = this;
 
-    // 标记当前子视图（ESC 返回列表用）
+    // 标记当前子视图（ESC 返回列表用）。
     const rpu = document.getElementById('right-panel-upper');
     if (rpu) rpu.dataset.subView = 'widget-type-picker';
 
-    // 添加流程中隐藏底部导出/导入/+ 按钮
+    // 添加流程中隐藏底部导出、导入与 + 按钮。
     if (buttonContainer) {
         const ioRow = buttonContainer.querySelector('.quick-links-io-row');
         const plusBtn = buttonContainer.querySelector('.settings-plus-btn');
@@ -606,7 +607,7 @@ showWidgetTypePicker (container, listContainer, buttonContainer) {
             item.className = 'widget-type-picker-item';
             item.innerHTML = '<span class="material-icons">' + meta.icon + '</span><span>' + meta.name + '</span>';
             item.addEventListener('click', () => {
-                // 先滑出类型选择器，再进入配置表单
+                // 先滑出类型选择器，再进入配置表单。
                 self.exitWidgetFormView(listContainer, () => {
                     self.showWidgetConfigForm(listContainer, null, type);
                 });
@@ -644,7 +645,7 @@ showWidgetFormView (listContainer, buildContentFn) {
 exitWidgetFormView (listContainer, callback) {
     const view = listContainer.querySelector('.widget-form-view');
 
-    // 底部表单按钮（确定/取消）同步滑出
+    // 底部表单按钮（确定、取消）同步滑出。
     const rpu = document.getElementById('right-panel-upper');
     const buttonContainer = rpu ? rpu.querySelector('.settings-menu-button-container') : null;
     const btnRow = buttonContainer ? buttonContainer.querySelector('.widget-form-bottom-buttons') : null;
@@ -672,7 +673,7 @@ exitWidgetFormView (listContainer, callback) {
         t.classList.remove('slide-in-right');
         t.classList.add('slide-out-right');
         t.addEventListener('animationend', onDone, { once: true });
-        // 兜底：动画异常时 300ms 后强制完成
+        // 兜底：动画异常时 300ms 后强制完成。
         setTimeout(() => {
             if (t.parentNode) {
                 t.dispatchEvent(new Event('animationend'));
@@ -693,7 +694,7 @@ restoreWidgetPanelButtons () {
         if (plusBtn) plusBtn.style.display = '';
         if (formBtns && formBtns.parentNode) formBtns.parentNode.removeChild(formBtns);
 
-        // 恢复的按钮滑入（避免闪现）
+        // 恢复的按钮滑入（避免闪现）。
         requestAnimationFrame(() => {
             if (ioRow) {
                 ioRow.classList.remove('slide-in-right');
@@ -718,15 +719,15 @@ showWidgetConfigForm (listContainer, widget, presetType) {
     const data = widget ? (widget.data || {}) : {};
     const currentSize = this.normalizeWidgetSize(type, widget ? widget.size : meta.defaultSize);
 
-    // 找到底部按钮容器（导出/导入/+ 所在位置）
+    // 找到底部按钮容器（导出、导入、+ 所在位置）。
     const container = listContainer.closest('.settings-menu-container');
     const buttonContainer = container ? container.querySelector('.settings-menu-button-container') : null;
 
-    // 标记当前子视图（ESC 返回列表用）
+    // 标记当前子视图（ESC 返回列表用）。
     const rpu = document.getElementById('right-panel-upper');
     if (rpu) rpu.dataset.subView = 'widget-config';
 
-    // 进入表单模式：隐藏导出/导入/+ 按钮
+    // 进入表单模式：隐藏导出、导入与 + 按钮。
     let ioRow = null, plusBtn = null;
     if (buttonContainer) {
         ioRow = buttonContainer.querySelector('.quick-links-io-row');
@@ -737,7 +738,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
 
     listContainer.innerHTML = '';
 
-    // 表单视图容器（带滑入动画）
+    // 表单视图容器（带滑入动画）。
     const formView = document.createElement('div');
     formView.className = 'widget-form-view';
     listContainer.appendChild(formView);
@@ -745,7 +746,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
     const form = document.createElement('div');
     form.className = 'widget-add-form';
 
-    // 类型（只读展示）
+    // 类型（只读展示）。
     const typeRow = document.createElement('div');
     typeRow.className = 'widget-add-form-row';
     const typeLabel = document.createElement('label');
@@ -757,8 +758,8 @@ showWidgetConfigForm (listContainer, widget, presetType) {
     typeRow.appendChild(typeVal);
     form.appendChild(typeRow);
 
-    // 尺寸分段滑块（iOS 26 分段切换器风格：小 / 大 / 超大）
-    // 允许尺寸由类型元信息决定：不允许小尺寸的类型（任务/AI Agent/邮箱）只显示 大/超大
+    // 尺寸分段滑块（iOS 26 分段切换器风格：小、大、超大）。
+    // 允许尺寸由类型元信息决定：不允许小尺寸的类型（任务、AI Agent、邮箱）只显示大、超大。
     const allowedSizes = this.getWidgetAllowedSizes(type);
     const currentIdx = allowedSizes.indexOf(currentSize);
     const hasSuper = allowedSizes.indexOf('super') >= 0;
@@ -826,7 +827,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
     sizeRow.appendChild(seg);
     form.appendChild(sizeRow);
 
-    // 类型专属配置
+    // 类型专属配置。
     const extraFields = {};
 
     if (type === 'weather') {
@@ -895,7 +896,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
     }
 
     if (type === 'email') {
-        // 服务商选择
+        // 服务商选择。
         const providerRow = document.createElement('div');
         providerRow.className = 'widget-add-form-row';
         const providerLabel = document.createElement('label');
@@ -920,7 +921,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
 
         extraFields.provider = providerSelect;
 
-        // Gmail Google 连接面板
+        // Gmail Google 连接面板。
         const gmailPanel = document.createElement('div');
         gmailPanel.className = 'widget-add-form-row widget-google-tasks-panel';
         gmailPanel.style.display = (providerSelect.value === 'gmail') ? '' : 'none';
@@ -1017,12 +1018,12 @@ showWidgetConfigForm (listContainer, widget, presetType) {
 
         form.appendChild(gmailPanel);
 
-        // 切换服务商时显示/隐藏 Gmail 面板
+        // 切换服务商时显示或隐藏 Gmail 面板。
         providerSelect.addEventListener('change', () => {
             gmailPanel.style.display = providerSelect.value === 'gmail' ? '' : 'none';
         });
 
-        // 其他服务商：API 地址（非 Gmail 时显示）
+        // 其他服务商：API 地址（非 Gmail 时显示）。
         const apiRow = document.createElement('div');
         apiRow.className = 'widget-add-form-row';
         apiRow.style.display = (providerSelect.value === 'gmail') ? 'none' : '';
@@ -1053,7 +1054,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
         form.appendChild(apiRow);
         extraFields.apiUrl = apiInput;
 
-        // 切换时同步显示/隐藏 API 行
+        // 切换时同步显示或隐藏 API 行。
         providerSelect.addEventListener('change', () => {
             apiRow.style.display = providerSelect.value === 'gmail' ? 'none' : '';
         });
@@ -1061,12 +1062,12 @@ showWidgetConfigForm (listContainer, widget, presetType) {
 
     formView.appendChild(form);
 
-    // 滑入动画
+    // 滑入动画。
     requestAnimationFrame(() => {
         formView.classList.add('slide-in-right');
     });
 
-    // 底部按钮：确定/取消（放入底部按钮容器，替代导出/导入/+）
+    // 底部按钮：确定、取消（放入底部按钮容器，替代导出、导入与 +）。
     const btnRow = document.createElement('div');
     btnRow.className = 'widget-form-bottom-buttons';
 
@@ -1083,7 +1084,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
 
     if (buttonContainer) {
         buttonContainer.appendChild(btnRow);
-        // 底部按钮与表单内容同步滑入
+        // 底部按钮与表单内容同步滑入。
         requestAnimationFrame(() => {
             btnRow.classList.add('slide-in-right');
         });
@@ -1091,7 +1092,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
         form.appendChild(btnRow); // 兜底：找不到容器时直接放表单底部
     }
 
-    // 退出表单：滑出动画后恢复导出/导入/+ 按钮，回到列表
+    // 退出表单：滑出动画后恢复导出、导入与 + 按钮，回到列表。
     const exitForm = (backToList) => {
         self.exitWidgetFormView(listContainer, () => {
             self.restoreWidgetPanelButtons();
@@ -1104,7 +1105,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
     });
 
     confirmBtn.addEventListener('click', () => {
-        // 尺寸映射：按当前类型允许的尺寸列表取索引对应的尺寸
+        // 尺寸映射：按当前类型允许的尺寸列表取索引对应的尺寸。
         const size = allowedSizes[parseInt(sizeSlider.value, 10)] || allowedSizes[allowedSizes.length - 1];
         const newData = {};
 
@@ -1128,7 +1129,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
         }
 
         if (widget) {
-            // 编辑：更新配置并重渲染
+            // 编辑：更新配置并重渲染。
             widget.size = size;
             widget.data = Object.assign({}, widget.data, newData);
             const idx = self.settings.widgetPanel.widgets.findIndex(w => w.id === widget.id);
@@ -1144,7 +1145,7 @@ showWidgetConfigForm (listContainer, widget, presetType) {
             self.renderWidgetPanel();
             self.showNotification('小组件已更新');
         } else {
-            // 添加
+            // 添加。
             const newWidget = {
                 id: self.genWidgetId(),
                 type: type,

@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 快速访问链接：增删改、侧边栏版本渲染，以及链接管理面板与 JSON 导入导出。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 import { QuickLinksExporter, QuickLinksImporter } from '../quicklinks-export.js';
 import { attachSortableList } from '../sortable.js';
@@ -16,7 +17,7 @@ export const QuickLinksMixin = {
                 }, 100);
                 return;
             }
-            // 侧边栏小组件空态/设置跳转直达：打开设置并进入小组件列表管理器
+            // 侧边栏小组件空态或设置跳转直达：打开设置并进入小组件列表管理器。
             if (params.get('openWidgets') === '1') {
                 this.openSettings('badge');
                 setTimeout(() => {
@@ -59,12 +60,12 @@ export const QuickLinksMixin = {
             return;
         }
 
-        // 确保URL包含协议
+        // 确保 URL 包含协议。
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = 'https://' + url;
         }
 
-        // 检查URL格式
+        // 检查 URL 格式。
         try {
             new URL(url);
         } catch (e) {
@@ -73,23 +74,23 @@ export const QuickLinksMixin = {
             return;
         }
 
-        // 检查是否已存在同名链接
+        // 检查是否已存在同名链接。
         const existingIndex = this.settings.quickLinks.findIndex(link => link.name === name);
         if (existingIndex >= 0) {
-            // 更新现有链接
+            // 更新现有链接。
             this.settings.quickLinks[existingIndex].url = url;
             this.showNotification('快速访问链接已更新');
         } else {
-            // 添加新链接
+            // 添加新链接。
             this.settings.quickLinks.push({ name, url });
             this.showNotification('快速访问链接已添加');
         }
 
-        // 清空输入框
+        // 清空输入框。
         nameInput.value = '';
         urlInput.value = '';
 
-        // 更新列表和保存设置
+        // 更新列表和保存设置。
         this.updateQuickLinksList();
         this.saveSettings();
     },
@@ -146,7 +147,7 @@ export const QuickLinksMixin = {
         }
     },
     applyQuickLinks() {
-        // 侧边栏链接子视图交换期间挂起，避免主页面渲染侧边栏数据
+        // 侧边栏链接子视图交换期间挂起，避免主页面渲染侧边栏数据。
         if (this._spSwap && this._spSwap.quickLinks !== undefined) return;
         const quickAccessContainer = document.getElementById('quick-access-links');
         quickAccessContainer.innerHTML = '';
@@ -154,7 +155,7 @@ export const QuickLinksMixin = {
         if (this.settings.quickLinks.length === 0) {
             quickAccessContainer.style.display = 'none';
         } else if (this.settings.quickAccessSidebar) {
-            // 快速访问侧边栏：隐藏原始底部链接，显示侧边栏
+            // 快速访问侧边栏：隐藏原始底部链接，显示侧边栏。
             quickAccessContainer.style.display = 'none';
         } else {
             quickAccessContainer.style.display = 'flex';
@@ -171,7 +172,7 @@ export const QuickLinksMixin = {
             });
         }
 
-        // 渲染侧边栏版本
+        // 渲染侧边栏版本。
         this.renderQuickAccessSidebar();
     },
     renderQuickAccessSidebar() {
@@ -187,7 +188,7 @@ export const QuickLinksMixin = {
             sidebarLinks.appendChild(emptyMsg);
             this.updateSidebarVisibility();
             this.updateSidebarIconColors();
-            // 不 return，继续渲染底部的添加按钮
+            // 不 return，继续渲染底部的添加按钮。
         } else {
 
             this.settings.quickLinks.forEach((link, index) => {
@@ -195,17 +196,17 @@ export const QuickLinksMixin = {
                 linkItem.className = 'quick-access-sidebar-link';
                 linkItem.title = link.url;
 
-                // 图标容器
+                // 图标容器。
                 const iconEl = document.createElement('span');
                 iconEl.className = 'quick-access-sidebar-link-icon';
 
-                // 字母占位（默认显示）
+                // 字母占位（默认显示）。
                 const letterEl = document.createElement('span');
                 letterEl.className = 'quick-access-sidebar-link-letter';
                 letterEl.textContent = link.name.charAt(0).toUpperCase();
                 iconEl.appendChild(letterEl);
 
-                // 尝试显示已缓存的 favicon
+                // 尝试显示已缓存的 favicon。
                 const faviconImg = document.createElement('img');
                 faviconImg.className = 'quick-access-sidebar-link-favicon';
                 faviconImg.alt = '';
@@ -216,7 +217,7 @@ export const QuickLinksMixin = {
                 let tryFallback = false;
 
                 if (link._favicon !== undefined && link._favicon !== null) {
-                    // _favicon 为空字符串表示之前已检测为无图标，直接用字母占位，不再重试
+                    // _favicon 为空字符串表示之前已检测为无图标，直接用字母占位，不再重试。
                     if (link._favicon !== '') {
                         faviconUrl = link._favicon;
                     }
@@ -237,26 +238,26 @@ export const QuickLinksMixin = {
                             this.src = 'https://icons.duckduckgo.com/ip3/' + domain + '.ico';
                             return;
                         }
-                        // 两个源都失败，回退到字母占位
+                        // 两个源都失败，回退到字母占位。
                         this.style.display = 'none';
                         const letter = this.parentElement.querySelector('.quick-access-sidebar-link-letter');
                         if (letter) letter.style.display = 'flex';
-                        // 仅在从未检测过时写入缓存，避免每次渲染重复回写设置
+                        // 仅在从未检测过时写入缓存，避免每次渲染重复回写设置。
                         if (link._favicon === undefined && domain) {
                             self.cacheFavicon(link, index, domain, null);
                         }
                     };
 
                     faviconImg.onload = function () {
-                        // 检测是否为默认图标（如 Google 的默认地球图标大小为 16x16）
+                        // 检测是否为默认图标（如 Google 的默认地球图标大小为 16x16）。
                         const isDefaultIcon = this.naturalWidth <= 20 || this.naturalHeight <= 20;
 
                         if (isDefaultIcon && link._favicon === undefined) {
-                            // 无真实图标，回退到字母占位
+                            // 无真实图标，回退到字母占位。
                             this.style.display = 'none';
                             const letter = this.parentElement.querySelector('.quick-access-sidebar-link-letter');
                             if (letter) letter.style.display = 'flex';
-                            // 标记为无图标，下次不再尝试加载
+                            // 标记为无图标，下次不再尝试加载。
                             self.cacheFavicon(link, index, domain, null);
                             return;
                         }
@@ -273,7 +274,7 @@ export const QuickLinksMixin = {
 
                 iconEl.appendChild(faviconImg);
 
-                // 文字
+                // 文字。
                 const textEl = document.createElement('span');
                 textEl.className = 'quick-access-sidebar-link-text';
                 textEl.textContent = link.name;
@@ -287,13 +288,13 @@ export const QuickLinksMixin = {
 
                 sidebarLinks.appendChild(linkItem);
             });
-        } // else 结束
+        }
 
-        // 根据设置显示/隐藏图标
+        // 根据设置显示或隐藏图标。
         const containerEl = document.getElementById('quick-access-sidebar-container');
         if (containerEl) {
             containerEl.classList.toggle('no-icons', !this.settings.showQuickLinkIcons);
-            // 内联样式兜底，确保图标隐藏
+            // 内联样式兜底，确保图标隐藏。
             const linkItems = containerEl.querySelectorAll('.quick-access-sidebar-link');
             linkItems.forEach(item => {
                 const icon = item.querySelector('.quick-access-sidebar-link-icon');
@@ -318,7 +319,7 @@ export const QuickLinksMixin = {
         if (src) {
             this.settings.quickLinks[index]._favicon = src;
         } else {
-            // 标记为无图标，存储空字符串避免下次重复请求
+            // 标记为无图标，存储空字符串避免下次重复请求。
             this.settings.quickLinks[index]._favicon = '';
         }
         this.saveSettings();
@@ -338,7 +339,7 @@ export const QuickLinksMixin = {
             sidebar.classList.add('active');
         } else {
             sidebar.classList.remove('active');
-            // 侧边栏功能关闭时始终隐藏容器（固定侧边栏不生效）
+            // 侧边栏功能关闭时始终隐藏容器（固定侧边栏不生效）。
             const container = document.getElementById('quick-access-sidebar-container');
             if (container) {
                 container.classList.remove('visible');
@@ -364,11 +365,11 @@ export const QuickLinksMixin = {
 
         if (!trigger || !container || !sidebar) return;
 
-        // 添加按钮：打开设置并跳转到快速链接管理
+        // 添加按钮：打开设置并跳转到快速链接管理。
         if (addBtn) {
             addBtn.addEventListener('click', () => {
                 this.openSettings('badge');
-                // 等待设置面板打开后，显示快速链接管理
+                // 等待设置面板打开后，显示快速链接管理。
                 setTimeout(() => {
                     this.showQuickLinksMenuInRightPanel();
                 }, 100);
@@ -397,7 +398,7 @@ export const QuickLinksMixin = {
                 clearTimeout(hideTimeout);
                 hideTimeout = null;
             }
-            // 类名与主内容让位标记都已在位：别重复推壁纸
+            // 类名与主内容让位标记都已在位：别重复推壁纸。
             if (isSidebarOpen() && document.body.classList.contains('sidebar-visible')) return;
             container.classList.remove('hiding');
             container.classList.add('visible');
@@ -408,9 +409,9 @@ export const QuickLinksMixin = {
         const scheduleHide = () => {
             if (hideTimeout) clearTimeout(hideTimeout);
             hideTimeout = setTimeout(() => {
-                // 当前视图处于固定模式时，不被 hover 隐藏
+                // 当前视图处于固定模式时，不被 hover 隐藏。
                 if (this.isSidebarFixed()) return;
-                // 已被其它路径（径向菜单/Esc/模式切换）收起或重新展开：以实际状态为准
+                // 已被其它路径（径向菜单、Esc、模式切换）收起或重新展开：以实际状态为准。
                 if (!isSidebarOpen()) {
                     hideTimeout = null;
                     return;
@@ -423,7 +424,7 @@ export const QuickLinksMixin = {
             }, HIDE_DELAY);
         };
 
-        // 全局鼠标移动检测：在右侧边缘触发区域显示容器（与小组件一致）
+        // 全局鼠标移动检测：在右侧边缘触发区域显示容器（与小组件一致）。
         document.addEventListener('mousemove', (e) => {
             if (!this.settings.quickAccessSidebar) return;
             const modal = document.getElementById('settings-modal');
@@ -432,11 +433,11 @@ export const QuickLinksMixin = {
             const mouseX = e.clientX;
 
             if (mouseX >= viewportWidth - TRIGGER_ZONE_WIDTH) {
-                // 当前视图处于固定模式时，无需 hover 触发
+                // 当前视图处于固定模式时，无需 hover 触发。
                 if (this.isSidebarFixed()) return;
                 showSidebar();
             } else if (isSidebarOpen() && !this.isSidebarFixed()) {
-                // 仅在容器可见且未固定时检查是否需要隐藏
+                // 仅在容器可见且未固定时检查是否需要隐藏。
                 const containerRect = container.getBoundingClientRect();
                 const isOverContainer = (
                     mouseX >= containerRect.left &&
@@ -450,7 +451,7 @@ export const QuickLinksMixin = {
             }
         });
 
-        // 容器悬停维持显示（与小组件一致）
+        // 容器悬停维持显示（与小组件一致）。
         container.addEventListener('mouseenter', () => {
             if (!this.settings.quickAccessSidebar) return;
             if (this.isSidebarFixed()) return;
@@ -466,13 +467,13 @@ export const QuickLinksMixin = {
         });
 
         container.addEventListener('mouseleave', () => {
-            // 当前视图固定时鼠标移开不隐藏
+            // 当前视图固定时鼠标移开不隐藏。
             if (this.isSidebarFixed()) return;
             scheduleHide();
         });
 
         // 侧边栏滚轮：内容溢出时拦截（只滚动侧边栏内容，不触发壁纸模式进退）；
-        // 内容不溢出时放行（交给页面滚动处理）
+        // 内容不溢出时放行（交给页面滚动处理）。
         const sidebarLinks = document.getElementById('quick-access-sidebar-links');
         const sidebarWheelHandler = (e) => {
             if (!sidebarLinks) return;
@@ -515,31 +516,31 @@ showQuickLinksMenuInRightPanel (skipAnimation) {
     plusBtn.textContent = '+';
     plusBtn.title = '添加快速访问链接';
 
-    // 书签导入按钮
+    // 书签导入按钮。
     const importBtn = document.createElement('button');
     importBtn.className = 'settings-import-btn';
     importBtn.title = '从 Chrome 书签导入';
     importBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
 
-    // 导出按钮（左边是导出，右边是导入）
+    // 导出按钮（左边是导出，右边是导入）。
     const exportBtn = document.createElement('button');
     exportBtn.className = 'settings-import-btn settings-export-btn';
     exportBtn.title = '导出快速访问链接为 JSON';
     exportBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
 
-    // 导入下拉菜单（挂到 body 避免被父容器裁剪）
+    // 导入下拉菜单（挂到 body 避免被父容器裁剪）。
     const importDropdown = document.createElement('div');
     importDropdown.className = 'bookmark-import-dropdown';
     importDropdown.setAttribute('data-import-dropdown', '');
     document.body.appendChild(importDropdown);
 
-    // 文件夹选择子菜单
+    // 文件夹选择子菜单。
     const folderSubmenu = document.createElement('div');
     folderSubmenu.className = 'bookmark-folder-submenu';
     folderSubmenu.setAttribute('data-folder-submenu', '');
     document.body.appendChild(folderSubmenu);
 
-    // 导出/导入按钮行：左边是导出，右边是导入
+    // 导出/导入按钮行：左边是导出，右边是导入。
     const ioRow = document.createElement('div');
     ioRow.className = 'quick-links-io-row';
     ioRow.appendChild(exportBtn);
@@ -559,14 +560,14 @@ showQuickLinksMenuInRightPanel (skipAnimation) {
         self.showQuickLinksAddInterface(container, listContainer, buttonContainer);
     });
 
-    // 导入按钮点击事件
+    // 导入按钮点击事件。
     importBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
         self.toggleBookmarkImportDropdown(importDropdown, folderSubmenu, importBtn);
     });
 
-    // 导出按钮点击事件：将快速访问链接导出为 JSON 文件
+    // 导出按钮点击事件：将快速访问链接导出为 JSON 文件。
     exportBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -575,13 +576,13 @@ showQuickLinksMenuInRightPanel (skipAnimation) {
         }
     });
 
-    // 点击外部关闭下拉菜单（先注销上一次的监听器，避免反复打开菜单导致监听器泄漏）
+    // 点击外部关闭下拉菜单（先注销上一次的监听器，避免反复打开菜单导致监听器泄漏）。
     if (this._quickLinksDocClickHandler) {
         document.removeEventListener('click', this._quickLinksDocClickHandler);
     }
     this._quickLinksDocClickHandler = (e) => {
         if (!importDropdown.isConnected) {
-            // 下拉元素已被移除（菜单关闭），自动注销监听器
+            // 下拉元素已被移除（菜单关闭），自动注销监听器。
             document.removeEventListener('click', this._quickLinksDocClickHandler);
             this._quickLinksDocClickHandler = null;
             return;
@@ -649,7 +650,7 @@ showQuickLinksAddInterface (container, listContainer, buttonContainer, editIndex
     confirmAddBtn.className = 'settings-menu-confirm-primary';
     confirmAddBtn.textContent = '确定';
 
-    // 编辑模式添加取消按钮
+    // 编辑模式添加取消按钮。
     if (isEdit) {
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = '取消';
@@ -674,9 +675,9 @@ showQuickLinksAddInterface (container, listContainer, buttonContainer, editIndex
 
     confirmAddBtn.addEventListener('click', handleSave);
 
-    // 从 JSON 导入：仅在"新增"模式下提供，编辑模式只保留取消和确定
+    // 从 JSON 导入：仅在「新增」模式下提供，编辑模式只保留取消和确定。
     if (!isEdit) {
-        // 从 JSON 导入按钮：与确定并排，配色与取消按钮同款
+        // 从 JSON 导入按钮：与确定并排，配色与取消按钮同款。
         const importFileBtn = document.createElement('button');
         importFileBtn.textContent = '从JSON导入';
         importFileBtn.title = '从 JSON 文件导入快速访问链接，也可直接拖入 JSON 文件';
@@ -688,7 +689,7 @@ showQuickLinksAddInterface (container, listContainer, buttonContainer, editIndex
         importFileInput.style.display = 'none';
         importFileInput.className = 'quick-links-json-file-input';
 
-        // 读取文件并导入，成功后回到列表视图
+        // 读取文件并导入，成功后回到列表视图。
         const readFileAndImport = (file) => {
             if (!file) return;
             const isJson = /\.json$/i.test(file.name) || (file.type && file.type.indexOf('json') !== -1);
@@ -715,7 +716,7 @@ showQuickLinksAddInterface (container, listContainer, buttonContainer, editIndex
 
         importFileBtn.addEventListener('click', () => importFileInput.click());
 
-        // 支持直接拖入 JSON 文件导入（仅在添加视图内生效）
+        // 支持直接拖入 JSON 文件导入（仅在添加视图内生效）。
         const isAddViewActive = () => {
             const panel = document.getElementById('right-panel-upper');
             return panel && panel.dataset.subView === 'quick-link-add';
@@ -773,7 +774,7 @@ showQuickLinksAddInterface (container, listContainer, buttonContainer, editIndex
 hideQuickLinksAddInterface (container, inputWrapper, listContainer, buttonContainer) {
     const buttonsWrapper = container.querySelector('.quick-links-add-buttons');
 
-    // 移除隐藏的 JSON 文件选择输入框，避免残留在列表视图
+    // 移除隐藏的 JSON 文件选择输入框，避免残留在列表视图。
     const jsonFileInput = container.querySelector('.quick-links-json-file-input');
     if (jsonFileInput && jsonFileInput.parentNode) {
         container.removeChild(jsonFileInput);
@@ -796,12 +797,12 @@ hideQuickLinksAddInterface (container, inputWrapper, listContainer, buttonContai
         buttonsWrapper.classList.add('slide-out-right');
     }
 
-    // 立即恢复列表与按钮区显示，不依赖延迟回调，避免输入框与列表视图重叠残留
+    // 立即恢复列表与按钮区显示，不依赖延迟回调，避免输入框与列表视图重叠残留。
     listContainer.style.display = 'flex';
     buttonContainer.style.display = 'flex';
 
     setTimeout(() => {
-        // 用实时查询兜底移除添加视图节点，确保无论闭包引用状态如何都不残留
+        // 用实时查询兜底移除添加视图节点，确保无论闭包引用状态如何都不残留。
         const leftoverButtons = container.querySelector('.quick-links-add-buttons');
         if (leftoverButtons && leftoverButtons.parentNode) {
             leftoverButtons.parentNode.removeChild(leftoverButtons);
@@ -827,14 +828,14 @@ updateQuickLinksListInMenu (listContainer) {
         return;
     }
 
-    // 使用 DocumentFragment 批量构建条目，大量链接时一次性挂载，避免逐个插入引发多次重排
+    // 使用 DocumentFragment 批量构建条目，大量链接时一次性挂载，避免逐个插入引发多次重排。
     const fragment = document.createDocumentFragment();
 
     this.settings.quickLinks.forEach((link, index) => {
         const item = document.createElement('div');
         item.className = 'quick-link-menu-item';
         item.setAttribute('data-index', index);
-        // 保存对 settings 对象的引用：拖动提交时按此重排，而不是从 DOM 文本重建
+        // 保存对 settings 对象的引用：拖动提交时按此重排，而不是从 DOM 文本重建。
         item._sortRef = link;
 
         const dragHandle = document.createElement('div');
@@ -856,13 +857,13 @@ updateQuickLinksListInMenu (listContainer) {
         info.appendChild(name);
         info.appendChild(url);
 
-        // 点击编辑链接
+        // 点击编辑链接。
         info.addEventListener('click', (e) => {
             e.stopPropagation();
             const container = listContainer.closest('.settings-menu-container');
             const buttonContainer = container ? container.querySelector('.settings-menu-button-container') : null;
             if (container) {
-                // 拖拽排序后 DOM 顺序会变，必须实时读取 data-index，避免使用旧闭包索引
+                // 拖拽排序后 DOM 顺序会变，必须实时读取 data-index，避免使用旧闭包索引。
                 const currentIndex = parseInt(item.getAttribute('data-index'), 10);
                 self.showQuickLinksAddInterface(container, listContainer, buttonContainer, currentIndex);
             }
@@ -874,7 +875,7 @@ updateQuickLinksListInMenu (listContainer) {
         deleteBtn.title = '删除';
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            // 拖拽排序后 DOM 顺序会变，必须实时读取 data-index，避免删除错误项
+            // 拖拽排序后 DOM 顺序会变，必须实时读取 data-index，避免删除错误项。
             const currentIndex = parseInt(item.getAttribute('data-index'), 10);
             if (isNaN(currentIndex) || currentIndex < 0 || currentIndex >= this.settings.quickLinks.length) return;
             this.settings.quickLinks.splice(currentIndex, 1);
@@ -890,10 +891,10 @@ updateQuickLinksListInMenu (listContainer) {
         fragment.appendChild(item);
     });
 
-    // 全部条目构建完成后一次性挂载到列表容器
+    // 全部条目构建完成后一次性挂载到列表容器。
     listContainer.appendChild(fragment);
 
-    // 一键清除按钮（超过5个链接时显示）
+    // 一键清除按钮（超过 5 个链接时显示）。
     if (this.settings.quickLinks.length > 5) {
         const clearAllBtn = document.createElement('button');
         clearAllBtn.className = 'quick-link-clear-all-btn';
@@ -914,11 +915,11 @@ updateQuickLinksListInMenu (listContainer) {
         listContainer.appendChild(clearAllBtn);
     }
 
-    // 接管拖动排序（整行可拖，移动超过阈值才算拖动；轻点仍进入编辑）
+    // 接管拖动排序（整行可拖，移动超过阈值才算拖动；轻点仍进入编辑）。
     listContainer._sortable = attachSortableList(listContainer, {
         itemSelector: '.quick-link-menu-item',
         onCommit: (items) => {
-            // 按新 DOM 顺序重排同一批对象引用，保留对象上的其它字段
+            // 按新 DOM 顺序重排同一批对象引用，保留对象上的其它字段。
             self.settings.quickLinks = items.map(el => el._sortRef);
             items.forEach((el, i) => el.setAttribute('data-index', i));
             self.saveSettings();

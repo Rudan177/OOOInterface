@@ -1,4 +1,6 @@
-// 从 update.js 的 WELC_CONTENT 读取文字内容并渲染到页面
+/**
+ * 欢迎页面脚本：从 update.js 的 WELC_CONTENT 读取文字内容并渲染，处理闪屏与更新日志翻页。
+ */
 (function () {
     var C = WELC_CONTENT;
 
@@ -46,7 +48,7 @@
     // 渲染版本号
     document.getElementById('version').textContent = VERSION;
 
-    // ===== 交互逻辑 =====
+    // ---------- 交互逻辑 ----------
     var splashOverlay = document.getElementById('splashOverlay');
     var splashLogo = document.getElementById('splashLogo');
     var splashTitle = document.getElementById('splashTitle');

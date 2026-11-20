@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 配色方案：解析当前配色配置，并把 accent 等 CSS 变量与各类 UI 配色同步到页面。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 import { getColorConfig, COLOR_SCHEME_NAMES } from '../color.js';
 
@@ -8,7 +9,7 @@ export const ColorMixin = {
     getColorConfig() {
         const scheme = this.settings.colorScheme || 'green';
         if (scheme === 'theme-add') {
-            // 主题 add 模式：使用主题内联的完整配色配置
+            // 主题 add 模式使用主题内联的完整配色配置。
             return this.settings.themeColorScheme || getColorConfig('green');
         }
         if (scheme === 'custom') {
@@ -37,17 +38,16 @@ export const ColorMixin = {
         const scheme = this.settings.colorScheme || 'green';
         const colorConfig = this.getColorConfig();
 
-        // 移除所有旧的配色方案类
+        // 先移除所有旧配色方案类，再加回当前方案。
         const colorClasses = ['color-scheme-green', 'color-scheme-blue', 'color-scheme-black-white', 'color-scheme-tianyi-blue', 'color-scheme-vibrant-red', 'color-scheme-classic-gold', 'color-scheme-isolation', 'color-scheme-custom', 'color-scheme-theme-add'];
         body.classList.remove(...colorClasses);
-        // 添加新的配色方案类
         body.classList.add('color-scheme-' + scheme);
 
         if (scheme === 'custom') {
             this.updateCustomSchemeDropdownDots();
         }
 
-        // 设置 CSS 自定义属性，让所有 UI 元素跟随配色方案
+        // 设置 CSS 自定义属性，让所有 UI 元素跟随配色方案。
         const isDark = this.isDarkMode;
         const accent = isDark ? colorConfig.accentDark : colorConfig.accent;
         const accentRgb = isDark ? colorConfig.accentDarkRgb : colorConfig.accentRgb;
@@ -59,22 +59,18 @@ export const ColorMixin = {
         body.style.setProperty('--scheme-accent-hover', colorConfig.accentHover);
         body.style.setProperty('--scheme-accent-active', colorConfig.accentActive);
 
-        // 更新右键菜单配色
+        // 同步依赖配色的子模块：右键菜单、侧边栏图标、引擎按钮。
         this.updateContextMenuColors();
-
-        // 更新侧边栏图标配色
         this.updateSidebarIconColors();
-
-        // 更新引擎按钮配色类
         this.updateEngineButtonClasses();
 
-        // 重新创建光晕（如果高级视觉效果已激活）
+        // 高级视觉效果激活时重建光晕。
         if (this.isAdvancedEffectsActive) {
             this.createGlowOrbs();
         }
     },
     updateCustomSchemeDropdownDots() {
-        // 兼容旧版：更新静态自定义选项的圆点（如果存在）
+        // 兼容旧版：更新静态自定义选项的圆点（如果存在）。
         const staticDot = document.querySelector('#color-scheme-select-items .color-scheme-item[data-value="custom"] .color-scheme-dot');
         if (staticDot) {
             const primary = this.settings.customPrimaryColor || '';
@@ -94,7 +90,7 @@ export const ColorMixin = {
         const colorSchemeValue = this.settings.colorScheme || 'green';
         const colorSchemeSelect = document.getElementById('color-scheme-select');
         if (colorSchemeSelect) {
-            // 'theme-add' 不是有效 <option>，跳过设值避免 select 回退到第一个选项
+            // 'theme-add' 不是有效 <option>，跳过设值以避免 select 回退到第一个选项。
             if (colorSchemeValue !== 'theme-add') {
                 colorSchemeSelect.value = colorSchemeValue;
             }

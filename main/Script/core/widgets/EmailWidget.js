@@ -1,3 +1,7 @@
+/**
+ * 邮箱小组件：展示 Gmail 或自定义邮件 API 的最近邮件列表。
+ * Gmail 使用 OAuth 只读接口，未连接时显示连接提示。
+ */
 import { WidgetBase } from './WidgetBase.js';
 
 export class EmailWidget extends WidgetBase {
@@ -105,7 +109,7 @@ export class EmailWidget extends WidgetBase {
     async fetchGmail() {
         if (!this.googleToken) return;
         try {
-            // 获取最近 20 封邮件的元数据
+            // 获取最近 20 封邮件的元数据。
             const listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20', {
                 headers: { Authorization: 'Bearer ' + this.googleToken }
             });
@@ -113,7 +117,7 @@ export class EmailWidget extends WidgetBase {
             const listData = await listRes.json();
             const messages = listData.messages || [];
 
-            // 批量获取邮件头
+            // 批量获取邮件头。
             const emails = [];
             for (const msg of messages) {
                 try {
@@ -274,7 +278,7 @@ export class EmailWidget extends WidgetBase {
                     const token = params.get('access_token');
                     if (!token) throw new Error('未获取到 access_token');
 
-                    // 获取用户邮箱
+                    // 获取用户邮箱。
                     const meRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
                         headers: { Authorization: 'Bearer ' + token }
                     });

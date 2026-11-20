@@ -1,7 +1,6 @@
 /**
- * AI Agent 小组件
- * 本地接口：http://127.0.0.1:{port}
- * 交互：消息列表（可滚动）+ 输入框 + 流式响应 + 停止按钮
+ * AI Agent 小组件：连接本地接口 http://127.0.0.1:{port}。
+ * 交互为消息列表、输入框、流式响应与停止按钮。
  */
 import { WidgetBase } from './WidgetBase.js';
 
@@ -22,7 +21,7 @@ export class AiAgentWidget extends WidgetBase {
     buildContent() {
         this.element.classList.add('widget-ai');
 
-        // 头部：标题 + 连接状态
+        // 头部：标题与连接状态。
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'widget-ai-header';
         this.headerEl.innerHTML = '<span>SI Agent</span>';
@@ -39,7 +38,7 @@ export class AiAgentWidget extends WidgetBase {
 
         this.element.appendChild(this.headerEl);
 
-        // 无配置时显示配置提示
+        // 无配置时显示配置提示。
         if (!this.port) {
             this.renderNoConfig();
             return;
@@ -98,7 +97,7 @@ export class AiAgentWidget extends WidgetBase {
         this.element.appendChild(this.messagesEl);
         this.element.appendChild(this.inputRow);
 
-        // 恢复历史消息
+        // 恢复历史消息。
         this.messages.forEach(m => this.appendMessage(m.role, m.content, false));
 
         // 事件
@@ -183,7 +182,7 @@ export class AiAgentWidget extends WidgetBase {
         };
 
         try {
-            // messages 已包含刚加入的用户消息，直接传递
+            // messages 已包含刚加入的用户消息，直接传递。
             const payload = {
                 messages: this.messages
             };
@@ -199,7 +198,7 @@ export class AiAgentWidget extends WidgetBase {
                 throw new Error('HTTP ' + resp.status);
             }
 
-            // 尝试流式读取；失败则回退整段 JSON
+            // 尝试流式读取；失败则回退整段 JSON。
             try {
                 const reader = resp.body.getReader();
                 const decoder = new TextDecoder('utf-8');
@@ -208,7 +207,7 @@ export class AiAgentWidget extends WidgetBase {
                     const { done, value } = await reader.read();
                     if (done) break;
                     buffer += decoder.decode(value, { stream: true });
-                    // 简单增量处理：新增长度追加
+                    // 简单增量处理：按新增长度追加。
                     const newLen = buffer.length;
                     if (newLen > fullText.length) {
                         fullText = buffer.slice(0, newLen);
@@ -218,7 +217,7 @@ export class AiAgentWidget extends WidgetBase {
                     }
                 }
             } catch (streamErr) {
-                // 非流式响应：整段 JSON { reply: "..." }
+                // 非流式响应：整段 JSON { reply: "..." }。
                 const data = JSON.parse(await resp.text());
                 fullText = data.reply || data.content || data.message || JSON.stringify(data);
                 aiMsg.textContent = fullText;
@@ -227,7 +226,7 @@ export class AiAgentWidget extends WidgetBase {
             finish(true);
         } catch (err) {
             if (err.name === 'AbortError') {
-                // 用户点击停止：保留已生成内容
+                // 用户点击停止：保留已生成内容。
                 if (fullText.trim()) {
                     this.messages.push({ role: 'assistant', content: fullText.trim() });
                     this.persist();

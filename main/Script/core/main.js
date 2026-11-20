@@ -1,30 +1,18 @@
-'use strict';
+/**
+ * 新标签页（main/index.html）的模块入口：加载主应用类与手柄控制器，并把各域 mixin 挂到原型上。
+ * 同时承接首启/版本升级跳转欢迎页，并维护 runtime 注册表供 OOOInterface 与 Controller 互相取用。
+ * bundle 以经典 defer 脚本加载，顶层 const/class 会进入全局，命名勿与 version.js 冲突。
+ */
 
-// 新标签页（main/index.html）的模块入口。
-//
-// 职责：
-//   1. 引入主应用类与手柄控制器；
-//   2. 承接原先写在 script.js 末尾的启动引导（首启/版本升级跳欢迎页）；
-//   3. 维护 runtime 注册表，供 OOOInterface 与 Controller 互相取用。
-//
-// 加载顺序说明：index.html 中 version.js 仍以经典脚本标签加载，且排在 bundle 之前。
-// bundle 自己用 <script defer>：经典脚本，同样是文档解析完成后、DOMContentLoaded
-// 之前执行（与原来的 type="module" 时机一致），因此此处可以安全地以裸名读取
-// version.js 的全局（VERSION / compareVersions 等）。
-//
-// 为什么不用 type="module"：扩展页里 Chromium 会为同一个模块 URL 发两次 parser 请求，
-// 910KB 的 bundle 因此要读两遍；换成经典 defer 脚本只读一次，实测 DCL 66→41ms、
-// app-constructed 76→55ms。副作用是经典脚本共享全局词法作用域：bundle 顶层的
-// const/class 会进入全局，改名时注意别和 version.js（VERSION 等）重名。
+'use strict';
 
 import { OOOInterface } from './script.js';
 import { runtime } from './runtime.js';
-// 仅为其自带的 DOMContentLoaded 引导（延迟 500ms 创建手柄控制器）而引入
+// 仅为其自带的 DOMContentLoaded 引导（延迟 500 ms 创建手柄控制器）而引入。
 import './Controller.js';
 
-// ========== 域混入模块（Stage 8 拆分产物）==========
+// ---------- 域混入模块 ----------
 // 每个 mixin 导出一个对象，方法在此统一挂到 OOOInterface.prototype 上。
-// 拆分只搬家、不改写调用点，因此 this 语义与原文件完全一致。
 import { BadgeMixin } from './mixins/BadgeMixin.js';
 import { BadgeAudioMixin } from './mixins/BadgeAudioMixin.js';
 import { ContextMenuMixin } from './mixins/ContextMenuMixin.js';
@@ -116,17 +104,17 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         const app = new OOOInterface();
         runtime.ooo = app;
-        // 保留全局引用：仅供调试与既有外部调用（Controller 的兜底读取）使用
+        // 保留全局引用：仅供调试与既有外部调用（Controller 的兜底读取）使用。
         window.oooInterface = app;
     }
 });
 
-// 添加错误处理
+// 全局错误处理
 window.addEventListener('error', (e) => {
     console.error('OOOInterface Error:', e.error);
 });
 
-// 添加未处理的Promise拒绝处理
+// 未处理的 Promise 拒绝
 window.addEventListener('unhandledrejection', (e) => {
     console.error('Unhandled Promise Rejection:', e.reason);
 });

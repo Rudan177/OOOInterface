@@ -1,3 +1,8 @@
+/**
+ * 手柄控制器：轮询 Gamepad API 驱动虚拟光标、方向导航与快捷轮盘。
+ * 实例在 DOMContentLoaded 后延迟创建并写入 runtime.controller，同时保留 window.oooController 供兼容读取。
+ */
+
 'use strict';
 
 import { runtime } from './runtime.js';
@@ -153,13 +158,13 @@ export class Controller {
                 const parsed = JSON.parse(raw);
                 Object.assign(this.settings, parsed);
             }
-        } catch (e) { /* ignore */ }
+        } catch (e) { /* 忽略 */ }
     }
 
     saveSettings() {
         try {
             localStorage.setItem('oooControllerSettings', JSON.stringify(this.settings));
-        } catch (e) { /* ignore */ }
+        } catch (e) { /* 忽略 */ }
     }
 
     bindEvents() {
@@ -198,7 +203,7 @@ export class Controller {
             }
         });
 
-        // 鼠标位置跟踪：Tab 轮盘用"指针相对呼出点的位移"驱动虚拟指针（从圆心出发）
+        // 鼠标位置跟踪：Tab 轮盘用「指针相对呼出点的位移」驱动虚拟指针（从圆心出发）。
         document.addEventListener('mousemove', (e) => {
             this._lastMouseX = e.clientX;
             this._lastMouseY = e.clientY;
@@ -210,7 +215,7 @@ export class Controller {
             }
         });
 
-        // 方向键选择轮盘：单键对应上下左右四项，斜向需两键组合（如左+上 = 左上角）
+        // 方向键选择轮盘：单键对应上下左右四项，斜向需两键组合（如左+上 = 左上角）。
         document.addEventListener('keydown', (e) => {
             if (!this.radialActive) return;
             const dir = this.arrowKeyDir(e.key);
@@ -228,14 +233,14 @@ export class Controller {
             e.preventDefault();
             this._radialArrowDirs.delete(dir);
             if (this._radialArrowDirs.size === 0 && this._radialArrowTimer) {
-                // 单键快速敲击：松开时立即触发
+                // 单键快速敲击：松开时立即触发。
                 clearTimeout(this._radialArrowTimer);
                 this._radialArrowTimer = null;
                 this.fireRadialIndex(this.radialIndexForDirs([dir]));
             }
         });
 
-        // Tab 长按打开快捷轮盘（与 Tab 单按聚焦搜索框共存）
+        // Tab 长按打开快捷轮盘（与 Tab 单按聚焦搜索框共存）。
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Tab') return;
             if (this.radialActive && this._radialMode === 'tab') {
@@ -265,7 +270,7 @@ export class Controller {
             }
         });
 
-        // 窗口失焦时取消未触发的长按并关闭 Tab 轮盘（如 Alt+Tab 切窗口）
+        // 窗口失焦时取消未触发的长按并关闭 Tab 轮盘（如 Alt+Tab 切窗口）。
         window.addEventListener('blur', () => {
             if (this._tabPressTimer) {
                 clearTimeout(this._tabPressTimer);
@@ -859,7 +864,7 @@ export class Controller {
         if (document.body.classList.contains('sidebar-visible')) {
             const container = document.getElementById('quick-access-sidebar-container');
             if (container) {
-                // 当前视图处于固定模式时，Escape 不隐藏固定的侧边栏
+                // 当前视图处于固定模式时，Escape 不隐藏固定的侧边栏。
                 if (this.ooo && this.ooo.isSidebarFixed()) {
                     document.body.classList.remove('sidebar-visible');
                     if (this.ooo) this.ooo.setSidebarWallpaperPush(false);
@@ -869,7 +874,7 @@ export class Controller {
                 container.classList.add('hiding');
             }
             document.body.classList.remove('sidebar-visible');
-            // 壁纸偏移与容器一起收起，别等下一次 mousemove
+            // 壁纸偏移与容器一起收起，别等下一次 mousemove。
             if (this.ooo) this.ooo.setSidebarWallpaperPush(false);
             return;
         }
@@ -903,7 +908,7 @@ export class Controller {
         else if (action === 'switch-engine' && this.ooo) {
             const next = this.ooo.currentEngine === 'google' ? 'bing' : 'google';
             this.ooo.currentEngine = next;
-            // 引擎按钮可能不存在，需空值保护避免报错
+            // 引擎按钮可能不存在，需空值保护避免报错。
             const googleEngine = document.getElementById('google-engine');
             const bingEngine = document.getElementById('bing-engine');
             if (googleEngine) googleEngine.classList.toggle('active', next === 'google');
@@ -915,7 +920,7 @@ export class Controller {
         }
         else if (action === 'wallpaper' && this.ooo) {
             if (this.ooo.settings.quickAccessSidebar) {
-                // 当前视图处于固定模式时，径向菜单的壁纸操作不切换固定侧边栏的显示状态
+                // 当前视图处于固定模式时，径向菜单的壁纸操作不切换固定侧边栏的显示状态。
                 if (this.ooo.isSidebarFixed()) return;
                 const container = document.getElementById('quick-access-sidebar-container');
                 if (container && document.body.classList.contains('sidebar-visible')) {
@@ -927,7 +932,7 @@ export class Controller {
                     container.classList.remove('hiding');
                     container.classList.add('visible');
                     document.body.classList.add('sidebar-visible');
-                    // 与 hover 展开走同一套推入逻辑，保证壁纸位移一致
+                    // 与 hover 展开走同一套推入逻辑，保证壁纸位移一致。
                     this.ooo.setSidebarWallpaperPush(true);
                 }
             } else {
@@ -1015,7 +1020,7 @@ export class Controller {
 
         if (mode === 'tab') {
             // 虚拟指针从轮盘圆心（屏幕中心）出发，位移取指针相对呼出点的坐标差，
-            // 边缘被系统钳制时也不会像增量累加那样单向漂移
+            // 边缘被系统钳制时也不会像增量累加那样单向漂移。
             const ox = window.innerWidth / 2;
             const oy = window.innerHeight / 2;
             this._tabRadialOrigin = { x: ox, y: oy };
@@ -1110,7 +1115,7 @@ export class Controller {
 
     handleRadialMouseMove(dispX, dispY) {
         if (!this._radialWheel || !this._tabRadialOrigin) return;
-        // dispX/dispY 为指针相对呼出点的位移，虚拟指针 = 圆心 + 位移
+        // dispX/dispY 为指针相对呼出点的位移，虚拟指针 = 圆心 + 位移。
         this._virtX = Math.max(0, Math.min(window.innerWidth, this._tabRadialOrigin.x + dispX));
         this._virtY = Math.max(0, Math.min(window.innerHeight, this._tabRadialOrigin.y + dispY));
         if (this._tabOriginDot) {
@@ -1125,7 +1130,7 @@ export class Controller {
         if (mag > this.tabRadialThreshold) {
             const idx = this.bestRadialIndex(dx, dy);
             if (this._radialSelectedIdx === idx) return;
-            // 同方向持续超过确认时间才选中，过滤晃动时的瞬时越界
+            // 同方向持续超过确认时间才选中，过滤晃动时的瞬时越界。
             if (this._radialCandidateIdx === idx) {
                 if (Date.now() - this._radialCandidateTime >= this.tabRadialConfirmDelay) {
                     this._radialSelectedIdx = idx;
@@ -1137,7 +1142,7 @@ export class Controller {
                 this._radialCandidateTime = Date.now();
             }
         } else if (this._radialSelectedIdx >= 0) {
-            // 迟滞：确认后拉回内圈才算取消，边界抖动不会反复触发
+            // 迟滞：确认后拉回内圈才算取消，边界抖动不会反复触发。
             if (mag <= this.tabRadialInnerRadius) {
                 this._resetRadialCandidate();
                 this._radialSelectedIdx = -1;
@@ -1195,11 +1200,11 @@ export class Controller {
         this._radialArrowTimer = null;
         const dirs = Array.from(this._radialArrowDirs);
         if (dirs.length === 2) {
-            // 两键组合（斜向）立即触发
+            // 两键组合（斜向）立即触发。
             const idx = this.radialIndexForDirs(dirs);
             if (idx >= 0) this.fireRadialIndex(idx);
         } else if (dirs.length === 1) {
-            // 单键稍作等待，若期间按下相邻键则构成斜向组合
+            // 单键稍作等待，若期间按下相邻键则构成斜向组合。
             this._radialArrowTimer = setTimeout(() => {
                 this._radialArrowTimer = null;
                 this._radialArrowDirs.clear();
@@ -1348,7 +1353,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         const controller = new Controller();
         runtime.controller = controller;
-        // 保留全局引用：script.js 判断径向菜单是否激活时读 window.oooController
+        // 保留全局引用：script.js 判断径向菜单是否激活时读 window.oooController。
         window.oooController = controller;
     }, 500);
 });

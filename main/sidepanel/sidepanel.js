@@ -1,12 +1,11 @@
 /**
- * OOOInterface 侧边栏面板（Chrome Side Panel）
- * 复用主页面的设置数据（chrome.storage.local 的 oooInterfaceSettings）、
- * DOM 结构与类名，同步主页面的外观状态（高级视觉效果/配色/壁纸），
- * 并按"侧边栏功能"设置渲染：小组件、快速访问链接、底部搜索框与引擎切换。
+ * OOOInterface 侧边栏面板（Chrome Side Panel）：复用主页面的设置数据、DOM 结构与类名，
+ * 同步外观状态（高级视觉效果、配色、壁纸），并按侧边栏功能设置渲染小组件、
+ * 快速访问链接、底部搜索框与引擎切换。
  */
 
-// color.js 的 getColorConfig：本文件内还有一个同名包装函数（负责补充 themeColorScheme/自定义配色分支），
-// 故以别名导入，避免与本文件内的函数声明重名。
+// 本文件另有一个同名 getColorConfig 包装函数（补充 themeColorScheme 与自定义配色分支），
+// 故以别名导入，避免与本地函数声明重名。
 import { getColorConfig as getColorConfigBase } from '../Script/core/color.js';
 import { ProxyManager } from '../Script/core/proxy.js';
 import { ClockWidget } from '../Script/core/widgets/ClockWidget.js';
@@ -16,35 +15,33 @@ import { TasksWidget } from '../Script/core/widgets/TasksWidget.js';
 import { AiAgentWidget } from '../Script/core/widgets/AiAgentWidget.js';
 import { EmailWidget } from '../Script/core/widgets/EmailWidget.js';
 import { UpgradeToolWidget } from '../Script/core/widgets/UpgradeToolWidget.js';
-// 出厂默认设置：与主页面共用同一来源（Stage 9）
+// 出厂默认设置：与主页面共用 settings-defaults.js 中的默认值。
 import { DEFAULT_SETTINGS } from '../Script/core/settings-defaults.js';
 import { SYNC_KEYS } from '../Script/core/storage-sync.js';
-// 小组件类型表与尺寸辅助函数：与主页面共用同一来源（Stage 9）
+// 小组件类型表与尺寸辅助函数：与主页面共用 widget-types.js。
 import { getWidgetAllowedSizes, normalizeWidgetSize } from '../Script/core/widgets/widget-types.js';
-// 翻译语言表与解析函数：与主页面共用同一来源（Stage 9）
+// 翻译语言表与解析函数：与主页面共用 translate-shared.js。
 import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/translate-shared.js';
 
 (function () {
     'use strict';
 
-    // 出厂预设设置：由 settings-defaults.js 提供，与主页面同源（Stage 9）。
-    // 此前这里只抄了本面板用到的一个子集，靠注释约定“与主页面保持一致”，
-    // 实际已漂移；现在改为共用全集，多余默认键无害——本面板保存时整体回写，
-    // 且 mergeSettings 会保留全部已存键，不会因此在两个页面间丢设置。
+    // 默认设置取自 settings-defaults.js，与主页面同源。本面板保存时整体回写，
+    // mergeSettings 会保留全部已存键，因此多出的默认键无害，也不会在两个页面间丢设置。
 
     var settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
     var isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    // 记录上次渲染的小组件配置，避免无关设置变化时重建小组件
+    // 记录上次渲染的小组件配置，避免无关设置变化时重建小组件。
     var lastWidgetsJson = null;
     var widgetInstances = [];
 
-    // 内置页浏览器状态：是否展示、自有历史栈（iframe 跨域无法读取其历史，故自行维护）
+    // 内置页浏览器状态：是否展示、自有历史栈（iframe 跨域无法读取其历史，故自行维护）。
     var browserOpen = false;
     var browserHistory = [];
     var browserIndex = -1;
     var browserCloseTimer = null;
 
-    // 主页面 app 的轻量替身：小组件仅依赖这三个方法（均有 typeof 守卫）
+    // 主页面 app 的轻量替身：小组件仅依赖这三个方法（均有 typeof 守卫）。
     var panelOOO = {
         settings: settings,
         saveWidgetData: saveWidgetData,
@@ -54,17 +51,15 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     };
 
-    // ========== 设置读取 ==========
+    // ---------- 设置读取 ----------
 
     function mergeSettings(saved) {
-        // 完整保留已存的全部设置键（面板保存时会整体回写，若只保留白名单键会清掉
-        // 主页面的壁纸/小组件等其余设置），默认值仅用于补缺。
-        //
-        // 注意：这里**故意不与**主页面 SettingsMixin.mergeSettings 合并。那个版本是
-        // 逐键白名单合并，带类型校验、旧数据迁移和取值 clamp，且只复制它认识的键；
-        // 本面板需要的是「原样全量保留」，两者契约不同。若把这里换成主页那版，面板
-        // 回写时会把主页的非默认设置冲回默认值；反过来则会让主页丢掉全部校验与迁移。
-        // 共用的只是 DEFAULT_SETTINGS 这份默认值（settings-defaults.js）。
+        // 完整保留已存的全部设置键：面板保存时会整体回写，若只保留白名单键，
+        // 会清掉主页面的壁纸、小组件等其余设置；默认值仅用于补缺。
+        // 这里有意不复用主页面 SettingsMixin.mergeSettings：那版按白名单逐键合并，
+        // 带类型校验、旧数据迁移与取值 clamp，只复制它认识的键；本面板需要「原样全量
+        // 保留」，两者契约不同。互换会让面板回写把主页的非默认设置冲回默认值，或让
+        // 主页丢掉全部校验与迁移。共用的只有 settings-defaults.js 的 DEFAULT_SETTINGS。
         return Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), saved || {});
     }
 
@@ -88,7 +83,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
         settings = mergeSettings(saved);
         panelOOO.settings = settings;
-        // 与主页面 loadSettings 一致：高级视觉效果自动启用标志由两项状态派生
+        // 与主页面 loadSettings 一致：高级视觉效果自动启用标志由两项状态派生。
     }
 
     function saveSettings() {
@@ -109,7 +104,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // ========== 提示浮层（小组件 saveWidgetData/showNotification 的面板版） ==========
+    // ---------- 提示浮层（小组件 saveWidgetData/showNotification 的面板版） ----------
 
     function showPanelToast(message) {
         var toast = document.getElementById('qa-panel-toast');
@@ -127,7 +122,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }, 2200);
     }
 
-    // ========== 配色方案（与主页面 getColorConfig/applyColorScheme 逻辑一致） ==========
+    // ---------- 配色方案（与主页面逻辑一致） ----------
 
     function getColorConfig() {
         var scheme = settings.colorScheme || 'green';
@@ -175,16 +170,16 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         body.style.setProperty('--scheme-accent-hover', colorConfig.accentHover);
         body.style.setProperty('--scheme-accent-active', colorConfig.accentActive);
 
-        // 侧边栏图标配色（与主页面 updateSidebarIconColors 一致）
+        // 侧边栏图标配色（与主页面 updateSidebarIconColors 一致）。
         var container = document.getElementById('quick-access-sidebar-container');
         if (container) {
             container.style.setProperty('--sidebar-icon-bg', colorConfig.sidebarIcon);
-            // 面板中侧边栏常驻显示（主页面由 hover/固定逻辑添加 visible，这里始终可见）
+            // 面板中侧边栏常驻显示（主页面由 hover/固定逻辑添加 visible，这里始终可见）。
             container.classList.add('visible');
         }
     }
 
-    // ========== 字体（与主页面 applyFont 逻辑一致） ==========
+    // ---------- 字体（与主页面逻辑一致） ----------
 
     function loadCustomFonts() {
         var promises = (settings.customFonts || []).map(function (font) {
@@ -253,7 +248,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // ========== 壁纸（与主页面 getWallpaperUrl 解析一致） ==========
+    // ---------- 壁纸（与主页面解析一致） ----------
 
     function resolveMainWallpaperUrl() {
         if (settings.wallpaper === 'default') {
@@ -275,12 +270,12 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         var url = null;
         if (settings.sidePanelWallpaperEnabled) {
             if (settings.sidePanelWallpaperSync) {
-                // 与主页面保持一致
+                // 与主页面保持一致。
                 url = resolveMainWallpaperUrl();
             } else if (settings.sidePanelWallpaperUrl) {
                 url = settings.sidePanelWallpaperUrl;
             } else {
-                // 未填地址时使用默认壁纸
+                // 未填地址时使用默认壁纸。
                 url = '../images/back.png';
             }
         }
@@ -289,11 +284,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         document.body.classList.toggle('qa-has-wallpaper', !!url);
     }
 
-    // ========== 小组件（与主页面小组件面板同一套组件与配置） ==========
-    //
-    // 类型表 getWidgetAllowedSizes / normalizeWidgetSize 已提取到
-    // ../Script/core/widgets/widget-types.js，与主页面共用（Stage 9）。
-    // 此处只是本地副本删除，两个函数的调用点保持不变。
+    // ---------- 小组件（与主页面共用组件与配置） ----------
 
     function createWidgetInstance(config) {
         var baseConfig = {
@@ -315,7 +306,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // 小组件数据保存：写入解析后的数据源并整体回写 storage（供主页面同步）
+    // 小组件数据保存：写入解析后的数据源并整体回写 storage（供主页面同步）。
     function saveWidgetData(widgetId, data) {
         var widgets = getWidgetsSource();
         if (!Array.isArray(widgets)) return;
@@ -342,7 +333,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             empty.className = 'widget-panel-empty';
             empty.textContent = '暂无小组件';
             grid.appendChild(empty);
-            // 空态引导：一键直达主页面的小组件管理
+            // 空态引导：一键直达主页面的小组件管理。
             var emptyCta = document.createElement('button');
             emptyCta.className = 'widget-panel-empty-cta';
             emptyCta.textContent = '去添加小组件';
@@ -366,12 +357,11 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         syncWidgetCardHeights();
     }
 
-    // 与主页面小组件面板保持同一观感：主页面为 2 列、网格宽 240px
-    //（单列/正方形卡片 116px、间距 8px）。侧边栏铺满可用宽度，列数按宽度动态计算：
-    // 面板越宽列数越多（3 列、4 列……），单列始终保持基准 116px 附近，
-    // 再把整块网格按 zoom 等比缩放以铺满宽度（窄面板时缩放 <1，保证内容不溢出）。
-    var WIDGET_COL_BASE = 116;   // 主页面单列（正方形卡片）宽度
-    var WIDGET_GAP = 8;          // 网格间距，与 widget-panel.css 一致
+    // 与主页面小组件面板保持同一观感（2 列、网格宽 240px、单列 116px、间距 8px）。
+    // 侧边栏铺满可用宽度，列数随面板宽度动态增加，单列保持基准 116px 附近，
+    // 再把整块网格按 zoom 等比缩放铺满宽度（窄面板时缩放 < 1，保证内容不溢出）。
+    var WIDGET_COL_BASE = 116; // 主页面单列（正方形卡片）宽度
+    var WIDGET_GAP = 8; // 网格间距，与 widget-panel.css 一致
     var lastWidgetScale = null;
     var currentWidgetColumns = 2;
 
@@ -379,8 +369,8 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         var grid = document.getElementById('qa-widgets-grid');
         var scrollEl = document.getElementById('qa-widgets-scroll');
         if (!grid || !scrollEl) return;
-        // 无小组件时不做缩放：空状态提示须按正常字号显示
-        //（否则 zoom 会把提示文字放大数倍，呈现为"报错"般的大字）
+        // 无小组件时不做缩放：空状态提示须按正常字号显示，
+        // 否则 zoom 会把提示文字放大数倍，呈现为“报错”般的大字。
         if (!getWidgetsSource().length) {
             if (lastWidgetScale !== 'empty') {
                 lastWidgetScale = 'empty';
@@ -393,14 +383,14 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             }
             return;
         }
-        // 外框（滚动视口）的可视宽度 = 网格目标宽度
+        // 外框（滚动视口）的可视宽度 = 网格目标宽度。
         var visualWidth = scrollEl.clientWidth;
         if (!(visualWidth > 0)) return;
         // 列数：只在可用宽度真正放得下下一列时才加列（向下取整）。
-        // 首列没有前置间距，故分子要补一个间距：(宽度 + 间距) / (列宽 + 间距)；
-        // 未加列时下面的 zoom 会把当前卡片等比放大铺满整宽，即"正常缩放"
+        // 首列没有前置间距，故分子要补一个间距：（宽度 + 间距）/（列宽 + 间距）；
+        // 未加列时下面的 zoom 会把当前卡片等比放大铺满整宽，即“正常缩放”。
         var cols = Math.max(2, Math.floor((visualWidth + WIDGET_GAP) / (WIDGET_COL_BASE + WIDGET_GAP)));
-        // 该列数下网格的"设计宽度"（未缩放）：N 列 + N-1 个间距
+        // 该列数下网格的“设计宽度”（未缩放）：N 列 + N-1 个间距。
         var localWidth = cols * WIDGET_COL_BASE + (cols - 1) * WIDGET_GAP;
         var scale = Math.round((visualWidth / localWidth) * 10000) / 10000;
         if (lastWidgetScale === scale && currentWidgetColumns === cols) return;
@@ -413,7 +403,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
     }
 
     // 行高 = 列宽（与主页面 syncWidgetCardHeights 一致）。
-    // 网格宽度 = N 列 × 116 + 间距、各列为 1fr，故列宽恒为基准 116px（缩放前的布局值）
+    // 网格宽度 = N 列 × 116 + 间距、各列为 1fr，故列宽恒为基准 116px（缩放前的布局值）。
     function syncWidgetCardHeights() {
         var grid = document.getElementById('qa-widgets-grid');
         if (!grid) return;
@@ -421,7 +411,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         grid.style.gridAutoRows = WIDGET_COL_BASE + 'px';
     }
 
-    // ========== 数据源解析（与主页面保持一致 / 侧边栏独立配置） ==========
+    // ---------- 数据源解析（跟随主页面或侧边栏独立配置） ----------
 
     function getQuickLinksSource() {
         if (settings.sidePanelQuickLinksSync) {
@@ -442,7 +432,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         return settings.sidePanelWidgetPanel.widgets;
     }
 
-    // ========== 快速访问链接渲染（与主页面 renderQuickAccessSidebar 完全一致） ==========
+    // ---------- 快速访问链接渲染（与主页面一致） ----------
 
     function extractDomain(url) {
         try {
@@ -498,7 +488,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
                 var tryFallback = false;
 
                 if (link._favicon !== undefined && link._favicon !== null) {
-                    // _favicon 为空字符串表示之前已检测为无图标，直接用字母占位，不再重试
+                    // _favicon 为空字符串表示之前已检测为无图标，直接用字母占位，不再重试。
                     if (link._favicon !== '') {
                         faviconUrl = link._favicon;
                     }
@@ -521,7 +511,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
                         this.style.display = 'none';
                         var letter = this.parentElement.querySelector('.quick-access-sidebar-link-letter');
                         if (letter) letter.style.display = 'flex';
-                        // 仅在从未检测过时写入缓存，避免每次渲染重复回写设置
+                        // 仅在从未检测过时写入缓存，避免每次渲染重复回写设置。
                         if (link._favicon === undefined && domain) {
                             cacheFavicon(link, index, domain, null);
                         }
@@ -565,7 +555,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             });
         }
 
-        // 根据设置显示/隐藏图标（与主页面一致：类开关 + 内联兜底）
+        // 根据设置显示/隐藏图标（与主页面一致：类开关 + 内联兜底）。
         var containerEl = document.getElementById('quick-access-sidebar-container');
         if (containerEl) {
             containerEl.classList.toggle('no-icons', !settings.showQuickLinkIcons);
@@ -579,12 +569,11 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // ========== 底部搜索框与引擎切换 ==========
-    //
-    // 与主页面的 oooEngineLocked（script.js / SearchMixin.js）不是一回事，**不要合并**：
-    //   oooEngineLocked    = 主页面用户是否「锁定」了搜索引擎（锁定后不再跟随默认引擎）
-    //   oooSidePanelEngine = 本面板当前选中的搜索引擎
-    // 两者语义不同、可各自独立取值。
+    // ---------- 底部搜索框与引擎切换 ----------
+
+    // 与主页面的 oooEngineLocked（script.js / SearchMixin.js）语义不同，不要合并：
+    // oooEngineLocked 表示主页面用户是否「锁定」搜索引擎（锁定后不再跟随默认引擎），
+    // oooSidePanelEngine 表示本面板当前选中的搜索引擎，两者可各自独立取值。
 
     var currentEngine = localStorage.getItem('oooSidePanelEngine') === 'bing' ? 'bing' : 'google';
 
@@ -608,10 +597,10 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         if (bingBtn) bingBtn.classList.toggle('active', currentEngine === 'bing');
     }
 
-    // ========== “/” 命令系统（网址 / 翻译） ==========
-    // 主页面把这套逻辑实现在 App 类里；面板是独立页面，这里按相同的语法与交互移植一份。
-    // DOM 与样式仍复用主页面：styles.css 中的 search-command-container /
-    // search-command-item / search-mode-chip / search-history-item 等类直接生效。
+    // ---------- “/” 命令系统（网址 / 翻译） ----------
+    // 主页面把这套逻辑放在 App 类中；面板是独立页面，这里按相同的语法与交互实现一份。
+    // DOM 与样式复用主页面：styles.css 中的 search-command-container、search-command-item、
+    // search-mode-chip、search-history-item 等类直接生效。
 
     var searchCommandMode = null;
     var translateSelectedPair = null;
@@ -641,12 +630,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         return ['translate', 't', '翻译'].indexOf((word || '').toLowerCase()) !== -1;
     }
 
-    // 语言表与解析函数已提取到 ../Script/core/translate-shared.js，与主页面共用（Stage 9）。
-    // 本地面板此前那份表少了 es（西班牙语），与主页面并不一致；改用共享表后
-    // /t es 也能在面板里解析。下方 resolveTranslateLanguage / resolveLanguagePair
-    // 的调用点保持不变。
-
-    // ---- 翻译语言对 / 网址历史（localStorage，与主页面共用同一份存储） ----
+    // ---------- 翻译语言对与网址历史（localStorage，与主页面共用） ----------
 
     function getTranslateHistory() {
         try {
@@ -681,7 +665,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         localStorage.setItem('oooWebCommandHistory', JSON.stringify(list || []));
     }
 
-    // 记录通过命令打开的网址（存主机名用于展示，key 用于去重）
+    // 记录通过命令打开的网址（存主机名用于展示，key 用于去重）。
     function recordWebHistory(urlText) {
         var parsed;
         try {
@@ -697,7 +681,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         setWebHistory(list);
     }
 
-    // ---- 翻译引擎（直连优先，配置了本地代理且直连抛错时走代理重试） ----
+    // ---------- 翻译引擎（直连优先，失败时走本地代理） ----------
 
     async function slashFetch(url, options) {
         try {
@@ -729,7 +713,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }).join('');
     }
 
-    // Microsoft(Bing) 免费接口：需先从 bing 首页抓取 IG 与防滥用 token
+    // Microsoft（Bing）免费接口：需先从 bing 首页抓取 IG 与防滥用 token。
     async function getBingTranslateAuth(forceRefresh) {
         if (!forceRefresh) {
             try {
@@ -782,7 +766,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             }
             throw new Error('Microsoft 翻译结果解析失败');
         } catch (err) {
-            // 凭证失效等情况：强制刷新一次后重试
+            // 凭证失效等情况：强制刷新一次后重试。
             if (!forceNewAuth) {
                 return await fetchBingTranslate(text, fromCode, toCode, true);
             }
@@ -790,7 +774,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // 引擎跟随面板当前选择的搜索引擎（与主页面同一套回退策略）
+    // 引擎跟随面板当前选择的搜索引擎（与主页面同一套回退策略）。
     async function translateText(text, fromEntry, toEntry) {
         if (currentEngine === 'bing') {
             try {
@@ -802,7 +786,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         return await fetchGoogleTranslate(text, fromEntry.g, toEntry.g);
     }
 
-    // ---- 命令列表 / 模式 chip / 历史面板 UI ----
+    // ---------- 命令列表、模式 chip 与历史面板 ----------
 
     // 统一同步搜索框辅助 UI：
     // - 组件模式（web/translate）激活时：左侧 chip 替代命令文字，下方展示对应历史
@@ -826,7 +810,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
 
         if (value.charAt(0) === '/') {
-            // “/别名 + 空格”：把前缀替换为左侧 chip，剩余文本作为参数继续输入
+            // “/别名 + 空格”：把前缀替换为左侧 chip，剩余文本作为参数继续输入。
             var entered = value.match(/^\/(\S+)\s([\s\S]*)$/);
             if (entered && (isWebCommand(entered[1]) || isTranslateCommand(entered[1]))) {
                 var mode = isWebCommand(entered[1]) ? 'web' : 'translate';
@@ -857,7 +841,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             return;
         }
 
-        // 只在第一个空格之前提供候选；出现空格说明已进入对应组件模式
+        // 只在第一个空格之前提供候选；出现空格说明已进入对应组件模式。
         var partial = currentInput.slice(1);
         if (/\s/.test(partial)) {
             hideSearchCommandList();
@@ -947,7 +931,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         if (input) input.focus();
     }
 
-    // 退出组件模式；clearInput=false 时保留输入框现有内容（如翻译结果）
+    // 退出组件模式；clearInput=false 时保留输入框现有内容（如翻译结果）。
     function exitSearchCommandMode(clearInput) {
         searchCommandMode = null;
         translateSelectedPair = null;
@@ -961,7 +945,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
     }
 
     // 模式 chip：由组件模式状态驱动，位于输入框左侧。
-    // 进入模式时放大镜图标收缩隐去、椭圆展开顶入（CSS 过渡联动），退出时反向还原
+    // 进入模式时放大镜图标收缩隐去、椭圆展开顶入（CSS 过渡联动），退出时反向还原。
     function updateSearchModeChip() {
         var chip = document.getElementById('qa-search-mode-chip');
         if (!chip) return;
@@ -989,7 +973,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // translate 模式下从输入中锁定语言对：首个空白之前的部分若可解析则锁定，并把它从输入中移除
+    // translate 模式下从输入中锁定语言对：首个空白之前的部分若可解析则锁定，并把它从输入中移除。
     function lockTranslatePairFromInput(value) {
         if (translateSelectedPair || !value) return;
 
@@ -1005,7 +989,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
     }
 
     // 下方共享下拉面板：命令列表可见时优先；否则按当前组件模式展示使用历史。
-    // 行样式复用原生搜索历史 search-history-item
+    // 行样式复用原生搜索历史 search-history-item。
     function refreshSearchDropdownPanels() {
         var container = document.getElementById('qa-search-command-container');
         if (!container) return;
@@ -1101,9 +1085,9 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // ---- 执行 ----
+    // ---------- 执行 ----------
 
-    // 通过命令打开网址：记录历史；开启「内置页打开」时在面板 iframe 内展示，否则新标签页
+    // 通过命令打开网址：记录历史；开启「内置页打开」时在面板 iframe 内展示，否则新标签页。
     function openExternalUrl(urlText) {
         var url = (urlText || '').trim();
         if (!url) return false;
@@ -1124,7 +1108,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         return true;
     }
 
-    // 翻译模式的回车执行：未锁定语言对时把首词作为语言对兜底解析
+    // 翻译模式的回车执行：未锁定语言对时把首词作为语言对兜底解析。
     async function executeTranslateModeQuery(rawText) {
         var text = (rawText || '').trim();
         if (!text) return;
@@ -1146,7 +1130,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         await runTranslateFlow(text, translateSelectedPair);
     }
 
-    // 统一翻译执行：调用引擎 → 结果输出到搜索框 → 复制 → 记录历史 → 退出模式（保留结果）
+    // 统一翻译执行：调用引擎 → 结果输出到搜索框 → 复制 → 记录历史 → 退出模式（保留结果）。
     async function runTranslateFlow(text, pair) {
         try {
             var result = await translateText(text, pair.from, pair.to);
@@ -1168,7 +1152,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // “/” 命令语法兜底路径（正常流程中前缀在输入空格时已替换为 chip）
+    // “/” 命令语法兜底路径（正常流程中前缀在输入空格时已替换为 chip）。
     async function executeSlashCommand(trimmedQuery) {
         var match = trimmedQuery.slice(1).match(/^(\S*)(?:\s+([\s\S]*))?$/);
         if (!match) return;
@@ -1200,7 +1184,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // 回车提交：分类处理组件模式 / “/” 命令，其余走搜索或直达网址
+    // 回车提交：分类处理组件模式 / “/” 命令，其余走搜索或直达网址。
     function submitSearch(value) {
         var text = (value || '').trim();
         if (!text) return;
@@ -1228,7 +1212,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
 
         if (input) input.value = '';
         var target = resolveBrowserTarget(text);
-        // 开启「内置页打开」时在面板内 iframe 展示，否则新标签页打开
+        // 开启「内置页打开」时在面板内 iframe 展示，否则新标签页打开。
         if (settings.sidePanelBuiltinOpen) {
             openBuiltinPage(target);
         } else {
@@ -1236,7 +1220,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // ========== 内置页浏览器（开启「内置页打开」后，搜索/访问的网页在此以 iframe 展示） ==========
+    // ---------- 内置页浏览器（网页以 iframe 展示） ----------
 
     // 移动端模式：面板窄于阈值时，把发往搜索引擎的「子帧」请求 UA 改为移动端，
     // 使其返回移动版页面。Chrome 不支持为单个 iframe 单独设置 UA，只能通过
@@ -1246,7 +1230,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
     var MOBILE_NARROW_MAX = 520;
     // 标准手机布局宽度：取略大于常见手机视口（Pixel 7 约 412px）的值，给移动版页面
     // 留出布局余量——站点的 min-width / 100vw（含滚动条）等固定宽元素常略超设备视口，
-    // 若视口恰好等于设备宽度，超出的部分会被裁切导致右侧显示不全
+    // 若视口恰好等于设备宽度，超出的部分会被裁切导致右侧显示不全。
     var MOBILE_VIEWPORT_WIDTH = 480;
     var MOBILE_UA_DOMAINS = ['google.com', 'bing.com'];
     var mobileUaRuleEnabled = false;
@@ -1261,7 +1245,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }
     }
 
-    // 依据「功能开关 + 面板宽度」同步移动端 UA 会话规则
+    // 依据「功能开关 + 面板宽度」同步移动端 UA 会话规则。
     function syncMobileUaRule() {
         if (!dnrAvailable()) return;
         var shouldEnable = !!settings.sidePanelBuiltinOpen && window.innerWidth < MOBILE_NARROW_MAX;
@@ -1294,10 +1278,10 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
 
     // 窄屏移动端视口缩放：卡片宽度小于移动端设计宽度时，把 iframe 布局视口固定为
     // MOBILE_VIEWPORT_WIDTH 再等比缩放到卡片内，使移动版页面按标准手机宽度排版，
-    // 避免站点 min-width 造成的横向溢出（超出屏幕边界）
+    // 避免站点 min-width 造成的横向溢出（超出屏幕边界）。
     function applyMobileViewportScale() {
         // 尺寸读取与计算延后到下一帧：load / resize 回调触发时 DOM 布局可能尚未稳定，
-        // 此刻读到的 clientWidth/clientHeight 会导致 scale 偏差、右侧被裁切
+        // 此刻读到的 clientWidth/clientHeight 会导致 scale 偏差、右侧被裁切。
         requestAnimationFrame(function () {
             var card = document.getElementById('qa-browser-card');
             var frame = document.getElementById('qa-browser-frame');
@@ -1309,7 +1293,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             if (scale < 1) {
                 card.classList.add('qa-mobile-mode');
                 frame.style.width = MOBILE_VIEWPORT_WIDTH + 'px';
-                // 视觉高度需等于卡片高度 => 布局高度 = 卡片高度 / scale
+                // 视觉高度需等于卡片高度，故布局高度 = 卡片高度 / scale。
                 frame.style.height = Math.round(cardH / scale) + 'px';
                 frame.style.transform = 'scale(' + scale + ')';
             } else {
@@ -1321,7 +1305,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         });
     }
 
-    // 面板尺寸变化跨越阈值时，若内置页正打开则重新加载当前页，使 UA 立即生效
+    // 面板尺寸变化跨越阈值时，若内置页正打开则重新加载当前页，使 UA 立即生效。
     function handlePanelResize() {
         syncMobileUaRule();
         applyMobileViewportScale();
@@ -1332,19 +1316,19 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         var frame = document.getElementById('qa-browser-frame');
         if (!frame) return;
         var url = browserHistory[browserIndex];
-        // 同一 src 赋值不会触发重载，先清空再回填以强制刷新
+        // 同一 src 赋值不会触发重载，先清空再回填以强制刷新。
         frame.src = 'about:blank';
         setTimeout(function () { frame.src = url; }, 0);
     }
 
-    // 面板卸载时移除会话规则，避免规则残留影响其它页面的 iframe
+    // 面板卸载时移除会话规则，避免规则残留影响其它页面的 iframe。
     function removeMobileUaRule() {
         if (!dnrAvailable()) return;
         mobileUaRuleEnabled = false;
         try { chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [MOBILE_UA_RULE_ID] }); } catch (e) { }
     }
 
-    // 将输入内容解析为地址：网址直连，其余按当前引擎搜索
+    // 将输入内容解析为地址：网址直连，其余按当前引擎搜索。
     function resolveBrowserTarget(text) {
         var value = (text || '').trim();
         if (!value) return '';
@@ -1357,7 +1341,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         var frame = document.getElementById('qa-browser-frame');
         if (frame) {
             // iframe 内容渲染完成后尺寸才稳定，需重算一次视口缩放，
-            // 否则按加载前的卡片尺寸算出的 scale 会与实际不符
+            // 否则按加载前的卡片尺寸算出的 scale 会与实际不符。
             if (!frame._scaleLoadBound) {
                 frame._scaleLoadBound = true;
                 frame.addEventListener('load', function () { applyMobileViewportScale(); });
@@ -1375,7 +1359,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         if (forwardBtn) forwardBtn.disabled = browserIndex >= browserHistory.length - 1;
     }
 
-    // 导航到目标地址并压入自有历史栈；push=false 用于前进/后退回放（不重复入栈）
+    // 导航到目标地址并压入自有历史栈；push=false 用于前进/后退回放（不重复入栈）。
     function browserNavigate(url, push) {
         if (!url) return;
         if (push !== false) {
@@ -1401,7 +1385,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         updateBrowserControls();
     }
 
-    // 打开内置页：展示浏览器视图并播放进入动画，小组件/链接区让位
+    // 打开内置页：展示浏览器视图并播放进入动画，小组件/链接区让位。
     function openBuiltinPage(url) {
         var wrap = document.getElementById('qa-panel-browser');
         if (!wrap) return;
@@ -1410,11 +1394,11 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         document.body.classList.add('qa-browser-open');
         wrap.setAttribute('aria-hidden', 'false');
         applySectionsVisibility();
-        // 防御：与存储同步竞态时可见性可能被旧状态覆盖，稍后再应用一次
+        // 防御：与存储同步竞态时可见性可能被旧状态覆盖，稍后再应用一次。
         setTimeout(applySectionsVisibility, 120);
-        // 视图已显示，按当前卡片尺寸应用窄屏移动端视口缩放
+        // 视图已显示，按当前卡片尺寸应用窄屏移动端视口缩放。
         applyMobileViewportScale();
-        // 先移除再强制回流，确保连续打开时进入动画可重放
+        // 先移除再强制回流，确保连续打开时进入动画可重放。
         wrap.classList.remove('qa-browser-leave');
         wrap.classList.remove('qa-browser-enter');
         void wrap.offsetWidth;
@@ -1422,7 +1406,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         browserNavigate(url, true);
     }
 
-    // 关闭内置页（Home）：播放退出动画后恢复默认视图并清空历史
+    // 关闭内置页（Home）：播放退出动画后恢复默认视图并清空历史。
     function closeBuiltinView() {
         var wrap = document.getElementById('qa-panel-browser');
         if (!wrap || !browserOpen) return;
@@ -1445,14 +1429,14 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         }, 200);
     }
 
-    // ========== 应用全部外观状态 ==========
+    // ---------- 应用全部外观状态 ----------
 
     function applySectionsVisibility() {
         var widgetsSection = document.getElementById('qa-panel-widgets');
-        // 内置页打开时，小组件/链接区让位于浏览器视图
+        // 内置页打开时，小组件/链接区让位于浏览器视图。
         var widgetsVisible = settings.sidePanelShowWidgets && !browserOpen;
         if (widgetsSection) widgetsSection.style.display = widgetsVisible ? '' : 'none';
-        // 间距标记：小组件区可见时，它与链接卡的间距由小组件区底部内边距提供
+        // 间距标记：小组件区可见时，它与链接卡的间距由小组件区底部内边距提供。
         document.body.classList.toggle('qa-hide-widgets', !widgetsVisible);
 
         var sidebar = document.getElementById('quick-access-sidebar');
@@ -1465,21 +1449,21 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         var engines = document.getElementById('qa-engine-buttons');
         if (engines) engines.style.display = (settings.sidePanelShowSearch && settings.sidePanelShowEngineButtons) ? '' : 'none';
 
-        // 搜索框厚度：与主页面保持一致时跟随主页面的搜索框厚度设置
+        // 搜索框厚度：与主页面保持一致时跟随主页面的搜索框厚度设置。
         var thickness = settings.sidePanelSearchSync
             ? (settings.searchBoxHeight || 50)
             : (settings.sidePanelSearchBoxHeight || 50);
         document.body.style.setProperty('--search-box-height', thickness + 'px');
 
         // 高度分配标记：链接区可见时小组件区最多占 50%（链接+搜索至少占 50%）；
-        // 链接区隐藏时小组件可用全部剩余高度
+        // 链接区隐藏时小组件可用全部剩余高度。
         document.body.classList.toggle('qa-hide-links', !linksVisible);
 
-        // 暗色压暗壁纸开关（与主页面共用设置键 wallpaperDarkDim）
+        // 暗色压暗壁纸开关（与主页面共用设置键 wallpaperDarkDim）。
         document.body.classList.toggle('wallpaper-dim-off', !settings.wallpaperDarkDim);
 
         // 未配置引导卡：三个内容区全关（或正被浏览器视图让位）时显示，
-        // 避免新用户打开面板看到纯白空屏
+        // 避免新用户打开面板看到纯白空屏。
         var guide = document.getElementById('qa-guide-card');
         if (guide) {
             var anyContent = (settings.sidePanelShowWidgets || settings.sidePanelShowQuickLinks || settings.sidePanelShowSearch) && !browserOpen;
@@ -1492,12 +1476,12 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         var body = document.body;
         panelOOO.settings = settings;
 
-        // 「内置页打开」被关闭时，收起已打开的内置页，恢复默认视图
+        // 「内置页打开」被关闭时，收起已打开的内置页，恢复默认视图。
         if (!settings.sidePanelBuiltinOpen && browserOpen) {
             closeBuiltinView();
         }
 
-        // 窄面板下启用移动端 UA（仅作用于搜索引擎域名的子帧请求）
+        // 窄面板下启用移动端 UA（仅作用于搜索引擎域名的子帧请求）。
         syncMobileUaRule();
 
         if (settings.dynamicBlur) {
@@ -1517,7 +1501,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         applyPanelWallpaper();
         applySectionsVisibility();
 
-        // 小组件仅在（解析后的）配置变化时重建，避免无关设置变更导致状态丢失
+        // 小组件仅在（解析后的）配置变化时重建，避免无关设置变更导致状态丢失。
         var widgetsJson = JSON.stringify({ sync: settings.sidePanelWidgetsSync, w: getWidgetsSource() });
         if (widgetsJson !== lastWidgetsJson) {
             lastWidgetsJson = widgetsJson;
@@ -1528,7 +1512,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
         updateEngineButtons();
     }
 
-    // ========== 交互 ==========
+    // ---------- 交互 ----------
 
     function openLink(url) {
         try {
@@ -1552,7 +1536,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
     }
 
     // 小组件区尺寸变化时重算缩放与行高：
-    // 覆盖"面板拖拽调宽"与"设置里显隐切换小组件区"两种情况（后者尺寸从 0 恢复）
+    // 覆盖“面板拖拽调宽”与“设置里显隐切换小组件区”两种情况（后者尺寸从 0 恢复）。
     function initWidgetScaleSync() {
         if (!window.ResizeObserver) return;
         var observer = new ResizeObserver(function () {
@@ -1566,14 +1550,14 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
     }
 
     function initInteractions() {
-        // 引导卡按钮：跳转主页面并直达「侧边栏功能」设置
+        // 引导卡按钮：跳转主页面并直达「侧边栏功能」设置。
         var guideBtn = document.getElementById('qa-guide-open-settings');
         if (guideBtn) guideBtn.addEventListener('click', function () { openMainPage('?openSidePanel=root'); });
 
         var addBtn = document.getElementById('quick-access-sidebar-add-btn');
         if (addBtn) {
             addBtn.addEventListener('click', function () {
-                // 与主页面一致 → 打开主页面快速链接管理；独立配置 → 打开侧边栏的链接管理子视图
+                // 与主页面一致 → 打开主页面快速链接管理；独立配置 → 打开侧边栏的链接管理子视图。
                 if (settings.sidePanelQuickLinksSync) {
                     openMainPage('?openQuickLinks=1');
                 } else {
@@ -1582,7 +1566,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             });
         }
 
-        // 搜索框：同步 “/” 命令辅助 UI，回车按模式/命令/搜索分流
+        // 搜索框：同步 “/” 命令辅助 UI，回车按模式/命令/搜索分流。
         var searchInput = document.getElementById('qa-search-input');
         if (searchInput) {
             searchInput.addEventListener('input', function () {
@@ -1592,7 +1576,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
                 syncSearchAssistantUI(searchInput.value);
             });
 
-            // ArrowUp/Down 选择命令、Enter 插入命令、Esc/Backspace 退出模式（与主页面一致）
+            // ArrowUp/Down 选择命令、Enter 插入命令、Esc/Backspace 退出模式（与主页面一致）。
             searchInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') {
                     if ((commandListState && commandListState.visible) || searchCommandMode) {
@@ -1609,7 +1593,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
                 }
 
                 // 组件模式下按退格删除 chip：输入为空时才生效；
-                // translate 已锁定语言对时先解锁语言对，再退格彻底退出
+                // translate 已锁定语言对时先解锁语言对，再退格彻底退出。
                 if (e.key === 'Backspace' && searchCommandMode && searchInput.value === '') {
                     e.preventDefault();
                     if (searchCommandMode === 'translate' && translateSelectedPair) {
@@ -1642,7 +1626,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             });
         }
 
-        // 命令候选列表点击：套用对应命令
+        // 命令候选列表点击：套用对应命令。
         var commandListEl = document.getElementById('qa-search-command-list');
         if (commandListEl) {
             commandListEl.addEventListener('click', function (e) {
@@ -1655,7 +1639,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             });
         }
 
-        // 翻译语言对 / 网址历史点击：删除按钮分流清理，行点击套用
+        // 翻译语言对 / 网址历史点击：删除按钮分流清理，行点击套用。
         var historyListEl = document.getElementById('qa-translate-history-list');
         if (historyListEl) {
             historyListEl.addEventListener('click', function (e) {
@@ -1689,7 +1673,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             });
         }
 
-        // 模式 chip 点击退出当前模式
+        // 模式 chip 点击退出当前模式。
         var modeChipEl = document.getElementById('qa-search-mode-chip');
         if (modeChipEl) {
             modeChipEl.addEventListener('click', function () {
@@ -1698,7 +1682,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             });
         }
 
-        // 点击面板其它区域时收起命令列表
+        // 点击面板其它区域时收起命令列表。
         document.addEventListener('click', function (e) {
             var container = document.getElementById('qa-search-command-container');
             if (!container) return;
@@ -1707,7 +1691,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             }
         });
 
-        // 内置页浏览器操作控件：Home（返回默认视图）/ Back / Next / 网址栏
+        // 内置页浏览器操作控件：Home（返回默认视图）/ Back / Next / 网址栏。
         var browserHomeBtn = document.getElementById('qa-browser-home');
         if (browserHomeBtn) browserHomeBtn.addEventListener('click', closeBuiltinView);
         var browserBackBtn = document.getElementById('qa-browser-back');
@@ -1725,7 +1709,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             });
         }
 
-        // 引擎切换按钮
+        // 引擎切换按钮。
         var googleBtn = document.getElementById('qa-google-engine');
         var bingBtn = document.getElementById('qa-bing-engine');
         if (googleBtn) {
@@ -1743,14 +1727,15 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             });
         }
 
-        // 深色模式切换时重新应用配色（与主页面行为一致）
+        // 深色模式切换时重新应用配色（与主页面行为一致）。
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
             isDarkMode = e.matches;
             applyColorScheme();
         });
 
-        // 触发重渲染的门控键表：与主页面共用 storage-sync.js（Stage 9）。
-        // 自己的回写与无关键（小组件数据等）的变化仍被跳过，不会产生同步风暴。
+        // 触发重渲染的门控键表与主页面共用 storage-sync.js：只有 SYNC_KEYS 中
+        // 相关键变化时才重渲染，自身回写与小组件数据等无关键的变化会被跳过，
+        // 不会产生同步风暴。
 
         var syncTimer = null;
         var pendingSyncValue = null;
@@ -1761,7 +1746,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             });
         }
 
-        // 主页面设置变更时实时同步
+        // 主页面设置变更时实时同步。
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
             chrome.storage.onChanged.addListener(function (changes, areaName) {
                 if (areaName !== 'local' || !changes.oooInterfaceSettings) return;
@@ -1772,23 +1757,19 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
                 clearTimeout(syncTimer);
                 syncTimer = setTimeout(function () {
                     settings = mergeSettings(pendingSyncValue);
-                                applyAll();
+                    applyAll();
                 }, 150);
             });
         }
     }
 
-    // ========== 启动 ==========
-
-    // ========== 入场动画重放 ==========
-    //
-    // 入场动画写在 sidepanel.css 里，且只能挂在"玻璃元素自身"上：祖先只要带
-    // transform / opacity < 1 就会形成 backdrop root，后代的 backdrop-filter
-    // 随即失效（实测：挂在 .qa-panel-search 上会让搜索框 80px 毛玻璃永久失效）。
-    //
-    // 面板关闭时若 Chrome 复用本页（不重新加载），纯 CSS 动画一辈子只播一次，
-    // 再次打开就没有入场效果；故在"由隐藏转为可见"时重放一次。首次加载不在
-    // 此列——那时 CSS 动画本来就在播，重复触发只会让元素闪一下。
+    // ---------- 入场动画重放 ----------
+    // 入场动画写在 sidepanel.css 中，且只能挂在「玻璃元素自身」上：祖先只要带
+    // transform 或 opacity < 1 就会形成 backdrop root，后代的 backdrop-filter
+    // 随即失效（实测挂在 .qa-panel-search 上会让搜索框 80px 毛玻璃永久失效）。
+    // 面板关闭时若 Chrome 复用本页而不重新加载，纯 CSS 动画只会播一次，再次打开
+    // 便没有入场效果，故在由隐藏转为可见时重放一次；首次加载不重放，那时动画本来
+    // 就在播放，重复触发只会让元素闪一下。
     var ENTRANCE_SELECTOR = [
         '.qa-panel-widgets .widget-card',
         '.qa-panel-search .search-container',
@@ -1819,7 +1800,7 @@ import { resolveTranslateLanguage, resolveLanguagePair } from '../Script/core/tr
             await loadSettings();
             await loadCustomFonts();
         } catch (error) {
-            // 设置加载失败时使用默认设置渲染，保证面板不至于空白
+            // 设置加载失败时使用默认设置渲染，保证面板不至于空白。
             console.error('侧边栏面板: 设置加载失败，使用默认设置:', error);
             settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
             panelOOO.settings = settings;

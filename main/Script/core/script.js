@@ -1,22 +1,27 @@
+/**
+ * 主应用类 OOOInterface：负责新标签页的启动流程与设置界面的核心事件绑定。
+ * 各领域方法由 main.js 合并的 mixin 提供，本文件只保留核心初始化与共享事件。
+ */
+
 'use strict';
 
-// 核心类仍直接使用：init 中创建 InfoManager
+// 核心类：init 中创建 InfoManager 实例。
 import { InfoManager } from './info.js';
-// 出厂默认设置与侧边栏面板共用同一来源（Stage 9）
+// 出厂默认设置与侧边栏面板共用同一来源。
 import { DEFAULT_SETTINGS } from './settings-defaults.js';
 
 export class OOOInterface {
     constructor() {
-        // 在线图标URL配置
+        // 在线图标 URL 配置
         this.onlineIcons = {
             'dll.png': 'https://rudan177.github.io/OOOInterface/images/dll.png',
             'dln.png': 'https://rudan177.github.io/OOOInterface/images/dln.png'
         };
         this.onlineBackgroundUrl = 'https://rudan177.github.io/OOOInterface/images/back.png';
         this.localBackgroundUrl = 'images/back.png';
-        // OCP 音源：铭牌音效与播控共用，播控的封面/曲名/艺术家也读取自该文件
+        // OCP 音源：铭牌音效与播控共用，播控的封面/曲名/艺术家也读取自该文件。
         this.ocpAudioUrl = 'https://rudan177.github.io/OOOInterface/images/wow.mp3';
-        // 点击播控封面后打开的在线播放器
+        // 点击播控封面后打开的在线播放器。
         this.ocpPlayerUrl = 'https://rudan177.github.io/CHAPTER/player.html';
         this.iconLoadStatus = {};
 
@@ -34,7 +39,7 @@ export class OOOInterface {
         this.infoPopupOpen = false;
         this.isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
         this.isFirstRun = true;
-        this.userChangedLogo = false; // 标记用户是否手动更改过Logo
+        this.userChangedLogo = false; // 标记用户是否手动更改过 Logo
         this.modalScrollHandler = null;
         this.backendConnected = false; // OUA 后端连接状态，通过 localStorage 与 about.js 同步
         this.currentVersion = VERSION; // 使用 version.js 中的版本号
@@ -59,7 +64,7 @@ export class OOOInterface {
         // 壁纸填充层
         this.wallpaperBlur = null;
         this.wallpaperMain = null;
-        // 壁纸本地版 → 在线版的升级记录与在途探测（见 WallpaperMixin.probeOnlineWallpaper）
+        // 壁纸本地版到在线版的升级记录与在途探测（见 WallpaperMixin.probeOnlineWallpaper）。
         this.onlineWallpaperMap = {};
         this._onlineWallpaperProbes = {};
 
@@ -85,21 +90,15 @@ export class OOOInterface {
 
         this.preloadWallpaper();
 
-        // 首屏外观抢在几个 await 前面：这几项只依赖 this.settings（chrome.storage 已经读回来了），
-        // 与自定义字体文件、主题文件都无关。实测热刷新时首屏 108ms 就出来了，
-        // 而配色/侧边栏要等到 303ms（排在 loadCustomFonts/loadThemes 之后）——
-        // 中间那段是「先默认外观、后变对」。先应用一次就没了。
-        // 主题启用时 loadThemes() 末尾仍会按主题覆盖一遍（顺序与改动前一致，只是间隔变短）。
-        // 不提前 applyFont：自定义字体的 FontFace 要等 loadCustomFonts() 才注册，
-        // 提前设 font-family 只会先落回退字体、字体到位后再跳一下。
-        // 放在 createWallpaperLayers() 之后：handlePersistentWallpaperToggle() 会调 applyWallpaper()，
-        // 那时图层必须已经存在。
+        // 首屏外观只依赖 this.settings（chrome.storage 已读回），与字体文件、主题文件无关，
+        // 因此抢在几个 await 之前应用，避免先显示默认外观再跳变；主题启用时 loadThemes() 末尾仍会覆盖一遍。
+        // 不提前 applyFont：自定义字体的 FontFace 要等 loadCustomFonts() 才注册，提前设置只会先落回退字体再跳一下。
+        // 放在 createWallpaperLayers() 之后：handlePersistentWallpaperToggle() 会调 applyWallpaper()，那时图层必须已存在。
         this.applyColorScheme();
         this.syncSidebarFixedState();
         this.handlePersistentWallpaperToggle();
 
-        // 存量壁纸的一次性重编码。自己挂 afterLoad，不占首屏；首屏之后才问、
-        // 才一条一条地跑（见 WallpaperMixin.maybeShrinkStoredWallpapers）。
+        // 存量壁纸的一次性重编码自己挂 afterLoad，不占首屏（见 WallpaperMixin.maybeShrinkStoredWallpapers）。
         this.maybeShrinkStoredWallpapers();
 
         this.initCustomSelect();
@@ -125,7 +124,7 @@ export class OOOInterface {
         this.initWidgetPanel();
 
         // 先加载主题列表（含用户导入的自定义主题），再应用外观设置，
-        // 确保页面刷新后主题在首屏渲染前即恢复，避免出现默认外观闪动
+        // 确保页面刷新后主题在首屏渲染前即恢复，避免出现默认外观闪动。
         await this.loadThemes();
 
         try {
@@ -142,21 +141,14 @@ export class OOOInterface {
             this.checkAndFetchBingWallpaper();
         }
 
-        // 这里原本调 primeWallpaperEffects()：临时给 body 加 scrolled+dynamic-blur 一帧，
-        // 逼浏览器先把动态模糊控件的 backdrop-filter 光栅化一次，免得第一次进壁纸模式卡一下。
-        // 但 body.scrolled .container 的 padding-top 是 calc(100dvh - 145px)（styles.css:6477），
-        // 于是这一帧搜索框瞬移到屏底、logo 胶囊消失，下一帧再弹回来 —— 实测合成帧在
-        // 705ms 与 735ms 两次全屏变化就是这个，肉眼就是「莫名其妙闪一下壁纸模式」。
-        // 以前首屏被 Google Fonts 的 <link> 堵着，这一帧发生在首帧之前所以看不见；
-        // 字体改成异步之后首屏 196ms 就画出来了，预热帧落在 ~700ms，就露出来了。
-        // 预热和「早出画面」构造上无法共存，取早出画面：删掉预热。代价是第一次进
-        // 壁纸模式时那几个玻璃控件要现光栅化一次（一次性），远小于每次新标签页都闪一下。
+        // 不在首屏预热动态模糊：body.scrolled .container 的 padding-top 是 calc(100dvh - 145px)，
+        // 预热帧会让搜索框瞬移到屏底再弹回，肉眼表现为壁纸模式闪一下。
 
-        // 注册跨上下文设置同步（侧边栏面板 ⇄ 主页面），并处理面板跳转参数
+        // 注册主页面与侧边栏面板之间的跨上下文设置同步，并处理面板跳转参数。
         this.setupSettingsSync();
         this.handleOpenQuickLinksParam();
 
-        // 自动聚焦搜索框，解决浏览器新标签页地址栏抢焦点的问题
+        // 自动聚焦搜索框，解决浏览器新标签页地址栏抢焦点的问题。
         setTimeout(() => {
             const searchInput = document.getElementById('search-input');
             if (searchInput) {
@@ -199,26 +191,6 @@ export class OOOInterface {
 
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     bindEvents() {
         // 欢迎界面关闭按钮
         const welcomeCloseBtn = document.getElementById('welcome-close');
@@ -230,13 +202,13 @@ export class OOOInterface {
         document.getElementById('google-engine').addEventListener('click', () => this.switchEngine('google'));
         document.getElementById('bing-engine').addEventListener('click', () => this.switchEngine('bing'));
 
-        // Google按钮右键事件 - 手气不错功能
+        // Google 按钮右键事件：手气不错。
         document.getElementById('google-engine').addEventListener('contextmenu', (e) => {
             e.preventDefault();
             this.performGoogleLucky();
         });
 
-        // 状态栏双击事件 - 切换显示秒钟
+        // 状态栏双击事件：切换显示秒钟。
         const statusBarEl = document.getElementById('status-bar');
         if (statusBarEl) {
             statusBarEl.addEventListener('dblclick', () => {
@@ -260,8 +232,8 @@ export class OOOInterface {
             }
         });
 
-        // “/” 命令列表键盘导航（ArrowUp/Down 选择、Enter 插入命令、Esc/Backspace 删除模式 chip）
-        // 注意：在拦截 Enter 时必须 preventDefault，否则随后的 keypress 仍会触发 performSearch
+        // “/” 命令列表键盘导航（ArrowUp/Down 选择、Enter 插入命令、Esc/Backspace 删除模式 chip）。
+        // 注意：在拦截 Enter 时必须 preventDefault，否则随后的 keypress 仍会触发 performSearch。
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const chipActive = !!this.searchCommandMode;
@@ -278,7 +250,7 @@ export class OOOInterface {
                 return;
             }
             // 组件模式下按退格删除椭圆：输入为空时才生效；
-            // translate 已锁定语言对时先解锁语言对，再退格彻底退出
+            // translate 已锁定语言对时先解锁语言对，再退格彻底退出。
             if (e.key === 'Backspace' && this.searchCommandMode && searchInput.value === '') {
                 e.preventDefault();
                 if (this.searchCommandMode === 'translate' && this.translateSelectedPair) {
@@ -347,7 +319,7 @@ export class OOOInterface {
         });
 
         searchHistoryList.addEventListener('click', (e) => {
-            // 删除按钮优先处理,避免命中同一行时误触发搜索
+            // 删除按钮优先处理，避免命中同一行时误触发搜索。
             const deleteBtn = e.target.closest('.search-history-delete');
             if (deleteBtn) {
                 e.stopPropagation();
@@ -358,7 +330,7 @@ export class OOOInterface {
                 return;
             }
 
-            // 历史行与热搜行均保留 search-history-item + data-query,统一回填搜索框并搜索
+            // 历史行与热搜行均保留 search-history-item + data-query，统一回填搜索框并搜索。
             const item = e.target.closest('.search-history-item');
             if (item) {
                 const searchQuery = item.dataset.query;
@@ -369,7 +341,7 @@ export class OOOInterface {
             }
         });
 
-        // 阻止搜索历史框内的滚轮事件冒泡到window，避免触发壁纸模式
+        // 阻止搜索历史框内的滚轮事件冒泡到 window，避免触发壁纸模式。
         searchHistoryContainer.addEventListener('wheel', (e) => {
             e.stopPropagation();
         });
@@ -394,7 +366,7 @@ export class OOOInterface {
         const translateHistoryList = document.querySelector('.translate-history-list');
         if (translateHistoryList) {
             translateHistoryList.addEventListener('click', (e) => {
-                // 删除按钮：按 kind 分流清理对应存储，然后刷新面板
+                // 删除按钮：按 kind 分流清理对应存储，然后刷新面板。
                 const deleteBtn = e.target.closest('.search-history-delete');
                 if (deleteBtn) {
                     e.stopPropagation();
@@ -407,7 +379,7 @@ export class OOOInterface {
                     return;
                 }
 
-                // 行点击：web 按 key 回填网址；translate 套用语言对
+                // 行点击：web 按 key 回填网址；translate 套用语言对。
                 const item = e.target.closest('.search-history-item');
                 if (!item) return;
 
@@ -422,7 +394,7 @@ export class OOOInterface {
             });
         }
 
-        // 模式 chip 点击退出当前模式
+        // 模式 chip 点击退出当前模式。
         const modeChip = document.getElementById('search-mode-chip');
         if (modeChip) {
             modeChip.addEventListener('click', () => {
@@ -434,7 +406,7 @@ export class OOOInterface {
             });
         }
 
-        // 铭牌点击事件 - 已在 setupBadgeOpenMethod() 中处理
+        // 铭牌点击事件已在 setupBadgeOpenMethod() 中处理。
 
         // 设置弹窗事件
         document.getElementById('close-modal').addEventListener('click', () => this.closeSettings());
@@ -462,12 +434,12 @@ export class OOOInterface {
             } else if (rpu && rpu.dataset.subView === 'custom-color-editor') {
                 this.backToCustomColorView(rpu);
             } else if (rpu && rpu.dataset.subView === 'wallpaper-badge-config') {
-                // 壁纸角标配置：返回壁纸列表（不带这条会一路掉到末尾，把整个右面板关掉）
+                // 壁纸角标配置：返回壁纸列表（不带这条会一路掉到末尾，把整个右面板关掉）。
                 this.backToWallpaperMenu(rpu);
             } else if (rpu && rpu.dataset.menuType === 'side-panel'
                 && this._sidePanelView && this._sidePanelView !== 'root') {
-                // 侧边栏功能子视图：顶部返回按钮逐级返回（子视图 → 功能根视图 → 关闭右面板）
-                // 子视图向右推出、功能根视图从左推入（iOS 式 pop）
+                // 侧边栏功能子视图：顶部返回按钮逐级返回（依次为子视图、功能根视图、关闭右面板）。
+                // 子视图向右推出、功能根视图从左推入（iOS 式 pop）。
                 this.panelTransition(rpu, 'pop', () => {
                     this.exitSidePanelScope();
                     this.renderSidePanelConfigView(rpu, true);
@@ -478,7 +450,7 @@ export class OOOInterface {
             }
         });
 
-        // ESC键关闭设置窗口
+        // ESC 键关闭设置窗口。
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const modal = document.getElementById('settings-modal');
@@ -493,7 +465,7 @@ export class OOOInterface {
                                 this.hideQuickLinksAddInterface(container, container._qlinput, container._qllist, container._qlbtn);
                             }
                         } else if (rpu && (rpu.dataset.subView === 'widget-config' || rpu.dataset.subView === 'widget-type-picker')) {
-                            // 小组件编辑/添加表单：ESC 返回列表（带滑出动画）
+                            // 小组件编辑/添加表单：ESC 返回列表（带滑出动画）。
                             const listContainer = rpu.querySelector('.widget-panel-list-container');
                             if (listContainer) {
                                 this.exitWidgetFormView(listContainer, () => {
@@ -507,7 +479,7 @@ export class OOOInterface {
                             this.backToWallpaperMenu(rpu);
                         } else if (rpu && rpu.dataset.menuType === 'side-panel'
                             && this._sidePanelView && this._sidePanelView !== 'root') {
-                            // 侧边栏功能子视图：逐级返回（子视图 → 功能根视图），同顶部返回按钮
+                            // 侧边栏功能子视图：逐级返回，由子视图回到功能根视图，同顶部返回按钮。
                             this.panelTransition(rpu, 'pop', () => {
                                 this.exitSidePanelScope();
                                 this.renderSidePanelConfigView(rpu, true);
@@ -538,19 +510,19 @@ export class OOOInterface {
             e.target.value = '';
         });
 
-        // 主题选择 change 事件：兜底应用主题（正常流程由下拉项直接调用 applyTheme）
+        // 主题选择 change 事件：兜底应用主题（正常流程由下拉项直接调用 applyTheme）。
         document.getElementById('theme-select').addEventListener('change', (e) => {
             if (e.target.value && this.themes[e.target.value]) {
                 this.applyTheme(e.target.value);
             }
         });
 
-        // Logo文件上传事件
+        // Logo 文件上传事件
         document.getElementById('logo-upload').addEventListener('change', (e) => {
             this.handleLogoUpload(e.target.files[0]);
         });
 
-        // 暗色Logo文件上传事件
+        // 暗色 Logo 文件上传事件
         document.getElementById('dark-logo-upload').addEventListener('change', (e) => {
             this.handleDarkLogoUpload(e.target.files[0]);
         });
@@ -565,9 +537,9 @@ export class OOOInterface {
             this.handleWallpaperUpload(e.target.files[0]);
         });
 
-        // URL壁纸由右侧面板处理，此处无需事件绑定
+        // URL 壁纸由右侧面板处理，此处无需事件绑定。
 
-        // 必应壁纸信息提示图标点击事件
+        // 必应壁纸信息提示图标点击事件。
         const bingInfoIcon = document.getElementById('bing-wallpaper-info');
         if (bingInfoIcon) {
             bingInfoIcon.addEventListener('click', (e) => {
@@ -593,21 +565,21 @@ export class OOOInterface {
         });
 
         // 动态模糊开关改变时，立即写入设置并生效，同时实时显示/隐藏增强显示开关
-        // （即时提交：勾选状态不再需要等到「应用」才被读取，避免中途的 UI 同步把待应用值写回旧值）
+        // （即时提交：勾选状态不再需要等到「应用」才被读取，避免中途的 UI 同步把待应用值写回旧值）。
         document.getElementById('dynamic-blur-toggle').addEventListener('change', (e) => {
             this.settings.dynamicBlur = e.target.checked;
             const enhancedDisplayGroup = document.getElementById('enhanced-display-group');
             if (enhancedDisplayGroup) {
                 enhancedDisplayGroup.style.display = e.target.checked ? 'block' : 'none';
             }
-            // 弹窗自身的毛玻璃外观与 openSettings 保持一致
+            // 弹窗自身的毛玻璃外观与 openSettings 保持一致。
             const modal = document.getElementById('settings-modal');
             if (modal) modal.classList.toggle('blur-effect', e.target.checked);
             this.applySettings();
             this.saveSettings();
         });
 
-        // 增强显示复选框改变时，立即同步到 settings 并更新右键菜单
+        // 增强显示复选框改变时，立即同步到 settings 并更新右键菜单。
         this._enhancedDisplayChangeHandler = (e) => {
             this.settings.enhancedDisplay = e.target.checked;
             this.applySettings();
@@ -618,7 +590,7 @@ export class OOOInterface {
 
         // 快速访问侧边栏开关改变时，立即写入设置并生效，同时显示/隐藏子开关并同步状态
         // （子开关被主开关强制关闭时不回写 showQuickLinkIcons，保留用户的图标偏好，
-        //   与 updateSettingsUI 里「主开关开启时才带出偏好」的读法一致）
+        //   与 updateSettingsUI 里「主开关开启时才带出偏好」的读法一致）。
         document.getElementById('quick-access-sidebar-toggle').addEventListener('change', (e) => {
             this.settings.quickAccessSidebar = e.target.checked;
             const iconsGroup = document.getElementById('show-quick-icons-group');
@@ -626,7 +598,7 @@ export class OOOInterface {
             if (iconsGroup && iconsToggle) {
                 if (e.target.checked) {
                     iconsGroup.style.display = 'block';
-                    // 恢复上次保存的状态
+                    // 恢复上次保存的状态。
                     iconsToggle.checked = this.settings.showQuickLinkIcons;
                 } else {
                     iconsGroup.style.display = 'none';
@@ -637,7 +609,7 @@ export class OOOInterface {
             this.saveSettings();
         });
 
-        // 显示图标子开关：即时生效
+        // 显示图标子开关：即时生效。
         document.getElementById('show-quick-icons').addEventListener('change', (e) => {
             this.settings.showQuickLinkIcons = e.target.checked;
             this.applyQuickLinks();
@@ -646,7 +618,7 @@ export class OOOInterface {
 
         // 固定侧边栏主开关改变时，立即写入设置并生效，同时显示/隐藏两个子开关并同步状态
         // （子开关被主开关强制勾选/取消只是「显示派生」，不回写 fixSidebarHomepage/fixSidebarWallpaper，
-        //   这样子开关的偏好能在主开关反复开关之间保留，与 updateSettingsUI 的读法一致）
+        //   这样子开关的偏好能在主开关反复开关之间保留，与 updateSettingsUI 的读法一致）。
         document.getElementById('fix-sidebar-toggle').addEventListener('change', (e) => {
             this.settings.fixSidebarEnabled = e.target.checked;
             const homepageGroup = document.getElementById('fix-homepage-group');
@@ -656,7 +628,7 @@ export class OOOInterface {
             if (e.target.checked) {
                 if (homepageGroup) homepageGroup.style.display = 'block';
                 if (wallpaperGroup) wallpaperGroup.style.display = 'block';
-                // 开启主开关时，子开关一并开启（连同设置项一起写回，保持勾选与设置一致）
+                // 开启主开关时，子开关一并开启（连同设置项一起写回，保持勾选与设置一致）。
                 if (homepageToggle) homepageToggle.checked = true;
                 if (wallpaperToggle) wallpaperToggle.checked = true;
                 this.settings.fixSidebarHomepage = true;
@@ -664,7 +636,7 @@ export class OOOInterface {
             } else {
                 if (homepageGroup) homepageGroup.style.display = 'none';
                 if (wallpaperGroup) wallpaperGroup.style.display = 'none';
-                // 关闭主开关时，子开关一并关闭
+                // 关闭主开关时，子开关一并关闭。
                 if (homepageToggle) homepageToggle.checked = false;
                 if (wallpaperToggle) wallpaperToggle.checked = false;
             }
@@ -672,7 +644,7 @@ export class OOOInterface {
             this.saveSettings();
         });
 
-        // 固定侧边栏的两个子开关：即时生效，各自独立写回自己的设置项
+        // 固定侧边栏的两个子开关：即时生效，各自独立写回自己的设置项。
         [['fix-sidebar-homepage-toggle', 'fixSidebarHomepage'],
          ['fix-sidebar-wallpaper-toggle', 'fixSidebarWallpaper']].forEach(([id, key]) => {
             const el = document.getElementById(id);
@@ -685,7 +657,7 @@ export class OOOInterface {
         });
 
         // 简洁视觉效果主开关改变时，联动全部子开关并即时生效
-        // （禁止提示按默认临时7天开启，设置页内双击该子开关才为永久；程序设置 checked 不触发子开关的 change 事件）
+        // （禁止提示按默认临时 7 天开启，设置页内双击该子开关才为永久；程序设置 checked 不触发子开关的 change 事件）。
         document.getElementById('simple-visual-toggle').addEventListener('change', (e) => {
             const checked = e.target.checked;
 
@@ -702,7 +674,7 @@ export class OOOInterface {
             this.showNotification(checked ? '简洁视觉效果：开启' : '简洁视觉效果：关闭');
         });
 
-        // 隐藏弹窗子开关：立即生效
+        // 隐藏弹窗子开关：立即生效。
         document.getElementById('hide-notifications-toggle').addEventListener('change', (e) => {
             this.settings.hideNotifications = e.target.checked;
             this.applySettings();
@@ -712,7 +684,7 @@ export class OOOInterface {
             this.showNotification(e.target.checked ? '隐藏弹窗：开启' : '隐藏弹窗：关闭');
         });
 
-        // 隐藏铭牌子开关：立即生效
+        // 隐藏铭牌子开关：立即生效。
         document.getElementById('hidden-badge-toggle').addEventListener('change', (e) => {
             this.settings.hiddenBadge = e.target.checked;
             this.applySettings();
@@ -722,7 +694,7 @@ export class OOOInterface {
         });
 
         // 搜索历史 / 热搜词建议 / 引擎锁定：与右键菜单里的同名开关走同一套副作用
-        // （此前设置页这三个勾选只在点「应用」时才被读取，中途任何 UI 同步都会把勾选写回旧值）
+        // （这三个勾选即时写入，避免中途的 UI 同步把待应用值写回旧值）。
         document.getElementById('search-history-toggle').addEventListener('change', (e) => {
             this.settings.searchHistory = e.target.checked;
             this.saveSettings();
@@ -744,7 +716,7 @@ export class OOOInterface {
             this.showNotification(e.target.checked ? '引擎锁定：开启' : '引擎锁定：关闭');
         });
 
-        // OCP 播控开关：开启后 OCP 播放过一次即可 hover 铭牌呼出播控；关闭时立即收起
+        // OCP 播控开关：开启后 OCP 播放过一次即可 hover 铭牌呼出播控；关闭时立即收起。
         document.getElementById('ocp-player-toggle').addEventListener('change', (e) => {
             this.settings.ocpPlayerEnabled = e.target.checked;
             if (!e.target.checked) {
@@ -754,7 +726,7 @@ export class OOOInterface {
             this.showNotification(e.target.checked ? 'OCP播控：开启' : 'OCP播控：关闭');
         });
 
-        // 小组件列表下拉点击 → 右面板管理界面
+        // 小组件列表下拉点击后打开右面板管理界面。
         const widgetPanelSelectSelected = document.getElementById('widget-panel-select-selected');
         if (widgetPanelSelectSelected) {
             widgetPanelSelectSelected.addEventListener('click', (e) => {
@@ -764,7 +736,7 @@ export class OOOInterface {
         }
 
         // 状态栏主开关改变时，立即写入设置并生效，同时显示/隐藏子开关并保留上次保存的秒钟偏好
-        // （子开关被主开关强制取消勾选只是显示派生，不回写 showStatusBarSeconds）
+        // （子开关被主开关强制取消勾选只是显示派生，不回写 showStatusBarSeconds）。
         document.getElementById('status-bar-toggle').addEventListener('change', (e) => {
             this.settings.statusBarEnabled = e.target.checked;
             const showSecondsGroup = document.getElementById('show-seconds-group');
@@ -782,7 +754,7 @@ export class OOOInterface {
             this.saveSettings();
         });
 
-        // 显示秒数子开关：即时生效
+        // 显示秒数子开关：即时生效。
         document.getElementById('show-seconds-toggle').addEventListener('change', (e) => {
             this.settings.showStatusBarSeconds = e.target.checked;
             this.applyStatusBarSettings();
@@ -799,7 +771,7 @@ export class OOOInterface {
             this.showShortcutsHint();
         });
 
-        // 壁纸常显示开关改变时，立即写入设置并生效，同时实时显示/隐藏壁纸缩放开关
+        // 壁纸常显示开关改变时，立即写入设置并生效，同时实时显示/隐藏壁纸缩放开关。
         document.getElementById('persistent-wallpaper-toggle').addEventListener('change', (e) => {
             this.settings.persistentWallpaper = e.target.checked;
             const wallpaperScaleGroup = document.getElementById('wallpaper-scale-group');
@@ -810,21 +782,21 @@ export class OOOInterface {
             this.saveSettings();
         });
 
-        // 壁纸缩放子开关：即时生效
+        // 壁纸缩放子开关：即时生效。
         document.getElementById('wallpaper-scale-toggle').addEventListener('change', (e) => {
             this.settings.wallpaperScale = e.target.checked;
             this.applySettings();
             this.saveSettings();
         });
 
-        // 暗色压暗壁纸开关：控制暗色模式下壁纸蒙版（主页面与侧边栏面板共用设置键）
+        // 暗色压暗壁纸开关：控制暗色模式下壁纸蒙版（主页面与侧边栏面板共用设置键）。
         document.getElementById('wallpaper-dim-toggle').addEventListener('change', (e) => {
             this.settings.wallpaperDarkDim = e.target.checked;
             this.applySettings();
             this.saveSettings();
         });
 
-        // 设置文字Logo事件
+        // 设置文字 Logo 事件
         document.getElementById('set-text-logo').addEventListener('click', (e) => {
             e.stopPropagation();
             this.setTextLogo();
@@ -841,12 +813,12 @@ export class OOOInterface {
                 this.settings.persistentWallpaper = document.getElementById('persistent-wallpaper-toggle').checked;
                 this.settings.wallpaperDarkDim = document.getElementById('wallpaper-dim-toggle').checked;
                 this.settings.wallpaperScale = document.getElementById('wallpaper-scale-toggle').checked;
-                // 读取右侧面板填满开关（如果面板打开时）
+                // 读取右侧面板填满开关（如果面板打开时）。
                 const panelFillToggle = document.getElementById('wallpaper-fill-toggle-panel');
                 if (panelFillToggle) {
                     this.settings.wallpaperFill = panelFillToggle.checked;
                 }
-                // 读取固定侧边栏主开关与子开关
+                // 读取固定侧边栏主开关与子开关。
                 const fixSidebarToggle = document.getElementById('fix-sidebar-toggle');
                 if (fixSidebarToggle) {
                     this.settings.fixSidebarEnabled = fixSidebarToggle.checked;
@@ -861,20 +833,20 @@ export class OOOInterface {
                 }
                 this.settings.searchHistory = document.getElementById('search-history-toggle').checked;
                 this.settings.searchSuggestions = document.getElementById('search-suggestions-toggle').checked;
-                // 引擎锁定走统一写入口：锁定时需要把当前引擎写进 localStorage
+                // 引擎锁定走统一写入口：锁定时需要把当前引擎写进 localStorage。
                 const engineLockToggle = document.getElementById('engine-lock-toggle');
                 if (engineLockToggle) {
                     this.setEngineLock(engineLockToggle.checked);
                 }
                 this.settings.contextMenuStyle = document.getElementById('context-menu-style').value;
 
-                // 读取快速访问侧边栏开关
+                // 读取快速访问侧边栏开关。
                 const newQuickLinkToggle = document.getElementById('quick-access-sidebar-toggle');
                 if (newQuickLinkToggle) {
                     this.settings.quickAccessSidebar = newQuickLinkToggle.checked;
                 }
 
-                // 读取显示图标开关（主开关关闭时该子开关被强制取消勾选，同样加守卫保留偏好）
+                // 读取显示图标开关（主开关关闭时该子开关被强制取消勾选，同样加守卫保留偏好）。
                 const showIconsToggle = document.getElementById('show-quick-icons');
                 if (showIconsToggle && this.settings.quickAccessSidebar) {
                     this.settings.showQuickLinkIcons = showIconsToggle.checked;
@@ -890,13 +862,13 @@ export class OOOInterface {
                     this.settings.showStatusBarSeconds = showSecondsToggle.checked;
                 }
 
-                // 读取隐藏弹窗开关
+                // 读取隐藏弹窗开关。
                 const hideNotifToggle = document.getElementById('hide-notifications-toggle');
                 if (hideNotifToggle) {
                     this.settings.hideNotifications = hideNotifToggle.checked;
                 }
 
-                // 读取禁止提示开关
+                // 读取禁止提示开关。
                 const hideInfoToggle = document.getElementById('hide-info-popup-toggle');
                 if (hideInfoToggle) {
                     this.settings.hideInfoPopup = {
@@ -906,13 +878,13 @@ export class OOOInterface {
                     };
                 }
 
-                // 读取隐藏铭牌开关（简洁视觉效果主开关由子开关状态派生，无需读取）
+                // 读取隐藏铭牌开关（简洁视觉效果主开关由子开关状态派生，无需读取）。
                 const hiddenBadgeToggle = document.getElementById('hidden-badge-toggle');
                 if (hiddenBadgeToggle) {
                     this.settings.hiddenBadge = hiddenBadgeToggle.checked;
                 }
 
-                // 底部铭牌功能（双击/右键动作）在右面板选择时已即时保存，此处无需再读取
+                // 底部铭牌功能（双击/右键动作）在右面板选择时已即时保存，此处无需再读取。
 
                 if (oldPersistentWallpaper !== this.settings.persistentWallpaper) {
                     this.handlePersistentWallpaperToggle();
@@ -923,14 +895,14 @@ export class OOOInterface {
                 this.updateContextMenuIcons();
                 this.closeSettings();
                 this.showNotification('设置已应用');
-                // 无需刷新页面，所有设置已通过组件级更新即时生效
+                // 无需刷新页面，所有设置已通过组件级更新即时生效。
             } catch (err) {
                 console.error('[Apply] 点击处理异常:', err);
                 this.showNotification('应用设置时出错: ' + err.message);
             }
         });
 
-        // 右键应用按钮打开/关闭开发者模式
+        // 右键应用按钮打开/关闭开发者模式。
         document.getElementById('apply-settings').addEventListener('contextmenu', (e) => {
             e.preventDefault();
             this.settings.developerMode = !this.settings.developerMode;
@@ -938,22 +910,22 @@ export class OOOInterface {
             this.updateDeveloperModeUI();
             this.applyDeveloperSettings();
             this.applyStatusBarSettings();
-            // 右面板若正停在使用开发者门槛的视图上，需要重渲染才能即时露出/收起其中的控件
+            // 右面板若正停在使用开发者门槛的视图上，需要重渲染才能即时露出/收起其中的控件。
             this.syncSidePanelSelectDisplay();
             this.showNotification(this.settings.developerMode ? '开发者模式已开启' : '开发者模式已关闭');
         });
 
-        // 恢复出厂设置按钮事件（两步确认弹窗）
+        // 恢复出厂设置按钮事件（两步确认弹窗）。
         document.getElementById('reset-settings').addEventListener('click', () => {
             this.showResetConfirmation(() => this.resetToDefaults());
         });
 
-        // 关于按钮事件 - 左键打开UpdateLog.html
+        // 关于按钮：左键打开 about/about.html。
         document.getElementById('about-btn').addEventListener('click', () => {
             window.location.href = 'about/about.html';
         });
 
-        // 关于按钮右键事件 - 右键打开welc.html
+        // 关于按钮：右键打开 welc.html。
         document.getElementById('about-btn').addEventListener('contextmenu', (e) => {
             e.preventDefault();
             window.location.href = 'welc/welc.html?manual=true';
@@ -962,7 +934,7 @@ export class OOOInterface {
         // 反馈按钮事件
         document.getElementById('feedback-btn').addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            // 播放音频
+            // 播放音频。
             this.playBadgeAudio();
         });
         document.getElementById('feedback-btn').addEventListener('click', () => {
@@ -1022,7 +994,7 @@ export class OOOInterface {
             this.applyDeveloperSettings();
         });
 
-        // 字体粗细输入框失焦时四舍五入显示
+        // 字体粗细输入框失焦时四舍五入显示。
         document.getElementById('font-weight-value').addEventListener('blur', (e) => {
             let value = parseInt(e.target.value);
             if (isNaN(value)) value = 400;
@@ -1111,7 +1083,7 @@ export class OOOInterface {
             });
         }
 
-        // 点击弹窗外部关闭
+        // 点击弹窗外部关闭。
         document.getElementById('settings-modal').addEventListener('click', (e) => {
             if (e.target.id === 'settings-modal') {
                 const rpu = document.getElementById('right-panel-upper');
@@ -1120,10 +1092,10 @@ export class OOOInterface {
             }
         });
 
-        // 滚轮事件 - 向下滚动出现壁纸，向上恢复
+        // 滚轮事件：向下滚动出现壁纸，向上恢复。
         window.addEventListener('wheel', (e) => this.handleScroll(e), { passive: true });
 
-        // 触摸滑动壁纸（移动端）
+        // 触摸滑动壁纸（移动端）。
         let touchStartY = 0;
         let touchActive = false;
 
@@ -1142,20 +1114,20 @@ export class OOOInterface {
             if (!touchActive || this.isAnimating) return;
             const deltaY = touchStartY - e.touches[0].pageY;
             if (Math.abs(deltaY) > 15) {
-                // touchGesture：这是按「起点→当前点」过滤过的整段位移，跳过 wheel 的累计判定
+                // touchGesture：这是按「起点到当前点」过滤过的整段位移，跳过 wheel 的累计判定。
                 this.handleScroll({ deltaY: deltaY, target: e.target, touchGesture: true });
                 touchActive = false;
             }
         }, { passive: true });
 
-        // 防止页面滚动
+        // 防止页面滚动。
         window.addEventListener('keydown', (e) => {
             if (e.key === ' ' && e.target === document.body) {
                 e.preventDefault();
             }
         });
 
-        // 快捷键（开发者模式）
+        // 快捷键（开发者模式）。
         document.addEventListener('keydown', (e) => {
             if (!this.settings.shortcutsEnabled) return;
 
@@ -1163,7 +1135,7 @@ export class OOOInterface {
             const modal = document.getElementById('settings-modal');
             const inSettings = modal && modal.classList.contains('show');
 
-            // Ctrl+S - 应用设置（仅在设置页面中）
+            // Ctrl+S：应用设置（仅在设置页面中）。
             if (ctrl && (e.key === 's' || e.key === 'S')) {
                 e.preventDefault();
                 if (inSettings) {
@@ -1172,7 +1144,7 @@ export class OOOInterface {
                 return;
             }
 
-            // Ctrl+H - 切换搜索历史框
+            // Ctrl+H：切换搜索历史框。
             if (ctrl && (e.key === 'h' || e.key === 'H')) {
                 e.preventDefault();
                 if (!inSettings) {
@@ -1186,7 +1158,7 @@ export class OOOInterface {
                 return;
             }
 
-            // Ctrl+, - 打开设置页面
+            // Ctrl+,：打开设置页面。
             if (ctrl && e.key === ',') {
                 e.preventDefault();
                 if (!inSettings) {
@@ -1195,7 +1167,7 @@ export class OOOInterface {
                 return;
             }
 
-            // Tab - 聚焦搜索框（不在设置页面时；快捷轮盘打开时跳过，避免打断选择）
+            // Tab：聚焦搜索框（不在设置页面时；快捷轮盘打开时跳过，避免打断选择）。
             if (e.key === 'Tab' && !inSettings && !e.shiftKey &&
                 !(window.oooController && window.oooController.radialActive)) {
                 const searchInput = document.getElementById('search-input');
@@ -1206,11 +1178,11 @@ export class OOOInterface {
             }
         });
 
-        // 右键菜单事件
+        // 右键菜单事件。
         document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
 
-            // 搜索框右键自动粘贴剪贴板内容
+            // 搜索框右键自动粘贴剪贴板内容。
             if (e.target.closest('.search-section')) {
                 this.pasteToSearch();
                 return;
@@ -1224,14 +1196,14 @@ export class OOOInterface {
             }
         });
 
-        // 点击页面其他地方关闭右键菜单
+        // 点击页面其他地方关闭右键菜单。
         document.addEventListener('click', (e) => {
             if (this.contextMenu && !this.contextMenu.contains(e.target)) {
                 this.hideContextMenu();
             }
         });
 
-        // 右键菜单项目点击事件
+        // 右键菜单项目点击事件。
         if (this.contextMenu) {
             this.contextMenu.addEventListener('click', (e) => {
                 const menuItem = e.target.closest('.context-menu-item');
@@ -1243,15 +1215,15 @@ export class OOOInterface {
             });
         }
 
-        // 拖拽上传功能
+        // 拖拽上传功能。
         this.setupDragAndDrop();
 
-        // 文字Logo输入框回车键支持
+        // 文字 Logo 输入框回车键支持。
         const textLogoInput = document.getElementById('text-logo-input');
         const textLogoInlineGroup = document.getElementById('text-logo-inline-group');
         const textLogoBtn = document.getElementById('set-text-logo');
 
-        // 计算字符长度（中文算2个字符）
+        // 计算字符长度（中文算 2 个字符）。
         const getCharLength = (str) => {
             let length = 0;
             for (let i = 0; i < str.length; i++) {
@@ -1265,7 +1237,7 @@ export class OOOInterface {
             return length;
         };
 
-        // 检查输入长度
+        // 检查输入长度。
         const checkTextLogoInputLength = () => {
             if (!textLogoInput || !textLogoBtn) return true;
             const text = textLogoInput.value;
@@ -1295,7 +1267,7 @@ export class OOOInterface {
             textLogoInput.addEventListener('input', () => {
                 checkTextLogoInputLength();
             });
-            // 阻止点击事件冒泡，防止关闭下拉菜单
+            // 阻止点击事件冒泡，防止关闭下拉菜单。
             textLogoInput.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
@@ -1307,7 +1279,7 @@ export class OOOInterface {
             });
         }
 
-        // 快速访问链接选择框点击事件
+        // 快速访问链接选择框点击事件。
         const quickLinksSelectSelected = document.getElementById('quick-links-select-selected');
         const quickLinksSelectItems = document.getElementById('quick-links-select-items');
 
@@ -1321,28 +1293,7 @@ export class OOOInterface {
         this.initHideInfoPopupToggle();
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // 预设字体名称到字体文件路径的映射
+    // 预设字体名称到字体文件路径的映射。
     static get PRESET_FONT_PATHS() {
         return {
             'Sans Flex': '../fonts/GoogleSansFlex.ttf',
@@ -1354,5 +1305,3 @@ export class OOOInterface {
     }
 
 }
-
-

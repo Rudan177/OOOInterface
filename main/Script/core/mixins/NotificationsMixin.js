@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 通知与信息弹窗：提示框配色与墨迹居中修正、信息弹窗、快捷键说明浮层。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const NotificationsMixin = {
     getNotificationColors() {
@@ -35,11 +36,11 @@ export const NotificationsMixin = {
                 const textColor = this.isDarkMode ? colorConfig.notificationTextDark : colorConfig.notificationText;
                 return { bg: bgColor, text: textColor, border: colorConfig.notificationBorder, blur: true };
             }
-            // 蓝色主题及其他
+            // 蓝色主题及其他配色。
             const bgColor = this.isDarkMode ? colorConfig.notificationBgDark : colorConfig.notificationBg;
             const textColorDark = colorConfig.notificationTextDark || '#ffffff';
             const textColorLight = colorConfig.notificationText || '#ffffff';
-            // 浅色模式下，若背景有效亮度较高（偏亮），自动切换为深色文字确保对比度
+            // 浅色模式下，若背景有效亮度较高（偏亮），自动切换为深色文字以确保对比度。
             let textColor = textColorDark;
             if (!this.isDarkMode) {
                 var effLum = rgbaEffectiveLuminance(bgColor, 1.0);
@@ -48,17 +49,17 @@ export const NotificationsMixin = {
             return { bg: bgColor, text: textColor, border: colorConfig.notificationBorder, blur: true };
         }
 
-        // 非高级视觉效果：使用表面色
+        // 非高级视觉效果：使用表面色。
         return { bg: 'var(--surface-color)', text: 'var(--text-color)', border: 'var(--border-color)', blur: false };
     },
-    // 提示框里的文字视觉上并不居中：line-height 的半行距对齐的是字体的内容区
-    // （ascent + descent），而字体的 ascent/descent 本就不对称，实际画出来的墨迹
-    // 因此整体偏上。偏移量随字体变（本次量到 0.8~1.6px），在 45px 高的胶囊里肉眼可辨。
+    // 提示框文字视觉上并不居中：line-height 的半行距对齐的是字体内容区
+    //（ascent + descent），而 ascent/descent 本就不对称，实际墨迹整体偏上。
+    // 偏移量随字体变化（本次量到 0.8~1.6px），在 45px 高的胶囊里肉眼可辨。
     // 这里量出真实偏移，交给调用方用不对称内边距压回去。
     getNotificationInkOffset(notification) {
         // 基线探针：零尺寸 inline-block 的底边正好压在基线上（vertical-align: baseline），
-        // 这是 DOM 里唯一能直接读出基线的办法。首尾各放一个，多行文案也能框住整块墨迹
-        // （单行时两者重合）。只测位置、不参与布局：宽高都是 0，不会影响居中和换行。
+        // 这是 DOM 里能直接读出基线的办法。首尾各放一个，多行文案也能框住整块墨迹
+        //（单行时两者重合）。只测位置、不参与布局：宽高都是 0，不影响居中和换行。
         const probeStyle = 'display:inline-block;width:0;height:0;vertical-align:baseline;';
         const head = document.createElement('span');
         const tail = document.createElement('span');
@@ -83,19 +84,19 @@ export const NotificationsMixin = {
 
         const inkCenter = (firstBaseline - ink.ascent + lastBaseline + ink.descent) / 2;
         const boxCenter = rect.top + rect.height / 2;
-        // 限幅：万一量出离谱的值，也不至于把提示框撑歪
+        // 限幅，避免异常值把提示框撑歪。
         return Math.max(-4, Math.min(4, inkCenter - boxCenter));
     },
-    // 量一段文字"墨迹"（真正落笔的部分）相对基线的上下沿，单位是 CSS px
+    // 量一段文字「墨迹」（真正落笔的部分）相对基线的上下沿，单位为 CSS px。
     measureTextInk(text, fontFamily, fontSize) {
         try {
             // 光栅化比 measureText 准：actualBoundingBoxAscent/Descent 被 Chrome 量化成
             // 整数，中文字体上能差 1px 以上；扫 alpha 通道得到的是真实落笔范围
-            // （实测与逐像素量截图的结果相差 0.02px）。放大 200px 再画，1px 的量化误差
+            //（实测与逐像素量截图的结果相差 0.02px）。放大 200px 再画，1px 的量化误差
             // 摊回 14px 只剩 0.07px。
             const big = 200;
             const scale = big / fontSize;
-            // 墨迹上下沿由字形决定，取开头一小段就够，长文案不必画满整张画布
+            // 墨迹上下沿由字形决定，取开头一小段就够，长文案不必画满整张画布。
             const sample = String(text || '').slice(0, 16);
             if (!sample) return null;
 
@@ -119,7 +120,7 @@ export const NotificationsMixin = {
             let bottom = -1;
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
-                    // alpha > 100 ≈ 四成覆盖率，与肉眼判定"有墨"的界线接近
+                    // alpha > 100 约等于四成覆盖率，接近肉眼判定「有墨」的界线。
                     if (data[(y * width + x) * 4 + 3] > 100) {
                         if (top < 0) top = y;
                         bottom = y;
@@ -130,12 +131,12 @@ export const NotificationsMixin = {
             if (top < 0) return null;
             return { ascent: (baseline - top) / scale, descent: (bottom + 1 - baseline) / scale };
         } catch (_) {
-            // 画布不可用（取不到像素等）时不修正，退回对称内边距
+            // 画布不可用（取不到像素等）时不修正，退回对称内边距。
             return null;
         }
     },
     showNotification(message) {
-        // 隐藏弹窗开启时，仅设置在设置页面内仍弹出
+        // 隐藏弹窗开启时，仅在设置页面内仍然弹出。
         if (this.settings && this.settings.hideNotifications) {
             const modal = document.getElementById('settings-modal');
             if (!modal || !modal.classList.contains('show')) {
@@ -143,7 +144,7 @@ export const NotificationsMixin = {
             }
         }
 
-        // 移除已存在的通知
+        // 移除已存在的通知。
         const existingNotification = document.getElementById('ooo-interface-notification');
         if (existingNotification) {
             existingNotification.remove();
@@ -152,18 +153,18 @@ export const NotificationsMixin = {
         const notification = document.createElement('div');
         notification.id = 'ooo-interface-notification';
 
-        // 获取配色（与右键菜单一致：背景/描边/文字）
+        // 获取配色（与右键菜单一致：背景、描边、文字）。
         const colors = this.getNotificationColors();
         const blurStyle = colors.blur
             ? 'backdrop-filter: blur(40px) saturate(1.4); -webkit-backdrop-filter: blur(40px) saturate(1.4);'
             : '';
 
-        // 居中底部：水平居中靠 left: 50% + translateX(-50%)，所以这个 -50% 必须并进出/入场
-        // 的 transform 里，否则动画的 transform 会覆盖掉定位用的位移，提示框会甩到屏幕右半边。
-        // 竖向贴底 20px——主页铭牌（bottom: 32px）和壁纸模式的引擎按钮都占着底部居中，
-        // 提示框既然要贴底就必然压到它们身上，由 styles.css 里那条 :has() 规则让它们先淡出。
-        // transition 先留空：下面量完墨迹要改内边距，过渡开着的话这不到 1px 的修正
-        // 也会走一遍 350ms 动画，提示框刚露头时文字还在慢慢往下滑。
+        // 水平居中依赖 left: 50% 加 translateX(-50%)，这个 -50% 必须并进入/入场动画的
+        // transform，否则定位位移会被动画覆盖，提示框甩到屏幕右半边。
+        // 竖向贴底 20px：主页铭牌（bottom: 32px）与壁纸模式的引擎按钮同样占着底部居中，
+        // 提示框贴底必然压住它们，由 styles.css 的 :has() 规则让它们先淡出。
+        // transition 先留空：下面量完墨迹还要改内边距，过渡开着会让这不到 1px 的修正
+        // 也走一遍 350ms 动画。
         notification.style.cssText = `
             position: fixed;
             left: 50%;
@@ -195,8 +196,8 @@ export const NotificationsMixin = {
 
         document.body.appendChild(notification);
 
-        // 文字纵向修正：把墨迹（而不是字体的内容区）摆到胶囊正中。上下内边距之和不变，
-        // 胶囊高度和贴底位置都不动，动的只是文字。必须赶在摆入场姿势之前量——入场动画
+        // 文字纵向修正：把墨迹（而不是字体内容区）摆到胶囊正中。上下内边距之和不变，
+        // 胶囊高度与贴底位置都不动，动的只是文字。必须赶在摆入场姿势之前量：入场动画
         // 带 translateY(12px)，先摆姿势会把量到的中心整体带偏 12px。
         const inkOffset = this.getNotificationInkOffset(notification);
         if (inkOffset) {
@@ -205,7 +206,7 @@ export const NotificationsMixin = {
         }
 
         // 入场初态：自下而上浮入。先强制一次重排把修正后的几何定下来，再打开过渡，
-        // 否则修正内边距这件事本身也会被当成一次过渡的起点。
+        // 否则修正内边距本身也会被当成一次过渡的起点。
         notification.style.transform = 'translateX(-50%) translateY(12px) scale(0.96)';
         void notification.offsetHeight;
         notification.style.transition = 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
@@ -214,7 +215,7 @@ export const NotificationsMixin = {
             notification.style.transform = 'translateX(-50%) translateY(0) scale(1)';
         }, 10);
 
-        // 3秒后自动隐藏
+        // 3 秒后自动隐藏。
         setTimeout(() => {
             notification.style.opacity = '0';
             notification.style.transform = 'translateX(-50%) translateY(12px) scale(0.96)';
@@ -226,10 +227,10 @@ export const NotificationsMixin = {
         }, 3000);
     },
     showInfoPopup() {
-        // 禁止提示开启时不弹出
+        // 禁止提示开启时不弹出。
         if (this.isHideInfoPopupActive()) return;
 
-        // 同步 UAC 连接状态
+        // 同步 UAC 连接状态。
         try { this.backendConnected = localStorage.getItem('oooBackendConnected') === 'true'; } catch (_) {}
         if (this.infoPopupOpen) return;
         this.infoPopupOpen = true;
@@ -248,7 +249,7 @@ export const NotificationsMixin = {
             font-family: 'Courier New', monospace;
         `;
 
-        // 创建弹窗内容
+        // 创建弹窗内容。
         const content = document.createElement('div');
         content.style.cssText = `
             display: flex;
@@ -256,7 +257,7 @@ export const NotificationsMixin = {
             gap: 15px;
         `;
 
-        // 版本信息
+        // 版本信息。
         const version = document.createElement('p');
         version.textContent = `[component.over]${this.currentVersion}`;
         version.style.cssText = `
@@ -266,7 +267,7 @@ export const NotificationsMixin = {
             word-wrap: break-word;
         `;
 
-        // 操作系统
+        // 操作系统。
         const os = document.createElement('p');
         const osName = this.getOperatingSystem();
         os.textContent = `[devtype]${osName}`;
@@ -277,7 +278,7 @@ export const NotificationsMixin = {
             word-wrap: break-word;
         `;
 
-        // 版本标志
+        // 版本标志。
         const beta = document.createElement('p');
         beta.textContent = `[package.flag]${PACKAGE_FLAG}`;
         beta.style.cssText = `
@@ -287,7 +288,7 @@ export const NotificationsMixin = {
             word-wrap: break-word;
         `;
 
-        // 包ID
+        // 包 ID。
         const packageId = document.createElement('p');
         packageId.textContent = `[package.id]${PACKAGE_ID}`;
         packageId.style.cssText = `
@@ -297,7 +298,7 @@ export const NotificationsMixin = {
             word-wrap: break-word;
         `;
 
-        // 后端连接状态
+        // 后端连接状态。
         const uac = document.createElement('p');
         uac.textContent = `[UAC]${this.getMemoryUsage('uac')}`;
         uac.style.cssText = `
@@ -307,7 +308,7 @@ export const NotificationsMixin = {
             word-wrap: break-word;
         `;
 
-        // 组装弹窗
+        // 组装弹窗。
         content.appendChild(version);
         content.appendChild(os);
         content.appendChild(beta);
@@ -315,10 +316,10 @@ export const NotificationsMixin = {
         content.appendChild(uac);
         popup.appendChild(content);
 
-        // 添加到页面
+        // 添加到页面。
         document.body.appendChild(popup);
 
-        // ESC键关闭弹窗（带 parentNode 检查避免重复移除报错，并及时注销监听器避免泄漏）
+        // ESC 键关闭弹窗（带 parentNode 检查避免重复移除报错，并及时注销监听器避免泄漏）。
         const closePopup = () => {
             if (popup.parentNode) {
                 popup.parentNode.removeChild(popup);
@@ -335,7 +336,7 @@ export const NotificationsMixin = {
         };
         document.addEventListener('keydown', handleEsc);
 
-        // 点击弹窗也可关闭，避免弹窗长期驻留时监听器泄漏
+        // 点击弹窗也可关闭，避免弹窗长期驻留时监听器泄漏。
         popup.addEventListener('click', closePopup);
     },
     showShortcutsHint() {

@@ -1,8 +1,8 @@
-/* ============================================================
-   OOOInterface 侧边栏面板（Chrome Side Panel）
-   在复用主页面 styles.css / dynamic-blur.css / widget-panel.css 的基础上，
-   仅做面板容器形态的最小适配，保证视觉与主页面完全一致。
-   ============================================================ */
+/**
+ * OOOInterface 侧边栏面板（Chrome Side Panel）。
+ * 复用主页面 styles.css / dynamic-blur.css / widget-panel.css，仅做面板容器形态的最小适配，
+ * 保证视觉与主页面一致。
+ */
 
 /* 面板页面基础：与主页面一致的背景与字体 */
 body.qa-panel-page {
@@ -25,7 +25,7 @@ body.qa-panel-page {
 }
 
 /* 暗色模式下给壁纸加一层蒙版，避免暗色控件浮在明亮壁纸上。
-   开关：主页面设置「暗色压暗壁纸」（wallpaperDarkDim，经 body.wallpaper-dim-off 门控，与主页面 #wallpaper-main::after 同款，均画在壁纸层内部） */
+   开关：主页面设置「暗色压暗壁纸」（wallpaperDarkDim，经 body.wallpaper-dim-off 门控，与主页面 #wallpaper-main::after 同款，均画在壁纸层内部）。 */
 .qa-panel-wallpaper::after {
     content: '';
     position: absolute;
@@ -47,7 +47,7 @@ body.qa-panel-page {
 
 /* 内容区：通栏纵向排布 小组件 / 快速链接 / 搜索区。
    高度按比例动态分配：小组件区最多 50%（超出内部滚动），
-   快速链接+搜索区至少 50%（链接区弹性填充剩余高度） */
+   快速链接+搜索区至少 50%（链接区弹性填充剩余高度）。 */
 .qa-panel-content {
     position: fixed;
     top: 0;
@@ -68,9 +68,9 @@ body.qa-panel-page {
 /* 小组件区：高度随内容自适应，上限为面板一半（-10px 为链接卡底边距的互补）。
    flex:0 0 不可收缩（防被长链接列表挤压变小）。外层只做尺寸与内边距，
    实际滚动交给内层 qa-panel-widgets-scroll——裁切发生在内层边界，
-   即距区域底边恒定 10px 处，于是"下边距"在任何滚动位置都保留，
+   即距区域底边恒定 10px 处，于是“下边距”在任何滚动位置都保留，
    滚到底时最后一行卡片的下圆角也完整可见。
-   内容不满上限时保持实际高度，剩余空间由下方链接卡向上补充 */
+   内容不满上限时保持实际高度，剩余空间由下方链接卡向上补充。 */
 .qa-panel-widgets {
     flex: 0 0 auto;
     max-height: calc(50% - 10px);
@@ -81,7 +81,7 @@ body.qa-panel-page {
     overflow: hidden;
 }
 
-/* 内层滚动容器 = 小组件的"看不见的外框"：无背景、无边框，仅靠圆角 + overflow
+/* 内层滚动容器 = 小组件的“看不见的外框”：无背景、无边框，仅靠圆角 + overflow
    把滚动裁切收进圆角边界内，于是上下两端始终呈现圆角
    （与主页面 .widget-panel-container 的观感一致）。
    宽度铺满小组件区：列数由 JS 按可用宽度动态计算（见 sidepanel.js syncWidgetScale），
@@ -114,7 +114,7 @@ body.qa-hide-links .qa-panel-widgets {
 }
 
 /* 快速访问侧边栏：改为内容流中的常驻卡片（主页面为右侧 hover 弹出，需覆盖定位）。
-   弹性填充剩余高度：与搜索区合计至少占面板 50% */
+   弹性填充剩余高度：与搜索区合计至少占面板 50%。 */
 body.qa-panel-page .quick-access-sidebar {
     position: relative;
     top: 0;
@@ -124,10 +124,10 @@ body.qa-panel-page .quick-access-sidebar {
     flex: 1 1 auto;
     min-height: 0;
     /* 与小组件区的间距由小组件区底部内边距提供（滚动到底时该间距一并可见，
-       下圆角不会被裁切）；小组件区隐藏时回退为自身 10px 上边距 */
+       下圆角不会被裁切）；小组件区隐藏时回退为自身 10px 上边距。 */
     margin-top: 0;
     /* 主页面是右侧 hover 弹出的横向布局（align-items:flex-start，高度按内容收缩）；
-       面板内改为纵向延展，让链接卡撑满分配的高度 */
+       面板内改为纵向延展，让链接卡撑满分配的高度。 */
     flex-direction: column;
     align-items: stretch;
 }
@@ -136,7 +136,7 @@ body.qa-hide-widgets .quick-access-sidebar {
     margin-top: 10px;
 }
 
-/* 链接列表自身限高滚动，外层卡片圆角不受影响 */
+/* 链接列表自身限高滚动，外层卡片圆角不受影响。 */
 body.qa-panel-page .quick-access-sidebar-container {
     height: auto;
     flex: none;
@@ -165,14 +165,14 @@ body.qa-panel-page .quick-access-sidebar-container {
     width: auto;
     /* 底部恢复 10px 外边距（卡片下圆角不贴住搜索区）；
        小组件区上限 calc(50% - 10px) 与该边距互补，
-       "链接框 + 搜索框"可见高度仍不低于面板的一半 */
+       “链接框 + 搜索框”可见高度仍不低于面板的一半。 */
     margin: 0 10px 10px 10px;
     height: auto;
 }
 
-/* 面板中无壁纸时内容底部留白由容器 margin 提供 */
+/* 面板中无壁纸时内容底部留白由容器 margin 提供。 */
 
-/* 底部搜索区：固定在内容区底部；上方无填充时贴底 */
+/* 底部搜索区：固定在内容区底部；上方无填充时贴底。 */
 .qa-panel-search {
     flex: 0 0 auto;
     margin-top: auto;
@@ -182,7 +182,7 @@ body.qa-panel-page .quick-access-sidebar-container {
 }
 
 /* 壁纸/毛玻璃模式下吸底区不铺独立背景与模糊：毛玻璃应落在搜索框、引擎按钮
-   各自组件上（与主页面一致），避免底部出现一条与组件不融合的模糊带 */
+   各自组件上（与主页面一致），避免底部出现一条与组件不融合的模糊带。 */
 body.qa-has-wallpaper .qa-panel-search,
 body.dynamic-blur .qa-panel-search {
     background: transparent;
@@ -205,10 +205,10 @@ body.dynamic-blur .qa-panel-search {
 }
 
 /* “/” 命令列表 / 翻译语言历史：主页面样式限宽 600px 并居中，
-   面板里改为铺满，并压低展开高度（面板整体矮，避免挤占上方内容） */
+   面板里改为铺满，并压低展开高度（面板整体矮，避免挤占上方内容）。 */
 .qa-panel-search .search-command-container {
     max-width: none;
-    /* 收起状态下不占任何间距（否则会在搜索框与引擎按钮之间留下空隙） */
+    /* 收起状态下不占任何间距（否则会在搜索框与引擎按钮之间留下空隙）。 */
     margin: 0;
 }
 
@@ -218,7 +218,7 @@ body.dynamic-blur .qa-panel-search {
 }
 
 /* 面板比主页面窄得多：输入框默认为 auto 最小宽度，叠加展开的模式 chip 会撑破搜索框，
-   故放开输入框最小宽度，并收紧 chip 的最大宽度（超出部分由 chip 自身省略号截断） */
+   故放开输入框最小宽度，并收紧 chip 的最大宽度（超出部分由 chip 自身省略号截断）。 */
 .qa-panel-search .search-input {
     min-width: 0;
 }
@@ -227,7 +227,7 @@ body.dynamic-blur .qa-panel-search {
     max-width: 140px;
 }
 
-/* 面板提示浮层（小组件通知用，配色跟随方案） */
+/* 面板提示浮层（小组件通知用，配色跟随方案）。 */
 .qa-panel-toast {
     position: fixed;
     left: 50%;
@@ -251,11 +251,12 @@ body.dynamic-blur .qa-panel-search {
     transform: translateX(-50%) translateY(0);
 }
 
-/* ============================================================
-   内置页浏览器（侧边栏搜索/访问的网页在此以内嵌 iframe 展示）
-   结构：顶部操作控件（Home / Back / Next / 网址栏）+ 圆角浮动卡片。
-   仅当 body.qa-browser-open 时显示，并替代小组件 / 快速访问链接区域。
-   ============================================================ */
+/* ---------- 内置页浏览器 ---------- */
+/*
+ * 侧边栏搜索 / 访问的网页在此以内嵌 iframe 展示：顶部操作控件（Home / Back / Next /
+ * 网址栏）+ 圆角浮动卡片。仅当 body.qa-browser-open 时显示，并替代小组件 /
+ * 快速访问链接区域。
+ */
 
 .qa-panel-browser {
     flex: 1 1 auto;
@@ -263,8 +264,8 @@ body.dynamic-blur .qa-panel-search {
     display: none;
     flex-direction: column;
     gap: 8px;
-    /* 底部 10px 与搜索区 8px 上内边距合计 18px，与"链接卡底边距 + 搜索区上内边距"
-       的既有间距一致；搜索区隐藏时也保留 10px 底边距 */
+    /* 底部 10px 与搜索区 8px 上内边距合计 18px，与“链接卡底边距 + 搜索区上内边距”
+       的既有间距一致；搜索区隐藏时也保留 10px 底边距。 */
     padding: 10px 10px 10px 10px;
     overflow: hidden;
 }
@@ -274,12 +275,12 @@ body.qa-browser-open .qa-panel-browser {
 }
 
 /* 内置页模式下取消搜索区贴底的 auto 外边距：auto margin 会参与空闲空间分配，
-   可能与浏览器视图的 flex-grow 争夺空间，导致卡片撑不满 => 显式归零后由 flex-grow 主导 */
+   可能与浏览器视图的 flex-grow 争夺空间，导致卡片撑不满；显式归零后由 flex-grow 主导。 */
 body.qa-browser-open .qa-panel-search {
     margin-top: 0;
 }
 
-/* 顶部操作控件：圆角工具栏，与面板卡片同一套底色 / 描边语言 */
+/* 顶部操作控件：圆角工具栏，与面板卡片同一套底色 / 描边语言。 */
 .qa-browser-toolbar {
     flex: 0 0 auto;
     display: flex;
@@ -292,7 +293,7 @@ body.qa-browser-open .qa-panel-search {
     box-shadow: var(--shadow);
 }
 
-/* 圆形图标按钮（Home / Back / Next） */
+/* 圆形图标按钮（Home / Back / Next）。 */
 .qa-browser-btn {
     flex: 0 0 auto;
     width: 30px;
@@ -338,7 +339,7 @@ body.qa-browser-open .qa-panel-search {
     }
 }
 
-/* 网址栏：胶囊输入框，沿用搜索框底色 */
+/* 网址栏：胶囊输入框，沿用搜索框底色。 */
 .qa-browser-urlbar {
     flex: 1 1 auto;
     min-width: 0;
@@ -380,7 +381,7 @@ body.qa-browser-open .qa-panel-search {
 }
 
 /* 浮动卡片：承载 iframe，圆角裁切。
-   用 flex 纵向布局让 iframe 通过 flex 撑满，避免百分比高度在 flex 链中解析失败 */
+   用 flex 纵向布局让 iframe 通过 flex 撑满，避免百分比高度在 flex 链中解析失败。 */
 .qa-browser-card {
     flex: 1 1 auto;
     min-height: 0;
@@ -405,7 +406,7 @@ body.qa-browser-open .qa-panel-search {
 
 /* 窄屏移动端模式：卡片宽度小于移动端设计宽度时，把 iframe 视口固定为标准手机宽度
    （由 JS 设置 width/height/transform），整体等比缩放到卡片内。
-   改用绝对定位以免被卡片的 flex 横向拉伸干扰 */
+   改用绝对定位以免被卡片的 flex 横向拉伸干扰。 */
 .qa-browser-card.qa-mobile-mode .qa-browser-frame {
     position: absolute;
     top: 0;
@@ -542,8 +543,7 @@ body.dynamic-blur.enhanced-display .qa-browser-card {
     }
 }
 
-
-/* ============ 未配置引导卡 ============ */
+/* ---------- 未配置引导卡 ---------- */
 .qa-guide-card {
     position: fixed;
     inset: 0;
@@ -600,7 +600,7 @@ body.dynamic-blur.enhanced-display .qa-browser-card {
     transform: scale(0.96);
 }
 
-/* 小组件空态引导按钮（仅面板，主页面空态不变） */
+/* 小组件空态引导按钮（仅面板，主页面空态不变）。 */
 .widget-panel-empty-cta {
     display: block;
     margin: 10px auto 0;
@@ -623,30 +623,22 @@ body.dynamic-blur.enhanced-display .qa-browser-card {
     transform: scale(0.96);
 }
 
-/* ============================================================
-   进入动画：小组件卡 / 搜索框 / 搜索引擎按钮 / 引导卡
-   ------------------------------------------------------------
-   链接卡自身已有由 .quick-access-sidebar-container 的 .visible 过渡驱动的滑入
-   （translateX(calc(100% + 20px)) → 0，0.3s cubic-bezier(0.4, 0, 0.2, 1)），
-   这里给其余区块同一支节奏的"滑入 + 淡入"，并用 animation-delay 形成
-   自上而下的接力，避免面板打开时元素硬邦邦地跳出（内置页浏览器自带
-   qaBrowser* 动画，不在此列）。
-
-   ⚠ 位移/淡入只能挂在「玻璃元素自身」，绝不能挂在它们的祖先容器上：
-   backdrop-filter 的取样范围止于最近的 backdrop root，而祖先只要带
-   transform / opacity < 1（哪怕是动画残留的恒等 transform）就会成为
-   backdrop root，后代的毛玻璃随即失效。Chromium 152 实测（条纹壁纸 +
-   量玻璃下方像素清晰度）：把动画挂在 .qa-panel-search / .qa-panel-widgets
-   上并配 animation-fill-mode: both，动画结束后容器仍残留
-   matrix(1,0,0,1,0,0) 的合成层 transform，搜索框 80px 与小组件卡 40px
-   毛玻璃被永久打断（该区域与同位置纯壁纸逐像素相同）；祖先只做 opacity
-   动画同样会永久打断。反之把同一支动画挂在 .search-container / .widget-card
-   自身，行进中与结束后毛玻璃都完好。故：
-     · 容器不动；
-     · 只动玻璃元素本身；
-     · fill-mode 用 backwards —— 结束后回到基础样式，不留残值
-       （与主页面 widget-panel.css 的 widgetCardIn 同款写法）。
-   ============================================================ */
+/* ---------- 进入动画：小组件卡 / 搜索框 / 搜索引擎按钮 / 引导卡 ---------- */
+/*
+ * 链接卡自身已由 .quick-access-sidebar-container 的 .visible 过渡驱动滑入
+ * （translateX(calc(100% + 20px)) → 0，0.3s cubic-bezier(0.4, 0, 0.2, 1)），
+ * 这里给其余区块同一节奏的滑入 + 淡入，并用 animation-delay 形成自上而下的接力，
+ * 避免面板打开时元素硬跳（内置页浏览器自带 qaBrowser* 动画，不在此列）。
+ *
+ * 约束：位移/淡入只能挂在玻璃元素自身，不能挂在祖先容器上。祖先带 transform
+ * 或 opacity < 1（哪怕是动画残留的恒等 transform）会成为 backdrop root，导致后代
+ * backdrop-filter 失效。Chromium 152 实测：把动画挂到 .qa-panel-search /
+ * .qa-panel-widgets 上并配 animation-fill-mode: both，结束后容器残留
+ * matrix(1,0,0,1,0,0)，搜索框 80px 与小组件卡 40px 毛玻璃被永久打断；祖先只做
+ * opacity 动画同样会打断。改挂到 .search-container / .widget-card 自身，行进中与
+ * 结束后毛玻璃都完好。故：容器不动，只动玻璃元素本身；fill-mode 用 backwards，
+ * 结束后回到基础样式、不留残值（与主页面 widget-panel.css 的 widgetCardIn 同款写法）。
+ */
 
 @keyframes qaPanelItemIn {
     from {
@@ -668,7 +660,7 @@ body.qa-panel-page .qa-guide-card {
     animation: qaPanelItemIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards;
 }
 
-/* 自上而下的接力延迟（与链接卡的滑入节奏对齐） */
+/* 自上而下的接力延迟（与链接卡的滑入节奏对齐）。 */
 body.qa-panel-page .qa-panel-widgets .widget-card:nth-child(1) {
     animation-delay: 0s;
 }
@@ -713,9 +705,9 @@ body.qa-panel-page .qa-guide-card {
     animation: qaPanelItemIn 0.32s cubic-bezier(0.4, 0, 0.2, 1) 0.07s backwards;
 }
 
-/* 系统开启"减少动态效果"时去掉位移，只保留短淡入。
+/* 系统开启“减少动态效果”时去掉位移，只保留短淡入。
    注意不能在这里直接 animation: none —— 链接卡用的是 transition（不受本条影响），
-   一旦关掉就成了"链接卡照样滑入、其余区块纹丝不动"的不一致观感。 */
+   一旦关掉就成了“链接卡照样滑入、其余区块纹丝不动”的不一致观感。 */
 @keyframes qaPanelFadeIn {
     from {
         opacity: 0;

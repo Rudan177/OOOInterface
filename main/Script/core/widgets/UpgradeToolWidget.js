@@ -1,7 +1,6 @@
 /**
- * 升级工具小组件
- * 支持小/大/超大三种尺寸，通过 OUA 后端接口检查更新
- * 挂载后自动检查一次；超大尺寸底部有手动检查按钮
+ * 升级工具小组件：通过 OUA 后端接口检查更新。
+ * 挂载后自动检查一次；超大尺寸底部提供手动检查按钮。
  */
 import { WidgetBase } from './WidgetBase.js';
 
@@ -25,7 +24,7 @@ export class UpgradeToolWidget extends WidgetBase {
         this._isSquare = (this.size === 'square');
         this._isSuper = (this.size === 'super');
 
-        // 先构建布局（创建 DOM 元素），再加载数据
+        // 先构建布局并创建 DOM 元素，再加载数据。
         if (this._isSquare) {
             this._buildSquareLayout();
         } else if (this.size === 'rectangle') {
@@ -34,11 +33,11 @@ export class UpgradeToolWidget extends WidgetBase {
             this._buildSuperLayout();
         }
 
-        // 布局渲染后自动检查一次
+        // 布局渲染后自动检查一次。
         this._loadData();
     }
 
-    /* -------- 布局 -------- */
+    // ---------- 布局 ----------
 
     _buildSquareLayout() {
         // 上方：本地版本
@@ -165,7 +164,7 @@ export class UpgradeToolWidget extends WidgetBase {
         dirRow.appendChild(copyBtn);
         this._content.appendChild(dirRow);
 
-        // 版本分支 | 数据来源
+        // 版本分支与数据来源。
         const infoRow1 = document.createElement('div');
         infoRow1.className = 'widget-upgrade-tool-grid-row';
         infoRow1.appendChild(this._makeCell('版本分支', 'branch'));
@@ -227,7 +226,7 @@ export class UpgradeToolWidget extends WidgetBase {
         return cell;
     }
 
-    /* -------- 数据加载 -------- */
+    // ---------- 数据加载 ----------
 
     async _loadData() {
         if (this.isChecking) return;
@@ -313,7 +312,7 @@ export class UpgradeToolWidget extends WidgetBase {
         if (!raw || raw === '未设置') return raw || '—';
         const parts = raw.split(/[\\/]/).filter(Boolean);
         if (parts.length <= 2) return raw;
-        // 保留根目录前缀（C:\ 或 /home/ 等），后面最多显示两段，超出用 …
+        // 保留根目录前缀（如 C:\ 或 /home/），后面最多显示两段，超出部分用省略号表示。
         const prefix = parts[0];
         const middle = parts.slice(1, -2);
         const suffix = parts.slice(-2);

@@ -1,10 +1,7 @@
 /**
- * 日历小组件
- * 纯客户端，本地时间，农历转换（1900-2100 查表算法，无网络依赖）
- * - 小尺寸：当天日期（大号数字）+ 星期 + 农历
- * - 大尺寸：左侧为小尺寸同款（日期/星期/农历），右侧为本月迷你日历
- * - 超大尺寸：大号本月日历（周一起始、含翻月导航与每日农历标注，标题点击回到今天）
- * 每日零点自动刷新（日期/星期/农历跨天更新）
+ * 日历小组件：纯客户端、本地时间，农历按 1900-2100 查表转换，无网络依赖。
+ * 正方形显示当天日期、星期与农历；长方形附本月迷你日历；超大尺寸为本月大日历（周一起始，可翻月）。
+ * 每日零点自动刷新。
  */
 import { WidgetBase } from './WidgetBase.js';
 
@@ -13,7 +10,7 @@ export class CalendarWidget extends WidgetBase {
         super(config);
         this.type = 'calendar';
         this.now = new Date();
-        // 超大尺寸的翻月视图（默认本月）
+        // 超大尺寸的翻月视图（默认本月）。
         this.viewYear = this.now.getFullYear();
         this.viewMonth = this.now.getMonth();
     }
@@ -34,7 +31,7 @@ export class CalendarWidget extends WidgetBase {
     }
 
     afterMount() {
-        // 每天零点后自动刷新（跨天更新日期/星期/农历）
+        // 每天零点后自动刷新（跨天更新日期/星期/农历）。
         this.scheduleMidnightRefresh();
     }
 
@@ -45,7 +42,7 @@ export class CalendarWidget extends WidgetBase {
             if (!this.element || !this.element.parentNode) return; // 组件已销毁，跳过刷新
             const prev = this.now;
             this.now = new Date();
-            // 若翻月视图仍停留在“昨天”所在月份，自动跟随到今天所在月份
+            // 若翻月视图仍停留在“昨天”所在月份，自动跟随到今天所在月份。
             if (this.viewYear === prev.getFullYear() && this.viewMonth === prev.getMonth()) {
                 this.viewYear = this.now.getFullYear();
                 this.viewMonth = this.now.getMonth();
@@ -57,7 +54,7 @@ export class CalendarWidget extends WidgetBase {
 
     // ---------- 布局构建 ----------
 
-    // “今天”信息区（小尺寸同款）：月份年份 / 大号日期 / 星期 / 农历
+    // “今天”信息区（与小尺寸一致）：月份年份、大号日期、星期与农历。
     buildTodayInfo(parent) {
         const monthEl = document.createElement('div');
         monthEl.className = 'widget-calendar-month';
@@ -83,13 +80,13 @@ export class CalendarWidget extends WidgetBase {
     }
 
     buildRectLayout() {
-        // 左侧：小尺寸同款
+        // 左侧：与小尺寸一致的信息区。
         this.leftEl = document.createElement('div');
         this.leftEl.className = 'widget-calendar-left';
         this.info = this.buildTodayInfo(this.leftEl);
         this.element.appendChild(this.leftEl);
 
-        // 右侧：本月迷你日历
+        // 右侧：本月迷你日历。
         this.rightEl = document.createElement('div');
         this.rightEl.className = 'widget-calendar-right';
         this.miniHeadEl = document.createElement('div');
@@ -102,7 +99,7 @@ export class CalendarWidget extends WidgetBase {
     }
 
     buildSuperLayout() {
-        // 顶栏：上月 / 年月标题 / 下月
+        // 顶栏：上月、年月标题与下月。
         this.superHeadEl = document.createElement('div');
         this.superHeadEl.className = 'widget-calendar-super-head';
 
@@ -122,18 +119,18 @@ export class CalendarWidget extends WidgetBase {
         this.superHeadEl.appendChild(this.nextBtn);
         this.element.appendChild(this.superHeadEl);
 
-        // 星期表头
+        // 星期表头。
         this.gridHeadEl = document.createElement('div');
         this.gridHeadEl.className = 'widget-calendar-grid-head';
         this.element.appendChild(this.gridHeadEl);
 
-        // 日期网格
+        // 日期网格。
         this.gridBodyEl = document.createElement('div');
         this.gridBodyEl.className = 'widget-calendar-grid';
         this.element.appendChild(this.gridBodyEl);
     }
 
-    // 导航箭头（内联 SVG，无字体依赖，与页面返回按钮风格一致）
+    // 导航箭头（内联 SVG，无字体依赖，与页面返回按钮风格一致）。
     buildNavButton(dir, label) {
         const btn = document.createElement('button');
         btn.className = 'widget-calendar-nav';
@@ -146,7 +143,7 @@ export class CalendarWidget extends WidgetBase {
         svg.setAttribute('height', '18');
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('fill', 'currentColor');
-        // Material Design chevron_left / chevron_right
+        // Material Design 的 chevron_left / chevron_right。
         path.setAttribute('d', dir === 'prev'
             ? 'M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z'
             : 'M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z');
@@ -157,7 +154,7 @@ export class CalendarWidget extends WidgetBase {
 
     // ---------- 渲染 ----------
 
-    // 更新显示（跨天/翻月后调用）
+    // 更新显示（跨天/翻月后调用）。
     update() {
         if (this.isSuper) {
             this.renderSuper();
@@ -176,7 +173,7 @@ export class CalendarWidget extends WidgetBase {
         }
     }
 
-    // 本月迷你日历（大尺寸右侧）
+    // 本月迷你日历（大尺寸右侧）。
     renderMini() {
         this.miniHeadEl.innerHTML = '';
         this.miniBodyEl.innerHTML = '';
@@ -208,7 +205,7 @@ export class CalendarWidget extends WidgetBase {
         }
     }
 
-    // 大号本月日历（超大尺寸）
+    // 大号本月日历（超大尺寸）。
     renderSuper() {
         this.superTitleEl.textContent = this.viewYear + '年' + (this.viewMonth + 1) + '月';
         this.gridHeadEl.innerHTML = '';
@@ -228,18 +225,18 @@ export class CalendarWidget extends WidgetBase {
         const now = this.now;
         const isCurrentMonth = this.viewYear === now.getFullYear() && this.viewMonth === now.getMonth();
 
-        // 上月补位日（弱化显示）
+        // 上月补位日（弱化显示）。
         for (let i = 0; i < leading; i++) {
             this.gridBodyEl.appendChild(this.buildSuperCell(prevDaysInMonth - leading + 1 + i, true, false));
         }
 
-        // 本月日期
+        // 本月日期。
         for (let d = 1; d <= daysInMonth; d++) {
             const isToday = isCurrentMonth && d === now.getDate();
             this.gridBodyEl.appendChild(this.buildSuperCell(d, false, isToday));
         }
 
-        // 下月补位日（补足最后一周）
+        // 下月补位日（补足最后一周）。
         const total = leading + daysInMonth;
         const trailing = total % 7 === 0 ? 0 : 7 - (total % 7);
         for (let i = 1; i <= trailing; i++) {
@@ -247,7 +244,7 @@ export class CalendarWidget extends WidgetBase {
         }
     }
 
-    // 构造单个日期格（超大尺寸）
+    // 构造单个日期格（超大尺寸）。
     buildSuperCell(dayNum, isOtherMonth, isToday) {
         const cell = document.createElement('div');
         cell.className = 'widget-calendar-cell';
@@ -259,7 +256,7 @@ export class CalendarWidget extends WidgetBase {
         numEl.textContent = String(dayNum);
         cell.appendChild(numEl);
 
-        // 本月日期显示农历：初一显示月份名（含闰月前缀）
+        // 本月日期显示农历：初一显示月份名（含闰月前缀）。
         if (!isOtherMonth) {
             const lunar = CalendarWidget.solarToLunar(this.viewYear, this.viewMonth + 1, dayNum);
             const label = lunar.lunarDay === 1
@@ -273,7 +270,7 @@ export class CalendarWidget extends WidgetBase {
         return cell;
     }
 
-    // 翻月导航
+    // 翻月导航。
     changeMonth(delta) {
         let m = this.viewMonth + delta;
         let y = this.viewYear;
@@ -284,7 +281,7 @@ export class CalendarWidget extends WidgetBase {
         this.renderSuper();
     }
 
-    // 回到今天
+    // 回到今天。
     goToday() {
         this.now = new Date();
         this.viewYear = this.now.getFullYear();
@@ -294,30 +291,30 @@ export class CalendarWidget extends WidgetBase {
 
     // ---------- 农历转换（1900-2100 查表） ----------
 
-    // 农历月天数（含大小月）
+    // 农历月天数（含大小月）。
     static monthDays(y, m) {
         return (LUNAR_INFO[y - 1899] & (0x10000 >> m)) ? 30 : 29;
     }
 
-    // 农历闰月（0 = 无闰月）
+    // 农历闰月（0 表示无闰月）。
     static leapMonth(y) {
         return LUNAR_INFO[y - 1899] & 0xf;
     }
 
-    // 农历闰月天数
+    // 农历闰月天数。
     static leapDays(y) {
         const l = CalendarWidget.leapMonth(y);
         return l > 0 ? ((LUNAR_INFO[y - 1899] & 0x10000) ? 30 : 29) : 0;
     }
 
-    // 农历年总天数
+    // 农历年总天数。
     static lunarYearDays(y) {
         let sum = 0;
         for (let i = 1; i <= 12; i++) sum += CalendarWidget.monthDays(y, i);
         return sum + CalendarWidget.leapDays(y);
     }
 
-    // 公历转农历（y/m/d 为公历年月日）
+    // 公历转农历（y/m/d 为公历年月日）。
     static solarToLunar(y, m, d) {
         let offset = (Date.UTC(y, m - 1, d) - Date.UTC(1900, 0, 31)) / 86400000;
         let i, temp = 0;
@@ -354,7 +351,7 @@ export class CalendarWidget extends WidgetBase {
         return { lunarYear, lunarMonth: i, lunarDay: offset + 1, isLeap };
     }
 
-    // 格式化农历（返回月份名 / 日名 / 完整串）
+    // 格式化农历（返回月份名、日名与完整串）。
     static formatLunar(date) {
         const l = CalendarWidget.solarToLunar(date.getFullYear(), date.getMonth() + 1, date.getDate());
         const monthName = (l.isLeap ? '闰' : '') + LUNAR_MONTH_NAMES[l.lunarMonth - 1];
@@ -371,7 +368,7 @@ export class CalendarWidget extends WidgetBase {
     }
 }
 
-/* ---------- 农历查表数据（1899-2100，索引 = 年份 - 1899） ---------- */
+// ---------- 农历查表数据（1899-2100，索引 = 年份 - 1899） ----------
 const LUNAR_INFO = [
     0x0AB50, 0x04BD8, 0x04AE0, 0x0A570, 0x054D5, 0x0D260, 0x0D950, 0x16554, 0x056A0, 0x09AD0,
     0x055D2, 0x04AE0, 0x0A5B6, 0x0A4D0, 0x0D250, 0x1D255, 0x0B540, 0x0D6A0, 0x0ADA2, 0x095B0,

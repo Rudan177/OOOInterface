@@ -1,3 +1,7 @@
+/**
+ * 本地代理客户端的端口配置与请求封装：端口存于 localStorage，未配置时回落到直连。
+ * 配置端口后，proxiedFetch 会将请求改写为 http://127.0.0.1:<port>/proxy?url=...。
+ */
 export const ProxyManager = (function () {
     var proxyPort = null;
 
@@ -69,7 +73,7 @@ export const ProxyManager = (function () {
             }
 
             // 使用 /health 端点做真实连通性检测：
-            // no-cors 模式得到的是 opaque 响应（无法读取状态码），会把失败误判为成功
+            // no-cors 模式得到的是 opaque 响应（无法读取状态码），会把失败误判为成功。
             var testUrl = 'http://127.0.0.1:' + port + '/health';
             var timer = setTimeout(function () {
                 reject(new Error('代理连接超时 (' + timeout + 'ms)，请确认代理服务正在运行'));

@@ -1,6 +1,7 @@
-// 本文件由 script.js 拆分而来（Stage 8）。
-// 方法正文与原文件逐字节一致，仅签名头改为对象字面量成员。
-// 由 main.js 通过 Object.assign(OOOInterface.prototype, ...) 组装。
+/**
+ * 设置弹窗内的交互：文件拖放与按住鼠标拖动滚动。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
 
 export const InteractionMixin = {
     setupDragAndDrop() {
@@ -19,7 +20,7 @@ export const InteractionMixin = {
         modalBody.addEventListener('drop', (e) => {
             e.preventDefault();
             modalBody.style.backgroundColor = '';
-            // 各右面板菜单自行处理拖放，详见 showSettingsMenuInRightPanel
+            // 各右面板菜单自行处理拖放，详见 showSettingsMenuInRightPanel。
         });
     },
     setupMouseScroll() {
@@ -30,7 +31,7 @@ export const InteractionMixin = {
 
         // 鼠标按下事件
         modalBody.addEventListener('mousedown', (e) => {
-            // 如果点击的是滑块、输入框或其他可交互元素，不处理
+            // 点击滑块、输入框等可交互元素时不处理。
             if (e.target.tagName === 'INPUT' ||
                 e.target.tagName === 'BUTTON' ||
                 e.target.tagName === 'SELECT' ||
