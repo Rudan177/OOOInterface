@@ -68,3 +68,4 @@
 | 20261118 | TruE | 黄龄 / HOYO-MiX | 188s | 1 | Contribute |
 | 20261119 | 簪花记 | 兰音Reine | 209s | 1 | Contribute |
 | 20261120 | 心 | Mara / 乐正绫 | 253s | 1 | Contribute |
+| 20261121 | 丑橘 | 夜踊Yoodori / 洛天依Official | 287s | 1 | Contribute |
