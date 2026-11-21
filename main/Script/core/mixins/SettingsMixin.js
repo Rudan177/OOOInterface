@@ -5,7 +5,7 @@
 
 import { ProxyManager } from '../proxy.js';
 import { SYNC_KEYS } from '../storage-sync.js';
-import { applyOnlineRollingUpdate } from '../online-update.js';
+import { checkOnlineRollingUpdate } from '../online-update.js';
 
 export const SettingsMixin = {
     /**
@@ -23,7 +23,8 @@ export const SettingsMixin = {
             this.showNotification(e.target.checked ? '网络滚动更新：开启' : '网络滚动更新：关闭');
             if (e.target.checked) {
                 // 刚写入的设置可能还没落到 storage，这里直接跳过读取，避免竞态。
-                applyOnlineRollingUpdate({ force: true });
+                // 只做后台预载，新版本在下次打开时应用。
+                checkOnlineRollingUpdate({ force: true }).catch(() => {});
             }
         });
     },

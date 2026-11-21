@@ -29,7 +29,7 @@
         "https://rudan177.github.io/OOOInterface/try/*"
       ],
       "js": [
-        "main/content-storage-bridge.js"
+        "main/Script/content/content-storage-bridge.js"
       ],
       "run_at": "document_start",
       "all_frames": true,
@@ -40,7 +40,7 @@
         "https://rudan177.github.io/OOOInterface/try/*"
       ],
       "js": [
-        "main/content-storage-relay.js"
+        "main/Script/content/content-storage-relay.js"
       ],
       "run_at": "document_start",
       "all_frames": true
