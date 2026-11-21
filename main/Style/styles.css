@@ -8321,6 +8321,21 @@ body.focus-search-active .search-command-container {
     border-top-right-radius: 0;
 }
 
+/* 下拉的宽度过渡必须与搜索框的 transform 用同一条曲线和时长：否则聚焦瞬间下拉会先跳到
+ * 放大后的宽度，而搜索框还在放大，动画期间两者左右边缘对不齐（退场同理）。 */
+body.focus-search-active .search-history-container,
+body.focus-search-active .search-command-container,
+body.focus-search-leaving .search-history-container,
+body.focus-search-leaving .search-command-container {
+    transition: max-height 0.35s ease,
+        opacity 0.2s ease,
+        padding 0.35s ease,
+        border 0.35s ease,
+        width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        max-width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        margin-top 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* 命令面板紧跟在搜索框后面：把搜索框「放大后多出的半高 + 上移量 + 原有 10px 间距」抵消掉，
  * 让它的顶边正好落在放大后的搜索框底边上。搜索历史排在命令面板之后，此时起点已经对齐，不再重复偏移。
  * 这段负位移同时带动下方的引擎按钮，让它跟着面板一起贴到框底；过渡写在面板的 margin-top 上（见
