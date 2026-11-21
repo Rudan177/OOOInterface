@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：aacab3d0727c3fb5    模块数：48
+// 源码指纹：fcfb26b31470dc8f    模块数：48
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -15132,11 +15132,22 @@ const SettingsMixin = {
             clearTimeout(this._focusSearchLeaveTimer);
             this._focusSearchLeaveTimer = null;
             body.classList.remove('focus-search-leaving');
+            if (!wasActive) {
+                // 下拉在进入聚焦前就已经展开时，位移要从 0 起步做平滑过渡；
+                // 若仍按「贴住框底」处理，面板会被瞬间上提 10px，看起来就是一次跳动。
+                // 只有聚焦时才展开的情形才挂 attach，让面板第一帧就与框底连在一起。
+                const history = document.getElementById('search-history-container');
+                const command = document.getElementById('search-command-container');
+                const panelOpen = !!((history && history.classList.contains('show'))
+                    || (command && command.classList.contains('show')));
+                body.classList.toggle('focus-search-attach', !panelOpen);
+            }
         } else if (wasActive) {
             // 放大过渡写在 .focus-search-active 上，类一去掉过渡也一并消失，卡片会瞬跳回原位。
             // 退出时先挂一小段 leaving（与过渡时长对齐），让退场沿用同一组过渡；
             // 它同时把层级继续压在压暗层之上，压暗层淡出时不会盖住正在缩回的卡片。
             // 下拉面板留在展开状态会与缩回中的搜索框错位，收起动画也一并从这里开始。
+            body.classList.remove('focus-search-attach');
             this.hideSearchHistory();
             body.classList.add('focus-search-leaving');
             clearTimeout(this._focusSearchLeaveTimer);
