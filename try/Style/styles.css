@@ -8220,6 +8220,15 @@ body.dynamic-blur .side-panel-url-input {
 body.focus-search-active {
     --focus-search-lift: 14px;
     --focus-search-surface: #F1F3F4;
+    /* 搜索框放大并上移后，底边相对原布局位移的量（负值等于上移）。下拉与引擎按钮
+     * 都按它做补偿，保证始终贴着放大后的框底。 */
+    --focus-search-bottom-shift: calc((var(--focus-search-scale, 1) - 1) * var(--search-box-height, 50px) / 2 - var(--focus-search-lift));
+}
+
+/* 退场时 body 上的 active 类已去掉，变量要在 leaving 期间继续生效，动画才能接上。 */
+body.focus-search-leaving {
+    --focus-search-lift: 14px;
+    --focus-search-bottom-shift: calc((var(--focus-search-scale, 1) - 1) * var(--search-box-height, 50px) / 2 - var(--focus-search-lift));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -8321,12 +8330,86 @@ body.focus-search-active .search-command-container {
     border-top-right-radius: 0;
 }
 
-/* 命令面板紧跟在搜索框后面：把搜索框「放大后多出的半高 + 上移量 + 原有 10px 间距」抵消掉，
- * 让它的顶边正好落在放大后的搜索框底边上。搜索历史排在命令面板之后，此时起点已经对齐，不再重复偏移。
- * 这段负位移同时带动下方的引擎按钮，让它跟着面板一起贴到框底；过渡写在面板的 margin-top 上（见
- * .search-command-container），避免聚焦/退场时按钮瞬间跳位。 */
+/* 侧边栏展开时搜索框会让出侧栏宽度（见 .search-section 的 max-width），
+ * 下拉必须按同一上限收窄：否则窄窗口里下拉比搜索框更宽，聚焦放大后还会溢出视口两侧。 */
+@media (min-width: 750px) {
+    body.sidebar-visible:not(.scrolled) {
+        --sidebar-search-max: min(600px, calc(100vw - 70px - 2 * clamp(50px, 10vw, 120px)));
+    }
+
+    body.sidebar-visible:not(.scrolled) .search-history-container,
+    body.sidebar-visible:not(.scrolled) .search-command-container {
+        max-width: var(--sidebar-search-max);
+    }
+
+    body.sidebar-visible:not(.scrolled).focus-search-active .search-history-container,
+    body.sidebar-visible:not(.scrolled).focus-search-active .search-command-container {
+        max-width: min(calc(600px * var(--focus-search-scale, 1)),
+            calc((100vw - 70px - 2 * clamp(50px, 10vw, 120px)) * var(--focus-search-scale, 1)));
+    }
+}
+
+/* 下拉的展开、宽度、位移都与搜索框的 transform 共用同一条曲线和时长：
+ * 三者节奏一致，面板才会像从搜索框底部一起长出来，而不是各走各的动画。
+ * 宽度若不做过渡，聚焦瞬间下拉会先跳到放大后的宽度，而搜索框还在放大，动画期间左右边缘对不齐。 */
+body.focus-search-active .search-history-container,
+body.focus-search-active .search-command-container,
+body.focus-search-leaving .search-history-container,
+body.focus-search-leaving .search-command-container {
+    transition: max-height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.2s ease,
+        padding 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        border 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        max-width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        margin-top 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 下拉要贴住放大后的搜索框底边，位移量随框底一起变化。面板原本收起、随聚焦一起展开时，
+ * 位移从 -10px 起步：先抵消搜索框与下拉之间原有的间距，再从那里叠加框底的位移，
+ * 第一帧就连在一起；若把面板直接过渡到终值，进场期间会一直露出一条缝。 */
+@keyframes focus-search-drop-in-attached {
+    from {
+        margin-top: -10px;
+    }
+
+    to {
+        margin-top: calc(-10px + var(--focus-search-bottom-shift, -9px));
+    }
+}
+
+/* 面板在进入聚焦前已展开：从原位（0）平滑移到框底，避免瞬间上提 10px 造成跳动。 */
+@keyframes focus-search-drop-in {
+    from {
+        margin-top: 0;
+    }
+
+    to {
+        margin-top: calc(-10px + var(--focus-search-bottom-shift, -9px));
+    }
+}
+
+@keyframes focus-search-drop-out {
+    from {
+        margin-top: calc(-10px + var(--focus-search-bottom-shift, -9px));
+    }
+
+    to {
+        margin-top: 0;
+    }
+}
+
+/* 命令面板紧跟在搜索框后面，位移同时带动其后的搜索历史与引擎按钮一起贴到框底。 */
 body.focus-search-active .search-command-container {
-    margin-top: calc((var(--focus-search-scale, 1) - 1) * var(--search-box-height, 50px) / 2 - var(--focus-search-lift) - 10px);
+    animation: focus-search-drop-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body.focus-search-attach.focus-search-active .search-command-container {
+    animation-name: focus-search-drop-in-attached;
+}
+
+body.focus-search-leaving .search-command-container {
+    animation: focus-search-drop-out 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 body.focus-search-active .search-history-container {
