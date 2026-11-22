@@ -40,74 +40,134 @@ export const TimeWallMixin = {
         if (!this.settings.timeWallEnabled || this.viewStage >= VIEW_STAGE_TIME_WALL) return;
 
         const clock = document.getElementById('time-wall-clock');
-        const statusBar = document.getElementById('status-bar');
-        // 状态栏真正可见时才做位置衔接；否则时钟直接在大时钟位置淡入。
-        const fromStatusBar = !!(this.settings.statusBarEnabled
-            && statusBar
-            && statusBar.classList.contains('visible'));
-        const statusRect = fromStatusBar ? statusBar.getBoundingClientRect() : null;
-        const statusFontSize = fromStatusBar
-            ? (parseFloat(getComputedStyle(statusBar).fontSize) || 12)
-            : 0;
+        // 状态栏必须在加上 time-wall-mode 之前测量：之后它会被移出视口。
+        const collapsed = this.getClockCollapsedMetrics();
 
         this.viewStage = VIEW_STAGE_TIME_WALL;
         document.body.classList.add('time-wall-mode');
         document.body.classList.remove('feed-mode');
-
         this.startTimeWallClock();
 
-        // 用 FLIP 把时钟的起点精确落回状态栏的位置与字号，再过渡到时间墙终态，
-        // 避免 CSS 里写死比例在不同视口下对不齐、看起来像跳一下。
-        if (clock && statusRect) {
-            this.animateClockFromStatusBar(clock, statusRect, statusFontSize);
+        // 始终从顶部的小时钟连续放大到大时钟，保证放大过程连贯；
+        // 状态栏开启时这条路径从状态栏文字的位置与字号起步。
+        if (clock) {
+            this.runClockScaleAnimation(clock, collapsed, 'translate(-50%, -50%) scale(1)', 650);
         }
         this.updateTimeWallClockContrast();
     },
     /**
-     * 让时钟从状态栏的位置与字号连续放大到时间墙终态。
-     * 前提：调用前已经加上 time-wall-mode，时钟处于终态布局。
+     * 时钟收缩到顶部时的落点：状态栏可见时与状态栏文字对齐，否则落在视口顶部中央。
      */
-    animateClockFromStatusBar(clock, statusRect, statusFontSize) {
-        const timeEl = clock.querySelector('.time-wall-clock-time');
-        const finalRect = clock.getBoundingClientRect();
-        const finalFontSize = timeEl ? (parseFloat(getComputedStyle(timeEl).fontSize) || 120) : 120;
-        if (!finalRect.width || !finalRect.height || !finalFontSize) return;
-
-        const scale = Math.max(0.04, statusFontSize / finalFontSize);
-        const statusCenterX = statusRect.left + statusRect.width / 2;
-        const statusCenterY = statusRect.top + statusRect.height / 2;
-        const dx = statusCenterX - (finalRect.left + finalRect.width / 2);
-        const dy = statusCenterY - (finalRect.top + finalRect.height / 2);
-
-        // 用 Web Animations 走完这一段：不依赖“设起始样式→等两帧→清样式”的时序，
-        // 标签页被节流或 rAF 被暂停时也不会卡在缩小的起始状态。
-        if (this._clockEntryAnimation) {
-            this._clockEntryAnimation.cancel();
-            this._clockEntryAnimation = null;
+    getClockCollapsedMetrics() {
+        const statusBar = document.getElementById('status-bar');
+        const statusBarVisible = !!(this.settings.statusBarEnabled
+            && statusBar
+            && statusBar.classList.contains('visible'));
+        if (statusBarVisible) {
+            const rect = statusBar.getBoundingClientRect();
+            if (rect.width || rect.height) {
+                return {
+                    centerX: rect.left + rect.width / 2,
+                    centerY: rect.top + rect.height / 2,
+                    fontSize: parseFloat(getComputedStyle(statusBar).fontSize) || 12
+                };
+            }
         }
-        if (typeof clock.animate !== 'function') return;
+        return { centerX: window.innerWidth / 2, centerY: 18, fontSize: 12 };
+    },
+    /**
+     * 时钟处于大时钟终态布局时，到顶部落点的收缩 transform。
+     */
+    getClockCollapsedTransform(clock, collapsed) {
+        const timeEl = clock.querySelector('.time-wall-clock-time');
+        const rect = clock.getBoundingClientRect();
+        const fontSize = timeEl ? (parseFloat(getComputedStyle(timeEl).fontSize) || 120) : 120;
+        if (!rect.width || !rect.height || !fontSize) return null;
 
-        this._clockEntryAnimation = clock.animate([
-            { transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(${scale})` },
-            { transform: 'translate(-50%, -50%) scale(1)' }
-        ], {
-            duration: 650,
-            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-        });
+        const scale = Math.max(0.04, collapsed.fontSize / fontSize);
+        const dx = collapsed.centerX - (rect.left + rect.width / 2);
+        const dy = collapsed.centerY - (rect.top + rect.height / 2);
+        return `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(${scale})`;
+    },
+    runClockScaleAnimation(clock, collapsed, toTransform, duration) {
+        if (typeof clock.animate !== 'function') return;
+        const fromTransform = this.getClockCollapsedTransform(clock, collapsed);
+        if (!fromTransform) return;
+        this.cancelClockAnimation();
+        this._clockAnimation = clock.animate(
+            [{ transform: fromTransform }, { transform: toTransform }],
+            { duration, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' }
+        );
     },
     exitTimeWall() {
         if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
 
         this.viewStage = VIEW_STAGE_WALLPAPER;
-        document.body.classList.remove('time-wall-mode', 'feed-mode');
+        const clock = document.getElementById('time-wall-clock');
+        if (!clock || typeof clock.animate !== 'function') {
+            this.finishExitTimeWall();
+            return;
+        }
+
+        // 先把当前画面读出来：若入场放大还没结束，就从这一刻接着收缩，避免跳回终态。
+        const currentTransform = getComputedStyle(clock).transform;
+        this.cancelClockAnimation();
+
+        const statusBar = document.getElementById('status-bar');
+        const collapsed = {
+            centerX: window.innerWidth / 2,
+            centerY: 18,
+            fontSize: 12
+        };
+        // 状态栏此时被 time-wall-mode 移出视口，用它的高度与字号推算落点。
+        if (this.settings.statusBarEnabled && statusBar) {
+            collapsed.centerY = (statusBar.offsetHeight || 36) / 2;
+            collapsed.fontSize = parseFloat(getComputedStyle(statusBar).fontSize) || 12;
+        }
+
+        const collapsedTransform = this.getClockCollapsedTransform(clock, collapsed);
+        if (!collapsedTransform || currentTransform === 'none') {
+            this.finishExitTimeWall();
+            return;
+        }
+
+        const animation = clock.animate(
+            [{ transform: currentTransform }, { transform: collapsedTransform }],
+            { duration: 500, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }
+        );
+        this._clockAnimation = animation;
+        animation.finished.then(() => {
+            if (this._clockAnimation !== animation) return;
+            this.finishExitTimeWall();
+        }).catch(() => {});
+        // 兜底：标签页被节流时 finished 可能迟迟不回调，不能让视图卡在半程。
+        setTimeout(() => {
+            if (this._clockAnimation !== animation) return;
+            this.finishExitTimeWall();
+        }, 700);
+    },
+    finishExitTimeWall() {
+        const clock = document.getElementById('time-wall-clock');
         this.stopTimeWallClock();
-        this.clearClockAnimationStyles();
+        this.cancelClockAnimation();
+        document.body.classList.remove('time-wall-mode', 'feed-mode');
+        if (!clock) return;
+        // 收缩到状态栏位置后让时钟立即退场，交接给状态栏自身的过渡。
+        clock.style.transition = 'none';
+        clock.style.opacity = '0';
+        requestAnimationFrame(() => {
+            clock.style.transition = '';
+            clock.style.opacity = '';
+        });
+    },
+    cancelClockAnimation() {
+        if (this._clockAnimation) {
+            this._clockAnimation.cancel();
+            this._clockAnimation = null;
+        }
     },
     clearClockAnimationStyles() {
-        if (this._clockEntryAnimation) {
-            this._clockEntryAnimation.cancel();
-            this._clockEntryAnimation = null;
-        }
+        this.cancelClockAnimation();
         const clock = document.getElementById('time-wall-clock');
         if (!clock) return;
         clock.style.transition = '';
@@ -123,10 +183,7 @@ export const TimeWallMixin = {
         if (!this.settings.timeWallEnabled) return;
 
         // 入场放大动画让位给缩小到顶部的 CSS 过渡，避免两段 transform 打架。
-        if (this._clockEntryAnimation) {
-            this._clockEntryAnimation.cancel();
-            this._clockEntryAnimation = null;
-        }
+        this.cancelClockAnimation();
 
         this.viewStage = VIEW_STAGE_FEED;
         document.body.classList.add('time-wall-mode', 'feed-mode');
