@@ -40,17 +40,48 @@ export const TimeWallMixin = {
     enterTimeWall() {
         if (!this.settings.timeWallEnabled || this.viewStage >= VIEW_STAGE_TIME_WALL) return;
 
+        // 先记下日期在一行状态栏里的位置，切换布局后把日期从旧位置接到新位置。
+        const dateRect = this.captureStatusDateRect();
         this.viewStage = VIEW_STAGE_TIME_WALL;
         document.body.classList.add('time-wall-mode');
         document.body.classList.remove('feed-mode');
         this.showClockInStatusBar();
+        this.animateStatusDate(dateRect);
     },
     exitTimeWall() {
         if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
 
+        const dateRect = this.captureStatusDateRect();
         this.viewStage = VIEW_STAGE_WALLPAPER;
         document.body.classList.remove('time-wall-mode', 'feed-mode');
         this.releaseClockInStatusBar();
+        this.animateStatusDate(dateRect);
+    },
+    captureStatusDateRect() {
+        const dateEl = document.querySelector('#status-bar .status-bar-date');
+        return dateEl ? dateEl.getBoundingClientRect() : null;
+    },
+    /**
+     * 状态栏在单行 / 两行之间切换时，日期会从时间左侧跳到时间上方。
+     * 用 FLIP 把这段横向位移连起来，纵向交给状态栏自身的 top 过渡。
+     */
+    animateStatusDate(fromRect) {
+        const dateEl = document.querySelector('#status-bar .status-bar-date');
+        if (!fromRect || !dateEl || typeof dateEl.animate !== 'function') return;
+
+        const toRect = dateEl.getBoundingClientRect();
+        if (!toRect.width) return;
+
+        const dx = (fromRect.left + fromRect.width / 2) - (toRect.left + toRect.width / 2);
+        if (Math.abs(dx) < 1) return;
+
+        if (this._statusDateAnimation) {
+            this._statusDateAnimation.cancel();
+        }
+        this._statusDateAnimation = dateEl.animate(
+            [{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }],
+            { duration: 650, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' }
+        );
     },
     enterFeed() {
         if (!this.settings.timeWallEnabled || !this.settings.feedEnabled) return;

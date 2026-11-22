@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：6007213edbd42a05    模块数：49
+// 源码指纹：3895d98ebc45cc10    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -6295,8 +6295,9 @@ const StatusBarMixin = {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return null;
 
-        // 时间墙/信息流里状态栏被放大成时钟，取样范围覆盖上部区域即可。
-        const inTimeWall = document.body.classList.contains('time-wall-mode');
+        // 只有时间墙的大时钟需要覆盖上部区域取样；信息流里已缩成顶部小钟。
+        const inTimeWall = document.body.classList.contains('time-wall-mode')
+            && !document.body.classList.contains('feed-mode');
         if (inTimeWall) {
             const sampleWidth = Math.max(320, viewportWidth * 0.5);
             const sampleHeight = Math.min(viewportHeight * 0.3, 280);
@@ -6488,7 +6489,9 @@ const StatusBarMixin = {
         this.applyStatusBarTextTone(result ? result.mode : this.getFallbackStatusBarTextTone());
 
         // 高级视觉效果下，时间墙的时钟文字改用取样区域的平均色（近似高斯模糊后的配色）。
+        // 信息流里时钟已经缩小，不再套用模糊配色，避免小字发虚。
         const useBlurPalette = document.body.classList.contains('time-wall-mode')
+            && !document.body.classList.contains('feed-mode')
             && this.settings.enhancedDisplay
             && result
             && result.color;
@@ -11577,17 +11580,48 @@ const TimeWallMixin = {
     enterTimeWall() {
         if (!this.settings.timeWallEnabled || this.viewStage >= VIEW_STAGE_TIME_WALL) return;
 
+        // 先记下日期在一行状态栏里的位置，切换布局后把日期从旧位置接到新位置。
+        const dateRect = this.captureStatusDateRect();
         this.viewStage = VIEW_STAGE_TIME_WALL;
         document.body.classList.add('time-wall-mode');
         document.body.classList.remove('feed-mode');
         this.showClockInStatusBar();
+        this.animateStatusDate(dateRect);
     },
     exitTimeWall() {
         if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
 
+        const dateRect = this.captureStatusDateRect();
         this.viewStage = VIEW_STAGE_WALLPAPER;
         document.body.classList.remove('time-wall-mode', 'feed-mode');
         this.releaseClockInStatusBar();
+        this.animateStatusDate(dateRect);
+    },
+    captureStatusDateRect() {
+        const dateEl = document.querySelector('#status-bar .status-bar-date');
+        return dateEl ? dateEl.getBoundingClientRect() : null;
+    },
+    /**
+     * 状态栏在单行 / 两行之间切换时，日期会从时间左侧跳到时间上方。
+     * 用 FLIP 把这段横向位移连起来，纵向交给状态栏自身的 top 过渡。
+     */
+    animateStatusDate(fromRect) {
+        const dateEl = document.querySelector('#status-bar .status-bar-date');
+        if (!fromRect || !dateEl || typeof dateEl.animate !== 'function') return;
+
+        const toRect = dateEl.getBoundingClientRect();
+        if (!toRect.width) return;
+
+        const dx = (fromRect.left + fromRect.width / 2) - (toRect.left + toRect.width / 2);
+        if (Math.abs(dx) < 1) return;
+
+        if (this._statusDateAnimation) {
+            this._statusDateAnimation.cancel();
+        }
+        this._statusDateAnimation = dateEl.animate(
+            [{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }],
+            { duration: 650, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' }
+        );
     },
     enterFeed() {
         if (!this.settings.timeWallEnabled || !this.settings.feedEnabled) return;
@@ -13277,6 +13311,7 @@ updateQuickLinksListInMenu (listContainer) {
 // 鼠标滚轮一格带 wheelDeltaY=±120，仍然一格即触发（见下方 wheelTick）。
 const SCROLL_TRIGGER_PX = 40;       // 触发一次模式切换所需的同方向累计位移
 const SCROLL_GESTURE_GAP_MS = 250;  // 两帧间隔超过它视为新手势，累计清零
+const STAGE_SWITCH_LOCK_MS = 700;   // 切换后短暂锁定，保证一次手势只推进一层
 
 const SearchMixin = {
     copySearchContent() {
@@ -13335,11 +13370,14 @@ const SearchMixin = {
         // 不能再走下面的累计判定（否则一次 swipe 只累加一帧，永远到不了阈值）。
         if (e.touchGesture) {
             this._scrollGesture = null;
+            const touchNow = window.performance && performance.now ? performance.now() : Date.now();
+            if (touchNow < (this._stageLockUntil || 0)) return;
             if (e.deltaY > 0) {
                 this.advanceViewStage();
             } else if (e.deltaY < 0) {
                 this.retreatViewStage();
             }
+            this._stageLockUntil = touchNow + STAGE_SWITCH_LOCK_MS;
             return;
         }
 
@@ -13356,6 +13394,8 @@ const SearchMixin = {
         else if (e.deltaMode === 2) dy *= window.innerHeight || 800;
 
         const now = window.performance && performance.now ? performance.now() : Date.now();
+        // 每次切换后短暂锁定，避免一次连续滑动连跳两层。
+        if (now < (this._stageLockUntil || 0)) return;
         let gesture = this._scrollGesture;
         if (!gesture || now - gesture.last > SCROLL_GESTURE_GAP_MS) {
             gesture = this._scrollGesture = { dir: 0, dist: 0, last: now, consumed: false };
@@ -13379,8 +13419,7 @@ const SearchMixin = {
 
         // 一次连续滑动只前进一层：进入时间墙后必须松手再滑，才会进入信息流。
         // 触摸板的惯性滚动会连续发出小位移，没有这道拦截就会一口气滑到底。
-        // 鼠标滚轮的一格是独立动作，仍按一格一层放行。
-        if (gesture.consumed && dir > 0 && !wheelTick) return;
+        if (gesture.consumed && dir > 0) return;
 
         // 累计还不够：不切换模式，也不打断正在进行的动画
         if (gesture.dist < SCROLL_TRIGGER_PX && !wheelTick) return;
@@ -13398,6 +13437,7 @@ const SearchMixin = {
         } else {
             this.retreatViewStage();
         }
+        this._stageLockUntil = now + STAGE_SWITCH_LOCK_MS;
 
         // 标记本次手势已用掉；showWallpaper 可能把累计对象清空，这里补一个已消费的手势。
         if (this._scrollGesture) {

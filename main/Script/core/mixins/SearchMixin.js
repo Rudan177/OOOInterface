@@ -10,6 +10,7 @@
 // 鼠标滚轮一格带 wheelDeltaY=±120，仍然一格即触发（见下方 wheelTick）。
 const SCROLL_TRIGGER_PX = 40;       // 触发一次模式切换所需的同方向累计位移
 const SCROLL_GESTURE_GAP_MS = 250;  // 两帧间隔超过它视为新手势，累计清零
+const STAGE_SWITCH_LOCK_MS = 700;   // 切换后短暂锁定，保证一次手势只推进一层
 
 export const SearchMixin = {
     copySearchContent() {
@@ -68,11 +69,14 @@ export const SearchMixin = {
         // 不能再走下面的累计判定（否则一次 swipe 只累加一帧，永远到不了阈值）。
         if (e.touchGesture) {
             this._scrollGesture = null;
+            const touchNow = window.performance && performance.now ? performance.now() : Date.now();
+            if (touchNow < (this._stageLockUntil || 0)) return;
             if (e.deltaY > 0) {
                 this.advanceViewStage();
             } else if (e.deltaY < 0) {
                 this.retreatViewStage();
             }
+            this._stageLockUntil = touchNow + STAGE_SWITCH_LOCK_MS;
             return;
         }
 
@@ -89,6 +93,8 @@ export const SearchMixin = {
         else if (e.deltaMode === 2) dy *= window.innerHeight || 800;
 
         const now = window.performance && performance.now ? performance.now() : Date.now();
+        // 每次切换后短暂锁定，避免一次连续滑动连跳两层。
+        if (now < (this._stageLockUntil || 0)) return;
         let gesture = this._scrollGesture;
         if (!gesture || now - gesture.last > SCROLL_GESTURE_GAP_MS) {
             gesture = this._scrollGesture = { dir: 0, dist: 0, last: now, consumed: false };
@@ -112,8 +118,7 @@ export const SearchMixin = {
 
         // 一次连续滑动只前进一层：进入时间墙后必须松手再滑，才会进入信息流。
         // 触摸板的惯性滚动会连续发出小位移，没有这道拦截就会一口气滑到底。
-        // 鼠标滚轮的一格是独立动作，仍按一格一层放行。
-        if (gesture.consumed && dir > 0 && !wheelTick) return;
+        if (gesture.consumed && dir > 0) return;
 
         // 累计还不够：不切换模式，也不打断正在进行的动画
         if (gesture.dist < SCROLL_TRIGGER_PX && !wheelTick) return;
@@ -131,6 +136,7 @@ export const SearchMixin = {
         } else {
             this.retreatViewStage();
         }
+        this._stageLockUntil = now + STAGE_SWITCH_LOCK_MS;
 
         // 标记本次手势已用掉；showWallpaper 可能把累计对象清空，这里补一个已消费的手势。
         if (this._scrollGesture) {

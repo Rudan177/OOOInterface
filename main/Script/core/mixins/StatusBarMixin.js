@@ -170,8 +170,9 @@ export const StatusBarMixin = {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return null;
 
-        // 时间墙/信息流里状态栏被放大成时钟，取样范围覆盖上部区域即可。
-        const inTimeWall = document.body.classList.contains('time-wall-mode');
+        // 只有时间墙的大时钟需要覆盖上部区域取样；信息流里已缩成顶部小钟。
+        const inTimeWall = document.body.classList.contains('time-wall-mode')
+            && !document.body.classList.contains('feed-mode');
         if (inTimeWall) {
             const sampleWidth = Math.max(320, viewportWidth * 0.5);
             const sampleHeight = Math.min(viewportHeight * 0.3, 280);
@@ -363,7 +364,9 @@ export const StatusBarMixin = {
         this.applyStatusBarTextTone(result ? result.mode : this.getFallbackStatusBarTextTone());
 
         // 高级视觉效果下，时间墙的时钟文字改用取样区域的平均色（近似高斯模糊后的配色）。
+        // 信息流里时钟已经缩小，不再套用模糊配色，避免小字发虚。
         const useBlurPalette = document.body.classList.contains('time-wall-mode')
+            && !document.body.classList.contains('feed-mode')
             && this.settings.enhancedDisplay
             && result
             && result.color;

@@ -184,13 +184,13 @@ body {
         font-weight 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 时间墙：状态栏从一行变成两行（日期在上），并下移离开顶部，
-   只把时间连续放大，日期始终在时间上方。 */
+/* 时间墙：状态栏从一行变成两行（日期在上），并下移到屏幕上方；
+   只把时间连续放大，日期始终在时间上方，不进到屏幕正中。 */
 body.time-wall-mode .status-bar {
-    top: 22vh;
+    top: 8vh;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
@@ -198,8 +198,9 @@ body.time-wall-mode .status-bar {
 }
 
 body.time-wall-mode .status-bar-time {
-    font-size: clamp(4rem, 13vw, 8.5rem);
-    font-weight: 500;
+    font-size: clamp(6rem, min(22vw, 30vh), 16rem);
+    font-weight: 700;
+    line-height: 0.95;
 }
 
 /* 信息流：同一个状态栏收成顶部的小钟。 */
@@ -209,14 +210,12 @@ body.feed-mode .status-bar {
 
 body.feed-mode .status-bar-time {
     font-size: 1.35rem;
-    font-weight: 600;
+    font-weight: 700;
 }
 
-/* 高级视觉效果：时钟文字使用高斯模糊配色（柔边 + 同色光晕）。 */
+/* 高级视觉效果：时间墙的时钟使用壁纸模糊后的配色，字本身保持清晰粗体。 */
 body.time-wall-mode .status-bar.clock-blur-palette .status-bar-time {
-    filter: blur(0.8px);
-    opacity: 0.92;
-    text-shadow: 0 0 20px currentColor, 0 0 48px currentColor;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.22);
 }
 
 .welcome-screen {
