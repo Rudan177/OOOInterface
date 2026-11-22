@@ -90,7 +90,11 @@ export const TimeWallMixin = {
         const startCenterY = fromRect.top + fromRect.height / 2;
         const duration = 650;
         const startTime = window.performance && performance.now ? performance.now() : Date.now();
-        const ease = (progress) => progress * progress * (3 - 2 * progress);
+        const ease = (progress) => 1 - Math.pow(1 - progress, 3);
+        let offsetX = null;
+        let offsetY = 0;
+
+        dateEl.style.willChange = 'transform';
 
         const step = (now) => {
             const progress = Math.min(1, (now - startTime) / duration);
@@ -98,16 +102,24 @@ export const TimeWallMixin = {
             const rect = dateEl.getBoundingClientRect();
             const naturalCenterX = rect.left + rect.width / 2;
             const naturalCenterY = rect.top + rect.height / 2;
-            const eased = ease(progress);
-            const dx = (startCenterX + (naturalCenterX - startCenterX) * eased) - naturalCenterX;
-            const dy = (startCenterY + (naturalCenterY - startCenterY) * eased) - naturalCenterY;
+
+            // 只在第一帧记录“旧位置 - 新布局位置”的差值，之后让日期严格跟随
+            // 真实布局，只让这个初始差值衰减到 0，动画路径清晰不拖泥带水。
+            if (offsetX === null) {
+                offsetX = startCenterX - naturalCenterX;
+                offsetY = startCenterY - naturalCenterY;
+            }
 
             if (progress >= 1) {
                 dateEl.style.transform = '';
+                dateEl.style.willChange = '';
                 this._statusDateRaf = null;
                 return;
             }
 
+            const remaining = 1 - ease(progress);
+            const dx = Math.round(offsetX * remaining);
+            const dy = Math.round(offsetY * remaining);
             dateEl.style.transform = `translate(${dx}px, ${dy}px)`;
             this._statusDateRaf = requestAnimationFrame(step);
         };
