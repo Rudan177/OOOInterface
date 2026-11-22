@@ -40,19 +40,29 @@ export const TimeWallMixin = {
     enterTimeWall() {
         if (!this.settings.timeWallEnabled || this.viewStage >= VIEW_STAGE_TIME_WALL) return;
 
-        // 先记下日期、时间在一行状态栏里的位置，切换布局后从旧位置接过去。
+        // 先记下普通单行状态栏里日期、时间的位置，退出时直接朝这个位置回去。
         const dateRect = this.captureStatusDateRect();
         const timeRect = this.captureStatusTimeRect();
+        this._normalStatusDateCenter = this.centerOfRect(dateRect);
+        this._normalStatusTimeCenter = this.centerOfRect(timeRect);
+
         this.viewStage = VIEW_STAGE_TIME_WALL;
         document.body.classList.add('time-wall-mode');
         document.body.classList.remove('feed-mode');
         this.showClockInStatusBar();
-        this.animateStatusDate(dateRect);
-        this.animateStatusTime(timeRect);
+        this.animateStatusDate(dateRect, 320);
+        this.animateStatusTime(timeRect, 320);
+    },
+    centerOfRect(rect) {
+        return rect
+            ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+            : null;
     },
     exitTimeWall() {
         if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
 
+        const dateStart = this.centerOfRect(this.captureStatusDateRect());
+        const timeStart = this.centerOfRect(this.captureStatusTimeRect());
         this.viewStage = VIEW_STAGE_WALLPAPER;
         if (this._timeWallPhaseTimer) {
             clearTimeout(this._timeWallPhaseTimer);
@@ -63,34 +73,94 @@ export const TimeWallMixin = {
             this._timeWallExitTimer = null;
         }
 
-        // 第一阶段：保持上下两行，只把时间缩小、整块退回顶部。
-        // 日期始终待在时间正上方，不做横向位移，返回过程中不会错位。
-        document.body.classList.remove('time-wall-collapsed', 'feed-mode');
-        document.body.classList.add('time-wall-returning');
+        // 一退出就让背景模糊开始淡出，不用等缩小结束。
+        document.body.classList.remove('time-wall-collapsed');
+        document.body.classList.add('time-wall-returning', 'time-wall-leaving');
 
-        // 第二阶段：缩成小钟后再切成单行，日期从时间上方连续滑回左侧。
-        // 此时字号已经稳定，横向 FLIP 的终点是精确的。
+        // 650ms 里边缩小边把日期、时间沿直线送到最终单行位置；
+        // 一开始就在往正确位置移动，不会“上去之后再走一段”。
+        this.startStatusReturnPath(
+            dateStart, timeStart,
+            this._normalStatusDateCenter, this._normalStatusTimeCenter,
+            650
+        );
+
         this._timeWallPhaseTimer = setTimeout(() => {
             this._timeWallPhaseTimer = null;
             if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
-
-            const dateRect = this.captureStatusDateRect();
-            const timeRect = this.captureStatusTimeRect();
-            document.body.classList.remove('time-wall-returning');
-            document.body.classList.add('time-wall-collapsed');
-            this.animateStatusDate(dateRect, 220);
-            this.animateStatusTime(timeRect, 220);
-        }, 650);
+            // 兜底：状态栏不可用、没有可回归的位置时，也要在缩小结束后切回单行。
+            if (!document.body.classList.contains('time-wall-collapsed')) {
+                document.body.classList.remove('time-wall-returning');
+                document.body.classList.add('time-wall-collapsed');
+            }
+        }, 700);
 
         this._timeWallExitTimer = setTimeout(() => {
             this._timeWallExitTimer = null;
             if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
             document.body.classList.remove(
-                'time-wall-mode', 'feed-mode', 'time-wall-returning', 'time-wall-collapsed'
+                'time-wall-mode', 'feed-mode', 'time-wall-returning',
+                'time-wall-collapsed', 'time-wall-leaving'
             );
             this.resetStatusTextTransforms();
             this.releaseClockInStatusBar();
         }, 920);
+    },
+    /**
+     * 退出过程中：每帧把日期/时间钉在“起点 → 最终单行位置”的直线上，
+     * 不让它跟着中间布局漂移。到位后切换布局并清空位移，不会跳变。
+     */
+    startStatusReturnPath(dateStart, timeStart, dateEnd, timeEnd, duration) {
+        const dateEl = document.querySelector('#status-bar .status-bar-date');
+        const timeEl = document.querySelector('#status-bar .status-bar-time');
+        if (!dateEl || !timeEl || !dateStart || !timeStart || !dateEnd || !timeEnd) return;
+
+        if (this._statusReturnRaf) {
+            cancelAnimationFrame(this._statusReturnRaf);
+            this._statusReturnRaf = null;
+        }
+
+        const startTime = window.performance && performance.now ? performance.now() : Date.now();
+        const ease = (progress) => 1 - Math.pow(1 - progress, 3);
+        const targets = [
+            { el: dateEl, from: dateStart, to: dateEnd },
+            { el: timeEl, from: timeStart, to: timeEnd }
+        ];
+        targets.forEach(({ el }) => { el.style.willChange = 'transform'; });
+
+        const placeAt = (el, from, to, eased) => {
+            el.style.transform = 'none';
+            const rect = el.getBoundingClientRect();
+            const naturalX = rect.left + rect.width / 2;
+            const naturalY = rect.top + rect.height / 2;
+            const targetX = from.x + (to.x - from.x) * eased;
+            const targetY = from.y + (to.y - from.y) * eased;
+            const dx = Math.round(targetX - naturalX);
+            const dy = Math.round(targetY - naturalY);
+            el.style.transform = `translate(${dx}px, ${dy}px)`;
+        };
+
+        const step = (now) => {
+            const progress = Math.min(1, (now - startTime) / duration);
+            const eased = ease(progress);
+            targets.forEach(({ el, from, to }) => placeAt(el, from, to, eased));
+
+            if (progress >= 1) {
+                // 已到达最终位置：切换单行布局并清空位移，两者重合。
+                document.body.classList.remove('time-wall-returning');
+                document.body.classList.add('time-wall-collapsed');
+                targets.forEach(({ el }) => {
+                    el.style.transform = '';
+                    el.style.willChange = '';
+                });
+                this._statusReturnRaf = null;
+                return;
+            }
+
+            this._statusReturnRaf = requestAnimationFrame(step);
+        };
+
+        this._statusReturnRaf = requestAnimationFrame(step);
     },
     captureStatusDateRect() {
         const dateEl = document.querySelector('#status-bar .status-bar-date');
@@ -155,6 +225,10 @@ export const TimeWallMixin = {
         this[rafKey] = requestAnimationFrame(step);
     },
     resetStatusTextTransforms() {
+        if (this._statusReturnRaf) {
+            cancelAnimationFrame(this._statusReturnRaf);
+            this._statusReturnRaf = null;
+        }
         ['_statusDateRaf', '_statusTimeRaf'].forEach((rafKey) => {
             if (this[rafKey]) {
                 cancelAnimationFrame(this[rafKey]);
@@ -202,7 +276,8 @@ export const TimeWallMixin = {
         }
         this.resetStatusTextTransforms();
         document.body.classList.remove(
-            'time-wall-mode', 'feed-mode', 'time-wall-returning', 'time-wall-collapsed'
+            'time-wall-mode', 'feed-mode', 'time-wall-returning',
+            'time-wall-collapsed', 'time-wall-leaving'
         );
         this.viewStage = VIEW_STAGE_HOME;
         if (wasExtendedStage) {
@@ -230,7 +305,8 @@ export const TimeWallMixin = {
             clearTimeout(this._timeWallPhaseTimer);
             this._timeWallPhaseTimer = null;
         }
-        document.body.classList.remove('time-wall-collapsed', 'time-wall-returning');
+        document.body.classList.remove('time-wall-collapsed', 'time-wall-returning', 'time-wall-leaving');
+        this.resetStatusTextTransforms();
 
         statusBar.classList.add('visible');
         document.documentElement.style.setProperty(

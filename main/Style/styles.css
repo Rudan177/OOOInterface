@@ -226,7 +226,7 @@ body.feed-mode .status-bar-time {
 }
 
 /* 退出第一阶段：保持上下两行，只缩小并回到顶部；
-   日期一直待在时间上方，不横向乱跑，避免返回过程中错位。 */
+   同时把日期和时间从当前位置直接朝最终单行位置移动。 */
 body.time-wall-mode.time-wall-returning .status-bar {
     top: 0;
     flex-direction: column;
@@ -7058,6 +7058,11 @@ body:not(.dynamic-blur) #wallpaper-main.active::before {
 
 body.time-wall-mode #wallpaper-main.active::before {
     opacity: 1;
+}
+
+/* 退出一开始就让背景模糊开始淡出，不用等到缩小结束。 */
+body.time-wall-mode.time-wall-leaving #wallpaper-main.active::before {
+    opacity: 0;
 }
 
 /* 暗色压暗壁纸：蒙版画在壁纸层内部（::after 属于层本身），

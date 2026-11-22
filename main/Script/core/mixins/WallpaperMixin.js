@@ -1735,7 +1735,8 @@ export const WallpaperMixin = {
             this._timeWallPhaseTimer = null;
         }
         document.body.classList.remove(
-            'time-wall-mode', 'feed-mode', 'time-wall-returning', 'time-wall-collapsed'
+            'time-wall-mode', 'feed-mode', 'time-wall-returning',
+            'time-wall-collapsed', 'time-wall-leaving'
         );
         this.resetStatusTextTransforms();
         this.viewStage = 1;
