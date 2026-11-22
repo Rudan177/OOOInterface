@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：d91a09c8f0656741    模块数：49
+// 源码指纹：dd998aa295ef4329    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11709,6 +11709,7 @@ const TimeWallMixin = {
         const duration = 460;
         this.shrinkStatusItem(dateEl, bigDate, finalDate, duration);
         this.shrinkStatusItem(timeEl, bigTime, finalTime, duration);
+        this.animateStatusWeight(duration);
         this.blurStatusBarAtEnd(bar, duration);
 
         this._timeWallExitTimer = setTimeout(() => {
@@ -11780,11 +11781,36 @@ const TimeWallMixin = {
             this.applyStatusBarTextTone(
                 this.statusBarContrastMode || this.getFallbackStatusBarTextTone()
             );
-            // 字重也在模糊最重时切到最终值，收尾就不会再从 900 跳到 500。
-            bar.querySelectorAll('.status-bar-date, .status-bar-time').forEach((el) => {
-                el.style.fontWeight = '500';
-            });
         }, peakTime);
+    },
+    /**
+     * 字重跟着缩小的节奏从 900/700 连续变到 500，和进入时的粗细过渡对称。
+     * 与 transform 同长，收尾时字重已到 500，不会在最后一帧跳变。
+     */
+    animateStatusWeight(duration) {
+        if (this._clockWeightAnimations) {
+            this._clockWeightAnimations.forEach((animation) => animation.cancel());
+        }
+        this._clockWeightAnimations = [];
+
+        const els = document.querySelectorAll(
+            '#status-bar .status-bar-date, #status-bar .status-bar-time'
+        );
+        els.forEach((el) => {
+            const from = window.getComputedStyle(el).fontWeight;
+            if (!from || from === '500') return;
+            this._clockWeightAnimations.push(
+                el.animate(
+                    [{ fontWeight: from }, { fontWeight: '500' }],
+                    {
+                        // 和缩小动画同长，粗细变化贯穿整段行进，收尾时正好到 500。
+                        duration,
+                        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                        fill: 'forwards',
+                    }
+                )
+            );
+        });
     },
     /**
      * 缩小动画结束：此时视觉位置已经和单行状态栏完全重合，
@@ -11893,6 +11919,10 @@ const TimeWallMixin = {
         if (this._clockBlurAnimation) {
             this._clockBlurAnimation.cancel();
             this._clockBlurAnimation = null;
+        }
+        if (this._clockWeightAnimations) {
+            this._clockWeightAnimations.forEach((animation) => animation.cancel());
+            this._clockWeightAnimations = [];
         }
         ['_statusDateRaf', '_statusTimeRaf'].forEach((rafKey) => {
             if (this[rafKey]) {
