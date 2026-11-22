@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：525c62ec5057d0cf    模块数：49
+// 源码指纹：40f2135a90020082    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11742,21 +11742,29 @@ const TimeWallMixin = {
         el.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
     },
     /**
-     * 收回的最后一段让整块字逐渐模糊，收尾那一帧切回清晰的小状态栏。
+     * 只在缩小行进途中加模糊：前一半渐入，后一半渐出，收尾时已回到清晰。
      * 模糊加在状态栏父级上，按屏幕像素计算，不会被缩小后的 transform 一起缩掉。
      */
     blurStatusBarAtEnd(bar, duration) {
         if (!bar) return;
-        const delay = Math.round(duration * 0.45);
-        const blurDuration = Math.max(100, Math.round(duration * 0.3));
+        const half = Math.round(duration * 0.5);
+        const peak = 4;
 
         bar.style.transition = 'none';
         bar.style.filter = 'blur(0px)';
         bar.style.willChange = 'filter';
-        // 先刷一次样式，确保模糊过渡从 0 开始。
+        // 先刷一次样式，确保前半程从 0 开始。
         bar.getBoundingClientRect();
-        bar.style.transition = `filter ${blurDuration}ms ease-in ${delay}ms`;
-        bar.style.filter = 'blur(3px)';
+        bar.style.transition = `filter ${half}ms ease-out`;
+        bar.style.filter = `blur(${peak}px)`;
+
+        // 后半程把模糊收回去，结束时正好清晰，切单行布局没有突变。
+        this._timeWallBlurTimer = setTimeout(() => {
+            this._timeWallBlurTimer = null;
+            if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
+            bar.style.transition = `filter ${half}ms ease-in`;
+            bar.style.filter = 'blur(0px)';
+        }, half);
     },
     /**
      * 缩小动画结束：此时视觉位置已经和单行状态栏完全重合，
@@ -11857,6 +11865,10 @@ const TimeWallMixin = {
         if (this._timeWallSettleTimer) {
             clearTimeout(this._timeWallSettleTimer);
             this._timeWallSettleTimer = null;
+        }
+        if (this._timeWallBlurTimer) {
+            clearTimeout(this._timeWallBlurTimer);
+            this._timeWallBlurTimer = null;
         }
         ['_statusDateRaf', '_statusTimeRaf'].forEach((rafKey) => {
             if (this[rafKey]) {
