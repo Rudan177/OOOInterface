@@ -144,9 +144,10 @@ body {
     left: 50%;
     z-index: 26;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
     padding: 6px 20px 0;
     color: var(--status-bar-text-color);
     font-size: 12px;
@@ -158,7 +159,8 @@ body {
     visibility: hidden;
     pointer-events: none;
     transform: translateX(-50%) translateY(-100%);
-    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease,
+        top 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .status-bar.visible {
@@ -182,8 +184,13 @@ body {
         font-weight 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 时间墙与信息流：不另建时钟，直接把状态栏自身放大 / 缩小，日期始终留在上方。 */
+/* 时间墙：状态栏从一行变成两行（日期在上），并下移离开顶部，
+   只把时间连续放大，日期始终在时间上方。 */
 body.time-wall-mode .status-bar {
+    top: 22vh;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
@@ -192,12 +199,24 @@ body.time-wall-mode .status-bar {
 
 body.time-wall-mode .status-bar-time {
     font-size: clamp(4rem, 13vw, 8.5rem);
-    font-weight: 300;
+    font-weight: 500;
+}
+
+/* 信息流：同一个状态栏收成顶部的小钟。 */
+body.feed-mode .status-bar {
+    top: 4px;
 }
 
 body.feed-mode .status-bar-time {
     font-size: 1.35rem;
     font-weight: 600;
+}
+
+/* 高级视觉效果：时钟文字使用高斯模糊配色（柔边 + 同色光晕）。 */
+body.time-wall-mode .status-bar.clock-blur-palette .status-bar-time {
+    filter: blur(0.8px);
+    opacity: 0.92;
+    text-shadow: 0 0 20px currentColor, 0 0 48px currentColor;
 }
 
 .welcome-screen {

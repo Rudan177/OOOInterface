@@ -27,8 +27,7 @@ export const StatusBarMixin = {
     },
     formatStatusBarDate(date) {
         const pad = (value) => String(value).padStart(2, '0');
-        const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-        return `${date.getFullYear()}年${pad(date.getMonth() + 1)}月${pad(date.getDate())}日 ${weekdays[date.getDay()]}`;
+        return `${date.getFullYear()}年${pad(date.getMonth() + 1)}月${pad(date.getDate())}日`;
     },
     formatStatusBarTime(date) {
         const pad = (value) => String(value).padStart(2, '0');
@@ -232,8 +231,49 @@ export const StatusBarMixin = {
         }
     },
     /**
-     * 按壁纸在指定区域的亮度给出文字明暗：返回 'light' / 'dark'，无法取样时返回 null。
-     * 状态栏与时间墙大时钟共用这一段，区别只在取样矩形。
+     * 取取样区域的平均颜色，作为高级视觉效果下时钟的「高斯模糊配色」。
+     */
+    getAverageColorFromCanvas(context, sampleRect) {
+        try {
+            const imageData = context.getImageData(
+                Math.round(sampleRect.x),
+                Math.round(sampleRect.y),
+                Math.max(1, Math.round(sampleRect.width)),
+                Math.max(1, Math.round(sampleRect.height))
+            );
+
+            let red = 0;
+            let green = 0;
+            let blue = 0;
+            let pixelCount = 0;
+            const { data } = imageData;
+
+            for (let index = 0; index < data.length; index += 4) {
+                const alpha = data[index + 3] / 255;
+                if (alpha <= 0) continue;
+
+                red += data[index] * alpha;
+                green += data[index + 1] * alpha;
+                blue += data[index + 2] * alpha;
+                pixelCount += alpha;
+            }
+
+            if (pixelCount === 0) {
+                return null;
+            }
+
+            return {
+                r: red / pixelCount,
+                g: green / pixelCount,
+                b: blue / pixelCount
+            };
+        } catch (error) {
+            return null;
+        }
+    },
+    /**
+     * 按壁纸在指定区域的亮度给出文字明暗，并附带平均颜色（高斯模糊配色用）。
+     * 无法取样时返回 null。
      */
     async computeWallpaperTextTone(sampleRect) {
         const wallpaperUrl = this.getWallpaperUrl();
@@ -267,7 +307,49 @@ export const StatusBarMixin = {
             return null;
         }
 
-        return brightness >= 160 ? 'dark' : 'light';
+        return {
+            mode: brightness >= 160 ? 'dark' : 'light',
+            brightness,
+            color: this.getAverageColorFromCanvas(context, sampleRect)
+        };
+    },
+    /**
+     * 高级视觉效果下，时钟文字改用取样区域的平均色（近似高斯模糊后的配色），
+     * 按背景明暗压到可读的亮度，保留色相。
+     */
+    applyBlurredClockColor(color, brightness) {
+        const statusBar = document.getElementById('status-bar');
+        if (!statusBar || !color) return;
+
+        const red = color.r / 255;
+        const green = color.g / 255;
+        const blue = color.b / 255;
+        const max = Math.max(red, green, blue);
+        const min = Math.min(red, green, blue);
+        const lightness = (max + min) / 2;
+        let hue = 0;
+        let saturation = 0;
+
+        if (max !== min) {
+            const delta = max - min;
+            saturation = lightness > 0.5
+                ? delta / (2 - max - min)
+                : delta / (max + min);
+
+            if (max === red) {
+                hue = ((green - blue) / delta + (green < blue ? 6 : 0));
+            } else if (max === green) {
+                hue = ((blue - red) / delta + 2);
+            } else {
+                hue = ((red - green) / delta + 4);
+            }
+            hue *= 60;
+        }
+
+        const targetLightness = brightness >= 160 ? 0.34 : 0.82;
+        const softSaturation = Math.min(0.8, Math.max(0.5, saturation));
+        const colorString = `hsl(${Math.round(hue)}, ${Math.round(softSaturation * 100)}%, ${Math.round(targetLightness * 100)}%)`;
+        statusBar.style.setProperty('--status-bar-text-color', colorString);
     },
     async updateStatusBarTextContrast() {
         const statusBar = document.getElementById('status-bar');
@@ -277,14 +359,24 @@ export const StatusBarMixin = {
             Math.max(1, window.innerWidth),
             Math.max(1, window.innerHeight)
         );
-        const tone = await this.computeWallpaperTextTone(sampleRect);
-        this.applyStatusBarTextTone(tone || this.getFallbackStatusBarTextTone());
+        const result = await this.computeWallpaperTextTone(sampleRect);
+        this.applyStatusBarTextTone(result ? result.mode : this.getFallbackStatusBarTextTone());
+
+        // 高级视觉效果下，时间墙的时钟文字改用取样区域的平均色（近似高斯模糊后的配色）。
+        const useBlurPalette = document.body.classList.contains('time-wall-mode')
+            && this.settings.enhancedDisplay
+            && result
+            && result.color;
+        statusBar.classList.toggle('clock-blur-palette', !!useBlurPalette);
+        if (useBlurPalette) {
+            this.applyBlurredClockColor(result.color, result.brightness);
+        }
     },
     startStatusBarTimer() {
         this.stopStatusBarTimer();
 
-        const shouldShow = this.settings.statusBarEnabled;
-        if (!shouldShow) {
+        // 状态栏关着时也允许在时间墙/信息流里走时，这块钟此时就是时钟本身。
+        if (!this.settings.statusBarEnabled && this.viewStage < 2) {
             return;
         }
 

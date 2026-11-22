@@ -140,6 +140,9 @@ export const TimeWallMixin = {
             this.exitTimeWall();
         } else if (!this.settings.feedEnabled && this.viewStage >= VIEW_STAGE_FEED) {
             this.exitFeed();
+        } else if (this.viewStage >= VIEW_STAGE_TIME_WALL) {
+            // 高级视觉效果等开关变化时，重新计算时钟的模糊配色。
+            this.updateStatusBarTextContrast();
         }
     }
 };
