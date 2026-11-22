@@ -130,37 +130,45 @@ export const TimeWallMixin = {
         el.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
     },
     /**
-     * 只在缩小行进途中加模糊：前一半渐入，后一半渐出，收尾时已回到清晰。
+     * 只在缩小行进途中加模糊：出现和消失都在动画进行中完成，
+     * 收尾之前已经回到清晰，结束时不再有任何模糊变化。
      * 模糊加在状态栏父级上，按屏幕像素计算，不会被缩小后的 transform 一起缩掉。
      */
     blurStatusBarAtEnd(bar, duration) {
         if (!bar) return;
-        const half = Math.round(duration * 0.5);
+        const peakTime = Math.round(duration * 0.45);
         const peak = 4;
 
-        bar.style.transition = 'none';
-        bar.style.filter = 'blur(0px)';
-        bar.style.willChange = 'filter';
-        // 先刷一次样式，确保前半程从 0 开始。
-        bar.getBoundingClientRect();
-        bar.style.transition = `filter ${half}ms ease-out`;
-        bar.style.filter = `blur(${peak}px)`;
+        if (this._clockBlurAnimation) {
+            this._clockBlurAnimation.cancel();
+            this._clockBlurAnimation = null;
+        }
+        if (this._timeWallBlurTimer) {
+            clearTimeout(this._timeWallBlurTimer);
+            this._timeWallBlurTimer = null;
+        }
 
-        // 后半程把模糊收回去，结束时正好清晰，切单行布局没有突变。
+        // 用关键帧把模糊绑定在缩小动画的时间轴上：
+        // 0% 清晰 → 45% 峰值 → 70% 已完全清晰 → 100% 保持清晰。
+        // 这样出现和消失都发生在行进中，离结束还有一段干净的缩小。
+        bar.style.willChange = 'filter';
+        this._clockBlurAnimation = bar.animate([
+            { filter: 'blur(0px)', offset: 0, easing: 'ease-out' },
+            { filter: `blur(${peak}px)`, offset: 0.45, easing: 'ease-out' },
+            { filter: 'blur(0px)', offset: 0.7 },
+            { filter: 'blur(0px)', offset: 1 },
+        ], { duration, easing: 'linear', fill: 'none' });
+
+        // 模糊最重时把时钟从模糊纹理配色切回最终纯色，颜色变化藏在模糊里。
         this._timeWallBlurTimer = setTimeout(() => {
             this._timeWallBlurTimer = null;
             if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
 
-            // 模糊最重时把时钟从模糊纹理配色切回最终纯色，
-            // 颜色变化藏在模糊里，收尾那一刻就不会再突变一次。
             bar.classList.remove('clock-blur-palette');
             this.applyStatusBarTextTone(
                 this.statusBarContrastMode || this.getFallbackStatusBarTextTone()
             );
-
-            bar.style.transition = `filter ${half}ms ease-in`;
-            bar.style.filter = 'blur(0px)';
-        }, half);
+        }, peakTime);
     },
     /**
      * 缩小动画结束：此时视觉位置已经和单行状态栏完全重合，
@@ -265,6 +273,10 @@ export const TimeWallMixin = {
         if (this._timeWallBlurTimer) {
             clearTimeout(this._timeWallBlurTimer);
             this._timeWallBlurTimer = null;
+        }
+        if (this._clockBlurAnimation) {
+            this._clockBlurAnimation.cancel();
+            this._clockBlurAnimation = null;
         }
         ['_statusDateRaf', '_statusTimeRaf'].forEach((rafKey) => {
             if (this[rafKey]) {
