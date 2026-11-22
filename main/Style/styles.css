@@ -8575,12 +8575,8 @@ body.time-wall-mode #quick-access-sidebar {
     pointer-events: none;
 }
 
-/* 信息流只保留开发中提示：主容器（搜索、引擎按钮等）整体淡出。 */
-body.feed-mode .container {
-    opacity: 0;
-    pointer-events: none;
-}
-
+/* 信息流里保留搜索框与引擎按钮，不再淡出主容器：
+   给它们加 opacity 会让内部的 backdrop-filter 在过渡中失效。 */
 .feed-view {
     position: fixed;
     inset: 0;
@@ -8588,15 +8584,13 @@ body.feed-mode .container {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 120px 24px 60px;
-    opacity: 0;
+    padding: 110px 24px 200px;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.4s ease 0.05s, visibility 0.4s ease;
+    transition: visibility 0.3s ease;
 }
 
 body.feed-mode .feed-view {
-    opacity: 1;
     visibility: visible;
 }
 

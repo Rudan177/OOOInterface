@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：214c76c7d1435c1e    模块数：49
+// 源码指纹：d1a79eee91204efb    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -6554,7 +6554,7 @@ const StatusBarMixin = {
         statusBar.style.setProperty('--clock-blur-image', `url("${texture}")`);
         statusBar.style.setProperty(
             '--clock-blur-overlay',
-            result.mode === 'dark' ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.30)'
+            result.mode === 'dark' ? 'rgba(0, 0, 0, 0.52)' : 'rgba(255, 255, 255, 0.56)'
         );
         statusBar.classList.add('clock-blur-palette');
     },
@@ -11688,7 +11688,8 @@ const TimeWallMixin = {
             this._statusDateRaf = null;
         }
 
-        const startCenter = fromRect.left + fromRect.width / 2;
+        const startCenterX = fromRect.left + fromRect.width / 2;
+        const startCenterY = fromRect.top + fromRect.height / 2;
         const duration = 650;
         const startTime = window.performance && performance.now ? performance.now() : Date.now();
         const ease = (progress) => progress * progress * (3 - 2 * progress);
@@ -11697,9 +11698,11 @@ const TimeWallMixin = {
             const progress = Math.min(1, (now - startTime) / duration);
             dateEl.style.transform = 'none';
             const rect = dateEl.getBoundingClientRect();
-            const naturalCenter = rect.left + rect.width / 2;
-            const desiredCenter = startCenter + (naturalCenter - startCenter) * ease(progress);
-            const dx = desiredCenter - naturalCenter;
+            const naturalCenterX = rect.left + rect.width / 2;
+            const naturalCenterY = rect.top + rect.height / 2;
+            const eased = ease(progress);
+            const dx = (startCenterX + (naturalCenterX - startCenterX) * eased) - naturalCenterX;
+            const dy = (startCenterY + (naturalCenterY - startCenterY) * eased) - naturalCenterY;
 
             if (progress >= 1) {
                 dateEl.style.transform = '';
@@ -11707,7 +11710,7 @@ const TimeWallMixin = {
                 return;
             }
 
-            dateEl.style.transform = `translateX(${dx}px)`;
+            dateEl.style.transform = `translate(${dx}px, ${dy}px)`;
             this._statusDateRaf = requestAnimationFrame(step);
         };
 

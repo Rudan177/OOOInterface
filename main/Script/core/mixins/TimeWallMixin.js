@@ -86,7 +86,8 @@ export const TimeWallMixin = {
             this._statusDateRaf = null;
         }
 
-        const startCenter = fromRect.left + fromRect.width / 2;
+        const startCenterX = fromRect.left + fromRect.width / 2;
+        const startCenterY = fromRect.top + fromRect.height / 2;
         const duration = 650;
         const startTime = window.performance && performance.now ? performance.now() : Date.now();
         const ease = (progress) => progress * progress * (3 - 2 * progress);
@@ -95,9 +96,11 @@ export const TimeWallMixin = {
             const progress = Math.min(1, (now - startTime) / duration);
             dateEl.style.transform = 'none';
             const rect = dateEl.getBoundingClientRect();
-            const naturalCenter = rect.left + rect.width / 2;
-            const desiredCenter = startCenter + (naturalCenter - startCenter) * ease(progress);
-            const dx = desiredCenter - naturalCenter;
+            const naturalCenterX = rect.left + rect.width / 2;
+            const naturalCenterY = rect.top + rect.height / 2;
+            const eased = ease(progress);
+            const dx = (startCenterX + (naturalCenterX - startCenterX) * eased) - naturalCenterX;
+            const dy = (startCenterY + (naturalCenterY - startCenterY) * eased) - naturalCenterY;
 
             if (progress >= 1) {
                 dateEl.style.transform = '';
@@ -105,7 +108,7 @@ export const TimeWallMixin = {
                 return;
             }
 
-            dateEl.style.transform = `translateX(${dx}px)`;
+            dateEl.style.transform = `translate(${dx}px, ${dy}px)`;
             this._statusDateRaf = requestAnimationFrame(step);
         };
 

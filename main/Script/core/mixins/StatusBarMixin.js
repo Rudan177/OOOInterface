@@ -429,7 +429,7 @@ export const StatusBarMixin = {
         statusBar.style.setProperty('--clock-blur-image', `url("${texture}")`);
         statusBar.style.setProperty(
             '--clock-blur-overlay',
-            result.mode === 'dark' ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.30)'
+            result.mode === 'dark' ? 'rgba(0, 0, 0, 0.52)' : 'rgba(255, 255, 255, 0.56)'
         );
         statusBar.classList.add('clock-blur-palette');
     },
