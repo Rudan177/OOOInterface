@@ -1730,7 +1730,14 @@ export const WallpaperMixin = {
             clearTimeout(this._timeWallExitTimer);
             this._timeWallExitTimer = null;
         }
-        document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-collapsed');
+        if (this._timeWallPhaseTimer) {
+            clearTimeout(this._timeWallPhaseTimer);
+            this._timeWallPhaseTimer = null;
+        }
+        document.body.classList.remove(
+            'time-wall-mode', 'feed-mode', 'time-wall-returning', 'time-wall-collapsed'
+        );
+        this.resetStatusTextTransforms();
         this.viewStage = 1;
         if (wasExtendedStage) {
             this.releaseClockInStatusBar();

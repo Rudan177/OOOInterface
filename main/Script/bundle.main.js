@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：9ce455e5e275eea2    模块数：49
+// 源码指纹：7161f7b3f26dab9d    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11137,7 +11137,14 @@ const WallpaperMixin = {
             clearTimeout(this._timeWallExitTimer);
             this._timeWallExitTimer = null;
         }
-        document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-collapsed');
+        if (this._timeWallPhaseTimer) {
+            clearTimeout(this._timeWallPhaseTimer);
+            this._timeWallPhaseTimer = null;
+        }
+        document.body.classList.remove(
+            'time-wall-mode', 'feed-mode', 'time-wall-returning', 'time-wall-collapsed'
+        );
+        this.resetStatusTextTransforms();
         this.viewStage = 1;
         if (wasExtendedStage) {
             this.releaseClockInStatusBar();
@@ -11642,88 +11649,133 @@ const TimeWallMixin = {
     enterTimeWall() {
         if (!this.settings.timeWallEnabled || this.viewStage >= VIEW_STAGE_TIME_WALL) return;
 
-        // 先记下日期在一行状态栏里的位置，切换布局后把日期从旧位置接到新位置。
+        // 先记下日期、时间在一行状态栏里的位置，切换布局后从旧位置接过去。
         const dateRect = this.captureStatusDateRect();
+        const timeRect = this.captureStatusTimeRect();
         this.viewStage = VIEW_STAGE_TIME_WALL;
         document.body.classList.add('time-wall-mode');
         document.body.classList.remove('feed-mode');
         this.showClockInStatusBar();
         this.animateStatusDate(dateRect);
+        this.animateStatusTime(timeRect);
     },
     exitTimeWall() {
         if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
 
-        const dateRect = this.captureStatusDateRect();
         this.viewStage = VIEW_STAGE_WALLPAPER;
-        // 先用普通状态栏的布局与字号，但保留 time-wall-mode 和模糊配色，
-        // 等缩小过程结束后再撤掉，避免动画中途掉成纯色。
-        document.body.classList.add('time-wall-collapsed');
-        this.animateStatusDate(dateRect);
-
+        if (this._timeWallPhaseTimer) {
+            clearTimeout(this._timeWallPhaseTimer);
+            this._timeWallPhaseTimer = null;
+        }
         if (this._timeWallExitTimer) {
             clearTimeout(this._timeWallExitTimer);
+            this._timeWallExitTimer = null;
         }
+
+        // 第一阶段：保持上下两行，只把时间缩小、整块退回顶部。
+        // 日期始终待在时间正上方，不做横向位移，返回过程中不会错位。
+        document.body.classList.remove('time-wall-collapsed', 'feed-mode');
+        document.body.classList.add('time-wall-returning');
+
+        // 第二阶段：缩成小钟后再切成单行，日期从时间上方连续滑回左侧。
+        // 此时字号已经稳定，横向 FLIP 的终点是精确的。
+        this._timeWallPhaseTimer = setTimeout(() => {
+            this._timeWallPhaseTimer = null;
+            if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
+
+            const dateRect = this.captureStatusDateRect();
+            const timeRect = this.captureStatusTimeRect();
+            document.body.classList.remove('time-wall-returning');
+            document.body.classList.add('time-wall-collapsed');
+            this.animateStatusDate(dateRect, 220);
+            this.animateStatusTime(timeRect, 220);
+        }, 650);
+
         this._timeWallExitTimer = setTimeout(() => {
             this._timeWallExitTimer = null;
             if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
-            document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-collapsed');
+            document.body.classList.remove(
+                'time-wall-mode', 'feed-mode', 'time-wall-returning', 'time-wall-collapsed'
+            );
+            this.resetStatusTextTransforms();
             this.releaseClockInStatusBar();
-        }, 800);
+        }, 920);
     },
     captureStatusDateRect() {
         const dateEl = document.querySelector('#status-bar .status-bar-date');
         return dateEl ? dateEl.getBoundingClientRect() : null;
     },
+    captureStatusTimeRect() {
+        const timeEl = document.querySelector('#status-bar .status-bar-time');
+        return timeEl ? timeEl.getBoundingClientRect() : null;
+    },
     /**
-     * 状态栏在单行 / 两行之间切换时，日期会从时间左侧跳到时间上方。
-     * 这里逐帧跟随布局的真实位置做插值：既连上横向位移，也跟得上时间字号
-     * 在过渡过程中不断变化的宽度，退出时不会停在一个错的位置。
+     * 状态栏在单行 / 两行之间切换时，日期与时间都会换位。
+     * 这里把元素从旧位置平滑接到新布局位置：同一帧写入反向偏移，
+     * 之后让偏移随动画衰减到 0，元素本身始终跟随真实布局。
      */
-    animateStatusDate(fromRect) {
-        const dateEl = document.querySelector('#status-bar .status-bar-date');
-        if (!fromRect || !dateEl) return;
+    animateStatusDate(fromRect, duration = 700) {
+        this.animateStatusItem('_statusDateRaf', '#status-bar .status-bar-date', fromRect, duration);
+    },
+    animateStatusTime(fromRect, duration = 700) {
+        this.animateStatusItem('_statusTimeRaf', '#status-bar .status-bar-time', fromRect, duration);
+    },
+    animateStatusItem(rafKey, selector, fromRect, duration) {
+        const el = document.querySelector(selector);
+        if (!fromRect || !el || !duration) return;
 
-        if (this._statusDateRaf) {
-            cancelAnimationFrame(this._statusDateRaf);
-            this._statusDateRaf = null;
+        if (this[rafKey]) {
+            cancelAnimationFrame(this[rafKey]);
+            this[rafKey] = null;
         }
 
         const startCenterX = fromRect.left + fromRect.width / 2;
         const startCenterY = fromRect.top + fromRect.height / 2;
-        // 日期动画比字号过渡略长，确保布局彻底稳定后再归位，避免最后错位。
-        const duration = 700;
         const startTime = window.performance && performance.now ? performance.now() : Date.now();
         const ease = (progress) => 1 - Math.pow(1 - progress, 3);
 
-        dateEl.style.willChange = 'transform';
+        el.style.willChange = 'transform';
 
-        // 切换布局后立刻量一次自然位置，并在同一帧内把日期拉回旧位置。
-        // 这样第一帧就不会先闪到新布局的位置，退出时开头不会错位。
-        dateEl.style.transform = 'none';
-        const naturalRect = dateEl.getBoundingClientRect();
+        // 切换布局后立刻量一次自然位置，并在同一帧内把元素拉回旧位置，
+        // 保证切换后的第一帧不会先闪到新位置。
+        el.style.transform = 'none';
+        const naturalRect = el.getBoundingClientRect();
         const offsetX = startCenterX - (naturalRect.left + naturalRect.width / 2);
         const offsetY = startCenterY - (naturalRect.top + naturalRect.height / 2);
-        dateEl.style.transform = `translate(${Math.round(offsetX)}px, ${Math.round(offsetY)}px)`;
+        el.style.transform = `translate(${Math.round(offsetX)}px, ${Math.round(offsetY)}px)`;
 
         const step = (now) => {
             const progress = Math.min(1, (now - startTime) / duration);
 
             if (progress >= 1) {
-                dateEl.style.transform = '';
-                dateEl.style.willChange = '';
-                this._statusDateRaf = null;
+                el.style.transform = '';
+                el.style.willChange = '';
+                this[rafKey] = null;
                 return;
             }
 
-            // 偏移量随动画衰减；元素本身跟随布局，布局怎么动日期就怎么动。
             const remaining = 1 - ease(progress);
             const dx = Math.round(offsetX * remaining);
             const dy = Math.round(offsetY * remaining);
-            dateEl.style.transform = `translate(${dx}px, ${dy}px)`;
-            this._statusDateRaf = requestAnimationFrame(step);
+            el.style.transform = `translate(${dx}px, ${dy}px)`;
+            this[rafKey] = requestAnimationFrame(step);
         };
 
-        this._statusDateRaf = requestAnimationFrame(step);
+        this[rafKey] = requestAnimationFrame(step);
+    },
+    resetStatusTextTransforms() {
+        ['_statusDateRaf', '_statusTimeRaf'].forEach((rafKey) => {
+            if (this[rafKey]) {
+                cancelAnimationFrame(this[rafKey]);
+                this[rafKey] = null;
+            }
+        });
+        ['#status-bar .status-bar-date', '#status-bar .status-bar-time'].forEach((selector) => {
+            const el = document.querySelector(selector);
+            if (!el) return;
+            el.style.transform = '';
+            el.style.willChange = '';
+        });
     },
     enterFeed() {
         if (!this.settings.timeWallEnabled || !this.settings.feedEnabled) return;
@@ -11749,11 +11801,18 @@ const TimeWallMixin = {
     },
     clearTimeWallState() {
         const wasExtendedStage = this.viewStage >= VIEW_STAGE_TIME_WALL;
+        if (this._timeWallPhaseTimer) {
+            clearTimeout(this._timeWallPhaseTimer);
+            this._timeWallPhaseTimer = null;
+        }
         if (this._timeWallExitTimer) {
             clearTimeout(this._timeWallExitTimer);
             this._timeWallExitTimer = null;
         }
-        document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-collapsed');
+        this.resetStatusTextTransforms();
+        document.body.classList.remove(
+            'time-wall-mode', 'feed-mode', 'time-wall-returning', 'time-wall-collapsed'
+        );
         this.viewStage = VIEW_STAGE_HOME;
         if (wasExtendedStage) {
             this.releaseClockInStatusBar();
@@ -11776,7 +11835,11 @@ const TimeWallMixin = {
             clearTimeout(this._timeWallExitTimer);
             this._timeWallExitTimer = null;
         }
-        document.body.classList.remove('time-wall-collapsed');
+        if (this._timeWallPhaseTimer) {
+            clearTimeout(this._timeWallPhaseTimer);
+            this._timeWallPhaseTimer = null;
+        }
+        document.body.classList.remove('time-wall-collapsed', 'time-wall-returning');
 
         statusBar.classList.add('visible');
         document.documentElement.style.setProperty(

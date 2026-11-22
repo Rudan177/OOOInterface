@@ -225,8 +225,26 @@ body.feed-mode .status-bar-time {
     font-weight: 900;
 }
 
-/* 退出到壁纸：布局与字号先缩回普通状态栏，但保留模糊配色，
-   等过渡结束后再撤掉，避免缩小过程中突然变成纯色。 */
+/* 退出第一阶段：保持上下两行，只缩小并回到顶部；
+   日期一直待在时间上方，不横向乱跑，避免返回过程中错位。 */
+body.time-wall-mode.time-wall-returning .status-bar {
+    top: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+body.time-wall-mode.time-wall-returning .status-bar-date {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+body.time-wall-mode.time-wall-returning .status-bar-time {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* 退出第二阶段：缩成小钟后再切回单行，日期横向滑回时间左侧。 */
 body.time-wall-mode.time-wall-collapsed .status-bar {
     top: 0;
     flex-direction: row;
@@ -7017,8 +7035,8 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     will-change: background-size, background-position, opacity, transform;
 }
 /* 时钟模式（时间墙 / 信息流）背景模糊层：
-   只在这两个层级生效，壁纸模式保持清晰。
-   开高级视觉效果时实时模糊；关闭时退化为压暗。 */
+   只在这两个层级显现，壁纸模式保持清晰。
+   模糊属性常驻、用 opacity 渐入渐出，退出时模糊是逐渐消失而不是瞬间断掉。 */
 #wallpaper-main::before {
     content: '';
     position: absolute;
@@ -7028,16 +7046,18 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-body.time-wall-mode.dynamic-blur #wallpaper-main.active::before {
-    opacity: 1;
+body.dynamic-blur #wallpaper-main.active::before {
     background: rgba(0, 0, 0, 0.06);
     backdrop-filter: blur(26px) saturate(1.15);
     -webkit-backdrop-filter: blur(26px) saturate(1.15);
 }
 
-body.time-wall-mode:not(.dynamic-blur) #wallpaper-main.active::before {
-    opacity: 1;
+body:not(.dynamic-blur) #wallpaper-main.active::before {
     background: rgba(0, 0, 0, 0.34);
+}
+
+body.time-wall-mode #wallpaper-main.active::before {
+    opacity: 1;
 }
 
 /* 暗色压暗壁纸：蒙版画在壁纸层内部（::after 属于层本身），
