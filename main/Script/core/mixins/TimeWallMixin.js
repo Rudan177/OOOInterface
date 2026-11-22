@@ -90,11 +90,11 @@ export const TimeWallMixin = {
         bar.classList.remove('no-transition');
 
         document.body.classList.add('time-wall-leaving');
-        this.disableClockBlur(480);
 
         // 大钟保持当前字号与模糊纹理，只用 transform 连续缩小并移到最终位置；
         // 动画结束时在最终布局原位收尾，整段没有淡出淡入的空档。
-        const duration = 460;
+        const duration = 400;
+        this.disableClockBlur(duration + 20);
         this.shrinkStatusItem(dateEl, bigDate, finalDate, duration);
         this.shrinkStatusItem(timeEl, bigTime, finalTime, duration);
         this.animateStatusWeight(duration);

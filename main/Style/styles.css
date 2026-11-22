@@ -8646,6 +8646,15 @@ body.time-wall-mode #quick-access-sidebar .quick-access-sidebar-container {
     pointer-events: none;
 }
 
+/* 退出时间墙时，面板不等大钟缩完，先从第一步就滑回来。 */
+body.time-wall-mode.time-wall-leaving #widget-panel .widget-panel-container.visible {
+    transform: translateX(0);
+}
+
+body.time-wall-mode.time-wall-leaving #quick-access-sidebar .quick-access-sidebar-container.visible {
+    transform: translateX(0);
+}
+
 /* 信息流里保留搜索框与引擎按钮，不再淡出主容器：
    给它们加 opacity 会让内部的 backdrop-filter 在过渡中失效。 */
 .feed-view {
