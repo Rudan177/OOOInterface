@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：a3dfda70219d9889    模块数：49
+// 源码指纹：456365d671199bb2    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11666,6 +11666,8 @@ const TimeWallMixin = {
     exitTimeWall() {
         if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
 
+        const dateRect = this.captureStatusDateRect();
+        const timeRect = this.captureStatusTimeRect();
         this.viewStage = VIEW_STAGE_WALLPAPER;
         if (this._timeWallPhaseTimer) {
             clearTimeout(this._timeWallPhaseTimer);
@@ -11680,19 +11682,13 @@ const TimeWallMixin = {
             this._timeWallSettleTimer = null;
         }
 
-        // 一退出就让背景模糊开始淡出，不用等缩小结束。
-        document.body.classList.remove('time-wall-collapsed');
-        document.body.classList.add('time-wall-returning', 'time-wall-leaving', 'clock-shrinking');
-        // 模糊属性本身只在时钟模式期间保留，淡出后再彻底移除，避免常驻开销。
+        // 直接切成单行，和进入时完全对称：先把日期/时间拉回旧位置，
+        // 再让偏移在 320ms 内衰减到 0；缩小期间用纯色填充避免掉帧。
+        document.body.classList.remove('time-wall-returning');
+        document.body.classList.add('time-wall-collapsed', 'time-wall-leaving', 'clock-shrinking');
         this.disableClockBlur(520);
-
-        // 第一阶段（0–650ms）：保持两行，只把时间缩小、整块退回顶部。
-        // 日期始终在时间上方，避免和巨大数字重叠；这段时间不做 JS 位移。
-        this._timeWallPhaseTimer = setTimeout(() => {
-            this._timeWallPhaseTimer = null;
-            if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
-            this.settleStatusBarToOneLine();
-        }, 650);
+        this.animateStatusDate(dateRect, 320);
+        this.animateStatusTime(timeRect, 320);
 
         this._timeWallExitTimer = setTimeout(() => {
             this._timeWallExitTimer = null;
@@ -11703,58 +11699,7 @@ const TimeWallMixin = {
             );
             this.resetStatusTextTransforms();
             this.releaseClockInStatusBar();
-        }, 920);
-    },
-    /**
-     * 第二阶段：字号已经缩到 12px，此时再切成单行。
-     * 先在两行布局里用 transform 把日期/时间滑到最终位置（日期在上、时间在下，
-     * 不会重叠），到位后切单行并清空位移，两者重合。
-     */
-    settleStatusBarToOneLine() {
-        const dateEl = document.querySelector('#status-bar .status-bar-date');
-        const timeEl = document.querySelector('#status-bar .status-bar-time');
-        if (!dateEl || !timeEl) return;
-
-        const center = (rect) => (rect
-            ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-            : null);
-        const columnDate = center(this.captureStatusDateRect());
-        const columnTime = center(this.captureStatusTimeRect());
-
-        // 字体已经稳定，临时切到单行量最终位置，不会触发字号过渡。
-        document.body.classList.add('time-wall-collapsed');
-        const rowDate = center(this.captureStatusDateRect());
-        const rowTime = center(this.captureStatusTimeRect());
-        document.body.classList.remove('time-wall-collapsed');
-
-        if (!columnDate || !columnTime || !rowDate || !rowTime) return;
-        // 强制回到两行布局后再启动 transform 过渡，确保起点正确。
-        dateEl.offsetWidth;
-
-        const ease = 'cubic-bezier(0.4, 0, 0.2, 1)';
-        const dateX = Math.round(rowDate.x - columnDate.x);
-        const dateY = Math.round(rowDate.y - columnDate.y);
-        const timeX = Math.round(rowTime.x - columnTime.x);
-        const timeY = Math.round(rowTime.y - columnTime.y);
-
-        dateEl.style.transition = `transform 200ms ${ease}`;
-        timeEl.style.transition = `transform 200ms ${ease}`;
-        dateEl.style.transform = `translate(${dateX}px, ${dateY}px)`;
-        timeEl.style.transform = `translate(${timeX}px, ${timeY}px)`;
-
-        if (this._timeWallSettleTimer) {
-            clearTimeout(this._timeWallSettleTimer);
-        }
-        this._timeWallSettleTimer = setTimeout(() => {
-            this._timeWallSettleTimer = null;
-            if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
-            document.body.classList.remove('time-wall-returning');
-            document.body.classList.add('time-wall-collapsed');
-            [dateEl, timeEl].forEach((el) => {
-                el.style.transition = '';
-                el.style.transform = '';
-            });
-        }, 210);
+        }, 700);
     },
     captureStatusDateRect() {
         const dateEl = document.querySelector('#status-bar .status-bar-date');

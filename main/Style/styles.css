@@ -225,26 +225,7 @@ body.feed-mode .status-bar-time {
     font-weight: 900;
 }
 
-/* 退出第一阶段：保持上下两行，只缩小并回到顶部；
-   同时把日期和时间从当前位置直接朝最终单行位置移动。 */
-body.time-wall-mode.time-wall-returning .status-bar {
-    top: 0;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-}
-
-body.time-wall-mode.time-wall-returning .status-bar-date {
-    font-size: 12px;
-    font-weight: 500;
-}
-
-body.time-wall-mode.time-wall-returning .status-bar-time {
-    font-size: 12px;
-    font-weight: 500;
-}
-
-/* 退出第二阶段：缩成小钟后再切回单行，日期横向滑回时间左侧。 */
+/* 退出时直接切回单行布局并缩小；日期、时间由 JS 从旧位置接过来。 */
 body.time-wall-mode.time-wall-collapsed .status-bar {
     top: 0;
     flex-direction: row;
