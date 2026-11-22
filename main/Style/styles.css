@@ -8624,10 +8624,25 @@ body.focus-search-leaving .engine-buttons {
    日期始终固定在时间上方，只让时间连续变大 / 变小，没有背景板。 */
 
 /* 时间墙隐藏小组件与相关侧边面板，保留壁纸模式的搜索框与引擎按钮。 */
-body.time-wall-mode #quick-access-links,
+body.time-wall-mode #quick-access-links {
+    opacity: 0;
+    pointer-events: none;
+}
+
 body.time-wall-mode #widget-panel,
 body.time-wall-mode #quick-access-sidebar {
-    opacity: 0;
+    pointer-events: none;
+}
+
+/* 小组件与侧边栏复用它们自身的滑出过渡：进入时间墙时滑走，
+   退出时滑回来，而不是整块 opacity 瞬间消失。 */
+body.time-wall-mode #widget-panel .widget-panel-container {
+    transform: translateX(calc(-100% - 20px));
+    pointer-events: none;
+}
+
+body.time-wall-mode #quick-access-sidebar .quick-access-sidebar-container {
+    transform: translateX(calc(100% + 20px));
     pointer-events: none;
 }
 
