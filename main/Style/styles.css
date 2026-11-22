@@ -201,12 +201,12 @@ body.time-wall-mode .status-bar {
 
 body.time-wall-mode .status-bar-date {
     font-size: clamp(1.05rem, 2.4vh, 1.6rem);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 body.time-wall-mode .status-bar-time {
     font-size: clamp(6rem, min(22vw, 30vh), 16rem);
-    font-weight: 800;
+    font-weight: 900;
     line-height: 0.95;
 }
 
@@ -222,7 +222,7 @@ body.feed-mode .status-bar-date {
 
 body.feed-mode .status-bar-time {
     font-size: 1.35rem;
-    font-weight: 800;
+    font-weight: 900;
 }
 
 /* 退出到壁纸：布局与字号先缩回普通状态栏，但保留模糊配色，
@@ -7016,29 +7016,6 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     pointer-events: none;
     will-change: background-size, background-position, opacity, transform;
 }
-/* 壁纸模式背景层：高级视觉效果开着时实时模糊壁纸；
-   没开高级视觉效果时退化为压暗，仍让前景内容保持可读。 */
-#wallpaper-main::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-body.scrolled.dynamic-blur #wallpaper-main.active::before {
-    opacity: 1;
-    background: rgba(0, 0, 0, 0.06);
-    backdrop-filter: blur(26px) saturate(1.15);
-    -webkit-backdrop-filter: blur(26px) saturate(1.15);
-}
-
-body.scrolled:not(.dynamic-blur) #wallpaper-main.active::before {
-    opacity: 1;
-    background: rgba(0, 0, 0, 0.28);
-}
-
 /* 暗色压暗壁纸：蒙版画在壁纸层内部（::after 属于层本身），
    壁纸层激活才有蒙版、随层显隐联动——顶部无壁纸状态不会被误压暗，
    且蒙版永远只压壁纸、不碰页面其它层级。
