@@ -36,8 +36,6 @@ export class OOOInterface {
         this.isScrolled = false;
         // 视图层级：0 首页 / 1 壁纸 / 2 时间墙 / 3 信息流（见 TimeWallMixin）。
         this.viewStage = 0;
-        this.timeWallTimer = null;
-        this._clockAnimation = null;
         this.scrollTimeout = null;
         this.isAnimating = false;
         this.infoPopupOpen = false;
@@ -170,9 +168,6 @@ export class OOOInterface {
 
         window.addEventListener('resize', () => {
             this.updateStatusBarTextContrast();
-            if (this.viewStage >= 2) {
-                this.updateTimeWallClockContrast();
-            }
             this.syncWidgetCardHeights();
             // 窗口宽度变化会改变搜索框的布局宽度，放大比例的上限要重算。
             this.applyFocusSearch();
@@ -230,10 +225,9 @@ export class OOOInterface {
                     this.updateStatusBarText();
                     this.startStatusBarTimer();
                 }
-                // 时间墙/信息流时钟共用「显示秒钟」偏好，可见时按新精度重启计时。
+                // 时间墙/信息流里状态栏本身就是时钟，按新的秒钟精度重启计时。
                 if (this.viewStage >= 2) {
-                    this.startTimeWallClock();
-                    this.updateTimeWallClockContrast();
+                    this.startStatusBarTimer();
                 }
                 this.showNotification(this.settings.showStatusBarSeconds ? '显示秒钟：开启' : '显示秒钟：关闭');
             });

@@ -24,19 +24,15 @@
 
 <body>
 
-    <div id="status-bar" class="status-bar" aria-live="polite"></div>
+    <div id="status-bar" class="status-bar" aria-live="polite">
+        <span class="status-bar-date"></span>
+        <span class="status-bar-time"></span>
+    </div>
     <div id="status-bar-blur" class="status-bar-blur"></div>
 
     <!-- 当前壁纸的格式角标（HDR / 实况照片），内容由 updateWallpaperFormatCorner() 填。
          必须是 body 的直接子元素：position: fixed 一旦被带 transform/filter 的祖先包住就退化。 -->
     <div id="wallpaper-format-corner" class="wallpaper-format-corner"></div>
-
-    <!-- 时间墙大时钟：壁纸模式下继续上滑显示，再上滑进入信息流时由 CSS 过渡缩小到顶部。
-         与状态栏是两个独立元素——开启状态栏时它从状态栏位置下移放大，进入信息流后独立停在顶部。 -->
-    <div id="time-wall-clock" class="time-wall-clock" aria-hidden="true">
-        <div class="time-wall-clock-date"></div>
-        <div class="time-wall-clock-time">--:--</div>
-    </div>
 
     <!-- 信息流占位页：进入后隐藏主容器，只保留开发中提示。 -->
     <div id="feed-view" class="feed-view" aria-hidden="true">

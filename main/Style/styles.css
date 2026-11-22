@@ -141,34 +141,63 @@ body {
 .status-bar {
     position: fixed;
     top: 0;
-    left: 0;
-    right: 0;
-    height: var(--status-bar-height);
+    left: 50%;
+    z-index: 26;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 0 20px;
+    gap: 2px;
+    padding: 6px 20px 0;
     color: var(--status-bar-text-color);
     font-size: 12px;
     font-weight: 500;
     text-align: center;
     letter-spacing: 0.02em;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    z-index: 25;
+    transform: translateX(-50%) translateY(-100%);
     transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
-    transform: translateY(-100%);
 }
 
 .status-bar.visible {
     opacity: 1;
     visibility: visible;
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(0);
     pointer-events: auto;
+}
+
+.status-bar-date {
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.status-bar-time {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    transition: font-size 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+        font-weight 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 时间墙与信息流：不另建时钟，直接把状态栏自身放大 / 缩小，日期始终留在上方。 */
+body.time-wall-mode .status-bar {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: none;
+}
+
+body.time-wall-mode .status-bar-time {
+    font-size: clamp(4rem, 13vw, 8.5rem);
+    font-weight: 300;
+}
+
+body.feed-mode .status-bar-time {
+    font-size: 1.35rem;
+    font-weight: 600;
 }
 
 .welcome-screen {
@@ -8476,76 +8505,8 @@ body.focus-search-leaving .engine-buttons {
 
 /* ---------- 时间墙 / 信息流 ---------- */
 
-/* 时钟固定锚在顶部中央，日期在上、时间在下；三个状态只改 scale，不移动位置。
-   壁纸 → 时间墙是同一个元素原地放大，时间墙 → 信息流是原地缩小，全程连续。 */
-.time-wall-clock {
-    position: fixed;
-    left: 50%;
-    top: 10px;
-    z-index: 26;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 22px 44px 26px;
-    color: var(--time-wall-text-color, #f8fafc);
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateX(-50%) scale(1);
-    transform-origin: top center;
-    transition: opacity 0.4s ease,
-        transform 0.65s cubic-bezier(0.4, 0, 0.2, 1),
-        visibility 0.4s ease;
-}
-
-/* 磨砂底板：让时间与壁纸之间隔一层模糊配色，浅色与深色壁纸都能读清。 */
-.time-wall-clock::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: 30px;
-    background: var(--time-wall-panel-bg, rgba(255, 255, 255, 0.30));
-    border: 1px solid var(--time-wall-panel-border, rgba(255, 255, 255, 0.48));
-    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.16);
-    backdrop-filter: blur(24px) saturate(1.25);
-    -webkit-backdrop-filter: blur(24px) saturate(1.25);
-}
-
-.time-wall-clock-time {
-    font-size: clamp(4rem, 13vw, 8.5rem);
-    font-weight: 300;
-    line-height: 1;
-    letter-spacing: 0.02em;
-}
-
-.time-wall-clock-date {
-    font-size: clamp(0.95rem, 1.6vw, 1.35rem);
-    font-weight: 400;
-    letter-spacing: 0.08em;
-    opacity: 0.86;
-}
-
-body.time-wall-mode .time-wall-clock {
-    opacity: 1;
-    visibility: visible;
-}
-
-/* 信息流：同一锚点原地缩小，位置不动，只缩小，因此进出天然连贯。 */
-body.feed-mode .time-wall-clock {
-    transform: translateX(-50%) scale(0.24);
-}
-
-/* 时间墙覆盖状态栏：时间由大时钟接管，避免顶部出现两份时间。 */
-body.time-wall-mode .status-bar {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transform: translateY(-100%);
-}
+/* 时间墙不再另建时钟：直接放大状态栏自身（.status-bar-time 的 font-size 过渡），
+   日期始终固定在时间上方，只让时间连续变大 / 变小，没有背景板。 */
 
 /* 时间墙隐藏小组件与相关侧边面板，保留壁纸模式的搜索框与引擎按钮。 */
 body.time-wall-mode #quick-access-links,

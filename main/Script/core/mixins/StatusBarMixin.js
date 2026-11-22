@@ -25,26 +25,32 @@ export const StatusBarMixin = {
             onlineUpdateToggle.checked = this.settings.onlineRollingUpdate;
         }
     },
-    formatStatusBarDateTime(date) {
+    formatStatusBarDate(date) {
         const pad = (value) => String(value).padStart(2, '0');
-        const year = date.getFullYear();
-        const month = pad(date.getMonth() + 1);
-        const day = pad(date.getDate());
+        const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+        return `${date.getFullYear()}年${pad(date.getMonth() + 1)}月${pad(date.getDate())}日 ${weekdays[date.getDay()]}`;
+    },
+    formatStatusBarTime(date) {
+        const pad = (value) => String(value).padStart(2, '0');
         const hours = pad(date.getHours());
         const minutes = pad(date.getMinutes());
         const seconds = pad(date.getSeconds());
 
         if (this.settings.showStatusBarSeconds) {
-            return `${year}年${month}月${day}日 ${hours}:${minutes}:${seconds}`;
+            return `${hours}:${minutes}:${seconds}`;
         }
 
-        return `${year}年${month}月${day}日 ${hours}:${minutes}`;
+        return `${hours}:${minutes}`;
     },
     updateStatusBarText() {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return;
 
-        statusBar.textContent = this.formatStatusBarDateTime(new Date());
+        const dateEl = statusBar.querySelector('.status-bar-date');
+        const timeEl = statusBar.querySelector('.status-bar-time');
+        const now = new Date();
+        if (dateEl) dateEl.textContent = this.formatStatusBarDate(now);
+        if (timeEl) timeEl.textContent = this.formatStatusBarTime(now);
     },
     stopStatusBarTimer() {
         if (this.statusBarTimer) {
@@ -164,6 +170,19 @@ export const StatusBarMixin = {
     getStatusBarSampleRect(viewportWidth, viewportHeight) {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return null;
+
+        // 时间墙/信息流里状态栏被放大成时钟，取样范围覆盖上部区域即可。
+        const inTimeWall = document.body.classList.contains('time-wall-mode');
+        if (inTimeWall) {
+            const sampleWidth = Math.max(320, viewportWidth * 0.5);
+            const sampleHeight = Math.min(viewportHeight * 0.3, 280);
+            return {
+                x: Math.max(0, (viewportWidth - sampleWidth) / 2),
+                y: 0,
+                width: Math.min(sampleWidth, viewportWidth),
+                height: Math.min(sampleHeight, viewportHeight)
+            };
+        }
 
         const rect = statusBar.getBoundingClientRect();
         const sampleWidth = Math.max(120, rect.width * 0.42);
@@ -293,18 +312,28 @@ export const StatusBarMixin = {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return;
 
-        const shouldShow = this.settings.statusBarEnabled;
+        // 时间墙/信息流里状态栏本身就是时钟，即使「状态栏」开关关着也必须显示。
+        const inExtendedStage = this.viewStage >= 2;
+        const shouldShow = this.settings.statusBarEnabled || inExtendedStage;
 
         if (!shouldShow) {
             statusBar.classList.remove('visible');
-            statusBar.textContent = '';
             this.stopStatusBarTimer();
             document.documentElement.style.setProperty('--status-bar-offset', '10px');
             return;
         }
 
         statusBar.classList.add('visible');
-        document.documentElement.style.setProperty('--status-bar-offset', '44px');
+        document.documentElement.style.setProperty(
+            '--status-bar-offset',
+            this.settings.statusBarEnabled ? '44px' : '10px'
+        );
+
+        if (!this.settings.statusBarEnabled) {
+            // 仅因时间墙而显示：由 TimeWallMixin 负责启动计时与取色。
+            return;
+        }
+
         this.startStatusBarTimer();
         this.updateStatusBarTextContrast();
     },

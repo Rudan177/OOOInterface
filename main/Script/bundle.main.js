@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：e2f79a7d3ec81771    模块数：49
+// 源码指纹：f644a40b79601f26    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -878,8 +878,6 @@ class OOOInterface {
         this.isScrolled = false;
         // 视图层级：0 首页 / 1 壁纸 / 2 时间墙 / 3 信息流（见 TimeWallMixin）。
         this.viewStage = 0;
-        this.timeWallTimer = null;
-        this._clockAnimation = null;
         this.scrollTimeout = null;
         this.isAnimating = false;
         this.infoPopupOpen = false;
@@ -1012,9 +1010,6 @@ class OOOInterface {
 
         window.addEventListener('resize', () => {
             this.updateStatusBarTextContrast();
-            if (this.viewStage >= 2) {
-                this.updateTimeWallClockContrast();
-            }
             this.syncWidgetCardHeights();
             // 窗口宽度变化会改变搜索框的布局宽度，放大比例的上限要重算。
             this.applyFocusSearch();
@@ -1072,10 +1067,9 @@ class OOOInterface {
                     this.updateStatusBarText();
                     this.startStatusBarTimer();
                 }
-                // 时间墙/信息流时钟共用「显示秒钟」偏好，可见时按新精度重启计时。
+                // 时间墙/信息流里状态栏本身就是时钟，按新的秒钟精度重启计时。
                 if (this.viewStage >= 2) {
-                    this.startTimeWallClock();
-                    this.updateTimeWallClockContrast();
+                    this.startStatusBarTimer();
                 }
                 this.showNotification(this.settings.showStatusBarSeconds ? '显示秒钟：开启' : '显示秒钟：关闭');
             });
@@ -6156,26 +6150,32 @@ const StatusBarMixin = {
             onlineUpdateToggle.checked = this.settings.onlineRollingUpdate;
         }
     },
-    formatStatusBarDateTime(date) {
+    formatStatusBarDate(date) {
         const pad = (value) => String(value).padStart(2, '0');
-        const year = date.getFullYear();
-        const month = pad(date.getMonth() + 1);
-        const day = pad(date.getDate());
+        const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+        return `${date.getFullYear()}年${pad(date.getMonth() + 1)}月${pad(date.getDate())}日 ${weekdays[date.getDay()]}`;
+    },
+    formatStatusBarTime(date) {
+        const pad = (value) => String(value).padStart(2, '0');
         const hours = pad(date.getHours());
         const minutes = pad(date.getMinutes());
         const seconds = pad(date.getSeconds());
 
         if (this.settings.showStatusBarSeconds) {
-            return `${year}年${month}月${day}日 ${hours}:${minutes}:${seconds}`;
+            return `${hours}:${minutes}:${seconds}`;
         }
 
-        return `${year}年${month}月${day}日 ${hours}:${minutes}`;
+        return `${hours}:${minutes}`;
     },
     updateStatusBarText() {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return;
 
-        statusBar.textContent = this.formatStatusBarDateTime(new Date());
+        const dateEl = statusBar.querySelector('.status-bar-date');
+        const timeEl = statusBar.querySelector('.status-bar-time');
+        const now = new Date();
+        if (dateEl) dateEl.textContent = this.formatStatusBarDate(now);
+        if (timeEl) timeEl.textContent = this.formatStatusBarTime(now);
     },
     stopStatusBarTimer() {
         if (this.statusBarTimer) {
@@ -6295,6 +6295,19 @@ const StatusBarMixin = {
     getStatusBarSampleRect(viewportWidth, viewportHeight) {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return null;
+
+        // 时间墙/信息流里状态栏被放大成时钟，取样范围覆盖上部区域即可。
+        const inTimeWall = document.body.classList.contains('time-wall-mode');
+        if (inTimeWall) {
+            const sampleWidth = Math.max(320, viewportWidth * 0.5);
+            const sampleHeight = Math.min(viewportHeight * 0.3, 280);
+            return {
+                x: Math.max(0, (viewportWidth - sampleWidth) / 2),
+                y: 0,
+                width: Math.min(sampleWidth, viewportWidth),
+                height: Math.min(sampleHeight, viewportHeight)
+            };
+        }
 
         const rect = statusBar.getBoundingClientRect();
         const sampleWidth = Math.max(120, rect.width * 0.42);
@@ -6424,18 +6437,28 @@ const StatusBarMixin = {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return;
 
-        const shouldShow = this.settings.statusBarEnabled;
+        // 时间墙/信息流里状态栏本身就是时钟，即使「状态栏」开关关着也必须显示。
+        const inExtendedStage = this.viewStage >= 2;
+        const shouldShow = this.settings.statusBarEnabled || inExtendedStage;
 
         if (!shouldShow) {
             statusBar.classList.remove('visible');
-            statusBar.textContent = '';
             this.stopStatusBarTimer();
             document.documentElement.style.setProperty('--status-bar-offset', '10px');
             return;
         }
 
         statusBar.classList.add('visible');
-        document.documentElement.style.setProperty('--status-bar-offset', '44px');
+        document.documentElement.style.setProperty(
+            '--status-bar-offset',
+            this.settings.statusBarEnabled ? '44px' : '10px'
+        );
+
+        if (!this.settings.statusBarEnabled) {
+            // 仅因时间墙而显示：由 TimeWallMixin 负责启动计时与取色。
+            return;
+        }
+
         this.startStatusBarTimer();
         this.updateStatusBarTextContrast();
     },
@@ -10956,9 +10979,12 @@ const WallpaperMixin = {
 
         this.isScrolled = true;
         // 进入壁纸模式即回到视图层级第 1 层，清掉可能残留的时间墙/信息流标记。
-        this.stopTimeWallClock();
+        const wasExtendedStage = this.viewStage >= 2;
         document.body.classList.remove('time-wall-mode', 'feed-mode');
         this.viewStage = 1;
+        if (wasExtendedStage) {
+            this.releaseClockInStatusBar();
+        }
 
         // 进入壁纸模式后侧边栏的显隐改由固定配置接管（下面 rAF 里同步），
         // 当前 hover 推入状态立即作废。必须在后面的 transform 计算之前清掉，
@@ -11418,7 +11444,8 @@ const WallpaperMixin = {
 
 // ---------- main/Script/core/mixins/TimeWallMixin.js ----------
 /**
- * 时间墙与信息流：壁纸模式下继续上滑显示大时钟，再上滑进入信息流占位页。
+ * 时间墙与信息流：壁纸模式下继续上滑，状态栏自身连续放大成顶部大时钟；
+ * 再上滑进入信息流，同一个状态栏再连续缩小成顶部小时钟。
  * 视图层级为 首页 → 壁纸 → 时间墙 → 信息流，进退统一由 advanceViewStage / retreatViewStage 驱动。
  * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
  */
@@ -11458,123 +11485,17 @@ const TimeWallMixin = {
     enterTimeWall() {
         if (!this.settings.timeWallEnabled || this.viewStage >= VIEW_STAGE_TIME_WALL) return;
 
-        const clock = document.getElementById('time-wall-clock');
-        // 状态栏必须在加上 time-wall-mode 之前测量：之后它会被移出视口。
-        const collapsed = this.getClockCollapsedMetrics();
-
         this.viewStage = VIEW_STAGE_TIME_WALL;
         document.body.classList.add('time-wall-mode');
         document.body.classList.remove('feed-mode');
-        this.startTimeWallClock();
-
-        // 始终从顶部的小时钟连续放大到大时钟：时钟锚点固定，只做 scale；
-        // 状态栏开启时起始字号与状态栏文字一致，交接时几乎没有位移。
-        if (clock) {
-            this.runClockScaleAnimation(clock, collapsed, 'translateX(-50%) scale(1)', 650);
-        }
-        this.updateTimeWallClockContrast();
-    },
-    /**
-     * 时钟收缩到顶部时的字号：状态栏可见时取状态栏字号，否则固定 12px。
-     */
-    getClockCollapsedMetrics() {
-        const statusBar = document.getElementById('status-bar');
-        const statusBarVisible = !!(this.settings.statusBarEnabled
-            && statusBar
-            && statusBar.classList.contains('visible'));
-        if (statusBarVisible) {
-            return { fontSize: parseFloat(getComputedStyle(statusBar).fontSize) || 12 };
-        }
-        return { fontSize: 12 };
-    },
-    /**
-     * 收缩 transform：锚点固定在顶部中央，所以只需要一个 scale，不产生任何位移。
-     */
-    getClockCollapsedTransform(clock, collapsed) {
-        const timeEl = clock.querySelector('.time-wall-clock-time');
-        const fontSize = timeEl ? (parseFloat(getComputedStyle(timeEl).fontSize) || 120) : 120;
-        if (!fontSize) return null;
-
-        const scale = Math.max(0.04, collapsed.fontSize / fontSize);
-        return `translateX(-50%) scale(${scale})`;
-    },
-    runClockScaleAnimation(clock, collapsed, toTransform, duration) {
-        if (typeof clock.animate !== 'function') return;
-        const fromTransform = this.getClockCollapsedTransform(clock, collapsed);
-        if (!fromTransform) return;
-        this.cancelClockAnimation();
-        this._clockAnimation = clock.animate(
-            [{ transform: fromTransform }, { transform: toTransform }],
-            { duration, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' }
-        );
+        this.showClockInStatusBar();
     },
     exitTimeWall() {
         if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
 
         this.viewStage = VIEW_STAGE_WALLPAPER;
-        const clock = document.getElementById('time-wall-clock');
-        if (!clock || typeof clock.animate !== 'function') {
-            this.finishExitTimeWall();
-            return;
-        }
-
-        // 先把当前画面读出来：若入场放大还没结束，就从这一刻接着收缩，避免跳回终态。
-        const currentTransform = getComputedStyle(clock).transform;
-        this.cancelClockAnimation();
-
-        const statusBar = document.getElementById('status-bar');
-        let fontSize = 12;
-        if (this.settings.statusBarEnabled && statusBar) {
-            fontSize = parseFloat(getComputedStyle(statusBar).fontSize) || 12;
-        }
-
-        const collapsedTransform = this.getClockCollapsedTransform(clock, { fontSize });
-        if (!collapsedTransform || currentTransform === 'none') {
-            this.finishExitTimeWall();
-            return;
-        }
-
-        const animation = clock.animate(
-            [{ transform: currentTransform }, { transform: collapsedTransform }],
-            { duration: 500, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }
-        );
-        this._clockAnimation = animation;
-        animation.finished.then(() => {
-            if (this._clockAnimation !== animation) return;
-            this.finishExitTimeWall();
-        }).catch(() => {});
-        // 兜底：标签页被节流时 finished 可能迟迟不回调，不能让视图卡在半程。
-        setTimeout(() => {
-            if (this._clockAnimation !== animation) return;
-            this.finishExitTimeWall();
-        }, 700);
-    },
-    finishExitTimeWall() {
-        const clock = document.getElementById('time-wall-clock');
-        this.stopTimeWallClock();
-        this.cancelClockAnimation();
         document.body.classList.remove('time-wall-mode', 'feed-mode');
-        if (!clock) return;
-        // 收缩到状态栏位置后让时钟立即退场，交接给状态栏自身的过渡。
-        clock.style.transition = 'none';
-        clock.style.opacity = '0';
-        requestAnimationFrame(() => {
-            clock.style.transition = '';
-            clock.style.opacity = '';
-        });
-    },
-    cancelClockAnimation() {
-        if (this._clockAnimation) {
-            this._clockAnimation.cancel();
-            this._clockAnimation = null;
-        }
-    },
-    clearClockAnimationStyles() {
-        this.cancelClockAnimation();
-        const clock = document.getElementById('time-wall-clock');
-        if (!clock) return;
-        clock.style.transition = '';
-        clock.style.transform = '';
+        this.releaseClockInStatusBar();
     },
     enterFeed() {
         if (!this.settings.timeWallEnabled || !this.settings.feedEnabled) return;
@@ -11585,14 +11506,9 @@ const TimeWallMixin = {
         }
         if (!this.settings.timeWallEnabled) return;
 
-        // 入场放大动画让位给缩小到顶部的 CSS 过渡，避免两段 transform 打架。
-        this.cancelClockAnimation();
-
         this.viewStage = VIEW_STAGE_FEED;
         document.body.classList.add('time-wall-mode', 'feed-mode');
-        // 时钟延续同一个元素缩小到顶部，计时器已在时间墙启动，这里只兜底。
-        this.startTimeWallClock();
-        this.updateTimeWallClockContrast();
+        this.showClockInStatusBar();
     },
     exitFeed() {
         if (this.viewStage < VIEW_STAGE_FEED) return;
@@ -11601,100 +11517,58 @@ const TimeWallMixin = {
         document.body.classList.remove('feed-mode');
     },
     clearTimeWallState() {
+        if (this.viewStage >= VIEW_STAGE_TIME_WALL) {
+            this.releaseClockInStatusBar();
+        }
         this.viewStage = VIEW_STAGE_HOME;
         document.body.classList.remove('time-wall-mode', 'feed-mode');
-        this.stopTimeWallClock();
-        this.clearClockAnimationStyles();
     },
-    startTimeWallClock() {
-        this.stopTimeWallClock();
+    /**
+     * 时间墙/信息流都用状态栏本身当钟：确保它可见、刷新文本并开始走时。
+     * 大时钟与小钟只是 .status-bar-time 的 font-size 过渡，日期始终留在上方。
+     */
+    showClockInStatusBar() {
+        const statusBar = document.getElementById('status-bar');
+        if (!statusBar) return;
 
-        const tick = () => {
-            this.updateTimeWallClockText();
-            const now = new Date();
-            const showSeconds = this.settings.showStatusBarSeconds;
-            let delay = showSeconds
-                ? 1000 - now.getMilliseconds()
-                : ((60 - now.getSeconds()) * 1000) - now.getMilliseconds();
-            if (delay <= 0) {
-                delay = showSeconds ? 1000 : 60000;
-            }
-            this.timeWallTimer = setTimeout(tick, delay);
-        };
-
-        this.updateTimeWallClockText();
-        const now = new Date();
-        const showSeconds = this.settings.showStatusBarSeconds;
-        let delay = showSeconds
-            ? 1000 - now.getMilliseconds()
-            : ((60 - now.getSeconds()) * 1000) - now.getMilliseconds();
-        if (delay <= 0) {
-            delay = showSeconds ? 1000 : 60000;
+        // 取消可能还在等待的退出淡出，避免刚放大就被收走。
+        if (this._statusBarCollapseTimer) {
+            clearTimeout(this._statusBarCollapseTimer);
+            this._statusBarCollapseTimer = null;
         }
-        this.timeWallTimer = setTimeout(tick, delay);
+
+        statusBar.classList.add('visible');
+        document.documentElement.style.setProperty(
+            '--status-bar-offset',
+            this.settings.statusBarEnabled ? '44px' : '10px'
+        );
+        this.updateStatusBarText();
+        this.startStatusBarTimer();
+        this.updateStatusBarTextContrast();
     },
-    stopTimeWallClock() {
-        if (this.timeWallTimer) {
-            clearTimeout(this.timeWallTimer);
-            this.timeWallTimer = null;
+    /**
+     * 离开时间墙：状态栏开关关着就把这块钟收回，开着则保留并恢复小字号取色。
+     */
+    releaseClockInStatusBar() {
+        if (this.settings.statusBarEnabled) {
+            this.updateStatusBarTextContrast();
+            return;
         }
-    },
-    updateTimeWallClockText() {
-        const clock = document.getElementById('time-wall-clock');
-        if (!clock) return;
 
-        const timeEl = clock.querySelector('.time-wall-clock-time');
-        const dateEl = clock.querySelector('.time-wall-clock-date');
-        const now = new Date();
-        const pad = (value) => String(value).padStart(2, '0');
-        const hours = pad(now.getHours());
-        const minutes = pad(now.getMinutes());
-        const seconds = pad(now.getSeconds());
-
-        if (timeEl) {
-            timeEl.textContent = this.settings.showStatusBarSeconds
-                ? `${hours}:${minutes}:${seconds}`
-                : `${hours}:${minutes}`;
+        // 状态栏关着时，也先让时间连续缩回小字号，再把整块钟淡出，
+        // 否则退出会变成直接消失。
+        if (this._statusBarCollapseTimer) {
+            clearTimeout(this._statusBarCollapseTimer);
         }
-        if (dateEl) {
-            const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-            dateEl.textContent = `${now.getFullYear()}年${pad(now.getMonth() + 1)}月${pad(now.getDate())}日 ${weekdays[now.getDay()]}`;
-        }
-    },
-    async updateTimeWallClockContrast() {
-        const clock = document.getElementById('time-wall-clock');
-        if (!clock) return;
+        this._statusBarCollapseTimer = setTimeout(() => {
+            this._statusBarCollapseTimer = null;
+            if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
 
-        // 大时钟位于视口上部中央，固定取这一带来取样，避免受缩放中的元素边界影响。
-        const viewportWidth = Math.max(1, window.innerWidth);
-        const viewportHeight = Math.max(1, window.innerHeight);
-        const sampleRect = {
-            x: viewportWidth * 0.2,
-            y: viewportHeight * 0.16,
-            width: viewportWidth * 0.6,
-            height: viewportHeight * 0.32
-        };
-
-        const tone = await this.computeWallpaperTextTone(sampleRect);
-        // 取样期间可能已退出时间墙，避免把结果写到已经离场的时钟上。
-        if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
-        this.applyTimeWallClockTone(tone || this.getFallbackStatusBarTextTone());
-    },
-    applyTimeWallClockTone(mode) {
-        const clock = document.getElementById('time-wall-clock');
-        const resolvedMode = mode === 'light' ? 'light' : 'dark';
-        const isLight = resolvedMode === 'light';
-        const color = isLight ? '#f8fafc' : '#1f2124';
-        const panelBg = isLight ? 'rgba(16, 18, 22, 0.28)' : 'rgba(255, 255, 255, 0.30)';
-        const panelBorder = isLight ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.48)';
-
-        if (clock) {
-            clock.style.setProperty('--time-wall-text-color', color);
-            clock.style.setProperty('--time-wall-panel-bg', panelBg);
-            clock.style.setProperty('--time-wall-panel-border', panelBorder);
-            // 浅色壁纸上用深色文字时不加白边阴影，避免小字发糊。
-            clock.style.textShadow = isLight ? '0 2px 14px rgba(0, 0, 0, 0.28)' : 'none';
-        }
+            const statusBar = document.getElementById('status-bar');
+            if (statusBar) statusBar.classList.remove('visible');
+            this.stopStatusBarTimer();
+            document.documentElement.style.setProperty('--status-bar-offset', '10px');
+        }, 700);
     },
     /**
      * 应用时间墙相关开关：同步设置页 UI，并在功能被关闭时把视图收回到允许的层级。
