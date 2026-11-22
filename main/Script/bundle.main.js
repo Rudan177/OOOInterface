@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：860a6d520fd7fc8f    模块数：49
+// 源码指纹：66742829762e5375    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11668,7 +11668,7 @@ const TimeWallMixin = {
             if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
             document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-collapsed');
             this.releaseClockInStatusBar();
-        }, 700);
+        }, 800);
     },
     captureStatusDateRect() {
         const dateEl = document.querySelector('#status-bar .status-bar-date');
@@ -11690,7 +11690,8 @@ const TimeWallMixin = {
 
         const startCenterX = fromRect.left + fromRect.width / 2;
         const startCenterY = fromRect.top + fromRect.height / 2;
-        const duration = 650;
+        // 日期动画比字号过渡略长，确保布局彻底稳定后再归位，避免最后错位。
+        const duration = 700;
         const startTime = window.performance && performance.now ? performance.now() : Date.now();
         const ease = (progress) => 1 - Math.pow(1 - progress, 3);
         let offsetX = null;

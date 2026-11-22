@@ -66,7 +66,7 @@ export const TimeWallMixin = {
             if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
             document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-collapsed');
             this.releaseClockInStatusBar();
-        }, 700);
+        }, 800);
     },
     captureStatusDateRect() {
         const dateEl = document.querySelector('#status-bar .status-bar-date');
@@ -88,7 +88,8 @@ export const TimeWallMixin = {
 
         const startCenterX = fromRect.left + fromRect.width / 2;
         const startCenterY = fromRect.top + fromRect.height / 2;
-        const duration = 650;
+        // 日期动画比字号过渡略长，确保布局彻底稳定后再归位，避免最后错位。
+        const duration = 700;
         const startTime = window.performance && performance.now ? performance.now() : Date.now();
         const ease = (progress) => 1 - Math.pow(1 - progress, 3);
         let offsetX = null;
