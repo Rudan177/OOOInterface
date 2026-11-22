@@ -97,6 +97,7 @@ export const TimeWallMixin = {
         const duration = 460;
         this.shrinkStatusItem(dateEl, bigDate, finalDate, duration);
         this.shrinkStatusItem(timeEl, bigTime, finalTime, duration);
+        this.blurStatusBarAtEnd(bar, duration);
 
         this._timeWallExitTimer = setTimeout(() => {
             this._timeWallExitTimer = null;
@@ -127,6 +128,23 @@ export const TimeWallMixin = {
         el.getBoundingClientRect();
         el.style.transition = `transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
         el.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
+    },
+    /**
+     * 收回的最后一段让整块字逐渐模糊，收尾那一帧切回清晰的小状态栏。
+     * 模糊加在状态栏父级上，按屏幕像素计算，不会被缩小后的 transform 一起缩掉。
+     */
+    blurStatusBarAtEnd(bar, duration) {
+        if (!bar) return;
+        const delay = Math.round(duration * 0.45);
+        const blurDuration = Math.max(100, Math.round(duration * 0.3));
+
+        bar.style.transition = 'none';
+        bar.style.filter = 'blur(0px)';
+        bar.style.willChange = 'filter';
+        // 先刷一次样式，确保模糊过渡从 0 开始。
+        bar.getBoundingClientRect();
+        bar.style.transition = `filter ${blurDuration}ms ease-in ${delay}ms`;
+        bar.style.filter = 'blur(3px)';
     },
     /**
      * 缩小动画结束：此时视觉位置已经和单行状态栏完全重合，
@@ -240,7 +258,15 @@ export const TimeWallMixin = {
             el.style.transform = '';
             el.style.willChange = '';
             el.style.transition = '';
+            el.style.filter = '';
         });
+        // 收尾模糊加在状态栏父级上，这里一并清掉，避免残留到下一次进入。
+        const bar = document.getElementById('status-bar');
+        if (bar) {
+            bar.style.filter = '';
+            bar.style.transition = '';
+            bar.style.willChange = '';
+        }
     },
     enterFeed() {
         if (!this.settings.timeWallEnabled || !this.settings.feedEnabled) return;
