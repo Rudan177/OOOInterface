@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：456365d671199bb2    模块数：49
+// 源码指纹：34fae491ec078144    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11143,7 +11143,8 @@ const WallpaperMixin = {
         }
         document.body.classList.remove(
             'time-wall-mode', 'feed-mode', 'time-wall-returning',
-            'time-wall-collapsed', 'time-wall-leaving', 'clock-shrinking'
+            'time-wall-collapsed', 'time-wall-leaving', 'clock-shrinking',
+            'status-bar-clock-exit'
         );
         this.resetStatusTextTransforms();
         this.disableClockBlur(0);
@@ -11666,8 +11667,6 @@ const TimeWallMixin = {
     exitTimeWall() {
         if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
 
-        const dateRect = this.captureStatusDateRect();
-        const timeRect = this.captureStatusTimeRect();
         this.viewStage = VIEW_STAGE_WALLPAPER;
         if (this._timeWallPhaseTimer) {
             clearTimeout(this._timeWallPhaseTimer);
@@ -11677,18 +11676,14 @@ const TimeWallMixin = {
             clearTimeout(this._timeWallExitTimer);
             this._timeWallExitTimer = null;
         }
-        if (this._timeWallSettleTimer) {
-            clearTimeout(this._timeWallSettleTimer);
-            this._timeWallSettleTimer = null;
-        }
 
-        // 直接切成单行，和进入时完全对称：先把日期/时间拉回旧位置，
-        // 再让偏移在 320ms 内衰减到 0；缩小期间用纯色填充避免掉帧。
-        document.body.classList.remove('time-wall-returning');
-        document.body.classList.add('time-wall-collapsed', 'time-wall-leaving', 'clock-shrinking');
+        // 先让整块大钟淡出并轻微缩小（只动 opacity/transform，不重排文字），
+        // 淡完后直接在最终位置换成单行状态栏再淡入，日期和时间始终各自在正确位置。
+        this.resetStatusTextTransforms();
+        document.body.classList.add(
+            'time-wall-leaving', 'clock-shrinking', 'status-bar-clock-exit'
+        );
         this.disableClockBlur(520);
-        this.animateStatusDate(dateRect, 320);
-        this.animateStatusTime(timeRect, 320);
 
         this._timeWallExitTimer = setTimeout(() => {
             this._timeWallExitTimer = null;
@@ -11697,9 +11692,13 @@ const TimeWallMixin = {
                 'time-wall-mode', 'feed-mode', 'time-wall-returning',
                 'time-wall-collapsed', 'time-wall-leaving', 'clock-shrinking'
             );
+            // 此时大钟已完全透明，切布局不会看到跳变；再移除淡出类，普通状态栏原地淡入。
+            document.body.classList.remove('status-bar-clock-exit');
             this.resetStatusTextTransforms();
+            this.updateStatusBarTextContrast();
             this.releaseClockInStatusBar();
-        }, 700);
+        // 淡出 0.25s 完成后再切布局，避免在还有残影时换位置。
+        }, 280);
     },
     captureStatusDateRect() {
         const dateEl = document.querySelector('#status-bar .status-bar-date');
@@ -11818,7 +11817,8 @@ const TimeWallMixin = {
         this.disableClockBlur(0);
         document.body.classList.remove(
             'time-wall-mode', 'feed-mode', 'time-wall-returning',
-            'time-wall-collapsed', 'time-wall-leaving', 'clock-shrinking'
+            'time-wall-collapsed', 'time-wall-leaving', 'clock-shrinking',
+            'status-bar-clock-exit'
         );
         this.viewStage = VIEW_STAGE_HOME;
         if (wasExtendedStage) {
@@ -11873,7 +11873,8 @@ const TimeWallMixin = {
             this._timeWallPhaseTimer = null;
         }
         document.body.classList.remove(
-            'time-wall-collapsed', 'time-wall-returning', 'time-wall-leaving', 'clock-shrinking'
+            'time-wall-collapsed', 'time-wall-returning', 'time-wall-leaving',
+            'clock-shrinking', 'status-bar-clock-exit'
         );
         this.resetStatusTextTransforms();
 

@@ -243,6 +243,13 @@ body.time-wall-mode.time-wall-collapsed .status-bar-time {
     font-weight: 500;
 }
 
+/* 退出：整块大钟原地淡出并轻微缩小，只动 opacity/transform，不重排文字。 */
+body.time-wall-mode.status-bar-clock-exit #status-bar {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(0.92);
+    transform-origin: top center;
+}
+
 /* 高级视觉效果：时钟文字直接填充实时模糊后的背景，而不是纯色。 */
 body.time-wall-mode .status-bar.clock-blur-palette .status-bar-time {
     background-image:
