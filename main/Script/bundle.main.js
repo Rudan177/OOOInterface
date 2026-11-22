@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：40f2135a90020082    模块数：49
+// 源码指纹：78ee6de26ea00485    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11762,6 +11762,14 @@ const TimeWallMixin = {
         this._timeWallBlurTimer = setTimeout(() => {
             this._timeWallBlurTimer = null;
             if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
+
+            // 模糊最重时把时钟从模糊纹理配色切回最终纯色，
+            // 颜色变化藏在模糊里，收尾那一刻就不会再突变一次。
+            bar.classList.remove('clock-blur-palette');
+            this.applyStatusBarTextTone(
+                this.statusBarContrastMode || this.getFallbackStatusBarTextTone()
+            );
+
             bar.style.transition = `filter ${half}ms ease-in`;
             bar.style.filter = 'blur(0px)';
         }, half);

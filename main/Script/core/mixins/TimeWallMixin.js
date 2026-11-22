@@ -150,6 +150,14 @@ export const TimeWallMixin = {
         this._timeWallBlurTimer = setTimeout(() => {
             this._timeWallBlurTimer = null;
             if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
+
+            // 模糊最重时把时钟从模糊纹理配色切回最终纯色，
+            // 颜色变化藏在模糊里，收尾那一刻就不会再突变一次。
+            bar.classList.remove('clock-blur-palette');
+            this.applyStatusBarTextTone(
+                this.statusBarContrastMode || this.getFallbackStatusBarTextTone()
+            );
+
             bar.style.transition = `filter ${half}ms ease-in`;
             bar.style.filter = 'blur(0px)';
         }, half);
