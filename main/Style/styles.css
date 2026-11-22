@@ -173,6 +173,8 @@ body {
 .status-bar-date {
     font-size: 12px;
     line-height: 1.2;
+    transition: font-size 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+        font-weight 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .status-bar-time {
@@ -184,33 +186,43 @@ body {
         font-weight 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 时间墙：状态栏从一行变成两行（日期在上），并下移到屏幕上方；
-   只把时间连续放大，日期始终在时间上方，不进到屏幕正中。 */
+/* 时间墙：状态栏从一行变成两行（日期在上），并下移到屏幕上方偏中间的位置；
+   时间连续放大，日期同步放大并留在时间上方。 */
 body.time-wall-mode .status-bar {
-    top: 8vh;
+    top: 22vh;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
     pointer-events: none;
 }
 
+body.time-wall-mode .status-bar-date {
+    font-size: clamp(1.05rem, 2.4vh, 1.6rem);
+    font-weight: 600;
+}
+
 body.time-wall-mode .status-bar-time {
     font-size: clamp(6rem, min(22vw, 30vh), 16rem);
-    font-weight: 700;
+    font-weight: 800;
     line-height: 0.95;
 }
 
-/* 信息流：同一个状态栏收成顶部的小钟。 */
+/* 信息流：同一个状态栏收成顶部的小钟，模糊配色继续沿用。 */
 body.feed-mode .status-bar {
     top: 4px;
 }
 
+body.feed-mode .status-bar-date {
+    font-size: 12px;
+    font-weight: 500;
+}
+
 body.feed-mode .status-bar-time {
     font-size: 1.35rem;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 /* 高级视觉效果：时间墙的时钟使用壁纸模糊后的配色，字本身保持清晰粗体。 */

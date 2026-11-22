@@ -94,7 +94,10 @@ export const TimeWallMixin = {
 
         this.viewStage = VIEW_STAGE_FEED;
         document.body.classList.add('time-wall-mode', 'feed-mode');
-        this.showClockInStatusBar();
+        // 只缩小，不重算配色：时间墙的模糊配色继续沿用，避免进入信息流时颜色消失。
+        const statusBar = document.getElementById('status-bar');
+        if (statusBar) statusBar.classList.add('visible');
+        this.startStatusBarTimer();
     },
     exitFeed() {
         if (this.viewStage < VIEW_STAGE_FEED) return;

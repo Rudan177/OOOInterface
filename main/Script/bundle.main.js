@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：3895d98ebc45cc10    模块数：49
+// 源码指纹：ee2dd2f53bc49582    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -6488,11 +6488,10 @@ const StatusBarMixin = {
         const result = await this.computeWallpaperTextTone(sampleRect);
         this.applyStatusBarTextTone(result ? result.mode : this.getFallbackStatusBarTextTone());
 
-        // 高级视觉效果下，时间墙的时钟文字改用取样区域的平均色（近似高斯模糊后的配色）。
-        // 信息流里时钟已经缩小，不再套用模糊配色，避免小字发虚。
+        // 「高级视觉效果」即 dynamicBlur（设置页里的高级视觉效果开关）；增强显示也一并生效。
+        // 时间墙与信息流共用同一套模糊配色，进入信息流不重算，避免颜色突然消失。
         const useBlurPalette = document.body.classList.contains('time-wall-mode')
-            && !document.body.classList.contains('feed-mode')
-            && this.settings.enhancedDisplay
+            && (this.settings.dynamicBlur || this.settings.enhancedDisplay)
             && result
             && result.color;
         statusBar.classList.toggle('clock-blur-palette', !!useBlurPalette);
@@ -11634,7 +11633,10 @@ const TimeWallMixin = {
 
         this.viewStage = VIEW_STAGE_FEED;
         document.body.classList.add('time-wall-mode', 'feed-mode');
-        this.showClockInStatusBar();
+        // 只缩小，不重算配色：时间墙的模糊配色继续沿用，避免进入信息流时颜色消失。
+        const statusBar = document.getElementById('status-bar');
+        if (statusBar) statusBar.classList.add('visible');
+        this.startStatusBarTimer();
     },
     exitFeed() {
         if (this.viewStage < VIEW_STAGE_FEED) return;

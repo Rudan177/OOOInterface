@@ -363,11 +363,10 @@ export const StatusBarMixin = {
         const result = await this.computeWallpaperTextTone(sampleRect);
         this.applyStatusBarTextTone(result ? result.mode : this.getFallbackStatusBarTextTone());
 
-        // 高级视觉效果下，时间墙的时钟文字改用取样区域的平均色（近似高斯模糊后的配色）。
-        // 信息流里时钟已经缩小，不再套用模糊配色，避免小字发虚。
+        // 「高级视觉效果」即 dynamicBlur（设置页里的高级视觉效果开关）；增强显示也一并生效。
+        // 时间墙与信息流共用同一套模糊配色，进入信息流不重算，避免颜色突然消失。
         const useBlurPalette = document.body.classList.contains('time-wall-mode')
-            && !document.body.classList.contains('feed-mode')
-            && this.settings.enhancedDisplay
+            && (this.settings.dynamicBlur || this.settings.enhancedDisplay)
             && result
             && result.color;
         statusBar.classList.toggle('clock-blur-palette', !!useBlurPalette);
