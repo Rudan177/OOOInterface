@@ -49,6 +49,7 @@ export const TimeWallMixin = {
         this.viewStage = VIEW_STAGE_TIME_WALL;
         document.body.classList.add('time-wall-mode');
         document.body.classList.remove('feed-mode');
+        this.enableClockBlur();
         this.showClockInStatusBar();
         this.animateStatusDate(dateRect, 320);
         this.animateStatusTime(timeRect, 320);
@@ -76,6 +77,8 @@ export const TimeWallMixin = {
         // 一退出就让背景模糊开始淡出，不用等缩小结束。
         document.body.classList.remove('time-wall-collapsed');
         document.body.classList.add('time-wall-returning', 'time-wall-leaving');
+        // 模糊属性本身只在时钟模式期间保留，淡出后再彻底移除，避免常驻开销。
+        this.disableClockBlur(520);
 
         // 650ms 里边缩小边把日期、时间沿直线送到最终单行位置；
         // 一开始就在往正确位置移动，不会“上去之后再走一段”。
@@ -128,22 +131,24 @@ export const TimeWallMixin = {
         ];
         targets.forEach(({ el }) => { el.style.willChange = 'transform'; });
 
-        const placeAt = (el, from, to, eased) => {
-            el.style.transform = 'none';
-            const rect = el.getBoundingClientRect();
-            const naturalX = rect.left + rect.width / 2;
-            const naturalY = rect.top + rect.height / 2;
-            const targetX = from.x + (to.x - from.x) * eased;
-            const targetY = from.y + (to.y - from.y) * eased;
-            const dx = Math.round(targetX - naturalX);
-            const dy = Math.round(targetY - naturalY);
-            el.style.transform = `translate(${dx}px, ${dy}px)`;
-        };
-
         const step = (now) => {
             const progress = Math.min(1, (now - startTime) / duration);
             const eased = ease(progress);
-            targets.forEach(({ el, from, to }) => placeAt(el, from, to, eased));
+
+            // 先统一清掉位移，再一次性读取两个元素的自然位置，
+            // 最后统一写入 transform；每帧只触发一次布局，避免卡顿。
+            targets.forEach(({ el }) => { el.style.transform = 'none'; });
+            const natural = targets.map(({ el }) => {
+                const rect = el.getBoundingClientRect();
+                return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            });
+            targets.forEach(({ el, from, to }, index) => {
+                const targetX = from.x + (to.x - from.x) * eased;
+                const targetY = from.y + (to.y - from.y) * eased;
+                const dx = Math.round(targetX - natural[index].x);
+                const dy = Math.round(targetY - natural[index].y);
+                el.style.transform = `translate(${dx}px, ${dy}px)`;
+            });
 
             if (progress >= 1) {
                 // 已到达最终位置：切换单行布局并清空位移，两者重合。
@@ -275,6 +280,7 @@ export const TimeWallMixin = {
             this._timeWallExitTimer = null;
         }
         this.resetStatusTextTransforms();
+        this.disableClockBlur(0);
         document.body.classList.remove(
             'time-wall-mode', 'feed-mode', 'time-wall-returning',
             'time-wall-collapsed', 'time-wall-leaving'
@@ -283,6 +289,32 @@ export const TimeWallMixin = {
         if (wasExtendedStage) {
             this.releaseClockInStatusBar();
         }
+    },
+    /**
+     * 背景模糊只在时钟模式期间挂上，退出淡出后彻底移除，
+     * 避免 opacity:0 的整屏 backdrop-filter 在首页/壁纸模式持续耗性能。
+     */
+    enableClockBlur() {
+        if (this._clockBlurTimer) {
+            clearTimeout(this._clockBlurTimer);
+            this._clockBlurTimer = null;
+        }
+        document.body.classList.add('clock-blur');
+    },
+    disableClockBlur(delay = 0) {
+        if (this._clockBlurTimer) {
+            clearTimeout(this._clockBlurTimer);
+            this._clockBlurTimer = null;
+        }
+        if (delay > 0) {
+            this._clockBlurTimer = setTimeout(() => {
+                this._clockBlurTimer = null;
+                if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
+                document.body.classList.remove('clock-blur');
+            }, delay);
+            return;
+        }
+        document.body.classList.remove('clock-blur');
     },
     /**
      * 时间墙/信息流都用状态栏本身当钟：确保它可见、刷新文本并开始走时。

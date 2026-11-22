@@ -7046,13 +7046,13 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-body.dynamic-blur #wallpaper-main.active::before {
+body.clock-blur.dynamic-blur #wallpaper-main.active::before {
     background: rgba(0, 0, 0, 0.06);
     backdrop-filter: blur(26px) saturate(1.15);
     -webkit-backdrop-filter: blur(26px) saturate(1.15);
 }
 
-body:not(.dynamic-blur) #wallpaper-main.active::before {
+body.clock-blur:not(.dynamic-blur) #wallpaper-main.active::before {
     background: rgba(0, 0, 0, 0.34);
 }
 

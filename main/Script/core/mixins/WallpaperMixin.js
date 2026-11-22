@@ -1739,6 +1739,7 @@ export const WallpaperMixin = {
             'time-wall-collapsed', 'time-wall-leaving'
         );
         this.resetStatusTextTransforms();
+        this.disableClockBlur(0);
         this.viewStage = 1;
         if (wasExtendedStage) {
             this.releaseClockInStatusBar();
