@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：3f8680f8f56a8993    模块数：49
+// 源码指纹：2e0b781d80109106    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11677,44 +11677,101 @@ const TimeWallMixin = {
             this._timeWallExitTimer = null;
         }
 
-        // 整块大钟原地淡出并轻微缩小（只动 opacity/transform，不重排文字），
-        // 淡完后在完全透明的状态下切回单行，再原地淡入。
         this.resetStatusTextTransforms();
-        document.body.classList.add(
-            'time-wall-leaving', 'status-bar-hidden', 'status-bar-clock-exit'
-        );
-        this.disableClockBlur(520);
+
+        const bar = document.getElementById('status-bar');
+        const dateEl = document.querySelector('#status-bar .status-bar-date');
+        const timeEl = document.querySelector('#status-bar .status-bar-time');
+        if (!bar || !dateEl || !timeEl) {
+            this.finishTimeWallExit(null, 0);
+            return;
+        }
+
+        // 大钟当前所在位置。
+        const bigDate = dateEl.getBoundingClientRect();
+        const bigTime = timeEl.getBoundingClientRect();
+
+        // 临时切到退出后的单行布局，量出日期/时间最终应该落在哪里，再切回来。
+        // 这一步只读一次布局，动画期间不再测量，全部交给 transform。
+        bar.classList.add('no-transition');
+        document.body.classList.add('time-wall-collapsed');
+        const finalDate = dateEl.getBoundingClientRect();
+        const finalTime = timeEl.getBoundingClientRect();
+        document.body.classList.remove('time-wall-collapsed');
+        bar.offsetHeight;
+        bar.classList.remove('no-transition');
+
+        document.body.classList.add('time-wall-leaving');
+        this.disableClockBlur(480);
+
+        // 大钟保持当前字号与模糊纹理，只用 transform 连续缩小并移到最终位置；
+        // 动画结束时在最终布局原位收尾，整段没有淡出淡入的空档。
+        const duration = 460;
+        this.shrinkStatusItem(dateEl, bigDate, finalDate, duration);
+        this.shrinkStatusItem(timeEl, bigTime, finalTime, duration);
 
         this._timeWallExitTimer = setTimeout(() => {
             this._timeWallExitTimer = null;
             if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
+            this.finishTimeWallExit(bar, 0);
+        }, duration + 20);
+    },
+    /**
+     * 把元素从大钟里的位置连续缩到单行状态栏里的最终位置。
+     * 动画只改 transform，不重排文字，也不逐帧读取布局。
+     */
+    shrinkStatusItem(el, fromRect, toRect, duration) {
+        if (!fromRect || !toRect) return;
 
-            const bar = document.getElementById('status-bar');
-            // 透明状态下关闭过渡，直接把布局/位置一步切到最终状态。
-            if (bar) bar.classList.add('no-transition');
+        const scale = Math.max(0.01, toRect.height / Math.max(1, fromRect.height));
+        const dx = Math.round(
+            (toRect.left + toRect.width / 2) - (fromRect.left + fromRect.width / 2)
+        );
+        const dy = Math.round(
+            (toRect.top + toRect.height / 2) - (fromRect.top + fromRect.height / 2)
+        );
+
+        el.style.transformOrigin = 'center center';
+        el.style.willChange = 'transform';
+        el.style.transition = 'none';
+        el.style.transform = '';
+        // 先刷一次样式，让下面的过渡从「未偏移」状态开始。
+        el.getBoundingClientRect();
+        el.style.transition = `transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+        el.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
+    },
+    /**
+     * 缩小动画结束：此时视觉位置已经和单行状态栏完全重合，
+     * 关掉过渡一步切到最终布局并清掉 transform，看起来是同一块字缩小到位。
+     */
+    finishTimeWallExit(bar, delay) {
+        const finalize = () => {
+            const statusBar = bar || document.getElementById('status-bar');
+            if (statusBar) statusBar.classList.add('no-transition');
+            this.resetStatusTextTransforms();
             document.body.classList.remove(
                 'time-wall-mode', 'feed-mode', 'time-wall-returning',
                 'time-wall-collapsed', 'time-wall-leaving', 'clock-shrinking',
-                'status-bar-clock-exit'
+                'status-bar-clock-exit', 'status-bar-hidden'
             );
-            // 状态栏开关关着时，这块钟到此为止，不应该再淡入普通状态栏。
-            if (!this.settings.statusBarEnabled && bar) {
-                bar.classList.remove('visible');
+            // 状态栏开关关着时，这块钟缩小完就收回，不再留在顶部。
+            if (!this.settings.statusBarEnabled && statusBar) {
+                statusBar.classList.remove('visible');
                 this.stopStatusBarTimer();
                 document.documentElement.style.setProperty('--status-bar-offset', '10px');
             }
-            if (bar) {
-                bar.offsetHeight;
-                bar.classList.remove('no-transition');
-                // 再刷一次样式：让「恢复过渡 + 仍透明」成为淡入前的初始状态。
-                bar.offsetHeight;
+            if (statusBar) {
+                statusBar.offsetHeight;
+                statusBar.classList.remove('no-transition');
             }
-            // 位置已就位，再解除隐藏，普通状态栏从 0 淡入，不会边淡入边位移。
-            document.body.classList.remove('status-bar-hidden');
-            this.resetStatusTextTransforms();
             this.updateStatusBarTextContrast();
-        // 淡出 0.25s 完成后再切布局，避免在还有残影时换位置。
-        }, 280);
+        };
+
+        if (delay > 0) {
+            setTimeout(finalize, delay);
+            return;
+        }
+        finalize();
     },
     captureStatusDateRect() {
         const dateEl = document.querySelector('#status-bar .status-bar-date');
