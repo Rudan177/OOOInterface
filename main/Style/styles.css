@@ -7016,6 +7016,30 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     pointer-events: none;
     will-change: background-size, background-position, opacity, transform;
 }
+/* 时钟模式（时间墙 / 信息流）背景模糊层：
+   只在这两个层级生效，壁纸模式保持清晰。
+   开高级视觉效果时实时模糊；关闭时退化为压暗。 */
+#wallpaper-main::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.time-wall-mode.dynamic-blur #wallpaper-main.active::before {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(26px) saturate(1.15);
+    -webkit-backdrop-filter: blur(26px) saturate(1.15);
+}
+
+body.time-wall-mode:not(.dynamic-blur) #wallpaper-main.active::before {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.34);
+}
+
 /* 暗色压暗壁纸：蒙版画在壁纸层内部（::after 属于层本身），
    壁纸层激活才有蒙版、随层显隐联动——顶部无壁纸状态不会被误压暗，
    且蒙版永远只压壁纸、不碰页面其它层级。
