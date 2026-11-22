@@ -277,6 +277,14 @@ body.time-wall-mode .status-bar.clock-blur-palette .status-bar-time {
     text-shadow: none;
 }
 
+/* 退出缩小期间改用采样纯色，避免巨大字号每帧重新栅格化模糊图导致掉帧。
+   颜色仍是模糊取样色，只是暂时没有纹理。 */
+body.time-wall-mode.clock-shrinking .status-bar.clock-blur-palette .status-bar-time {
+    background-image: none;
+    -webkit-text-fill-color: var(--status-bar-text-color);
+    color: var(--status-bar-text-color);
+}
+
 .welcome-screen {
     position: fixed;
     top: 0;
