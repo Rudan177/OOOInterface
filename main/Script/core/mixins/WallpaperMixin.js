@@ -1736,7 +1736,8 @@ export const WallpaperMixin = {
         }
         document.body.classList.remove(
             'time-wall-mode', 'feed-mode', 'time-wall-returning',
-            'time-wall-collapsed', 'time-wall-leaving', 'clock-shrinking'
+            'time-wall-collapsed', 'time-wall-leaving', 'clock-shrinking',
+            'status-bar-clock-exit', 'status-bar-hidden'
         );
         this.resetStatusTextTransforms();
         this.disableClockBlur(0);

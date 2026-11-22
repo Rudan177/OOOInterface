@@ -250,6 +250,17 @@ body.time-wall-mode.status-bar-clock-exit #status-bar {
     transform-origin: top center;
 }
 
+/* 切布局期间保持透明，避免在位置变化时看到文字。 */
+body.status-bar-hidden #status-bar {
+    opacity: 0 !important;
+}
+
+/* 切布局的那一帧禁用过渡，让位置一步到位，而不是边淡入边上移。 */
+#status-bar.no-transition,
+#status-bar.no-transition * {
+    transition: none !important;
+}
+
 /* 高级视觉效果：时钟文字直接填充实时模糊后的背景，而不是纯色。 */
 body.time-wall-mode .status-bar.clock-blur-palette .status-bar-time {
     background-image:
