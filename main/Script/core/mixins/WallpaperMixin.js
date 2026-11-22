@@ -1726,7 +1726,11 @@ export const WallpaperMixin = {
         this.isScrolled = true;
         // 进入壁纸模式即回到视图层级第 1 层，清掉可能残留的时间墙/信息流标记。
         const wasExtendedStage = this.viewStage >= 2;
-        document.body.classList.remove('time-wall-mode', 'feed-mode');
+        if (this._timeWallExitTimer) {
+            clearTimeout(this._timeWallExitTimer);
+            this._timeWallExitTimer = null;
+        }
+        document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-collapsed');
         this.viewStage = 1;
         if (wasExtendedStage) {
             this.releaseClockInStatusBar();

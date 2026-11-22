@@ -225,9 +225,38 @@ body.feed-mode .status-bar-time {
     font-weight: 800;
 }
 
-/* 高级视觉效果：时间墙的时钟使用壁纸模糊后的配色，字本身保持清晰粗体。 */
+/* 退出到壁纸：布局与字号先缩回普通状态栏，但保留模糊配色，
+   等过渡结束后再撤掉，避免缩小过程中突然变成纯色。 */
+body.time-wall-mode.time-wall-collapsed .status-bar {
+    top: 0;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+}
+
+body.time-wall-mode.time-wall-collapsed .status-bar-date {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+body.time-wall-mode.time-wall-collapsed .status-bar-time {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* 高级视觉效果：时钟文字直接填充实时模糊后的背景，而不是纯色。 */
 body.time-wall-mode .status-bar.clock-blur-palette .status-bar-time {
-    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.22);
+    background-image:
+        linear-gradient(var(--clock-blur-overlay, rgba(0, 0, 0, 0.26)), var(--clock-blur-overlay, rgba(0, 0, 0, 0.26))),
+        var(--clock-blur-image);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    text-shadow: none;
 }
 
 .welcome-screen {

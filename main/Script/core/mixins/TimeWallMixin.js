@@ -53,9 +53,20 @@ export const TimeWallMixin = {
 
         const dateRect = this.captureStatusDateRect();
         this.viewStage = VIEW_STAGE_WALLPAPER;
-        document.body.classList.remove('time-wall-mode', 'feed-mode');
-        this.releaseClockInStatusBar();
+        // 先用普通状态栏的布局与字号，但保留 time-wall-mode 和模糊配色，
+        // 等缩小过程结束后再撤掉，避免动画中途掉成纯色。
+        document.body.classList.add('time-wall-collapsed');
         this.animateStatusDate(dateRect);
+
+        if (this._timeWallExitTimer) {
+            clearTimeout(this._timeWallExitTimer);
+        }
+        this._timeWallExitTimer = setTimeout(() => {
+            this._timeWallExitTimer = null;
+            if (this.viewStage >= VIEW_STAGE_TIME_WALL) return;
+            document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-collapsed');
+            this.releaseClockInStatusBar();
+        }, 700);
     },
     captureStatusDateRect() {
         const dateEl = document.querySelector('#status-bar .status-bar-date');
@@ -63,25 +74,43 @@ export const TimeWallMixin = {
     },
     /**
      * 状态栏在单行 / 两行之间切换时，日期会从时间左侧跳到时间上方。
-     * 用 FLIP 把这段横向位移连起来，纵向交给状态栏自身的 top 过渡。
+     * 这里逐帧跟随布局的真实位置做插值：既连上横向位移，也跟得上时间字号
+     * 在过渡过程中不断变化的宽度，退出时不会停在一个错的位置。
      */
     animateStatusDate(fromRect) {
         const dateEl = document.querySelector('#status-bar .status-bar-date');
-        if (!fromRect || !dateEl || typeof dateEl.animate !== 'function') return;
+        if (!fromRect || !dateEl) return;
 
-        const toRect = dateEl.getBoundingClientRect();
-        if (!toRect.width) return;
-
-        const dx = (fromRect.left + fromRect.width / 2) - (toRect.left + toRect.width / 2);
-        if (Math.abs(dx) < 1) return;
-
-        if (this._statusDateAnimation) {
-            this._statusDateAnimation.cancel();
+        if (this._statusDateRaf) {
+            cancelAnimationFrame(this._statusDateRaf);
+            this._statusDateRaf = null;
         }
-        this._statusDateAnimation = dateEl.animate(
-            [{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }],
-            { duration: 650, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' }
-        );
+
+        const startCenter = fromRect.left + fromRect.width / 2;
+        const duration = 650;
+        const startTime = window.performance && performance.now ? performance.now() : Date.now();
+        const ease = (progress) => progress * progress * (3 - 2 * progress);
+
+        const step = (now) => {
+            const progress = Math.min(1, (now - startTime) / duration);
+            dateEl.style.transform = 'none';
+            const rect = dateEl.getBoundingClientRect();
+            const naturalCenter = rect.left + rect.width / 2;
+            const desiredCenter = startCenter + (naturalCenter - startCenter) * ease(progress);
+            const dx = desiredCenter - naturalCenter;
+
+            if (progress >= 1) {
+                dateEl.style.transform = '';
+                this._statusDateRaf = null;
+                return;
+            }
+
+            dateEl.style.transform = `translateX(${dx}px)`;
+            this._statusDateRaf = requestAnimationFrame(step);
+        };
+
+        dateEl.style.transform = 'none';
+        this._statusDateRaf = requestAnimationFrame(step);
     },
     enterFeed() {
         if (!this.settings.timeWallEnabled || !this.settings.feedEnabled) return;
@@ -106,11 +135,16 @@ export const TimeWallMixin = {
         document.body.classList.remove('feed-mode');
     },
     clearTimeWallState() {
-        if (this.viewStage >= VIEW_STAGE_TIME_WALL) {
+        const wasExtendedStage = this.viewStage >= VIEW_STAGE_TIME_WALL;
+        if (this._timeWallExitTimer) {
+            clearTimeout(this._timeWallExitTimer);
+            this._timeWallExitTimer = null;
+        }
+        document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-collapsed');
+        this.viewStage = VIEW_STAGE_HOME;
+        if (wasExtendedStage) {
             this.releaseClockInStatusBar();
         }
-        this.viewStage = VIEW_STAGE_HOME;
-        document.body.classList.remove('time-wall-mode', 'feed-mode');
     },
     /**
      * 时间墙/信息流都用状态栏本身当钟：确保它可见、刷新文本并开始走时。
@@ -125,6 +159,11 @@ export const TimeWallMixin = {
             clearTimeout(this._statusBarCollapseTimer);
             this._statusBarCollapseTimer = null;
         }
+        if (this._timeWallExitTimer) {
+            clearTimeout(this._timeWallExitTimer);
+            this._timeWallExitTimer = null;
+        }
+        document.body.classList.remove('time-wall-collapsed');
 
         statusBar.classList.add('visible');
         document.documentElement.style.setProperty(

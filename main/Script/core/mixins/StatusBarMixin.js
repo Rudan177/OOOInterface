@@ -352,6 +352,48 @@ export const StatusBarMixin = {
         const colorString = `hsl(${Math.round(hue)}, ${Math.round(softSaturation * 100)}%, ${Math.round(targetLightness * 100)}%)`;
         statusBar.style.setProperty('--status-bar-text-color', colorString);
     },
+    /**
+     * 把当前壁纸实时画到画布上并做高斯模糊，作为时钟文字的填充图。
+     * 只在壁纸切换时重新生成，生成后缓存在内存里。
+     */
+    async buildBlurredWallpaperTexture() {
+        const wallpaperUrl = this.getWallpaperUrl();
+        if (!wallpaperUrl) return null;
+        if (this._clockBlurTexture && this._clockBlurTexture.url === wallpaperUrl) {
+            return this._clockBlurTexture.dataUrl;
+        }
+
+        const image = await this.ensureWallpaperAnalysisImage(wallpaperUrl);
+        if (!image || wallpaperUrl !== this.getWallpaperUrl()) {
+            return null;
+        }
+
+        try {
+            const size = 720;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext('2d');
+            if (!context) return null;
+
+            // 放大一点再模糊，避免模糊把四周变透明。
+            const scale = Math.max(size / image.width, size / image.height) * 1.25;
+            const drawWidth = image.width * scale;
+            const drawHeight = image.height * scale;
+            const x = (size - drawWidth) / 2;
+            const y = (size - drawHeight) / 2;
+
+            context.filter = 'blur(36px) saturate(1.3)';
+            context.drawImage(image, x, y, drawWidth, drawHeight);
+            context.drawImage(image, x, y, drawWidth, drawHeight);
+
+            const dataUrl = canvas.toDataURL('image/png');
+            this._clockBlurTexture = { url: wallpaperUrl, dataUrl };
+            return dataUrl;
+        } catch (error) {
+            return null;
+        }
+    },
     async updateStatusBarTextContrast() {
         const statusBar = document.getElementById('status-bar');
         if (!statusBar) return;
@@ -369,10 +411,27 @@ export const StatusBarMixin = {
             && (this.settings.dynamicBlur || this.settings.enhancedDisplay)
             && result
             && result.color;
-        statusBar.classList.toggle('clock-blur-palette', !!useBlurPalette);
-        if (useBlurPalette) {
-            this.applyBlurredClockColor(result.color, result.brightness);
+
+        if (!useBlurPalette) {
+            statusBar.classList.remove('clock-blur-palette');
+            return;
         }
+
+        // 先把模糊背景图准备好，再开启文字填充，避免出现“字透明但还没图”的空档。
+        const texture = await this.buildBlurredWallpaperTexture();
+        if (!texture) {
+            statusBar.classList.remove('clock-blur-palette');
+            return;
+        }
+
+        // 日期用模糊区域的平均色，时间直接用实时模糊后的背景图填充。
+        this.applyBlurredClockColor(result.color, result.brightness);
+        statusBar.style.setProperty('--clock-blur-image', `url("${texture}")`);
+        statusBar.style.setProperty(
+            '--clock-blur-overlay',
+            result.mode === 'dark' ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.30)'
+        );
+        statusBar.classList.add('clock-blur-palette');
     },
     startStatusBarTimer() {
         this.stopStatusBarTimer();
