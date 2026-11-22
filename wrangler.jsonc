@@ -4,6 +4,25 @@
   "observability": { "enabled": true },
   "assets": {
     "directory": ".",
-    "exclude": ["./.git/**", "./.git"]
+    "exclude": [
+      "./.git/**",
+      "./.git",
+      "./images/MusicLog/mp3/**",
+      "./images/MusicLog/mp3",
+      "./node_modules/**",
+      "./npm-debug.log*",
+      "./yarn-debug.log*",
+      "./yarn-error.log*",
+      "./.vscode/**",
+      "./.idea/**",
+      "./*.swp",
+      "./*.swo",
+      "./*~",
+      "./.DS_Store",
+      "./Thumbs.db",
+      "./.github/**",
+      "./open-in-trae.sh",
+      "./.workbuddy/**"
+    ]
   }
 }
