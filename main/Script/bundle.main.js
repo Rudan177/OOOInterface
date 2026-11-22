@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：f8cce4c52dfbe0d5    模块数：48
+// 源码指纹：8da9b9212047e7c4    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -757,6 +757,10 @@ const DEFAULT_SETTINGS = {
     searchBoxHeight: 50,
     enhancedDisplay: false,
     wallpaperScale: false,
+    // 时间墙与信息流：壁纸模式下继续上滑显示大时钟，再上滑进入信息流占位页。
+    // 主开关默认关（新交互不请自来），开启后才允许越过壁纸模式；信息流可单独关闭。
+    timeWallEnabled: false,
+    feedEnabled: true,
     wallpaperDarkDim: true,
     wallpaperFill: true,
     colorScheme: 'green',
@@ -872,6 +876,9 @@ class OOOInterface {
         this.settings = JSON.parse(JSON.stringify(this.defaultSettings)); // 深拷贝默认设置
         this.isBadgeExpanded = false;
         this.isScrolled = false;
+        // 视图层级：0 首页 / 1 壁纸 / 2 时间墙 / 3 信息流（见 TimeWallMixin）。
+        this.viewStage = 0;
+        this.timeWallTimer = null;
         this.scrollTimeout = null;
         this.isAnimating = false;
         this.infoPopupOpen = false;
@@ -1004,6 +1011,9 @@ class OOOInterface {
 
         window.addEventListener('resize', () => {
             this.updateStatusBarTextContrast();
+            if (this.viewStage >= 2) {
+                this.updateTimeWallClockContrast();
+            }
             this.syncWidgetCardHeights();
             // 窗口宽度变化会改变搜索框的布局宽度，放大比例的上限要重算。
             this.applyFocusSearch();
@@ -1060,6 +1070,11 @@ class OOOInterface {
                 if (this.settings.statusBarEnabled) {
                     this.updateStatusBarText();
                     this.startStatusBarTimer();
+                }
+                // 时间墙/信息流时钟共用「显示秒钟」偏好，可见时按新精度重启计时。
+                if (this.viewStage >= 2) {
+                    this.startTimeWallClock();
+                    this.updateTimeWallClockContrast();
                 }
                 this.showNotification(this.settings.showStatusBarSeconds ? '显示秒钟：开启' : '显示秒钟：关闭');
             });
@@ -1762,6 +1777,22 @@ class OOOInterface {
             this.settings.wallpaperScale = e.target.checked;
             this.applySettings();
             this.saveSettings();
+        });
+
+        // 时间墙主开关：需手动开启；关闭时立即把视图收回壁纸模式。
+        document.getElementById('time-wall-toggle').addEventListener('change', (e) => {
+            this.settings.timeWallEnabled = e.target.checked;
+            this.applyTimeWallSettings();
+            this.saveSettings();
+            this.showNotification(e.target.checked ? '时间墙：开启' : '时间墙：关闭');
+        });
+
+        // 信息流子开关：关闭后上滑只停在时间墙，不进入信息流占位页。
+        document.getElementById('feed-toggle').addEventListener('change', (e) => {
+            this.settings.feedEnabled = e.target.checked;
+            this.applyTimeWallSettings();
+            this.saveSettings();
+            this.showNotification(e.target.checked ? '信息流：开启' : '信息流：关闭');
         });
 
         // 暗色压暗壁纸开关：控制暗色模式下壁纸蒙版（主页面与侧边栏面板共用设置键）。
@@ -6311,23 +6342,22 @@ const StatusBarMixin = {
             return null;
         }
     },
-    async updateStatusBarTextContrast() {
-        const statusBar = document.getElementById('status-bar');
-        if (!statusBar) return;
-
+    /**
+     * 按壁纸在指定区域的亮度给出文字明暗：返回 'light' / 'dark'，无法取样时返回 null。
+     * 状态栏与时间墙大时钟共用这一段，区别只在取样矩形。
+     */
+    async computeWallpaperTextTone(sampleRect) {
         const wallpaperUrl = this.getWallpaperUrl();
         const hasWallpaper = !!(wallpaperUrl && this.wallpaperMain && this.wallpaperMain.classList.contains('active'));
 
-        if (!hasWallpaper) {
-            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
-            return;
+        if (!hasWallpaper || !sampleRect) {
+            return null;
         }
 
         const analysisUrl = wallpaperUrl;
         const image = await this.ensureWallpaperAnalysisImage(analysisUrl);
         if (!image || analysisUrl !== this.getWallpaperUrl()) {
-            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
-            return;
+            return null;
         }
 
         const viewportWidth = Math.max(1, window.innerWidth);
@@ -6338,25 +6368,28 @@ const StatusBarMixin = {
 
         const context = canvas.getContext('2d', { willReadFrequently: true });
         if (!context) {
-            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
-            return;
+            return null;
         }
 
         this.drawWallpaperPreviewToCanvas(context, viewportWidth, viewportHeight, image);
 
-        const sampleRect = this.getStatusBarSampleRect(viewportWidth, viewportHeight);
-        if (!sampleRect) {
-            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
-            return;
-        }
-
         const brightness = this.getAverageBrightnessFromCanvas(context, sampleRect);
         if (brightness === null) {
-            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
-            return;
+            return null;
         }
 
-        this.applyStatusBarTextTone(brightness >= 160 ? 'dark' : 'light');
+        return brightness >= 160 ? 'dark' : 'light';
+    },
+    async updateStatusBarTextContrast() {
+        const statusBar = document.getElementById('status-bar');
+        if (!statusBar) return;
+
+        const sampleRect = this.getStatusBarSampleRect(
+            Math.max(1, window.innerWidth),
+            Math.max(1, window.innerHeight)
+        );
+        const tone = await this.computeWallpaperTextTone(sampleRect);
+        this.applyStatusBarTextTone(tone || this.getFallbackStatusBarTextTone());
     },
     startStatusBarTimer() {
         this.stopStatusBarTimer();
@@ -10921,6 +10954,10 @@ const WallpaperMixin = {
         }
 
         this.isScrolled = true;
+        // 进入壁纸模式即回到视图层级第 1 层，清掉可能残留的时间墙/信息流标记。
+        this.stopTimeWallClock();
+        document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-from-status');
+        this.viewStage = 1;
 
         // 进入壁纸模式后侧边栏的显隐改由固定配置接管（下面 rAF 里同步），
         // 当前 hover 推入状态立即作废。必须在后面的 transform 计算之前清掉，
@@ -11038,6 +11075,8 @@ const WallpaperMixin = {
         }
 
         this.isScrolled = false;
+        // 退出壁纸模式时一并清掉时间墙/信息流层级。
+        this.clearTimeWallState();
 
         // 退出壁纸模式后侧边栏是否固定由下面的 syncWidgetPanelsForWallpaper 决定，
         // 壁纸模式里的 hover 推入先作废，避免回主页后壁纸停在偏移位置。
@@ -11374,6 +11413,205 @@ const WallpaperMixin = {
             }
         }
     },
+};
+
+// ---------- main/Script/core/mixins/TimeWallMixin.js ----------
+/**
+ * 时间墙与信息流：壁纸模式下继续上滑显示大时钟，再上滑进入信息流占位页。
+ * 视图层级为 首页 → 壁纸 → 时间墙 → 信息流，进退统一由 advanceViewStage / retreatViewStage 驱动。
+ * 由 main.js 通过 Object.assign 挂载到 OOOInterface.prototype。
+ */
+
+const VIEW_STAGE_HOME = 0;
+const VIEW_STAGE_WALLPAPER = 1;
+const VIEW_STAGE_TIME_WALL = 2;
+const VIEW_STAGE_FEED = 3;
+
+const TimeWallMixin = {
+    advanceViewStage() {
+        if (!this.isScrolled) {
+            this.showWallpaper();
+            return;
+        }
+        if (this.viewStage <= VIEW_STAGE_WALLPAPER) {
+            this.enterTimeWall();
+            return;
+        }
+        if (this.viewStage === VIEW_STAGE_TIME_WALL) {
+            this.enterFeed();
+        }
+    },
+    retreatViewStage() {
+        if (this.viewStage >= VIEW_STAGE_FEED) {
+            this.exitFeed();
+            return;
+        }
+        if (this.viewStage === VIEW_STAGE_TIME_WALL) {
+            this.exitTimeWall();
+            return;
+        }
+        if (this.isScrolled) {
+            this.restoreHomepage();
+        }
+    },
+    enterTimeWall() {
+        if (!this.settings.timeWallEnabled || this.viewStage >= VIEW_STAGE_TIME_WALL) return;
+
+        this.viewStage = VIEW_STAGE_TIME_WALL;
+        document.body.classList.add('time-wall-mode');
+        document.body.classList.remove('feed-mode');
+
+        // 状态栏开启时，时钟从状态栏的位置与字号起步，再过渡到大时钟；
+        // 关闭时直接在大时钟位置淡入，避免从无到有的跳变。
+        if (this.settings.statusBarEnabled) {
+            document.body.classList.add('time-wall-from-status');
+            const clock = document.getElementById('time-wall-clock');
+            if (clock) void clock.offsetWidth;
+            requestAnimationFrame(() => {
+                document.body.classList.remove('time-wall-from-status');
+            });
+        }
+
+        this.startTimeWallClock();
+        this.updateTimeWallClockContrast();
+    },
+    exitTimeWall() {
+        if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
+
+        this.viewStage = VIEW_STAGE_WALLPAPER;
+        document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-from-status');
+        this.stopTimeWallClock();
+    },
+    enterFeed() {
+        if (!this.settings.timeWallEnabled || !this.settings.feedEnabled) return;
+        if (this.viewStage >= VIEW_STAGE_FEED) return;
+
+        if (this.viewStage < VIEW_STAGE_TIME_WALL) {
+            this.enterTimeWall();
+        }
+        if (!this.settings.timeWallEnabled) return;
+
+        this.viewStage = VIEW_STAGE_FEED;
+        document.body.classList.add('time-wall-mode', 'feed-mode');
+        // 时钟延续同一个元素缩小到顶部，计时器已在时间墙启动，这里只兜底。
+        this.startTimeWallClock();
+        this.updateTimeWallClockContrast();
+    },
+    exitFeed() {
+        if (this.viewStage < VIEW_STAGE_FEED) return;
+
+        this.viewStage = VIEW_STAGE_TIME_WALL;
+        document.body.classList.remove('feed-mode');
+    },
+    clearTimeWallState() {
+        this.viewStage = VIEW_STAGE_HOME;
+        document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-from-status');
+        this.stopTimeWallClock();
+    },
+    startTimeWallClock() {
+        this.stopTimeWallClock();
+
+        const tick = () => {
+            this.updateTimeWallClockText();
+            const now = new Date();
+            const showSeconds = this.settings.showStatusBarSeconds;
+            let delay = showSeconds
+                ? 1000 - now.getMilliseconds()
+                : ((60 - now.getSeconds()) * 1000) - now.getMilliseconds();
+            if (delay <= 0) {
+                delay = showSeconds ? 1000 : 60000;
+            }
+            this.timeWallTimer = setTimeout(tick, delay);
+        };
+
+        this.updateTimeWallClockText();
+        const now = new Date();
+        const showSeconds = this.settings.showStatusBarSeconds;
+        let delay = showSeconds
+            ? 1000 - now.getMilliseconds()
+            : ((60 - now.getSeconds()) * 1000) - now.getMilliseconds();
+        if (delay <= 0) {
+            delay = showSeconds ? 1000 : 60000;
+        }
+        this.timeWallTimer = setTimeout(tick, delay);
+    },
+    stopTimeWallClock() {
+        if (this.timeWallTimer) {
+            clearTimeout(this.timeWallTimer);
+            this.timeWallTimer = null;
+        }
+    },
+    updateTimeWallClockText() {
+        const clock = document.getElementById('time-wall-clock');
+        if (!clock) return;
+
+        const timeEl = clock.querySelector('.time-wall-clock-time');
+        const dateEl = clock.querySelector('.time-wall-clock-date');
+        const now = new Date();
+        const pad = (value) => String(value).padStart(2, '0');
+        const hours = pad(now.getHours());
+        const minutes = pad(now.getMinutes());
+        const seconds = pad(now.getSeconds());
+
+        if (timeEl) {
+            timeEl.textContent = this.settings.showStatusBarSeconds
+                ? `${hours}:${minutes}:${seconds}`
+                : `${hours}:${minutes}`;
+        }
+        if (dateEl) {
+            const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            dateEl.textContent = `${now.getFullYear()}年${pad(now.getMonth() + 1)}月${pad(now.getDate())}日 ${weekdays[now.getDay()]}`;
+        }
+    },
+    async updateTimeWallClockContrast() {
+        const clock = document.getElementById('time-wall-clock');
+        if (!clock) return;
+
+        // 大时钟位于视口上部中央，固定取这一带来取样，避免受缩放中的元素边界影响。
+        const viewportWidth = Math.max(1, window.innerWidth);
+        const viewportHeight = Math.max(1, window.innerHeight);
+        const sampleRect = {
+            x: viewportWidth * 0.2,
+            y: viewportHeight * 0.16,
+            width: viewportWidth * 0.6,
+            height: viewportHeight * 0.32
+        };
+
+        const tone = await this.computeWallpaperTextTone(sampleRect);
+        // 取样期间可能已退出时间墙，避免把结果写到已经离场的时钟上。
+        if (this.viewStage < VIEW_STAGE_TIME_WALL) return;
+        this.applyTimeWallClockTone(tone || this.getFallbackStatusBarTextTone());
+    },
+    applyTimeWallClockTone(mode) {
+        const clock = document.getElementById('time-wall-clock');
+        const resolvedMode = mode === 'light' ? 'light' : 'dark';
+        const color = resolvedMode === 'light' ? '#f8fafc' : '#202124';
+        const shadow = resolvedMode === 'light'
+            ? '0 2px 14px rgba(0, 0, 0, 0.34)'
+            : '0 2px 14px rgba(255, 255, 255, 0.26)';
+
+        if (clock) {
+            clock.style.setProperty('--time-wall-text-color', color);
+            clock.style.textShadow = shadow;
+        }
+    },
+    /**
+     * 应用时间墙相关开关：同步设置页 UI，并在功能被关闭时把视图收回到允许的层级。
+     */
+    applyTimeWallSettings() {
+        const toggle = document.getElementById('time-wall-toggle');
+        if (toggle) toggle.checked = !!this.settings.timeWallEnabled;
+        const feedToggle = document.getElementById('feed-toggle');
+        if (feedToggle) feedToggle.checked = !!this.settings.feedEnabled;
+        const feedGroup = document.getElementById('feed-toggle-group');
+        if (feedGroup) feedGroup.style.display = this.settings.timeWallEnabled ? 'block' : 'none';
+
+        if (!this.settings.timeWallEnabled && this.viewStage >= VIEW_STAGE_TIME_WALL) {
+            this.exitTimeWall();
+        } else if (!this.settings.feedEnabled && this.viewStage >= VIEW_STAGE_FEED) {
+            this.exitFeed();
+        }
+    }
 };
 
 // ---------- main/Script/core/quicklinks-export.js ----------
@@ -13027,10 +13265,10 @@ const SearchMixin = {
         // 不能再走下面的累计判定（否则一次 swipe 只累加一帧，永远到不了阈值）。
         if (e.touchGesture) {
             this._scrollGesture = null;
-            if (e.deltaY > 0 && !this.isScrolled) {
-                this.showWallpaper();
-            } else if (e.deltaY < 0 && this.isScrolled) {
-                this.restoreHomepage();
+            if (e.deltaY > 0) {
+                this.advanceViewStage();
+            } else if (e.deltaY < 0) {
+                this.retreatViewStage();
             }
             return;
         }
@@ -13077,13 +13315,11 @@ const SearchMixin = {
             this._animationTimeout = null;
         }
 
-        // 向下滚动出现壁纸
-        if (dir > 0 && !this.isScrolled) {
-            this.showWallpaper();
-        }
-        // 向上滚动恢复
-        else if (dir < 0 && this.isScrolled) {
-            this.restoreHomepage();
+        // 方向决定前进还是后退：-> 首页→壁纸→时间墙→信息流，<- 逐层返回。
+        if (dir > 0) {
+            this.advanceViewStage();
+        } else {
+            this.retreatViewStage();
         }
     },
     switchEngine(engine) {
@@ -14347,6 +14583,7 @@ const SettingsMixin = {
         if (op) op.checked = this.settings.ocpPlayerEnabled;
         this.updateHideInfoPopupLabel();
         this.syncStatusBarUI();
+        this.applyTimeWallSettings();
         this.syncWidgetPanelUI();
         this.syncBadgeOpenMethodUI();
         this.syncFocusSearchUI();
@@ -14540,6 +14777,8 @@ const SettingsMixin = {
         }
         if (savedSettings.statusBarEnabled !== undefined) result.statusBarEnabled = savedSettings.statusBarEnabled;
         if (savedSettings.showStatusBarSeconds !== undefined) result.showStatusBarSeconds = savedSettings.showStatusBarSeconds;
+        if (savedSettings.timeWallEnabled !== undefined) result.timeWallEnabled = savedSettings.timeWallEnabled;
+        if (savedSettings.feedEnabled !== undefined) result.feedEnabled = savedSettings.feedEnabled;
         if (savedSettings.onlineRollingUpdate !== undefined) result.onlineRollingUpdate = savedSettings.onlineRollingUpdate;
         if (savedSettings.hideNotifications !== undefined) result.hideNotifications = savedSettings.hideNotifications;
         if (savedSettings.shortcutsEnabled !== undefined) result.shortcutsEnabled = savedSettings.shortcutsEnabled;
@@ -15422,6 +15661,7 @@ const SettingsMixin = {
 
         this.handlePersistentWallpaperToggle();
         this.applyStatusBarSettings();
+        safe('applyTimeWallSettings', this.applyTimeWallSettings);
         this.applyColorScheme();
 
         // 隐藏铭牌（简洁视觉效果子项）：隐藏主页面底部铭牌。
@@ -22249,6 +22489,7 @@ const InteractionMixin = {
 // [bundled] import { … } from './mixins/ResetMixin.js'
 // [bundled] import { … } from './mixins/AssetsMixin.js'
 // [bundled] import { … } from './mixins/WallpaperMixin.js'
+// [bundled] import { … } from './mixins/TimeWallMixin.js'
 // [bundled] import { … } from './mixins/QuickLinksMixin.js'
 // [bundled] import { … } from './mixins/SearchMixin.js'
 // [bundled] import { … } from './mixins/TranslateMixin.js'
@@ -22275,6 +22516,7 @@ const MIXINS = [
     ResetMixin,
     AssetsMixin,
     WallpaperMixin,
+    TimeWallMixin,
     QuickLinksMixin,
     SearchMixin,
     TranslateMixin,

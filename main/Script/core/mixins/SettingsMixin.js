@@ -83,6 +83,7 @@ export const SettingsMixin = {
         if (op) op.checked = this.settings.ocpPlayerEnabled;
         this.updateHideInfoPopupLabel();
         this.syncStatusBarUI();
+        this.applyTimeWallSettings();
         this.syncWidgetPanelUI();
         this.syncBadgeOpenMethodUI();
         this.syncFocusSearchUI();
@@ -276,6 +277,8 @@ export const SettingsMixin = {
         }
         if (savedSettings.statusBarEnabled !== undefined) result.statusBarEnabled = savedSettings.statusBarEnabled;
         if (savedSettings.showStatusBarSeconds !== undefined) result.showStatusBarSeconds = savedSettings.showStatusBarSeconds;
+        if (savedSettings.timeWallEnabled !== undefined) result.timeWallEnabled = savedSettings.timeWallEnabled;
+        if (savedSettings.feedEnabled !== undefined) result.feedEnabled = savedSettings.feedEnabled;
         if (savedSettings.onlineRollingUpdate !== undefined) result.onlineRollingUpdate = savedSettings.onlineRollingUpdate;
         if (savedSettings.hideNotifications !== undefined) result.hideNotifications = savedSettings.hideNotifications;
         if (savedSettings.shortcutsEnabled !== undefined) result.shortcutsEnabled = savedSettings.shortcutsEnabled;
@@ -1158,6 +1161,7 @@ export const SettingsMixin = {
 
         this.handlePersistentWallpaperToggle();
         this.applyStatusBarSettings();
+        safe('applyTimeWallSettings', this.applyTimeWallSettings);
         this.applyColorScheme();
 
         // 隐藏铭牌（简洁视觉效果子项）：隐藏主页面底部铭牌。

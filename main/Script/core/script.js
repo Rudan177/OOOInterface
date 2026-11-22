@@ -34,6 +34,9 @@ export class OOOInterface {
         this.settings = JSON.parse(JSON.stringify(this.defaultSettings)); // 深拷贝默认设置
         this.isBadgeExpanded = false;
         this.isScrolled = false;
+        // 视图层级：0 首页 / 1 壁纸 / 2 时间墙 / 3 信息流（见 TimeWallMixin）。
+        this.viewStage = 0;
+        this.timeWallTimer = null;
         this.scrollTimeout = null;
         this.isAnimating = false;
         this.infoPopupOpen = false;
@@ -166,6 +169,9 @@ export class OOOInterface {
 
         window.addEventListener('resize', () => {
             this.updateStatusBarTextContrast();
+            if (this.viewStage >= 2) {
+                this.updateTimeWallClockContrast();
+            }
             this.syncWidgetCardHeights();
             // 窗口宽度变化会改变搜索框的布局宽度，放大比例的上限要重算。
             this.applyFocusSearch();
@@ -222,6 +228,11 @@ export class OOOInterface {
                 if (this.settings.statusBarEnabled) {
                     this.updateStatusBarText();
                     this.startStatusBarTimer();
+                }
+                // 时间墙/信息流时钟共用「显示秒钟」偏好，可见时按新精度重启计时。
+                if (this.viewStage >= 2) {
+                    this.startTimeWallClock();
+                    this.updateTimeWallClockContrast();
                 }
                 this.showNotification(this.settings.showStatusBarSeconds ? '显示秒钟：开启' : '显示秒钟：关闭');
             });
@@ -924,6 +935,22 @@ export class OOOInterface {
             this.settings.wallpaperScale = e.target.checked;
             this.applySettings();
             this.saveSettings();
+        });
+
+        // 时间墙主开关：需手动开启；关闭时立即把视图收回壁纸模式。
+        document.getElementById('time-wall-toggle').addEventListener('change', (e) => {
+            this.settings.timeWallEnabled = e.target.checked;
+            this.applyTimeWallSettings();
+            this.saveSettings();
+            this.showNotification(e.target.checked ? '时间墙：开启' : '时间墙：关闭');
+        });
+
+        // 信息流子开关：关闭后上滑只停在时间墙，不进入信息流占位页。
+        document.getElementById('feed-toggle').addEventListener('change', (e) => {
+            this.settings.feedEnabled = e.target.checked;
+            this.applyTimeWallSettings();
+            this.saveSettings();
+            this.showNotification(e.target.checked ? '信息流：开启' : '信息流：关闭');
         });
 
         // 暗色压暗壁纸开关：控制暗色模式下壁纸蒙版（主页面与侧边栏面板共用设置键）。

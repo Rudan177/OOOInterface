@@ -212,23 +212,22 @@ export const StatusBarMixin = {
             return null;
         }
     },
-    async updateStatusBarTextContrast() {
-        const statusBar = document.getElementById('status-bar');
-        if (!statusBar) return;
-
+    /**
+     * 按壁纸在指定区域的亮度给出文字明暗：返回 'light' / 'dark'，无法取样时返回 null。
+     * 状态栏与时间墙大时钟共用这一段，区别只在取样矩形。
+     */
+    async computeWallpaperTextTone(sampleRect) {
         const wallpaperUrl = this.getWallpaperUrl();
         const hasWallpaper = !!(wallpaperUrl && this.wallpaperMain && this.wallpaperMain.classList.contains('active'));
 
-        if (!hasWallpaper) {
-            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
-            return;
+        if (!hasWallpaper || !sampleRect) {
+            return null;
         }
 
         const analysisUrl = wallpaperUrl;
         const image = await this.ensureWallpaperAnalysisImage(analysisUrl);
         if (!image || analysisUrl !== this.getWallpaperUrl()) {
-            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
-            return;
+            return null;
         }
 
         const viewportWidth = Math.max(1, window.innerWidth);
@@ -239,25 +238,28 @@ export const StatusBarMixin = {
 
         const context = canvas.getContext('2d', { willReadFrequently: true });
         if (!context) {
-            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
-            return;
+            return null;
         }
 
         this.drawWallpaperPreviewToCanvas(context, viewportWidth, viewportHeight, image);
 
-        const sampleRect = this.getStatusBarSampleRect(viewportWidth, viewportHeight);
-        if (!sampleRect) {
-            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
-            return;
-        }
-
         const brightness = this.getAverageBrightnessFromCanvas(context, sampleRect);
         if (brightness === null) {
-            this.applyStatusBarTextTone(this.getFallbackStatusBarTextTone());
-            return;
+            return null;
         }
 
-        this.applyStatusBarTextTone(brightness >= 160 ? 'dark' : 'light');
+        return brightness >= 160 ? 'dark' : 'light';
+    },
+    async updateStatusBarTextContrast() {
+        const statusBar = document.getElementById('status-bar');
+        if (!statusBar) return;
+
+        const sampleRect = this.getStatusBarSampleRect(
+            Math.max(1, window.innerWidth),
+            Math.max(1, window.innerHeight)
+        );
+        const tone = await this.computeWallpaperTextTone(sampleRect);
+        this.applyStatusBarTextTone(tone || this.getFallbackStatusBarTextTone());
     },
     startStatusBarTimer() {
         this.stopStatusBarTimer();

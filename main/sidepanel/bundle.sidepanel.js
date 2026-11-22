@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：da4ff3aa608562fd    模块数：15
+// 源码指纹：fa4265c66c6741e4    模块数：15
 // 入口：main/sidepanel/sidepanel.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -2587,6 +2587,10 @@ const DEFAULT_SETTINGS = {
     searchBoxHeight: 50,
     enhancedDisplay: false,
     wallpaperScale: false,
+    // 时间墙与信息流：壁纸模式下继续上滑显示大时钟，再上滑进入信息流占位页。
+    // 主开关默认关（新交互不请自来），开启后才允许越过壁纸模式；信息流可单独关闭。
+    timeWallEnabled: false,
+    feedEnabled: true,
     wallpaperDarkDim: true,
     wallpaperFill: true,
     colorScheme: 'green',

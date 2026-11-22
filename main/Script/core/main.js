@@ -27,6 +27,7 @@ import { InfoPopupToggleMixin } from './mixins/InfoPopupToggleMixin.js';
 import { ResetMixin } from './mixins/ResetMixin.js';
 import { AssetsMixin } from './mixins/AssetsMixin.js';
 import { WallpaperMixin } from './mixins/WallpaperMixin.js';
+import { TimeWallMixin } from './mixins/TimeWallMixin.js';
 import { QuickLinksMixin } from './mixins/QuickLinksMixin.js';
 import { SearchMixin } from './mixins/SearchMixin.js';
 import { TranslateMixin } from './mixins/TranslateMixin.js';
@@ -53,6 +54,7 @@ const MIXINS = [
     ResetMixin,
     AssetsMixin,
     WallpaperMixin,
+    TimeWallMixin,
     QuickLinksMixin,
     SearchMixin,
     TranslateMixin,

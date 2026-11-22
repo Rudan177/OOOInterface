@@ -32,6 +32,10 @@ export const DEFAULT_SETTINGS = {
     searchBoxHeight: 50,
     enhancedDisplay: false,
     wallpaperScale: false,
+    // 时间墙与信息流：壁纸模式下继续上滑显示大时钟，再上滑进入信息流占位页。
+    // 主开关默认关（新交互不请自来），开启后才允许越过壁纸模式；信息流可单独关闭。
+    timeWallEnabled: false,
+    feedEnabled: true,
     wallpaperDarkDim: true,
     wallpaperFill: true,
     colorScheme: 'green',

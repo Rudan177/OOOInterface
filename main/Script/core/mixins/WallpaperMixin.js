@@ -1724,6 +1724,10 @@ export const WallpaperMixin = {
         }
 
         this.isScrolled = true;
+        // 进入壁纸模式即回到视图层级第 1 层，清掉可能残留的时间墙/信息流标记。
+        this.stopTimeWallClock();
+        document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-from-status');
+        this.viewStage = 1;
 
         // 进入壁纸模式后侧边栏的显隐改由固定配置接管（下面 rAF 里同步），
         // 当前 hover 推入状态立即作废。必须在后面的 transform 计算之前清掉，
@@ -1841,6 +1845,8 @@ export const WallpaperMixin = {
         }
 
         this.isScrolled = false;
+        // 退出壁纸模式时一并清掉时间墙/信息流层级。
+        this.clearTimeWallState();
 
         // 退出壁纸模式后侧边栏是否固定由下面的 syncWidgetPanelsForWallpaper 决定，
         // 壁纸模式里的 hover 推入先作废，避免回主页后壁纸停在偏移位置。

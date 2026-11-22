@@ -68,10 +68,10 @@ export const SearchMixin = {
         // 不能再走下面的累计判定（否则一次 swipe 只累加一帧，永远到不了阈值）。
         if (e.touchGesture) {
             this._scrollGesture = null;
-            if (e.deltaY > 0 && !this.isScrolled) {
-                this.showWallpaper();
-            } else if (e.deltaY < 0 && this.isScrolled) {
-                this.restoreHomepage();
+            if (e.deltaY > 0) {
+                this.advanceViewStage();
+            } else if (e.deltaY < 0) {
+                this.retreatViewStage();
             }
             return;
         }
@@ -118,13 +118,11 @@ export const SearchMixin = {
             this._animationTimeout = null;
         }
 
-        // 向下滚动出现壁纸
-        if (dir > 0 && !this.isScrolled) {
-            this.showWallpaper();
-        }
-        // 向上滚动恢复
-        else if (dir < 0 && this.isScrolled) {
-            this.restoreHomepage();
+        // 方向决定前进还是后退：-> 首页→壁纸→时间墙→信息流，<- 逐层返回。
+        if (dir > 0) {
+            this.advanceViewStage();
+        } else {
+            this.retreatViewStage();
         }
     },
     switchEngine(engine) {

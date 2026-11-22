@@ -8473,3 +8473,133 @@ body.focus-search-leaving .engine-buttons {
 #focus-search-scale-group .slider-input {
     height: 32px;
 }
+
+/* ---------- 时间墙 / 信息流 ---------- */
+
+/* 大时钟与状态栏是两个独立元素：开启状态栏时它从状态栏位置下移放大，
+   进入信息流后缩小停在顶部，因此位置与缩放都用过渡而不是切换显示。 */
+.time-wall-clock {
+    position: fixed;
+    left: 50%;
+    top: 32vh;
+    z-index: 26;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--time-wall-text-color, #f8fafc);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -50%) scale(1);
+    transition: opacity 0.45s ease,
+        top 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.45s ease;
+}
+
+.time-wall-clock-time {
+    font-size: clamp(4rem, 13vw, 8.5rem);
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: 0.02em;
+}
+
+.time-wall-clock-date {
+    font-size: clamp(0.95rem, 1.6vw, 1.35rem);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    opacity: 0.86;
+}
+
+body.time-wall-mode .time-wall-clock {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 状态栏开启时的入场起点：与状态栏文字同一位置、同一尺度，再过渡到大时钟。 */
+body.time-wall-from-status .time-wall-clock {
+    top: 4px;
+    transform: translate(-50%, 0) scale(0.12);
+}
+
+/* 信息流：时钟缩到顶部，成为独立的顶部时钟。 */
+body.feed-mode .time-wall-clock {
+    top: 12px;
+    transform: translate(-50%, 0) scale(0.24);
+}
+
+/* 时间墙覆盖状态栏：时间由大时钟接管，避免顶部出现两份时间。 */
+body.time-wall-mode .status-bar {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-100%);
+}
+
+/* 时间墙隐藏小组件与相关侧边面板，保留壁纸模式的搜索框与引擎按钮。 */
+body.time-wall-mode #quick-access-links,
+body.time-wall-mode #widget-panel,
+body.time-wall-mode #quick-access-sidebar {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 信息流只保留开发中提示：主容器（搜索、引擎按钮等）整体淡出。 */
+body.feed-mode .container {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.feed-view {
+    position: fixed;
+    inset: 0;
+    z-index: 24;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 24px 60px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.4s ease 0.05s, visibility 0.4s ease;
+}
+
+body.feed-mode .feed-view {
+    opacity: 1;
+    visibility: visible;
+}
+
+.feed-dev-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 28px 44px;
+    border-radius: 20px;
+    color: rgba(255, 255, 255, 0.92);
+    background: rgba(18, 18, 20, 0.36);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.feed-dev-icon {
+    font-size: 34px;
+    opacity: 0.9;
+}
+
+.feed-dev-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+}
+
+.feed-dev-desc {
+    font-size: 0.9rem;
+    opacity: 0.78;
+    letter-spacing: 0.04em;
+}
