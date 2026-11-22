@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：dd998aa295ef4329    模块数：49
+// 源码指纹：846237705f27ea20    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11702,11 +11702,11 @@ const TimeWallMixin = {
         bar.classList.remove('no-transition');
 
         document.body.classList.add('time-wall-leaving');
-        this.disableClockBlur(480);
 
         // 大钟保持当前字号与模糊纹理，只用 transform 连续缩小并移到最终位置；
         // 动画结束时在最终布局原位收尾，整段没有淡出淡入的空档。
-        const duration = 460;
+        const duration = 400;
+        this.disableClockBlur(duration + 20);
         this.shrinkStatusItem(dateEl, bigDate, finalDate, duration);
         this.shrinkStatusItem(timeEl, bigTime, finalTime, duration);
         this.animateStatusWeight(duration);
