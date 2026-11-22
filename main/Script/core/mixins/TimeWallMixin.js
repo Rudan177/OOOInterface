@@ -168,6 +168,10 @@ export const TimeWallMixin = {
             this.applyStatusBarTextTone(
                 this.statusBarContrastMode || this.getFallbackStatusBarTextTone()
             );
+            // 字重也在模糊最重时切到最终值，收尾就不会再从 900 跳到 500。
+            bar.querySelectorAll('.status-bar-date, .status-bar-time').forEach((el) => {
+                el.style.fontWeight = '500';
+            });
         }, peakTime);
     },
     /**
@@ -291,6 +295,7 @@ export const TimeWallMixin = {
             el.style.willChange = '';
             el.style.transition = '';
             el.style.filter = '';
+            el.style.fontWeight = '';
         });
         // 收尾模糊加在状态栏父级上，这里一并清掉，避免残留到下一次进入。
         const bar = document.getElementById('status-bar');

@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：ef1e7cbc89d7271c    模块数：49
+// 源码指纹：d91a09c8f0656741    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11780,6 +11780,10 @@ const TimeWallMixin = {
             this.applyStatusBarTextTone(
                 this.statusBarContrastMode || this.getFallbackStatusBarTextTone()
             );
+            // 字重也在模糊最重时切到最终值，收尾就不会再从 900 跳到 500。
+            bar.querySelectorAll('.status-bar-date, .status-bar-time').forEach((el) => {
+                el.style.fontWeight = '500';
+            });
         }, peakTime);
     },
     /**
@@ -11903,6 +11907,7 @@ const TimeWallMixin = {
             el.style.willChange = '';
             el.style.transition = '';
             el.style.filter = '';
+            el.style.fontWeight = '';
         });
         // 收尾模糊加在状态栏父级上，这里一并清掉，避免残留到下一次进入。
         const bar = document.getElementById('status-bar');
