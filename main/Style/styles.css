@@ -7,16 +7,12 @@
     font-style: normal;
 }
 
-
-
 @font-face {
     font-family: 'Ginto';
     src: url('../fonts/ABCGintoVariable.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
 }
-
-
 
 @font-face {
     font-family: 'Josefin';
@@ -25,8 +21,6 @@
     font-style: normal;
 }
 
-
-
 @font-face {
     font-family: 'Code';
     src: url('../fonts/GoogleSansCode.ttf') format('truetype');
@@ -34,16 +28,12 @@
     font-style: normal;
 }
 
-
-
 @font-face {
     font-family: 'HMSC';
     src: url('../fonts/HarmonyOS_SansSC.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
 }
-
-
 
 /* 全局重置 */
 
@@ -77,8 +67,6 @@ textarea,
     outline: none;
 }
 
-
-
 :root {
     --primary-color: #1a73e8;
     --scheme-accent: #00AE90;
@@ -108,8 +96,6 @@ textarea,
     --status-bar-text-color: #202124;
 }
 
-
-
 @media (prefers-color-scheme: dark) {
     :root {
         --background-color: #202124;
@@ -136,8 +122,6 @@ textarea,
     }
 }
 
-
-
 body {
     font-family: 'Sans Flex', system-ui, -apple-system, sans-serif;
     font-size: calc(16px * var(--base-font-size));
@@ -153,7 +137,6 @@ body {
     background-attachment: fixed;
     isolation: isolate;
 }
-
 
 .status-bar {
     position: fixed;
@@ -188,9 +171,6 @@ body {
     pointer-events: auto;
 }
 
-
-
-
 .welcome-screen {
     position: fixed;
     top: 0;
@@ -206,8 +186,6 @@ body {
     transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
-
-
 .welcome-content {
     text-align: center;
     padding: 40px;
@@ -216,23 +194,17 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-
-
 .welcome-title {
     font-size: 2.5rem;
     margin-bottom: 20px;
     font-weight: 700;
 }
 
-
-
 .welcome-version {
     font-size: 1.2rem;
     margin-bottom: 30px;
     color: #666;
 }
-
-
 
 .welcome-close-btn {
     background-color: var(--scheme-accent);
@@ -245,13 +217,9 @@ body {
     transition: background-color 0.2s ease;
 }
 
-
-
 .welcome-close-btn:hover {
     background-color: var(--scheme-accent-hover);
 }
-
-
 
 /* 深色模式 - 欢迎屏幕 */
 
@@ -274,8 +242,6 @@ body {
         color: #aaa;
     }
 }
-
-
 
 /* 主容器 */
 
@@ -311,9 +277,7 @@ body.scrolled.sidebar-visible .search-section {
     max-width: none;
 }
 
-
-
-/* Logo区域 */
+/* Logo 区域 */
 
 .logo-section {
     height: 120px;
@@ -325,16 +289,12 @@ body.scrolled.sidebar-visible .search-section {
     flex-direction: column;
 }
 
-
-
 .logo {
     height: 120px;
-    /* 设置Logo尺寸 */
+    /* 设置 Logo 尺寸 */
     width: auto;
     transition: var(--transition);
 }
-
-
 
 .text-logo {
     font-size: 80px;
@@ -344,8 +304,6 @@ body.scrolled.sidebar-visible .search-section {
     text-align: center;
     line-height: 1;
 }
-
-
 
 /* 搜索区域 - 宽度 */
 
@@ -361,8 +319,6 @@ body.scrolled.sidebar-visible .search-section {
     margin-bottom: 10px;
     margin-top: 0;
 }
-
-
 
 .search-container {
     position: relative;
@@ -384,8 +340,6 @@ body.scrolled.sidebar-visible .search-section {
     -webkit-backdrop-filter: blur(0);
 }
 
-
-
 @media (prefers-color-scheme: dark) {
     .search-container {
         background: #202124;
@@ -396,8 +350,6 @@ body.scrolled.sidebar-visible .search-section {
         -webkit-backdrop-filter: blur(0);
     }
 }
-
-
 
 /* 搜索框壁纸模式样式 */
 
@@ -410,8 +362,6 @@ body:not(.dynamic-blur).homepage-wallpaper .search-container {
     -webkit-backdrop-filter: blur(0);
 }
 
-
-
 /* 搜索框壁纸模式深色样式 */
 
 @media (prefers-color-scheme: dark) {
@@ -423,23 +373,17 @@ body:not(.dynamic-blur).homepage-wallpaper .search-container {
     }
 }
 
-
-
 .search-container:hover,
 
 .search-container:focus-within {
     border-color: transparent;
 }
 
-
-
 body:not(.enhanced-display) .search-container:hover,
 
 body:not(.enhanced-display) .search-container:focus-within {
     box-shadow: none;
 }
-
-
 
 .search-icon {
     width: 18px;
@@ -501,12 +445,10 @@ body:not(.enhanced-display) .search-container:focus-within {
     fill: currentColor;
 }
 
-
-
 .search-input {
     flex: 1;
-    /* 窄屏下 "/" 模式 chip 展开后，输入框默认的 auto 最小宽度（约 20 字符）会撑破搜索框并顶出屏幕，
-       放开最小宽度让输入框随容器收缩 */
+    /* 窄屏下 “/” 模式 chip 展开后，输入框默认的 auto 最小宽度（约 20 字符）会撑破搜索框并顶出屏幕，
+       放开最小宽度让输入框随容器收缩。 */
     min-width: 0;
     border: none;
     outline: none;
@@ -517,17 +459,9 @@ body:not(.enhanced-display) .search-container:focus-within {
     height: 100%;
 }
 
-
-
 .search-input::placeholder {
     color: var(--text-secondary);
 }
-
-
-
-
-
-
 
 /* 引擎按钮 - 间距 */
 
@@ -539,8 +473,6 @@ body:not(.enhanced-display) .search-container:focus-within {
     transition: opacity 0.3s ease, margin-top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-
 .engine-btn {
     background-color: #F1F3F4;
     /* 浅色模式 #F8F9FA */
@@ -550,21 +482,23 @@ body:not(.enhanced-display) .search-container:focus-within {
     border-radius: 24px;
     /* 圆角 */
     color: var(--text-color);
-    /* 使用CSS变量适配浅色/深色 */
+    /* 使用 CSS 变量适配浅色/深色 */
     font-family: inherit;
     font-size: 14px;
     font-weight: 500;
     padding: 12px 24px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* 只过渡切换引擎时真正会变的属性：all 配回弹曲线会让按下/松开时的
+     * translateY 先回弹一次，看起来像按钮跳了一下。 */
+    transition: background-color 0.16s ease-out, color 0.16s ease-out,
+        border-color 0.16s ease-out, box-shadow 0.24s ease-out,
+        transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     min-width: 100px;
     text-align: center;
     box-shadow: none;
     backdrop-filter: blur(0);
     -webkit-backdrop-filter: blur(0);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     .engine-btn {
@@ -577,8 +511,6 @@ body:not(.enhanced-display) .search-container:focus-within {
     }
 }
 
-
-
 /* 引擎按钮壁纸模式样式 */
 
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn,
@@ -590,8 +522,6 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn {
     -webkit-backdrop-filter: blur(0);
 }
 
-
-
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-google,
 
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-google {
@@ -600,16 +530,12 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-google {
     color: var(--text-color);
 }
 
-
-
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-microsoft,
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-microsoft {
     background: #F1F3F4;
     border: none;
     color: var(--text-color);
 }
-
-
 
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-google,
 
@@ -620,15 +546,11 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-google {
     box-shadow: 0 4px 16px rgba(var(--scheme-accent-rgb), 0.4);
 }
 
-
-
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-google:hover,
 
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-google:hover {
     box-shadow: 0 6px 20px rgba(var(--scheme-accent-rgb), 0.5);
 }
-
-
 
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.logo-default,
 
@@ -637,8 +559,6 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.logo-default {
     border: none;
     color: var(--text-color);
 }
-
-
 
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-default,
 
@@ -649,15 +569,11 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default {
     box-shadow: 0 4px 16px rgba(0, 174, 144, 0.4);
 }
 
-
-
 body:not(.dynamic-blur):not([style*="background-image: none"]) .engine-btn.active.logo-default:hover,
 
 body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover {
     box-shadow: 0 6px 20px rgba(0, 174, 144, 0.5);
 }
-
-
 
 /* 引擎按钮壁纸模式深色样式 */
 
@@ -714,23 +630,21 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     }
 }
 
-
-
 .engine-btn:hover {
     border-color: transparent;
     box-shadow: none;
     transform: translateY(-2px);
 }
 
-
-
-.engine-btn:active {
-    transform: translateY(0);
+/* 按下不回落：切换引擎时一按一松的上下位移会被看成跳动。
+ * 悬停抬起的按钮在按下期间保持同一高度；触屏没有悬停，因此不会产生位移。 */
+@media (hover: hover) {
+    .engine-btn:active {
+        transform: translateY(-2px);
+    }
 }
 
-
-
-/* Google和Microsoft - 激活状态 */
+/* Google 和 Microsoft - 激活状态 */
 
 .engine-btn.active.logo-google,
 
@@ -741,17 +655,13 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     box-shadow: 0 4px 16px rgba(var(--scheme-accent-rgb), 0.4);
 }
 
-
-
 .engine-btn.active.logo-google:hover,
 
 .engine-btn.active.logo-microsoft:hover {
     box-shadow: 0 6px 20px rgba(var(--scheme-accent-rgb), 0.5);
 }
 
-
-
-/* Google和Microsoft - 深色模式 */
+/* Google 和 Microsoft - 深色模式 */
 
 @media (prefers-color-scheme: dark) {
 
@@ -768,9 +678,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     }
 }
 
-
-
-/* Apple和HUAWEI - 激活状态 */
+/* Apple 和 HUAWEI - 激活状态 */
 
 .engine-btn.logo-apple,
 
@@ -782,8 +690,6 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     color: var(--text-color);
 }
 
-
-
 .engine-btn.active.logo-apple,
 
 .engine-btn.active.logo-huawei {
@@ -793,8 +699,6 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
-
-
 .engine-btn.active.logo-default {
     background-color: #00AE90;
     color: #ffffff;
@@ -802,23 +706,17 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     box-shadow: 0 4px 16px rgba(0, 174, 144, 0.4);
 }
 
-
-
 .engine-btn.active.logo-apple:hover,
 
 .engine-btn.active.logo-huawei:hover {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
-
-
 .engine-btn.active.logo-default:hover {
     box-shadow: 0 6px 20px rgba(0, 174, 144, 0.5);
 }
 
-
-
-/* Apple和HUAWEI - 深色模式 */
+/* Apple 和 HUAWEI - 深色模式 */
 
 @media (prefers-color-scheme: dark) {
 
@@ -855,9 +753,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     }
 }
 
-
-
-/* 自定义和文字Logo引擎 - 默认 */
+/* 自定义和文字 Logo 引擎 - 默认 */
 
 .engine-btn.logo-custom,
 
@@ -866,8 +762,6 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     border: none;
     color: var(--text-color);
 }
-
-
 
 .engine-btn.active.logo-custom,
 
@@ -878,15 +772,11 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
-
-
 .engine-btn.active.logo-custom:hover,
 
 .engine-btn.active.logo-text:hover {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
 
@@ -911,9 +801,7 @@ body:not(.dynamic-blur).homepage-wallpaper .engine-btn.active.logo-default:hover
     }
 }
 
-
-
-/* ==================== 配色方案覆盖 ==================== */
+/* ---------- 配色方案覆盖 ---------- */
 
 body.color-scheme-green .engine-btn.active {
     background-color: #00AE90 !important;
@@ -978,7 +866,6 @@ body.color-scheme-custom .engine-btn.active {
 body.color-scheme-custom .engine-btn.active:hover {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
 }
-
 
 @media (prefers-color-scheme: dark) {
     body.color-scheme-green .engine-btn.active {
@@ -1053,8 +940,6 @@ body.color-scheme-custom .engine-btn.active:hover {
     opacity: 1;
 }
 
-
-
 .ooo-badge {
     background-color: var(--surface-color);
     border-radius: 16px;
@@ -1076,8 +961,6 @@ body.color-scheme-custom .engine-btn.active:hover {
     -ms-user-select: none;
 }
 
-
-
 @keyframes badgeBounce {
     0% {
         transform: scale(1);
@@ -1096,8 +979,6 @@ body.color-scheme-custom .engine-btn.active:hover {
     animation: badgeBounce 0.2s ease;
     transition: none !important;
 }
-
-
 
 /* 播放音效时：底部铭牌外圈的主题色律动光线
    光线“长度”由播放进度驱动（--badge-audio-progress：0~1，由 JS 更新）：
@@ -1129,7 +1010,7 @@ body.color-scheme-custom .engine-btn.active:hover {
     padding: 2px;
 }
 
-/* 外圈柔光：半径 = 铭牌 16px + 外扩 6px，保持同心 */
+/* 外圈柔光：半径 = 铭牌 16px + 外扩 6px，保持同心。 */
 .ooo-badge::before {
     inset: -6px;
     padding: 3px;
@@ -1187,21 +1068,19 @@ body.color-scheme-custom .engine-btn.active:hover {
     }
 }
 
-
-
-/* ============================================================
-   OCP 播控：hover 底部铭牌时显示的媒体播控卡片
-   整卡为胶囊形（完全圆角），封面与播放键同样完全圆角（正圆），
-   动效与配色对齐 info 提示条（见 info.css）：
-   0.3s ease 的淡入 + 上浮入场（毛玻璃模式下附 0.8→1 缩放）、
-   --info-bg-color / --info-text-color 表面与文字、
-   高级视觉效果下同款毛玻璃（blur(80px) saturate(1.5)）且不加投影。
-   - 外层 .ocp-player-popover 只做定位（横向居中、悬于铭牌上方），
-     常驻文档流外层且 pointer-events: none，不干扰页面交互；
-   - 内层 .ocp-player-card 是唯一交互面，显隐由 .show 类驱动：
-     隐藏时 visibility:hidden，避免透明卡片挡住上方点击；
-   - 仅当“OCP播控”开启且 OCP 已开始播放后由 JS 控制显示。
-   ============================================================ */
+/* ---------- OCP 播控：hover 底部铭牌时显示的媒体播控卡片 ---------- */
+/*
+ * 整卡为胶囊形（完全圆角），封面与播放键同样为正圆；动效与配色对齐 info 提示条
+ * （见 info.css）：0.3s ease 淡入 + 上浮入场（毛玻璃模式下附 0.8→1 缩放），
+ * 表面与文字取自 --info-bg-color / --info-text-color，高级视觉效果下为同款毛玻璃
+ * （blur(80px) saturate(1.5)），不加投影。
+ *
+ * - 外层 .ocp-player-popover 只做定位（横向居中、悬于铭牌上方），常驻文档流且
+ *   pointer-events: none，不干扰页面交互；
+ * - 内层 .ocp-player-card 是唯一交互面，显隐由 .show 类驱动：隐藏时 visibility: hidden，
+ *   避免透明卡片挡住上方点击；
+ * - 仅当「OCP 播控」开启且 OCP 已开始播放后由 JS 控制显示。
+ */
 .ocp-player-popover {
     position: absolute;
     left: 0;
@@ -1242,14 +1121,14 @@ body.color-scheme-custom .engine-btn.active:hover {
 }
 
 /* 封面：正圆，与播放键同为 38px；默认主题色渐变压底，
-   读到音源封面图后铺满，暂停时显示音符，播放时切换为居中律动均衡条 */
+   读到音源封面图后铺满，暂停时显示音符，播放时切换为居中律动均衡条。 */
 .ocp-player-cover {
     position: relative;
     width: 38px;
     height: 38px;
     border-radius: 50%;
     flex-shrink: 0;
-    /* 封面是可点按钮（打开在线播放器）：清掉按钮默认外观，只保留圆形图块 */
+    /* 封面是可点按钮（打开在线播放器）：清掉按钮默认外观，只保留圆形图块。 */
     padding: 0;
     border: none;
     cursor: pointer;
@@ -1284,7 +1163,7 @@ body.color-scheme-custom .engine-btn.active:hover {
     display: none;
 }
 
-/* 封面图读到后淡入一次（与卡片同为 0.3s 级节奏），避免整块图突然出现 */
+/* 封面图读到后淡入一次（与卡片同为 0.3s 级节奏），避免整块图突然出现。 */
 .ocp-player-cover.has-art {
     animation: ocpCoverIn 0.34s ease;
 }
@@ -1385,7 +1264,7 @@ body.color-scheme-custom .engine-btn.active:hover {
 }
 
 /* 曲名与艺术家（均读取自音源标签）：超长省略，避免破坏卡片布局。
-   给定最小宽度让胶囊保持细长形状（短曲名也不回缩），上限仍做截断 */
+   给定最小宽度让胶囊保持细长形状（短曲名也不回缩），上限仍做截断。 */
 .ocp-player-meta {
     display: flex;
     flex-direction: column;
@@ -1510,22 +1389,16 @@ body.dynamic-blur .ocp-player-artist {
     }
 }
 
-
-
 /* 高级视觉效果 - 底部动画 */
 
 body.dynamic-blur .ooo-badge {
     transition: background 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
-
-
 body.dynamic-blur .ooo-badge:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     body.dynamic-blur .ooo-badge:hover {
@@ -1533,15 +1406,11 @@ body.dynamic-blur .ooo-badge:hover {
     }
 }
 
-
-
 .ooo-badge:hover {
     background-color: rgba(0, 0, 0, 0.04);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     .ooo-badge:hover {
@@ -1551,7 +1420,7 @@ body.dynamic-blur .ooo-badge:hover {
     }
 }
 
-/* 底部名片退出动画 - 由JavaScript控制时添加此效果 */
+/* 底部名片退出动画 - 由 JavaScript 控制时添加此效果 */
 body.exit-animation .ooo-badge {
     transform: translateY(100%) !important;
     opacity: 0 !important;
@@ -1566,14 +1435,14 @@ body.dynamic-blur.exit-animation .ooo-badge {
     opacity: 0 !important;
 }
 
-/* 底部名片进入动画 - Phase 1: 初始位置 */
+/* 底部名片进入动画 - 阶段 1：初始位置 */
 body.enter-animation .ooo-badge {
     transform: translateY(100%) !important;
     opacity: 0 !important;
     pointer-events: none !important;
 }
 
-/* 底部名片进入动画 - Phase 2: 过渡到最终位置 */
+/* 底部名片进入动画 - 阶段 2：过渡到最终位置 */
 body.enter-animation.enter-active .ooo-badge {
     transform: translateY(0) !important;
     opacity: 1 !important;
@@ -1627,8 +1496,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     transition: all 0.40s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-
 /* 高级视觉效果 - 模态框模糊容器 */
 
 .modal.blur-effect {
@@ -1636,8 +1503,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     backdrop-filter: blur(80px) saturate(1.5) !important;
     -webkit-backdrop-filter: blur(80px) saturate(1.5) !important;
 }
-
-
 
 /* 深色模式 - 模态框模糊容器 */
 
@@ -1649,8 +1514,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     }
 }
 
-
-
 .modal.show {
     display: flex;
     align-items: center;
@@ -1659,8 +1522,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     backdrop-filter: blur(80px);
     -webkit-backdrop-filter: blur(80px);
 }
-
-
 
 .modal.hiding {
     display: flex;
@@ -1672,8 +1533,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     -webkit-backdrop-filter: blur(0px);
     transition: all 0.40s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-
 
 .modal-content {
     background: var(--background-color);
@@ -1691,8 +1550,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     flex-direction: column;
 }
 
-
-
 /* 高级视觉效果 - 模态框内容 */
 
 .modal.blur-effect .modal-content {
@@ -1702,8 +1559,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     border: 1px solid rgba(0, 0, 0, 0.08) !important;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
 }
-
-
 
 /* 深色模式 - 模态框内容 */
 
@@ -1715,8 +1570,6 @@ body.scrolled.dynamic-blur .ooo-badge {
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
 }
-
-
 
 /* 浅色模式 - 模态框标题 */
 
@@ -1744,8 +1597,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     -webkit-backdrop-filter: blur(80px) saturate(1.5);
 }
 
-
-
 /* 无动画 */
 
 .modal-content.no-animation {
@@ -1754,15 +1605,11 @@ body.scrolled.dynamic-blur .ooo-badge {
     opacity: 1;
 }
 
-
-
 .modal.show .modal-content {
     transform: scale(1) translateY(0);
     opacity: 1;
     box-shadow: 0 28px 56px rgba(0, 0, 0, 0.22);
 }
-
-
 
 /* 从底部铭牌缩放打开 - 弹窗从铭牌位置向上展开 */
 
@@ -1778,8 +1625,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     opacity: 1;
     box-shadow: 0 28px 56px rgba(0, 0, 0, 0.22);
 }
-
-
 
 /* 关闭弹窗动效 - 默认/右键来源：简单淡出收缩 */
 
@@ -1820,8 +1665,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     align-items: center;
     gap: 8px;
 }
-
-
 
 .modal-header h2 {
     font-size: 20px;
@@ -1866,8 +1709,6 @@ body.scrolled.dynamic-blur .ooo-badge {
     padding-left: 44px;
 }
 
-
-
 /* 图标字体是异步挂载的（见 Script/core/font-loader.js）：Google Fonts 那份样式表由脚本插进
    <head>，不阻塞首屏，于是从首屏画出到字体族生效之间有几十~几百毫秒（CDN 慢时更久），
    这期间这两个类名没有对应的字体族，字形会退化成字面文字（按钮上直接印出 settings
@@ -1908,8 +1749,6 @@ html:not(.symbols-ready) .material-symbols-outlined {
     fill: currentColor;
 }
 
-
-
 @media (prefers-color-scheme: dark) {
     .close-btn {
         background: rgba(0, 0, 0, 0.3);
@@ -1919,8 +1758,6 @@ html:not(.symbols-ready) .material-symbols-outlined {
         background-color: rgba(255, 255, 255, 0.08);
     }
 }
-
-
 
 /* 触屏优化：去除浏览器默认蓝色高亮 */
 #settings-modal button,
@@ -1932,20 +1769,14 @@ html:not(.symbols-ready) .material-symbols-outlined {
     outline: none;
 }
 
-
-
 .close-btn:hover {
     background-color: rgba(0, 0, 0, 0.08);
     transform: scale(1.1);
 }
 
-
-
 .close-btn:active {
     transform: scale(0.95);
 }
-
-
 
 /* 设置面板头部操作按钮（导出 / 导入） */
 .header-action-btn {
@@ -1986,20 +1817,16 @@ html:not(.symbols-ready) .material-symbols-outlined {
     }
 }
 
-
-
 @media (prefers-color-scheme: dark) {
     .close-btn:hover {
         background-color: rgba(255, 255, 255, 0.08);
     }
 }
 
-
-
 .modal-body {
     padding: 24px;
     max-height: 60vh;
-    /* 通用弹窗内容高度上限 60vh；设置面板的高度由 #settings-modal 窗口约束 */
+    /* 通用弹窗内容高度上限 60vh；设置面板的高度由 #settings-modal 窗口约束。 */
     min-height: 0;
     overflow: hidden;
     display: flex;
@@ -2007,28 +1834,20 @@ html:not(.symbols-ready) .material-symbols-outlined {
     overscroll-behavior: contain;
 }
 
-
-
-/* Chrome、Safari滚动条 */
+/* Chrome、Safari 滚动条 */
 
 .modal-body::-webkit-scrollbar {
     width: 6px;
 }
 
-
-
 .modal-body::-webkit-scrollbar-track {
     background: transparent;
 }
-
-
 
 .modal-body::-webkit-scrollbar-thumb {
     background-color: var(--border-color);
     border-radius: 3px;
 }
-
-
 
 /* 设置布局 */
 
@@ -2051,8 +1870,6 @@ html:not(.symbols-ready) .material-symbols-outlined {
     display: none;
 }
 
-
-
 .settings-left-panel {
     flex: 1;
     display: flex;
@@ -2074,8 +1891,6 @@ html:not(.symbols-ready) .material-symbols-outlined {
     overscroll-behavior: contain;
 }
 
-
-
 .settings-right-panel {
     position: absolute;
     top: 0;
@@ -2089,8 +1904,6 @@ html:not(.symbols-ready) .material-symbols-outlined {
     overflow: hidden;
 }
 
-
-
 .right-panel-content {
     display: flex;
     flex-direction: column;
@@ -2099,8 +1912,6 @@ html:not(.symbols-ready) .material-symbols-outlined {
     padding: 24px;
 }
 
-
-
 .right-panel-upper {
     /* 下钻切换的幽灵层靠这两个值对齐内容区，改内边距时一并改 */
     --panel-pad: 16px;
@@ -2108,7 +1919,7 @@ html:not(.symbols-ready) .material-symbols-outlined {
     min-height: 0;
     max-height: 100%;
     overflow-y: auto;
-    /* 下钻推入/推出时内容整体左右平移，横向必须裁掉，避免动画期间出现横向滚动条 */
+    /* 下钻推入/推出时内容整体左右平移，横向必须裁掉，避免动画期间出现横向滚动条。 */
     overflow-x: hidden;
     margin-bottom: 16px;
     padding: var(--panel-pad);
@@ -2141,8 +1952,6 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
     border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
-
-
 .right-panel-placeholder-container {
     flex: 1;
     display: flex;
@@ -2151,8 +1960,6 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
     width: 100%;
 }
 
-
-
 .right-panel-placeholder {
     color: var(--text-secondary);
     font-size: 16px;
@@ -2160,13 +1967,9 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
     font-weight: 500;
 }
 
-
-
 .right-panel-lower {
     margin-top: auto;
 }
-
-
 
 /* 设置菜单容器 */
 
@@ -2217,7 +2020,7 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
    位移取整屏宽，两屏一进一出严丝合缝；叠一点点淡入淡出（起止 0.6），
    与其它设置页面滑入动画的柔和程度一致，不至于像硬切。
    旧视图由 .panel-transition-ghost 承载（脱离文档流浮在新视图之上），播完即移除。
-   这些类由 panelTransition() 动态挂到面板的直接子元素上 */
+   这些类由 panelTransition() 动态挂到面板的直接子元素上。 */
 .panel-in-right {
     animation: panelPushIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
@@ -2255,7 +2058,7 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
 }
 
 /* 下钻切换时承载旧视图的幽灵层：范围与右面板的内容区完全重合
-   （节点是直接搬移过来的，滚动位置也保留），因此切换瞬间画面不跳变 */
+   （节点是直接搬移过来的，滚动位置也保留），因此切换瞬间画面不跳变。 */
 .panel-transition-ghost {
     position: absolute;
     top: var(--panel-pad, 16px);
@@ -2270,8 +2073,6 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
     background-color: var(--surface-color);
     will-change: transform, opacity;
 }
-
-
 
 .settings-menu-options {
     flex: 1 1 0;
@@ -2303,8 +2104,6 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
     -webkit-user-select: none;
 }
 
-
-
 .settings-menu-option {
     padding: 12px 16px;
     border-radius: 16px;
@@ -2319,13 +2118,9 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
     gap: 10px;
 }
 
-
-
 .settings-menu-option:hover {
     background-color: var(--surface-variant);
 }
-
-
 
 .settings-menu-option.selected {
     background-color: var(--primary-color);
@@ -2336,8 +2131,6 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
 .settings-menu-option.selected .color-scheme-dot {
     border-color: rgba(255, 255, 255, 0.5);
 }
-
-
 
 /* 底部铭牌功能面板（双击 / 右键 各一个三段式滑动选择器，样式对齐小组件尺寸选择器） */
 .badge-action-row {
@@ -2370,7 +2163,7 @@ body.dynamic-blur .right-panel-upper .widget-panel-list-container {
    容器透明后不可再用 --surface-color（与面板同色会看不见），
    改用半透明叠加：浅色模式深色叠加、深色模式浅色叠加。
    每段槽宽 33.3333%，滑块左右各内缩 3px，故宽度减去 2×3px，
-   位移按“槽宽 = 自身宽 + 2×3px”推进，保证首末段左右间隙对称、不贴边 */
+   位移按“槽宽 = 自身宽 + 2×3px”推进，保证首末段左右间隙对称、不贴边。 */
 .badge-action-thumb {
     position: absolute;
     top: 3px;
@@ -2433,8 +2226,6 @@ body.dynamic-blur .badge-action-thumb {
     color: var(--scheme-accent) !important;
     font-weight: 600;
 }
-
-
 
 /* 自定义配色删除按钮 */
 .custom-color-delete-btn {
@@ -2525,8 +2316,6 @@ body.dynamic-blur .badge-action-thumb {
     border-color: white;
 }
 
-
-
 /* 主题菜单项：左上角主题名称+版本号，换行小字显示设计师 */
 .theme-menu-option {
     height: 50px;
@@ -2559,7 +2348,7 @@ body.dynamic-blur .badge-action-thumb {
     line-height: 1.2;
 }
 
-/* 选中态：名称/版本/设计师全部反白，版本与设计师略降不透明度 */
+/* 选中态：名称/版本/设计师全部反白，版本与设计师略降不透明度。 */
 .settings-menu-option.selected .theme-option-name,
 .settings-menu-option.selected .theme-option-version,
 .settings-menu-option.selected .theme-option-designer {
@@ -2570,8 +2359,6 @@ body.dynamic-blur .badge-action-thumb {
 .settings-menu-option.selected .theme-option-designer {
     opacity: 0.85;
 }
-
-
 
 /* 设置菜单底部区域 */
 
@@ -2601,8 +2388,6 @@ body.dynamic-blur .badge-action-thumb {
     background: rgba(var(--surface-color-rgb), 0.75) !important;
     transform: scale(0.95);
 }
-
-
 
 /* 书签导入按钮 */
 
@@ -2704,8 +2489,6 @@ body.dynamic-blur .badge-action-thumb {
         background: rgba(var(--surface-color-rgb), 0.92) !important;
     }
 }
-
-
 
 /* 书签导入下拉菜单 */
 
@@ -2947,7 +2730,6 @@ body.dynamic-blur .bookmark-folder-submenu {
     }
 }
 
-
 /* 设置菜单操作 */
 
 .settings-menu-button-container {
@@ -2968,8 +2750,6 @@ body.dynamic-blur .bookmark-folder-submenu {
     pointer-events: auto;
 }
 
-
-
 /* 快捷链接输入 */
 
 .quick-link-inputs-container {
@@ -2979,8 +2759,6 @@ body.dynamic-blur .bookmark-folder-submenu {
     gap: 16px;
 }
 
-
-
 .quick-link-inputs-wrapper {
     flex: 1;
     display: flex;
@@ -2989,15 +2767,11 @@ body.dynamic-blur .bookmark-folder-submenu {
     overflow-y: auto;
 }
 
-
-
 .quick-link-inputs-wrapper label {
     font-size: 14px;
     font-weight: 500;
     color: var(--text-color);
 }
-
-
 
 .quick-link-inputs-wrapper input {
     padding: 12px 16px;
@@ -3010,14 +2784,10 @@ body.dynamic-blur .bookmark-folder-submenu {
     transition: all 0.2s ease;
 }
 
-
-
 .quick-link-inputs-wrapper input:focus {
     outline: none;
     border-color: var(--primary-color);
 }
-
-
 
 .confirm-quick-link-btn {
     padding: 12px 24px;
@@ -3035,20 +2805,14 @@ body.dynamic-blur .bookmark-folder-submenu {
     box-sizing: border-box;
 }
 
-
-
 .confirm-quick-link-btn:hover {
     background-color: var(--scheme-accent-hover);
 }
-
-
 
 .confirm-quick-link-btn:active {
     background-color: var(--scheme-accent-active);
     transform: translateY(0);
 }
-
-
 
 .settings-menu-confirm {
     padding: 0 28px;
@@ -3122,15 +2886,11 @@ body.dynamic-blur .settings-menu-confirm:active {
     background: rgba(var(--surface-color-rgb), 0.78) !important;
 }
 
-
-
 .setting-group {
     margin-bottom: 14px;
     padding-bottom: 0;
     border-bottom: none;
 }
-
-
 
 .setting-group.action-buttons {
     margin-bottom: 0;
@@ -3138,15 +2898,11 @@ body.dynamic-blur .settings-menu-confirm:active {
     /* 固定贴底，内容区独立滚动 */
 }
 
-
-
 .setting-group label {
     display: block;
     margin-bottom: 8px;
     color: var(--text-color);
 }
-
-
 
 .setting-select {
     width: 100%;
@@ -3165,15 +2921,11 @@ body.dynamic-blur .settings-menu-confirm:active {
     background-size: 20px;
 }
 
-
-
 .custom-select {
     position: relative;
     display: inline-block;
     width: 100%;
 }
-
-
 
 .select-selected {
     width: 100%;
@@ -3195,12 +2947,10 @@ body.dynamic-blur .settings-menu-confirm:active {
 }
 
 /* 可下钻项（点击进入右面板子页面，而非展开下拉）：箭头换成右向 chevron。
-   设置主页面「小组件列表 / 快速访问链接」与侧边栏功能根视图的四个入口行共用 */
+   设置主页面「小组件列表 / 快速访问链接」与侧边栏功能根视图的四个入口行共用。 */
 .select-selected.select-drill {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 6 15 12 9 18'%3E%3C/polyline%3E%3C/svg%3E");
 }
-
-
 
 .select-items {
     position: absolute;
@@ -3216,13 +2966,9 @@ body.dynamic-blur .settings-menu-confirm:active {
     overflow-y: auto;
 }
 
-
-
 .select-hide {
     display: none;
 }
-
-
 
 .select-item {
     padding: 14px 16px;
@@ -3231,27 +2977,19 @@ body.dynamic-blur .settings-menu-confirm:active {
     transition: background-color 0.2s ease;
 }
 
-
-
 .select-item:hover {
     background-color: rgba(0, 0, 0, 0.02);
 }
-
-
 
 .select-item:first-child {
     border-radius: 16px 16px 0 0;
 }
 
-
-
 .select-item:last-child {
     border-radius: 0 0 16px 16px;
 }
 
-
-
-/* 自定义文字Logo样式 */
+/* 自定义文字 Logo 样式 */
 .select-item-text-logo {
     display: flex;
     flex-direction: column;
@@ -3265,27 +3003,19 @@ body.dynamic-blur .settings-menu-confirm:active {
     padding-bottom: 8px;
 }
 
-
-
 .select-items::-webkit-scrollbar {
     width: 6px;
 }
-
-
 
 .select-items::-webkit-scrollbar-track {
     background: transparent;
     border-radius: 6px;
 }
 
-
-
 .select-items::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 6px;
 }
-
-
 
 .select-items::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.3);
@@ -3343,7 +3073,7 @@ body.dynamic-blur .settings-menu-confirm:active {
     transition: opacity 0.2s ease;
 }
 
-/* ========== 右键菜单项自定义面板（已移至右面板） ========== */
+/* ---------- 右键菜单项自定义面板（已移至右面板） ---------- */
 
 .bing-wallpaper-item .info-icon:hover {
     opacity: 1;
@@ -3354,8 +3084,6 @@ body.dynamic-blur .settings-menu-confirm:active {
     border-color: var(--primary-color);
     background-color: rgba(0, 0, 0, 0.02);
 }
-
-
 
 .setting-input {
     width: 100%;
@@ -3369,15 +3097,11 @@ body.dynamic-blur .settings-menu-confirm:active {
     transition: all 0.2s ease;
 }
 
-
-
 .setting-input:focus {
     outline: none;
     border-color: var(--primary-color);
     background-color: rgba(0, 0, 0, 0.02);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
 
@@ -3387,16 +3111,12 @@ body.dynamic-blur .settings-menu-confirm:active {
     }
 }
 
-
-
 /* 下拉选择与上传组合样式 */
 .select-with-upload {
     display: flex;
     gap: 8px;
     align-items: stretch;
 }
-
-
 
 .upload-btn {
     padding: 16px;
@@ -3416,19 +3136,13 @@ body.dynamic-blur .settings-menu-confirm:active {
     justify-content: center;
 }
 
-
-
 .upload-btn:hover {
     background-color: var(--primary-color);
 }
 
-
-
 .upload-btn:active {
     background-color: var(--scheme-accent-active);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     .upload-btn {
@@ -3436,19 +3150,13 @@ body.dynamic-blur .settings-menu-confirm:active {
     }
 }
 
-
-
 .upload-btn:hover {
     background-color: var(--scheme-accent-hover);
 }
 
-
-
 .upload-btn:active {
     background-color: var(--scheme-accent-active);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     .upload-btn:hover {
@@ -3456,16 +3164,12 @@ body.dynamic-blur .settings-menu-confirm:active {
     }
 }
 
-
-
-/* 文字Logo输入组 */
+/* 文字 Logo 输入组 */
 
 .text-logo-input-group {
     display: flex;
     gap: 8px;
 }
-
-
 
 .text-logo-btn {
     padding: 10px 16px;
@@ -3481,23 +3185,17 @@ body.dynamic-blur .settings-menu-confirm:active {
     white-space: nowrap;
 }
 
-
-
 .text-logo-btn:hover {
     background-color: var(--surface-variant);
     border-color: var(--primary-color);
     transform: translateY(-1px);
 }
 
-
-
 .text-logo-btn:active {
     transform: translateY(0);
 }
 
-
-
-/* 文字Logo内联输入框样式 */
+/* 文字 Logo 内联输入框样式 */
 
 .text-logo-inline-group {
     display: flex;
@@ -3630,7 +3328,7 @@ body.dynamic-blur .settings-menu-confirm:active {
     background-color: rgba(255, 255, 255, 0.15);
 }
 
-/* 暗色Logo上传按钮样式 */
+/* 暗色 Logo 上传按钮样式 */
 
 .dark-logo-upload-btn {
     width: 100%;
@@ -3650,7 +3348,7 @@ body.dynamic-blur .settings-menu-confirm:active {
     border-color: white;
 }
 
-/* 自定义Logo选项包装器 */
+/* 自定义 Logo 选项包装器 */
 .custom-logo-option-wrapper {
     display: flex;
     align-items: center;
@@ -3708,7 +3406,7 @@ body.dynamic-blur .settings-menu-confirm:active {
     border-color: white;
 }
 
-/* 自定义Logo按钮容器 */
+/* 自定义 Logo 按钮容器 */
 .custom-logo-btn-container {
     display: flex;
     align-items: center;
@@ -3811,7 +3509,7 @@ body.dynamic-blur .settings-menu-confirm:active {
 .custom-wallpaper-name {
     flex: 1;
     /* 加了固定宽度的格式方框后，长名字必须能真正收缩，
-       否则 flex 的默认 min-width:auto 会把方框和删除按钮顶出容器 */
+       否则 flex 的默认 min-width:auto 会把方框和删除按钮顶出容器。 */
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3821,7 +3519,7 @@ body.dynamic-blur .settings-menu-confirm:active {
 /* 壁纸格式方框（HDR / 实况照片），位于壁纸名与删除按钮之间。
    是与删除按钮同一套写法：1px 实边、6px 圆角、0.2s 过渡、选中态翻白
    （选中行是主色渐变底，暖色/冷色都会被糊掉）。
-   和删除按钮不同的是它是个**开关按钮**：图标取 Material Symbols 的
+   和删除按钮不同的是它是个开关按钮：图标取 Material Symbols 的
    hdr_on/hdr_off、motion_photos_on/motion_photos_off（关闭态自带一道斜杠），
    配色只是开关状态的第二重提示。 */
 .wallpaper-format-badges {
@@ -3841,7 +3539,7 @@ body.dynamic-blur .settings-menu-confirm:active {
     margin: 0;
     border: 1px solid currentColor;
     border-radius: 6px;
-    /* button 默认样式一律清掉，否则会带上系统字体与凸起背景 */
+    /* button 默认样式一律清掉，否则会带上系统字体与凸起背景。 */
     appearance: none;
     -webkit-appearance: none;
     font-family: inherit;
@@ -4074,16 +3772,13 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
     background: rgba(255, 255, 255, 0.05);
 }
 
-
 .wallpaper-url-group {
     display: flex;
     gap: 8px;
     margin-top: 8px;
 }
 
-
-
-/* 自定义Logo列表 */
+/* 自定义 Logo 列表 */
 
 .custom-logos-list {
     display: flex;
@@ -4092,8 +3787,6 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
     max-height: 200px;
     overflow-y: auto;
 }
-
-
 
 .custom-logo-item {
     display: flex;
@@ -4106,21 +3799,15 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
     transition: all 0.2s ease;
 }
 
-
-
 .custom-logo-item:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
-
-
 
 .custom-logo-name {
     flex: 1;
     font-size: 14px;
     font-weight: 500;
 }
-
-
 
 .delete-logo-btn {
     padding: 8px 12px;
@@ -4135,21 +3822,15 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
     transition: all 0.2s ease;
 }
 
-
-
 .delete-logo-btn:hover {
     background-color: rgba(239, 68, 68, 0.1);
     border-color: #ef4444;
     color: #ef4444;
 }
 
-
-
 .delete-logo-btn:active {
     transform: translateY(0);
 }
-
-
 
 /* 快捷链接空状态 */
 
@@ -4160,8 +3841,6 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
     font-size: 13px;
     line-height: 1.6;
 }
-
-
 
 .quick-links-input-wrapper {
     flex: 0 0 auto;
@@ -4177,7 +3856,6 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
 .quick-links-input-wrapper.slide-out-right {
     animation: slideOutToRight 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-
 
 .quick-links-input-wrapper .setting-input {
     width: 100%;
@@ -4199,8 +3877,6 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
     border-radius: 12px;
 }
 
-
-
 .quick-links-list-container {
     flex: 1 1 0;
     min-height: 0;
@@ -4213,8 +3889,6 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
     padding-bottom: 52px;
 }
 
-
-
 .quick-link-menu-item {
     display: flex;
     align-items: center;
@@ -4226,18 +3900,14 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
     margin-bottom: 6px;
     user-select: none;
     color: var(--text-color);
-    /* 禁止被 flex 容器压缩：大量链接时保持条目高度不变，改为容器滚动 */
+    /* 禁止被 flex 容器压缩：大量链接时保持条目高度不变，改为容器滚动。 */
     flex-shrink: 0;
     min-height: 52px;
 }
 
-
-
 .quick-link-menu-item:hover {
     background-color: var(--surface-variant);
 }
-
-
 
 /* 拖动排序（共享给快速访问链接与小组件两个列表，见 Script/core/sortable.js） */
 
@@ -4254,9 +3924,9 @@ body.scrolled .wallpaper-format-corner-badge[data-scope="wallpaper"] {
     opacity: 0.98;
     /* 关键：克隆体带 .quick-link-menu-item / .widget-menu-item 类，
        它们有 transition: all 0.2s ease —— 不禁用的话浏览器会用缓动
-       去"追"我们写入的位移，表现为明显滞后、不跟手。 */
+       去“追”我们写入的位移，表现为明显滞后、不跟手。 */
     transition: none !important;
-    /* 位移走 transform：提升为独立合成层，移动时不重排、不重绘 */
+    /* 位移走 transform：提升为独立合成层，移动时不重排、不重绘。 */
     will-change: transform;
     backface-visibility: hidden;
 }
@@ -4277,8 +3947,6 @@ body.sortable-active {
     cursor: grabbing;
 }
 
-
-
 .quick-link-drag-handle {
     width: 24px;
     height: 24px;
@@ -4295,19 +3963,13 @@ body.sortable-active {
     touch-action: none;
 }
 
-
-
 .quick-link-drag-handle:hover {
     opacity: 0.8;
 }
 
-
-
 .quick-link-drag-handle:active {
     cursor: grabbing;
 }
-
-
 
 .quick-link-drag-handle span {
     display: block;
@@ -4316,8 +3978,6 @@ body.sortable-active {
     background-color: var(--text-secondary);
     border-radius: 2px;
 }
-
-
 
 .quick-link-menu-info {
     flex: 1;
@@ -4328,8 +3988,6 @@ body.sortable-active {
     cursor: pointer;
 }
 
-
-
 .quick-link-menu-name {
     font-weight: 500;
     font-size: 14px;
@@ -4338,8 +3996,6 @@ body.sortable-active {
     text-overflow: ellipsis;
 }
 
-
-
 .quick-link-menu-url {
     font-size: 12px;
     color: var(--text-secondary);
@@ -4347,8 +4003,6 @@ body.sortable-active {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-
 
 .delete-link-menu-btn {
     width: 28px;
@@ -4369,15 +4023,11 @@ body.sortable-active {
     opacity: 0.5;
 }
 
-
-
 .delete-link-menu-btn:hover {
     background-color: rgba(239, 68, 68, 0.1);
     color: #ef4444;
     opacity: 1;
 }
-
-
 
 /* 一键清除按钮 */
 
@@ -4415,16 +4065,12 @@ body.sortable-active {
     flex-shrink: 0;
 }
 
-
-
 /* 关于和反馈按钮 */
 
 .about-feedback-buttons {
     display: flex;
     gap: 12px;
 }
-
-
 
 .about-feedback-btn {
     flex: 1;
@@ -4440,21 +4086,15 @@ body.sortable-active {
     transition: all 0.2s ease;
 }
 
-
-
 .about-feedback-btn:hover {
     background-color: var(--surface-variant);
     border-color: var(--primary-color);
     transform: translateY(-1px);
 }
 
-
-
 .about-feedback-btn:active {
     transform: translateY(0);
 }
-
-
 
 .developer-mode-controls {
     display: flex;
@@ -4467,23 +4107,17 @@ body.sortable-active {
     display: none;
 }
 
-
-
 .developer-control-item {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-
-
 .developer-control-item label {
     font-size: 14px;
     color: var(--text-color);
     font-weight: 500;
 }
-
-
 
 .slider-input {
     width: 100%;
@@ -4494,8 +4128,6 @@ body.sortable-active {
     -webkit-appearance: none;
     appearance: none;
 }
-
-
 
 .slider-input::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -4510,13 +4142,9 @@ body.sortable-active {
     box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.8);
 }
 
-
-
 .slider-input::-webkit-slider-thumb:hover {
     transform: scale(1.05);
 }
-
-
 
 .slider-input::-moz-range-thumb {
     width: 2px;
@@ -4529,13 +4157,9 @@ body.sortable-active {
     box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.8);
 }
 
-
-
 .slider-input::-moz-range-thumb:hover {
     transform: scale(1.05);
 }
-
-
 
 .slider-value {
     font-size: 14px;
@@ -4544,8 +4168,6 @@ body.sortable-active {
     min-width: 40px;
     text-align: right;
 }
-
-
 
 .slider-value-input {
     width: 60px;
@@ -4561,15 +4183,11 @@ body.sortable-active {
     transition: all 0.2s ease;
 }
 
-
-
 .slider-value-input:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(var(--scheme-accent-rgb), 0.1);
 }
-
-
 
 .slider-value-input::-webkit-outer-spin-button,
 
@@ -4578,14 +4196,10 @@ body.sortable-active {
     margin: 0;
 }
 
-
-
 .slider-value-input {
     appearance: textfield;
     -moz-appearance: textfield;
 }
-
-
 
 .developer-control-item .setting-input {
     width: 100%;
@@ -4598,15 +4212,11 @@ body.sortable-active {
     transition: all 0.2s ease;
 }
 
-
-
 .developer-control-item .setting-input:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(var(--scheme-accent-rgb), 0.1);
 }
-
-
 
 .developer-control-item .setting-input.no-spin::-webkit-outer-spin-button,
 
@@ -4615,14 +4225,10 @@ body.sortable-active {
     margin: 0;
 }
 
-
-
 .developer-control-item .setting-input.no-spin {
     appearance: textfield;
     -moz-appearance: textfield;
 }
-
-
 
 .control-with-reset {
     display: flex;
@@ -4630,26 +4236,18 @@ body.sortable-active {
     gap: 8px;
 }
 
-
-
 .control-with-reset .slider-input {
     flex: 1;
 }
-
-
 
 .control-with-reset .slider-value {
     min-width: 50px;
     text-align: center;
 }
 
-
-
 .control-with-reset .setting-input {
     flex: 1;
 }
-
-
 
 .reset-developer-btn {
     width: 100%;
@@ -4666,21 +4264,15 @@ body.sortable-active {
     margin-top: 16px;
 }
 
-
-
 .reset-developer-btn:hover {
     background-color: rgba(239, 68, 68, 0.1);
     border-color: #ef4444;
     color: #ef4444;
 }
 
-
-
 .reset-developer-btn:active {
     transform: translateY(0);
 }
-
-
 
 .search-history-container {
     position: relative;
@@ -4701,8 +4293,6 @@ body.sortable-active {
     scrollbar-color: var(--border-color) transparent;
 }
 
-
-
 /* 搜索历史 - 显示 */
 
 .search-history-container.show {
@@ -4713,8 +4303,6 @@ body.sortable-active {
     overflow-y: auto;
     pointer-events: auto;
 }
-
-
 
 /* 滚动时隐藏搜索历史 */
 
@@ -4727,15 +4315,11 @@ body.scrolled .search-history-container {
     pointer-events: none !important;
 }
 
-
-
 /* 搜索历史列表 */
 
 .search-history-list {
     padding: 8px 0;
 }
-
-
 
 /* 搜索历史项 */
 
@@ -4754,8 +4338,6 @@ body.scrolled .search-history-container {
 .search-history-item:hover {
     background-color: var(--surface-variant);
 }
-
-
 
 /* 搜索历史删除按钮 */
 
@@ -4794,9 +4376,7 @@ body.scrolled .search-history-container {
     }
 }
 
-
-
-/* 热搜词建议行：趋势图标 + “热搜”角标，配色复用 CSS 变量以适配三套主题与暗色模式 */
+/* 热搜词建议行：趋势图标 + “热搜”角标，配色复用 CSS 变量以适配三套主题与暗色模式。 */
 
 .search-suggestion-item {
     justify-content: flex-start;
@@ -4831,29 +4411,21 @@ body.scrolled .search-history-container {
     pointer-events: none;
 }
 
-
-
 /* 搜索历史滚动条 */
 
 .search-history-container::-webkit-scrollbar {
     width: 6px;
 }
 
-
-
 .search-history-container::-webkit-scrollbar-track {
     background: var(--surface-variant);
     border-radius: 3px;
 }
 
-
-
 .search-history-container::-webkit-scrollbar-thumb {
     background: var(--border-color);
     border-radius: 3px;
 }
-
-
 
 .search-history-container::-webkit-scrollbar-thumb:hover {
     background: var(--text-secondary);
@@ -4873,7 +4445,10 @@ body.scrolled .search-history-container {
     z-index: 1000;
     border: 0 none;
     opacity: 0;
-    transition: max-height 0.35s ease, opacity 0.2s ease, padding 0.35s ease, border 0.35s ease;
+    /* margin-top 与搜索框的放大/回缩同步过渡：聚焦时这段负位移要带动下方引擎按钮一起贴到框底，
+     * 不能瞬跳。 */
+    transition: max-height 0.35s ease, opacity 0.2s ease, padding 0.35s ease, border 0.35s ease,
+        margin-top 0.32s cubic-bezier(0.22, 1, 0.36, 1);
     pointer-events: none;
     padding: 0 16px;
     scrollbar-width: thin;
@@ -4975,7 +4550,7 @@ body.scrolled .search-command-container {
 }
 
 /* 搜索框内模式指示 chip（网址组件 / 翻译组件），位于输入框左侧。
-   收起时宽度、内边距、外边距与透明度归零；展开时随放大镜收缩同步顶入 */
+   收起时宽度、内边距、外边距与透明度归零；展开时随放大镜收缩同步顶入。 */
 
 .search-mode-chip {
     display: flex;
@@ -5016,7 +4591,7 @@ body.scrolled .search-command-container {
     pointer-events: auto;
 }
 
-/* 翻译语言对 / 网址历史：行样式复用原生搜索历史 search-history-item，无需额外定义 */
+/* 翻译语言对 / 网址历史：行样式复用原生搜索历史 search-history-item，无需额外定义。 */
 
 .search-mode-chip.expanded:hover {
     filter: brightness(1.1);
@@ -5035,8 +4610,6 @@ body.scrolled .search-command-container {
     text-overflow: ellipsis;
 }
 
-
-
 /* 快捷访问链接 */
 
 .quick-access-links {
@@ -5050,8 +4623,6 @@ body.scrolled .search-command-container {
     transition: transform 0.35s ease-out, opacity 0.3s ease,
         max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-
 
 .quick-access-btn {
     background-color: #F1F3F4;
@@ -5071,8 +4642,6 @@ body.scrolled .search-command-container {
     -webkit-backdrop-filter: blur(0);
 }
 
-
-
 @media (prefers-color-scheme: dark) {
     .quick-access-btn {
         background-color: #303134;
@@ -5081,8 +4650,6 @@ body.scrolled .search-command-container {
         -webkit-backdrop-filter: blur(0);
     }
 }
-
-
 
 /* 快捷访问链接壁纸模式样式 */
 
@@ -5095,8 +4662,6 @@ body:not(.dynamic-blur).homepage-wallpaper .quick-access-btn {
     -webkit-backdrop-filter: blur(0);
 }
 
-
-
 /* 快捷访问链接壁纸模式深色样式 */
 
 @media (prefers-color-scheme: dark) {
@@ -5107,7 +4672,7 @@ body:not(.dynamic-blur).homepage-wallpaper .quick-access-btn {
     }
 }
 
-/* 快捷访问链接容器退出动画 - 由JavaScript控制时添加此效果 */
+/* 快捷访问链接容器退出动画 - 由 JavaScript 控制时添加此效果 */
 body.exit-animation #quick-access-links {
     transform: translateY(200px) !important;
     opacity: 0 !important;
@@ -5123,7 +4688,7 @@ body.dynamic-blur.exit-animation #quick-access-links {
     opacity: 0 !important;
 }
 
-/* 快捷访问链接容器进入动画 - Phase 1: 初始位置 */
+/* 快捷访问链接容器进入动画 - 阶段 1：初始位置 */
 body.enter-animation #quick-access-links {
     transform: translateY(200px) !important;
     opacity: 0 !important;
@@ -5131,7 +4696,7 @@ body.enter-animation #quick-access-links {
     pointer-events: none !important;
 }
 
-/* 快捷访问链接容器进入动画 - Phase 2: 过渡到最终位置 */
+/* 快捷访问链接容器进入动画 - 阶段 2：过渡到最终位置 */
 body.enter-animation.enter-active #quick-access-links {
     transform: translateY(0) !important;
     opacity: 1 !important;
@@ -5162,22 +4727,16 @@ body.scrolled.dynamic-blur .quick-access-btn {
     background: transparent !important;
 }
 
-
-
 .quick-access-btn:hover {
     border-color: transparent;
     box-shadow: none;
     transform: translateY(-2px);
 }
 
-
-
 .quick-access-btn:active {
     transform: translateY(0);
     box-shadow: none;
 }
-
-
 
 /* 操作按钮 */
 
@@ -5187,8 +4746,6 @@ body.scrolled.dynamic-blur .quick-access-btn {
     gap: 12px;
     margin-top: 10px;
 }
-
-
 
 /* 操作按钮 - 设置上下文 */
 
@@ -5207,13 +4764,11 @@ body.scrolled.dynamic-blur .quick-access-btn {
     box-sizing: border-box;
 }
 
-
-
 /* 深色模式 - 操作按钮 */
 
 /* 右键菜单 */
 
-/* MD3右键菜单 */
+/* MD3 右键菜单 */
 
 .context-menu {
     position: fixed;
@@ -5234,23 +4789,17 @@ body.scrolled.dynamic-blur .quick-access-btn {
     overflow: hidden;
 }
 
-
-
 /* 无动画 */
 
 .context-menu.no-animation {
     transition: none;
 }
 
-
-
 .context-menu.no-animation .context-menu-item {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
 }
-
-
 
 /* 右键菜单模糊 */
 
@@ -5259,8 +4808,6 @@ body.scrolled.dynamic-blur .quick-access-btn {
     opacity: 1;
     transform: scale(1) translateY(0);
 }
-
-
 
 /* 右键菜单项动画 */
 
@@ -5271,8 +4818,6 @@ body.scrolled.dynamic-blur .quick-access-btn {
     pointer-events: none;
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-
-
 
 /* 右键菜单分隔线 */
 
@@ -5290,13 +4835,9 @@ body.scrolled.dynamic-blur .quick-access-btn {
     animation: contextMenuItemFadeIn 0.2s ease forwards;
 }
 
-
-
 .context-menu-item:hover {
     background-color: var(--surface-variant);
 }
-
-
 
 .context-menu-item .context-menu-icon {
     width: 20px;
@@ -5308,15 +4849,11 @@ body.scrolled.dynamic-blur .quick-access-btn {
     flex-shrink: 0;
 }
 
-
-
 .context-menu-item .context-menu-text {
     flex: 1;
     font-size: 14px;
     font-weight: 500;
 }
-
-
 
 /* 右键菜单分隔线动画 */
 
@@ -5373,8 +4910,6 @@ body.scrolled.dynamic-blur .quick-access-btn {
     }
 }
 
-
-
 /* 信息提示 */
 
 .hide-info-popup-days {
@@ -5392,8 +4927,6 @@ body.scrolled.dynamic-blur .quick-access-btn {
     z-index: 1;
 }
 
-
-
 /* 隐藏信息提示天数 */
 
 .hide-info-popup-days::before {
@@ -5408,57 +4941,39 @@ body.scrolled.dynamic-blur .quick-access-btn {
     z-index: -1;
 }
 
-
-
 /* 信息提示天数进度 */
 
 .hide-info-popup-days[data-days-left='7']::before {
     width: 100%;
 }
 
-
-
 .hide-info-popup-days[data-days-left='6']::before {
     width: 85.7%;
 }
-
-
 
 .hide-info-popup-days[data-days-left='5']::before {
     width: 71.4%;
 }
 
-
-
 .hide-info-popup-days[data-days-left='4']::before {
     width: 57.1%;
 }
-
-
 
 .hide-info-popup-days[data-days-left='3']::before {
     width: 42.9%;
 }
 
-
-
 .hide-info-popup-days[data-days-left='2']::before {
     width: 28.6%;
 }
-
-
 
 .hide-info-popup-days[data-days-left='1']::before {
     width: 14.3%;
 }
 
-
-
 .hide-info-popup-days[data-days-left='0']::before {
     width: 0%;
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     .hide-info-popup-days {
@@ -5470,8 +4985,6 @@ body.scrolled.dynamic-blur .quick-access-btn {
         background-color: rgba(var(--scheme-accent-rgb), 0.9);
     }
 }
-
-
 
 /* 淡入 */
 
@@ -5487,8 +5000,6 @@ body.scrolled.dynamic-blur .quick-access-btn {
     }
 }
 
-
-
 /* 淡出 */
 
 @keyframes fadeOut {
@@ -5502,8 +5013,6 @@ body.scrolled.dynamic-blur .quick-access-btn {
         transform: scale(0.9);
     }
 }
-
-
 
 /* 右键菜单分隔线动画 */
 
@@ -5519,13 +5028,9 @@ body.scrolled.dynamic-blur .quick-access-btn {
     }
 }
 
-
-
 .context-menu.show .context-menu-item {
     animation: menuItemSlideIn 0.3s ease forwards;
 }
-
-
 
 .context-menu.show .context-menu-item:nth-child(1) {
     animation-delay: 0.02s;
@@ -5571,8 +5076,6 @@ body.scrolled.dynamic-blur .quick-access-btn {
     animation-delay: 0.22s;
 }
 
-
-
 .context-menu-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -5580,8 +5083,6 @@ body.scrolled.dynamic-blur .quick-access-btn {
     padding: 0;
     min-width: 180px;
 }
-
-
 
 .context-menu-grid.compact {
     grid-template-columns: 1fr;
@@ -5733,8 +5234,6 @@ body.color-scheme-black-white .context-menu-grid.minimal .context-menu-item:hove
     overflow: hidden;
 }
 
-
-
 .context-menu-item:hover {
     background-color: var(--context-menu-color, #00AE00);
     background-image: var(--scheme-gradient);
@@ -5747,13 +5246,9 @@ body.color-scheme-black-white .context-menu-item:hover {
     color: #000000;
 }
 
-
-
 .context-menu-item:active {
     transform: translateX(4px) scale(0.98);
 }
-
-
 
 .context-menu-text {
     font-size: 14px;
@@ -5762,15 +5257,11 @@ body.color-scheme-black-white .context-menu-item:hover {
     text-align: left;
 }
 
-
-
 .context-menu-item .md3-icon {
     font-size: 20px;
     color: var(--context-menu-text-color, var(--text-secondary));
     transition: all 0.2s ease;
 }
-
-
 
 .context-menu-item:hover .md3-icon {
     color: white;
@@ -5788,9 +5279,7 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     }
 }
 
-
-
-/* 应用按钮 - 适配Logo */
+/* 应用按钮 - 适配 Logo */
 
 .apply-btn {
     width: 100%;
@@ -5807,20 +5296,14 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     transition: all 0.2s ease;
 }
 
-
-
 .apply-btn:hover {
     background-color: var(--scheme-accent);
     transform: translateY(-1px);
 }
 
-
-
 .apply-btn:active {
     transform: translateY(0);
 }
-
-
 
 /* 应用按钮 - 深色模式 */
 
@@ -5833,8 +5316,6 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
         background-color: var(--scheme-accent-active);
     }
 }
-
-
 
 /* 滑块模态框按钮 */
 
@@ -5852,8 +5333,6 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     transition: all 0.2s ease;
 }
 
-
-
 .reset-btn:hover {
     background-color: rgba(239, 68, 68, 0.1);
     border-color: #ef4444;
@@ -5861,13 +5340,9 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     transform: translateY(-1px);
 }
 
-
-
 .reset-btn:active {
     transform: translateY(0);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     .reset-btn:hover {
@@ -5887,7 +5362,7 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     }
 }
 
-/* ========== 快速访问链接侧边栏 ========== */
+/* ---------- 快速访问链接侧边栏 ---------- */
 
 .quick-access-sidebar {
     position: fixed;
@@ -5926,8 +5401,8 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     border-radius: 16px;
     padding: 6px;
     margin: 0 10px 10px 0;
-    min-width: 160px;
-    max-width: 220px;
+    /* 宽度固定：链接文字长短不再让卡片在 160~220px 之间浮动。 */
+    width: 160px;
     height: calc(100vh - var(--status-bar-offset) - 10px);
     display: flex;
     flex-direction: column;
@@ -6074,7 +5549,7 @@ body.color-scheme-black-white .context-menu-item:hover .md3-icon {
     object-fit: contain;
 }
 
-/* 侧边栏链接字母占位（favicon加载失败时显示） */
+/* 侧边栏链接字母占位（favicon 加载失败时显示） */
 .quick-access-sidebar-link-letter {
     width: 28px;
     height: 28px;
@@ -6172,13 +5647,13 @@ body.scrolled .quick-access-sidebar-container.visible {
     opacity: 1;
 }
 
-/* 固定侧边栏：壁纸模式下未勾选"壁纸模式固定"时，覆盖 body.scrolled 的常显示规则，保持隐藏 */
+/* 固定侧边栏：壁纸模式下未勾选“壁纸模式固定”时，覆盖 body.scrolled 的常显示规则，保持隐藏。 */
 body.scrolled.sidebar-fixed .quick-access-sidebar-container.hiding {
     transform: translateX(calc(100% + 20px));
     opacity: 0;
 }
 
-/* 固定侧边栏：壁纸模式下未勾选"壁纸模式固定"时，覆盖 dynamic-blur 的常显示/动画规则 */
+/* 固定侧边栏：壁纸模式下未勾选“壁纸模式固定”时，覆盖 dynamic-blur 的常显示/动画规则。 */
 body.dynamic-blur.scrolled.sidebar-fixed .quick-access-sidebar-container.hiding {
     transform: translateX(calc(100% + 20px)) scale(0.9);
     opacity: 0;
@@ -6262,9 +5737,7 @@ body.dynamic-blur.scrolled.sidebar-fixed .quick-access-sidebar-container.hiding 
     }
 }
 
-
-
-/* Material Design 3开关 - 浅色 */
+/* Material Design 3 开关 - 浅色 */
 
 .switch {
     position: relative;
@@ -6274,15 +5747,11 @@ body.dynamic-blur.scrolled.sidebar-fixed .quick-access-sidebar-container.hiding 
     vertical-align: middle;
 }
 
-
-
 .switch input {
     opacity: 0;
     width: 0;
     height: 0;
 }
-
-
 
 .slider {
     position: absolute;
@@ -6296,8 +5765,6 @@ body.dynamic-blur.scrolled.sidebar-fixed .quick-access-sidebar-container.hiding 
     border-radius: 28px;
 }
 
-
-
 .slider:before {
     position: absolute;
     content: "";
@@ -6310,28 +5777,20 @@ body.dynamic-blur.scrolled.sidebar-fixed .quick-access-sidebar-container.hiding 
     border-radius: 50%;
 }
 
-
-
 input:focus+.slider {
     outline: none;
 }
-
-
 
 input:checked+.slider {
     background-color: var(--primary-color);
     background-image: var(--scheme-gradient);
 }
 
-
-
 input:checked+.slider:before {
     transform: translateX(24px);
 }
 
-
-
-/* 隐藏number输入框的上下箭头 */
+/* 隐藏 number 输入框的上下箭头 */
 .bing-interval-input::-webkit-inner-spin-button,
 .bing-interval-input::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -6343,8 +5802,6 @@ input:checked+.slider:before {
     appearance: textfield;
 }
 
-
-
 .switch-label {
     display: flex;
     align-items: center;
@@ -6354,8 +5811,6 @@ input:checked+.slider:before {
     transition: all 0.2s ease;
     border-radius: 12px;
 }
-
-
 
 .setting-label {
     font-size: 16px;
@@ -6378,35 +5833,23 @@ input:checked+.slider:before {
     opacity: 1;
 }
 
-
-
-
-
 /* 字体类 */
 
 .font-ginto {
     font-family: 'Ginto', system-ui, -apple-system, sans-serif;
 }
 
-
-
 .font-josefin {
     font-family: 'Josefin', system-ui, -apple-system, sans-serif;
 }
-
-
 
 .font-code {
     font-family: 'Code', system-ui, -apple-system, sans-serif;
 }
 
-
-
 .font-hmsc {
     font-family: 'HMSC', system-ui, -apple-system, sans-serif;
 }
-
-
 
 /* 滚动状态 - 默认壁纸 */
 
@@ -6415,8 +5858,6 @@ body.scrolled {
     background-position: center;
     background-repeat: no-repeat;
 }
-
-
 
 /* 主页壁纸 - 全屏 */
 
@@ -6427,14 +5868,9 @@ body.homepage-wallpaper {
     background-repeat: no-repeat;
 }
 
+/* 壁纸模糊 - JS 控制 */
 
-
-/* 壁纸模糊 - JS控制 */
-
-
-/* 壁纸缩放效果 - 由JS精确控制 */
-
-
+/* 壁纸缩放效果 - 由 JS 精确控制 */
 
 /* 壁纸模糊 - 背景 */
 
@@ -6449,8 +5885,6 @@ body.scrolled:not(.dynamic-blur) {
     -webkit-backdrop-filter: none;
 }
 
-
-
 @keyframes fadeBlur {
     0% {
         backdrop-filter: blur(30px) saturate(1.3) brightness(1.05);
@@ -6463,8 +5897,6 @@ body.scrolled:not(.dynamic-blur) {
     }
 }
 
-
-
 body.scrolled #quick-access-links {
     margin-top: 120px;
     opacity: 0;
@@ -6472,16 +5904,12 @@ body.scrolled #quick-access-links {
     transition: margin-top 0.35s ease-out, opacity 0.3s ease;
 }
 
-
-
 body.scrolled .container {
     padding-top: calc(100dvh - 145px);
     transition: padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
         opacity 0.3s ease,
         transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-
 
 body.scrolled .logo-section {
     opacity: 0;
@@ -6492,14 +5920,10 @@ body.scrolled .logo-section {
     overflow: hidden;
 }
 
-
-
 body.scrolled .footer {
     opacity: 1;
     bottom: -120px;
 }
-
-
 
 /* 壁纸模式 - 引擎按钮 */
 
@@ -6509,11 +5933,9 @@ body.scrolled .engine-buttons {
     transition: opacity 0.3s ease, margin-top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-
-/* 提示框贴底居中，压着的正是"底部居中"的常驻元素：主页是铭牌，壁纸模式是引擎按钮
+/* 提示框贴底居中，压着的正是“底部居中”的常驻元素：主页是铭牌，壁纸模式是引擎按钮
    （搜索区沉底时按钮在 33~75px 一带）。两者与提示框同色同形，叠在一起会糊成一团；
-   把它们整体抬到提示框上方又不够"贴底"。所以提示框在的这几秒让它们先淡出——
+   把它们整体抬到提示框上方又不够“贴底”。所以提示框在的这几秒让它们先淡出——
    两个元素本来就带 opacity 过渡，淡入淡出是现成的；提示框移除后规则自动失效。
    .engine-buttons 只在壁纸模式下才沉底，主页模式下它在搜索框下面，不能跟着淡出。
    顺手关掉它们的指针事件：看不见的东西不该还能点到。 */
@@ -6524,19 +5946,14 @@ body.scrolled:has(#ooo-interface-notification) .engine-buttons {
     pointer-events: none;
 }
 
-
-
 /* 壁纸模式 - 搜索区域 */
 
 body.scrolled .search-section {
     max-width: 584px;
-    /* 标准Google搜索宽度 */
+    /* 标准 Google 搜索宽度 */
 }
 
-
-/* ========== 高级视觉效果 ========== */
-
-
+/* ---------- 高级视觉效果 ---------- */
 
 /* 粒子容器 */
 
@@ -6557,8 +5974,6 @@ body.scrolled .search-section {
     opacity: 1;
 }
 
-
-
 /* 粒子 */
 
 .particle {
@@ -6569,8 +5984,6 @@ body.scrolled .search-section {
     opacity: 0;
     will-change: transform, opacity;
 }
-
-
 
 @keyframes float-particle {
     0% {
@@ -6592,8 +6005,6 @@ body.scrolled .search-section {
     }
 }
 
-
-
 /* 光晕容器 */
 
 #glow-orbs-container {
@@ -6613,10 +6024,8 @@ body.scrolled .search-section {
     opacity: 1;
 }
 
-
-
 /* 光晕的柔边靠 background 里的 radial-gradient 做（见 VisualEffectsMixin.createGlowOrbs），
-   **不要**用 filter: blur()：这个元素在跑 transform 动画，带 blur 滤镜时 Chrome 无法复用
+   不要用 filter: blur()：这个元素在跑 transform 动画，带 blur 滤镜时 Chrome 无法复用
    缓存的模糊纹理，每一帧都要重算一次 60px 半径的高斯模糊，4 个光晕就是每帧 4 次。
    实测（本机无头 Chrome，全部高级视觉效果开着）：
      原样 中位帧间隔 50.0ms(20fps) → 只把这条 filter 去掉 16.7ms(60fps)
@@ -6628,8 +6037,6 @@ body.scrolled .search-section {
     animation: orb-float 20s ease-in-out infinite;
     will-change: transform;
 }
-
-
 
 @keyframes orb-float {
 
@@ -6651,8 +6058,6 @@ body.scrolled .search-section {
     }
 }
 
-
-
 /* 搜索聚焦效果 - 壁纸模式 */
 
 body.scrolled:not(.dynamic-blur) .search-container {
@@ -6662,16 +6067,12 @@ body.scrolled:not(.dynamic-blur) .search-container {
     -webkit-backdrop-filter: blur(0);
 }
 
-
-
 @media (prefers-color-scheme: dark) {
     body.scrolled:not(.dynamic-blur) .search-container {
         background: #202124;
         border: 1px solid var(--border-color);
     }
 }
-
-
 
 body.scrolled.dynamic-blur .search-container {
     background: rgba(255, 255, 255, 0.25);
@@ -6681,13 +6082,9 @@ body.scrolled.dynamic-blur .search-container {
     transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-
 body.scrolled.dynamic-blur .search-container:hover {
     background: rgba(255, 255, 255, 0.35);
 }
-
-
 
 body.scrolled.dynamic-blur.enhanced-display .search-container:hover,
 
@@ -6697,8 +6094,6 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
         0 0 80px rgba(255, 255, 255, 0.1),
         0 12px 40px rgba(0, 0, 0, 0.12);
 }
-
-
 
 /* 暗色模式适配 */
 
@@ -6712,8 +6107,6 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
         background: rgba(0, 0, 0, 0.45);
     }
 }
-
-
 
 @keyframes breathe {
 
@@ -6729,8 +6122,6 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
     }
 }
 
-
-
 /* 波纹效果 */
 
 .ripple-effect {
@@ -6742,8 +6133,6 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
     pointer-events: none;
 }
 
-
-
 @keyframes ripple {
     to {
         transform: scale(4);
@@ -6751,11 +6140,7 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
     }
 }
 
-
-
 /* 悬停光效 */
-
-
 
 @keyframes border-flow {
     0% {
@@ -6767,11 +6152,7 @@ body.scrolled.dynamic-blur.enhanced-display .search-container:focus-within {
     }
 }
 
-
-
-/* ========== 高级视觉模式与模糊 ========== */
-
-
+/* ---------- 高级视觉模式与模糊 ---------- */
 
 /* 引擎按钮模糊 - 壁纸模式 */
 
@@ -6784,16 +6165,12 @@ body.scrolled:not(.dynamic-blur) .engine-btn {
     -webkit-backdrop-filter: blur(0);
 }
 
-
-
 @media (prefers-color-scheme: dark) {
     body.scrolled:not(.dynamic-blur) .engine-btn {
         background: #303134;
         border: none;
     }
 }
-
-
 
 body.scrolled.dynamic-blur .engine-btn {
     background: rgba(255, 255, 255, 0.25);
@@ -6803,19 +6180,13 @@ body.scrolled.dynamic-blur .engine-btn {
     transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-
 body.scrolled.dynamic-blur .engine-btn:hover {
     background: rgba(255, 255, 255, 0.35);
 }
 
-
-
 body.scrolled.dynamic-blur.enhanced-display .engine-btn:hover {
     transform: translateY(-2px);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     body.scrolled.dynamic-blur .engine-btn {
@@ -6828,15 +6199,11 @@ body.scrolled.dynamic-blur.enhanced-display .engine-btn:hover {
     }
 }
 
-
-
 /* 快捷访问链接模糊 - 壁纸 */
 
 body.scrolled.dynamic-blur #quick-access-links {
     background: transparent;
 }
-
-
 
 body.scrolled.dynamic-blur .quick-access-btn,
 body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
@@ -6847,23 +6214,17 @@ body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn {
     transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-
 body.scrolled.dynamic-blur .quick-access-btn:hover,
 
 body.scrolled.dynamic-blur.homepage-wallpaper .quick-access-btn:hover {
     background: rgba(255, 255, 255, 0.18);
 }
 
-
-
 body.scrolled.dynamic-blur.enhanced-display .quick-access-btn:hover,
 
 body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn:hover {
     transform: translateY(-2px);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
 
@@ -6878,8 +6239,6 @@ body.scrolled.dynamic-blur.enhanced-display.homepage-wallpaper .quick-access-btn
         background: rgba(0, 0, 0, 0.3);
     }
 }
-
-
 
 /* 搜索历史模糊 */
 
@@ -6915,8 +6274,6 @@ body.scrolled.dynamic-blur .search-command-item.selected {
     -webkit-backdrop-filter: blur(30px);
 }
 
-
-
 body.dynamic-blur .search-history-item:hover,
 body.scrolled.dynamic-blur .search-history-item:hover {
     background: rgba(255, 255, 255, 0.15);
@@ -6945,8 +6302,6 @@ body.scrolled.dynamic-blur .search-history-delete:hover {
     }
 }
 
-
-
 @media (prefers-color-scheme: dark) {
 
     body.dynamic-blur .search-history-container,
@@ -6974,8 +6329,6 @@ body.scrolled.dynamic-blur .search-history-delete:hover {
     }
 }
 
-
-
 /* 深色模式 - 搜索历史模糊 */
 
 body.dynamic-blur:not(.scrolled) .search-container {
@@ -6986,15 +6339,11 @@ body.dynamic-blur:not(.scrolled) .search-container {
     transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-
 body.dynamic-blur:not(.scrolled) .search-container:hover,
 
 body.dynamic-blur:not(.scrolled) .search-container:focus-within {
     background: rgba(255, 255, 255, 0.18);
 }
-
-
 
 body.dynamic-blur:not(.scrolled).enhanced-display .search-container:hover,
 
@@ -7004,8 +6353,6 @@ body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within
         0 0 80px rgba(255, 255, 255, 0.1),
         0 12px 40px rgba(0, 0, 0, 0.12);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     body.dynamic-blur:not(.scrolled) .search-container {
@@ -7019,8 +6366,6 @@ body.dynamic-blur:not(.scrolled).enhanced-display .search-container:focus-within
     }
 }
 
-
-
 /* 主页模式下的引擎按钮样式 */
 
 body.dynamic-blur:not(.scrolled) .engine-btn {
@@ -7031,19 +6376,13 @@ body.dynamic-blur:not(.scrolled) .engine-btn {
     transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-
 body.dynamic-blur:not(.scrolled) .engine-btn:hover {
     background: rgba(255, 255, 255, 0.18);
 }
 
-
-
 body.dynamic-blur:not(.scrolled).enhanced-display .engine-btn:hover {
     transform: translateY(-2px);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     body.dynamic-blur:not(.scrolled) .engine-btn {
@@ -7055,12 +6394,6 @@ body.dynamic-blur:not(.scrolled).enhanced-display .engine-btn:hover {
         background: rgba(0, 0, 0, 0.3);
     }
 }
-
-
-
-
-
-
 
 /* 选中引擎按钮 - 高级视觉 */
 
@@ -7114,8 +6447,6 @@ body.dynamic-blur .engine-btn.active.logo-text {
     }
 }
 
-
-
 /* 选中引擎按钮悬停 - 高级视觉 */
 
 body.dynamic-blur .engine-btn.active.logo-google:hover,
@@ -7168,14 +6499,10 @@ body.dynamic-blur .engine-btn.active.logo-text:hover {
     }
 }
 
-
-
 body.dynamic-blur .setting-group {
     background: transparent;
     border: none;
 }
-
-
 
 /* 高级视觉 - 设置菜单操作按钮 */
 
@@ -7242,8 +6569,6 @@ body.dynamic-blur .right-panel-upper {
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-
-
 /* 高级视觉 - 应用按钮 */
 
 body.dynamic-blur .apply-btn {
@@ -7252,8 +6577,6 @@ body.dynamic-blur .apply-btn {
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
-
-
 
 /* 高级视觉 - 重置按钮 */
 
@@ -7264,8 +6587,6 @@ body.dynamic-blur .reset-btn {
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-
-
 /* 高级视觉 - 操作按钮 */
 
 body.dynamic-blur .setting-group.action-buttons {
@@ -7273,15 +6594,11 @@ body.dynamic-blur .setting-group.action-buttons {
     border: none;
 }
 
-
-
 /* 高级视觉 - 模态框主体 */
 
 body.dynamic-blur .modal-body {
     background: transparent;
 }
-
-
 
 /* 高级视觉 - 下拉选择 */
 
@@ -7291,8 +6608,6 @@ body.dynamic-blur .select-selected {
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
-
-
 
 body.dynamic-blur .select-items {
     background: rgba(var(--surface-color-rgb), 0.5);
@@ -7305,8 +6620,6 @@ body.dynamic-blur .select-item:hover {
     background: rgba(0, 0, 0, 0.01);
 }
 
-
-
 /* 高级视觉 - 滑块输入 */
 
 body.dynamic-blur .slider-value-input {
@@ -7315,8 +6628,6 @@ body.dynamic-blur .slider-value-input {
     -webkit-backdrop-filter: blur(120px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
-
-
 
 /* 高级视觉 - 底部徽章 */
 
@@ -7327,15 +6638,11 @@ body.dynamic-blur:not(.scrolled) .ooo-badge {
     border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-
-
 body.dynamic-blur:not(.scrolled) .ooo-badge:hover {
     background: rgba(255, 255, 255, 0.18);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     body.dynamic-blur:not(.scrolled) .ooo-badge {
@@ -7350,8 +6657,6 @@ body.dynamic-blur:not(.scrolled) .ooo-badge:hover {
     }
 }
 
-
-
 /* 高级视觉 - 全局颜色覆盖 */
 
 body.dynamic-blur:not(.scrolled) .search-input,
@@ -7364,13 +6669,9 @@ body.dynamic-blur:not(.scrolled) .ooo-badge {
     color: #1a1a1a;
 }
 
-
-
 body.dynamic-blur:not(.scrolled) .search-input::placeholder {
     color: rgba(0, 0, 0, 0.5);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
 
@@ -7386,8 +6687,6 @@ body.dynamic-blur:not(.scrolled) .search-input::placeholder {
     }
 }
 
-
-
 /* 壁纸模式 - 全局颜色 */
 
 body.scrolled.dynamic-blur .search-input,
@@ -7400,13 +6699,9 @@ body.scrolled.dynamic-blur .ooo-badge {
     color: #1a1a1a;
 }
 
-
-
 body.scrolled.dynamic-blur .search-input::placeholder {
     color: rgba(0, 0, 0, 0.5);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
 
@@ -7422,8 +6717,6 @@ body.scrolled.dynamic-blur .search-input::placeholder {
     }
 }
 
-
-
 /* 壁纸模式 - 底部模糊 */
 
 body.scrolled.dynamic-blur .ooo-badge {
@@ -7433,15 +6726,11 @@ body.scrolled.dynamic-blur .ooo-badge {
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-
-
 body.scrolled.dynamic-blur .ooo-badge:hover {
     background: rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     body.scrolled.dynamic-blur .ooo-badge {
@@ -7470,13 +6759,9 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     display: none;
 }
 
-
-
 .info-indicator.visible {
     display: block;
 }
-
-
 
 @keyframes pulse {
 
@@ -7535,19 +6820,13 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     visibility: visible;
 }
 
-
-
 .info-indicator.google {
     background-color: #1a73e8;
 }
 
-
-
 .info-indicator.microsoft {
     background-color: #00a4ef;
 }
-
-
 
 .info-indicator.apple,
 .info-indicator.black-white {
@@ -7555,14 +6834,10 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-
-
 .info-indicator.huawei {
     background-color: #000000;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
-
-
 
 .info-indicator.default {
     background-color: #00AE00;
@@ -7576,8 +6851,6 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
 .info-indicator.custom {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
-
-
 
 @media (prefers-color-scheme: dark) {
     .info-indicator.apple,
@@ -7597,7 +6870,7 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     }
 }
 
-/* 右侧面板中文字Logo选项样式 */
+/* 右侧面板中文字 Logo 选项样式 */
 
 .settings-menu-option.selected .text-logo-inline-group {
     display: flex;
@@ -7606,13 +6879,11 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-
-
-/* ========== 壁纸模糊填充系统 ========== */
-/* 原理：两层壁纸叠加，模糊层始终 cover 全屏，清晰层 contain 居中显示 */
-/* 当清晰层因宽高比不同出现空隙时，模糊层填充空隙，消除黑边 */
-
-
+/* ---------- 壁纸模糊填充系统 ---------- */
+/*
+ * 两层壁纸叠加：模糊层始终 cover 全屏，清晰层 contain 居中显示。
+ * 当清晰层因宽高比不同出现空隙时，由模糊层填充空隙，消除黑边。
+ */
 
 #wallpaper-blur {
     position: fixed;
@@ -7636,15 +6907,11 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     opacity: 1;
 }
 
-
-
 @media (prefers-color-scheme: dark) {
     #wallpaper-blur {
         filter: blur(40px) brightness(0.6);
     }
 }
-
-
 
 #wallpaper-main {
     position: fixed;
@@ -7720,23 +6987,21 @@ body.scrolled.dynamic-blur .ooo-badge:hover {
     object-fit: cover;
 }
 
-
-
 #wallpaper-main.no-transition {
     transition: none !important;
 }
 
-
-
-/* 覆盖 body.scrolled / body.homepage-wallpaper 的 CSS 背景图，避免冲突 */
+/* 覆盖 body.scrolled / body.homepage-wallpaper 的 CSS 背景图，避免冲突。 */
 body.wallpaper-layers-ready {
     background-image: none !important;
 }
 
-/* ========== 右侧面板壁纸菜单的「显示设置」入口 ========== */
-/* 与旁边的 + 号同为 40×40 的图标按钮，只放一枚设置齿轮 —— 铺满与角标设置都收进
-   它点开的视图里，底栏因此只剩 [齿轮][+] 两个图标。
-   按钮上没有可读文字，说明交给 title 与 aria-label。 */
+/* ---------- 右侧面板壁纸菜单的「显示设置」入口 ---------- */
+/*
+ * 与旁边的 + 号同为 40×40 的图标按钮，只放一枚设置齿轮 —— 铺满与角标设置都收进
+ * 它点开的视图里，底栏因此只剩 [齿轮][+] 两个图标。按钮上没有可读文字，
+ * 说明交给 title 与 aria-label。
+ */
 .wallpaper-badge-config-entry {
     display: flex;
     align-items: center;
@@ -7757,7 +7022,7 @@ body.wallpaper-layers-ready {
 }
 
 /* 图标来自全站的 Material Icons 字体（与设置按钮、右键菜单里那枚 settings 同源），
-   字体栈自己会给 .material-icons 一个 24px 的字号，这里收到与相邻 + 号相称的大小 */
+   字体栈自己会给 .material-icons 一个 24px 的字号，这里收到与相邻 + 号相称的大小。 */
 .wallpaper-badge-config-entry .material-icons {
     font-size: 18px;
     line-height: 1;
@@ -7774,7 +7039,7 @@ body.wallpaper-layers-ready {
     transform: scale(0.95);
 }
 
-/* 屏幕高度500~700px时，按钮区域上下间距缩小 */
+/* 屏幕高度 500~700px 时，按钮区域上下间距缩小 */
 
 @media (min-height: 500px) and (max-height: 700px) {
     .setting-group.action-buttons {
@@ -7783,7 +7048,7 @@ body.wallpaper-layers-ready {
     }
 }
 
-/* 屏幕高度低于500px时的设置面板紧凑布局 */
+/* 屏幕高度低于 500px 时的设置面板紧凑布局 */
 
 @media (max-height: 499px) {
     .settings-right-panel {
@@ -7835,7 +7100,7 @@ body.wallpaper-layers-ready {
     }
 }
 
-/* 屏幕宽度小于600px时，设置页面改为单栏 */
+/* 屏幕宽度小于 600px 时，设置页面改为单栏 */
 
 @media (max-width: 599px) {
     .modal-content {
@@ -7941,7 +7206,6 @@ body.wallpaper-layers-ready {
     }
 }
 
-
 /* 壁纸导入选择器 */
 
 .wallpaper-import-selector-overlay {
@@ -8039,7 +7303,7 @@ body.wallpaper-layers-ready {
     margin: 2px 8px;
 }
 
-/* ========== 高级视觉效果 - 壁纸导入选择器 ========== */
+/* ---------- 高级视觉效果 - 壁纸导入选择器 ---------- */
 body.dynamic-blur .wallpaper-import-selector {
     background: rgba(255, 255, 255, 0.12) !important;
     backdrop-filter: blur(80px) saturate(1.5) !important;
@@ -8109,7 +7373,6 @@ body.dynamic-blur .wallpaper-import-selector-divider {
         color: rgba(255, 255, 255, 0.5);
     }
 }
-
 
 /* 系列壁纸导入预览面板 */
 
@@ -8316,7 +7579,7 @@ body.dynamic-blur .wallpaper-import-selector-divider {
     padding: 40px 20px;
 }
 
-/* ========== 高级视觉效果 - 系列壁纸预览面板 ========== */
+/* ---------- 高级视觉效果 - 系列壁纸预览面板 ---------- */
 body.dynamic-blur .series-preview-overlay {
     background: rgba(0, 0, 0, 0.2) !important;
     backdrop-filter: blur(8px) saturate(1.2) !important;
@@ -8918,9 +8181,8 @@ body.dynamic-blur .side-panel-url-input {
     padding-bottom: 2px;
 }
 
-
 /* 侧边栏功能子视图外层包裹：填满右面板并保持纵向 flex，
-   使内部 .settings-menu-container（flex:1 设计）恢复正常高度 */
+   使内部 .settings-menu-container（flex:1 设计）恢复正常高度。 */
 .side-panel-config-view {
     display: flex;
     flex-direction: column;
@@ -8928,12 +8190,12 @@ body.dynamic-blur .side-panel-url-input {
     min-height: 0;
 }
 
-/* ===== 侧边栏功能设置视图：沿用设置主页面的分组间距与文案样式 =====
-   仅作用于设置弹窗右侧的「侧边栏功能」视图，不影响设置主页面同名控件 */
+/* ---------- 侧边栏功能设置视图：沿用设置主页面分组间距与文案样式 ---------- */
+/* 仅作用于设置弹窗右侧的「侧边栏功能」视图，不影响设置主页面同名控件。 */
 
 /* 子视图头部（显示小组件/快速访问链接）容器透明化：其内部开关行直接参与外层纵向排列。
    设置主页面各分组靠 .setting-group 的 14px 下边距拉开层次、并无分隔线，
-   这里同样不再额外加分隔线或间距 */
+   这里同样不再额外加分隔线或间距。 */
 .side-panel-subview-header {
     display: contents;
 }
@@ -8945,4 +8207,269 @@ body.dynamic-blur .side-panel-url-input {
 
 .side-panel-config-view .select-selected:active {
     background: var(--surface-color);
+}
+
+/* ---------- 聚焦搜索 ---------- */
+/*
+ * 聚焦搜索：搜索框聚焦时放大、上移，背景压暗（开启高级视觉效果时改为模糊），
+ * 搜索历史/热搜与搜索框拼成一张卡片，引擎切换按钮保持在压暗层之上。
+ * 放大用 transform 完成，不改变布局；下拉面板与下方引擎按钮靠同一段位移接到框底，
+ * 两处的尺寸都由 --focus-search-scale / --focus-search-lift 推导，不各算一份。
+ */
+
+body.focus-search-active {
+    --focus-search-lift: 14px;
+    --focus-search-surface: #F1F3F4;
+    /* 搜索框放大并上移后，底边相对原布局位移的量（负值等于上移）。下拉与引擎按钮
+     * 都按它做补偿，保证始终贴着放大后的框底。 */
+    --focus-search-bottom-shift: calc((var(--focus-search-scale, 1) - 1) * var(--search-box-height, 50px) / 2 - var(--focus-search-lift));
+}
+
+/* 退场时 body 上的 active 类已去掉，变量要在 leaving 期间继续生效，动画才能接上。 */
+body.focus-search-leaving {
+    --focus-search-lift: 14px;
+    --focus-search-bottom-shift: calc((var(--focus-search-scale, 1) - 1) * var(--search-box-height, 50px) / 2 - var(--focus-search-lift));
+}
+
+@media (prefers-color-scheme: dark) {
+    body.focus-search-active {
+        --focus-search-surface: #202124;
+    }
+}
+
+/* 高级视觉效果下搜索框是玻璃材质，下拉跟随搜索框 focus-within 时的那一档半透明底色
+ *（见 dynamic-blur.css），否则两者之间会露出一道深浅不同的接缝。 */
+body.dynamic-blur.focus-search-active {
+    --focus-search-surface: rgba(240, 240, 240, 0.6);
+}
+
+body.dynamic-blur.scrolled.focus-search-active {
+    --focus-search-surface: rgba(240, 240, 240, 0.65);
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dynamic-blur.focus-search-active {
+        --focus-search-surface: rgba(0, 0, 0, 0.3);
+    }
+
+    body.dynamic-blur.scrolled.focus-search-active {
+        --focus-search-surface: rgba(0, 0, 0, 0.35);
+    }
+}
+
+.focus-search-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    /* 压暗层只负责视觉：不拦截点击，背景里的快速访问等仍可直接点，
+     * 点到搜索区域外时由搜索框的 blur 收起聚焦状态。 */
+    pointer-events: none;
+    transition: opacity 0.28s ease,
+        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 压暗层随 .container 一起被侧边栏的 translateX 推走，这里按同样的量反向补回来，
+ * 让它始终铺满视口；过渡时长与 .container 的 transform 一致，两边的位移互相抵消。 */
+body.sidebar-visible:not(.scrolled) .focus-search-backdrop {
+    transform: translateX(clamp(50px, 10vw, 120px));
+}
+
+/* 窄屏下侧边栏不推动 .container（见上方 749px 媒体查询），这里也不用补位移。 */
+@media (max-width: 749px) {
+    body.sidebar-visible:not(.scrolled) .focus-search-backdrop {
+        transform: none;
+    }
+}
+
+body.focus-search-active .focus-search-backdrop {
+    opacity: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+    .focus-search-backdrop {
+        background: rgba(0, 0, 0, 0.45);
+    }
+}
+
+/* 高级视觉效果：压暗改为模糊，覆盖模糊时不叠浓色，避免背景被压死。 */
+body.dynamic-blur.focus-search-active .focus-search-backdrop {
+    background: rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+body.focus-search-active .search-section {
+    z-index: 10;
+}
+
+/* 只放大搜索框本身，不放大整行：.search-section 铺满容器宽度，放大它会把文档撑出横向滚动。
+ * 容器宽度 600px 放大后仍落在行内，文档宽度不受影响。
+ * 选择器多带两级祖先，:not() 里再放一个永远不会命中的类名，都是为了在 transition 上
+ * 压过 dynamic-blur.css 的同名规则，否则高级视觉效果下 transform 的过渡会被它覆盖成瞬跳。 */
+body.focus-search-active .container .search-section .search-container:not(.focus-search-ignore) {
+    transform: translateY(calc(-1 * var(--focus-search-lift))) scale(var(--focus-search-scale, 1));
+    transform-origin: center center;
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        background 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+body.focus-search-active .search-container:focus-within {
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16);
+}
+
+/* 下拉面板和放大的搜索框等宽：宽度按同一比例放大，上移量把缝隙补平。 */
+body.focus-search-active .search-history-container,
+body.focus-search-active .search-command-container {
+    width: calc(100% * var(--focus-search-scale, 1));
+    max-width: calc(600px * var(--focus-search-scale, 1));
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+/* 侧边栏展开时搜索框会让出侧栏宽度（见 .search-section 的 max-width），
+ * 下拉必须按同一上限收窄：否则窄窗口里下拉比搜索框更宽，聚焦放大后还会溢出视口两侧。 */
+@media (min-width: 750px) {
+    body.sidebar-visible:not(.scrolled) {
+        --sidebar-search-max: min(600px, calc(100vw - 70px - 2 * clamp(50px, 10vw, 120px)));
+    }
+
+    body.sidebar-visible:not(.scrolled) .search-history-container,
+    body.sidebar-visible:not(.scrolled) .search-command-container {
+        max-width: var(--sidebar-search-max);
+    }
+
+    body.sidebar-visible:not(.scrolled).focus-search-active .search-history-container,
+    body.sidebar-visible:not(.scrolled).focus-search-active .search-command-container {
+        max-width: min(calc(600px * var(--focus-search-scale, 1)),
+            calc((100vw - 70px - 2 * clamp(50px, 10vw, 120px)) * var(--focus-search-scale, 1)));
+    }
+}
+
+/* 下拉的展开、宽度、位移都与搜索框的 transform 共用同一条曲线和时长：
+ * 三者节奏一致，面板才会像从搜索框底部一起长出来，而不是各走各的动画。
+ * 宽度若不做过渡，聚焦瞬间下拉会先跳到放大后的宽度，而搜索框还在放大，动画期间左右边缘对不齐。 */
+body.focus-search-active .search-history-container,
+body.focus-search-active .search-command-container,
+body.focus-search-leaving .search-history-container,
+body.focus-search-leaving .search-command-container {
+    transition: max-height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.2s ease,
+        padding 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        border 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        max-width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        margin-top 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 下拉要贴住放大后的搜索框底边，位移量随框底一起变化。面板原本收起、随聚焦一起展开时，
+ * 位移从 -10px 起步：先抵消搜索框与下拉之间原有的间距，再从那里叠加框底的位移，
+ * 第一帧就连在一起；若把面板直接过渡到终值，进场期间会一直露出一条缝。 */
+@keyframes focus-search-drop-in-attached {
+    from {
+        margin-top: -10px;
+    }
+
+    to {
+        margin-top: calc(-10px + var(--focus-search-bottom-shift, -9px));
+    }
+}
+
+/* 面板在进入聚焦前已展开：从原位（0）平滑移到框底，避免瞬间上提 10px 造成跳动。 */
+@keyframes focus-search-drop-in {
+    from {
+        margin-top: 0;
+    }
+
+    to {
+        margin-top: calc(-10px + var(--focus-search-bottom-shift, -9px));
+    }
+}
+
+@keyframes focus-search-drop-out {
+    from {
+        margin-top: calc(-10px + var(--focus-search-bottom-shift, -9px));
+    }
+
+    to {
+        margin-top: 0;
+    }
+}
+
+/* 命令面板紧跟在搜索框后面，位移同时带动其后的搜索历史与引擎按钮一起贴到框底。 */
+body.focus-search-active .search-command-container {
+    animation: focus-search-drop-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body.focus-search-attach.focus-search-active .search-command-container {
+    animation-name: focus-search-drop-in-attached;
+}
+
+body.focus-search-leaving .search-command-container {
+    animation: focus-search-drop-out 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body.focus-search-active .search-history-container {
+    margin-top: 0;
+}
+
+body.focus-search-active .search-history-container.show,
+body.focus-search-active .search-command-container.show {
+    border-top: 0 none;
+    background-color: var(--focus-search-surface);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16);
+    /* 拼成一张卡片后底部圆角跟随搜索框的圆角，
+     * 否则上端是搜索框的 28px，下端还是面板自己的 16px。 */
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+}
+
+/* 下拉展开时搜索框下沿拉平，两者在视觉上连成一整张卡片。 */
+body.focus-search-active:has(.search-history-container.show) .search-container,
+body.focus-search-active:has(.search-command-container.show) .search-container {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    /* 下边框会让透明的一像素露出背后的压暗层，拼卡片时直接去掉；
+     * 盒高是固定的，去掉边框只会把内容区多让出 1px。 */
+    border-bottom-width: 0;
+}
+
+/* 引擎切换按钮属于聚焦视图的一部分，压在压暗层之上保持可点。 */
+body.focus-search-active .engine-buttons {
+    position: relative;
+    z-index: 10;
+}
+
+/* 退场：类去掉后放大规则不再命中，过渡也随之消失，卡片会瞬跳回原位。
+ * 退出时 body 上先保留一小段 leaving（见 refreshFocusSearchState），
+ * 让它在这段时间里继续沿用与入场相同的过渡；层级也一并挂住，
+ * 压暗层淡出时不会盖住正在缩回的卡片。 */
+body.focus-search-leaving .container .search-section .search-container:not(.focus-search-ignore) {
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        background 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+body.focus-search-leaving .search-section {
+    z-index: 10;
+}
+
+body.focus-search-leaving .engine-buttons {
+    position: relative;
+    z-index: 10;
+}
+
+/* 设置页的缩放滑块：滑块的拇指比轨道高，上下多让出一点空间，
+ * 避免标签和下一组设置紧贴在拇指上。 */
+#focus-search-scale-group .developer-control-item {
+    gap: 10px;
+    padding: 2px 0;
+}
+
+#focus-search-scale-group .slider-input {
+    height: 32px;
 }

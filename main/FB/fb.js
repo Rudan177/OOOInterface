@@ -1,4 +1,6 @@
-// 右键菜单功能
+/**
+ * 反馈页面脚本：自定义右键菜单与反馈表单交互。
+ */
 class ContextMenu {
     constructor() {
         this.menu = null;
@@ -113,7 +115,7 @@ class ContextMenu {
 
     attachMenuItemListeners() {
         if (!this.menu) return;
-        
+
         this.menu.querySelectorAll('.context-menu-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -269,7 +271,7 @@ class FeedbackApp {
             if (isScrolled && isThemeMode) {
                 e.preventDefault();
                 const currentIsDark = document.body.classList.contains('dark-theme');
-                
+
                 if (currentIsDark) {
                     applyTheme('light');
                     if (isLocked) localStorage.setItem('currentTheme', 'light');
@@ -281,7 +283,7 @@ class FeedbackApp {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
                 const currentIsDark = document.body.classList.contains('dark-theme');
-                
+
                 if (currentIsDark) {
                     applyTheme('light');
                     if (isLocked) localStorage.setItem('currentTheme', 'light');
@@ -297,7 +299,7 @@ class FeedbackApp {
             e.stopPropagation();
             isLocked = !isLocked;
             localStorage.setItem('themeLocked', isLocked);
-            
+
             if (isLocked) {
                 const theme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
                 localStorage.setItem('currentTheme', theme);
@@ -427,15 +429,15 @@ class FeedbackApp {
 
     buildRUDContent(feedbackType, severity, description, environment, author, timeStr, os) {
         const startContent = feedbackType === 'bug' ? '反馈Bug' : '功能建议';
-        
+
         let content = `# ${startContent}\n\n`;
         content += `**${feedbackType === 'bug' ? '严重程度' : '实用程度'}：** ${severity}\n\n`;
         content += `**详细描述：** ${description}\n`;
-        
+
         if (feedbackType === 'bug' && environment) {
             content += `\n**环境信息：** ${environment}\n`;
         }
-        
+
         content += `\n---\n`;
         content += `**反馈时间：** ${timeStr}\n`;
         content += `**操作系统：** ${os}\n`;
@@ -518,27 +520,27 @@ function bindEvents() {
 
 function initResizeHandles() {
     const handles = document.querySelectorAll('.resize-handle');
-    
+
     handles.forEach(handle => {
         let startY, startHeight, textarea;
-        
+
         handle.addEventListener('mousedown', (e) => {
             e.preventDefault();
             const targetId = handle.getAttribute('data-target');
             textarea = document.getElementById(targetId);
             startY = e.clientY;
             startHeight = textarea.offsetHeight;
-            
+
             document.addEventListener('mousemove', resize);
             document.addEventListener('mouseup', stopResize);
         });
-        
+
         function resize(e) {
             const diff = e.clientY - startY;
             const newHeight = Math.max(80, Math.min(300, startHeight + diff));
             textarea.style.height = newHeight + 'px';
         }
-        
+
         function stopResize() {
             document.removeEventListener('mousemove', resize);
             document.removeEventListener('mouseup', stopResize);

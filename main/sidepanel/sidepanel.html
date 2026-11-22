@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="sidepanel.css">
 </head>
 
-<body class="qa-panel-page">
+<body class="qa-panel-page qa-panel-booting">
 
     <!-- 壁纸层 -->
     <div class="qa-panel-wallpaper" id="qa-panel-wallpaper"></div>
@@ -27,7 +27,7 @@
 
         <!-- 小组件（与主页面小组件面板同一套组件与配置）。
              内层 qa-panel-widgets-scroll 负责滚动：外层保留 10px 内边距，
-             使滚动裁切始终发生在距底边 10px 处——下边距在任何滚动位置都恒定 -->
+             使滚动裁切始终发生在距底边 10px 处——下边距在任何滚动位置都恒定。 -->
         <div class="qa-panel-widgets" id="qa-panel-widgets">
             <div class="qa-panel-widgets-scroll" id="qa-widgets-scroll">
                 <div class="widget-panel-grid" id="qa-widgets-grid"></div>
@@ -50,7 +50,7 @@
 
         <!-- 内置页浏览器：开启「内置页打开」后，搜索/访问的网页在此以 iframe 展示。
              顶部为操作控件（Home / Back / Next / 网址栏），下方为圆角浮动卡片，
-             开启时替代原本的小组件 / 快速访问链接区域 -->
+             开启时替代原本的小组件 / 快速访问链接区域。 -->
         <div class="qa-panel-browser" id="qa-panel-browser" aria-hidden="true">
             <div class="qa-browser-toolbar" id="qa-browser-toolbar">
                 <button class="qa-browser-btn" id="qa-browser-home" type="button" title="返回默认视图">
@@ -76,7 +76,7 @@
             <div class="qa-browser-card" id="qa-browser-card">
                 <!-- sandbox 有意省略 allow-top-navigation：阻止站点用 JS 帧破坏脚本
                      （top.location = self.location）把整个侧边栏劫持跳转；
-                     其余令牌尽量放开以保证页面功能正常 -->
+                     其余令牌尽量放开以保证页面功能正常。 -->
                 <iframe id="qa-browser-frame" class="qa-browser-frame" src="about:blank"
                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-pointer-lock allow-presentation allow-storage-access-by-user-activation"
                     title="内置页浏览器"></iframe>
@@ -119,6 +119,23 @@
         <img class="qa-guide-logo" src="../images/icon128.png" alt="">
         <div class="qa-guide-title">OOOInterface 侧边栏</div>
         <button class="qa-guide-btn" id="qa-guide-open-settings">去主页面设置开启</button>
+    </div>
+
+    <!-- 快速访问链接快速编辑：面板打开时按 Alt+Shift+O 弹出。
+         外层只负责遮罩与定位，卡片自身承载毛玻璃与入场动画，
+         避免祖先带 transform 形成 backdrop root 打断卡片的 backdrop-filter。 -->
+    <div class="qa-quick-edit" id="qa-quick-edit" hidden>
+        <div class="qa-quick-edit-backdrop" id="qa-quick-edit-backdrop"></div>
+        <div class="qa-quick-edit-card" role="dialog" aria-modal="true" aria-labelledby="qa-quick-edit-title">
+            <div class="qa-quick-edit-header">
+                <span class="qa-quick-edit-title" id="qa-quick-edit-title">快速访问链接</span>
+                <button class="qa-quick-edit-close" id="qa-quick-edit-close" type="button" title="关闭">×</button>
+            </div>
+            <div class="qa-quick-edit-list" id="qa-quick-edit-list"></div>
+            <div class="qa-quick-edit-footer">
+                <button class="qa-quick-edit-add-page" id="qa-quick-edit-add-page" type="button">添加当前网页</button>
+            </div>
+        </div>
     </div>
 
     <!-- 同主页：用经典 defer 脚本引入产物，不要写回 type="module"

@@ -1,12 +1,12 @@
-// ⚠️ 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹: 5fc63055c157fd81    模块数: 15
-// 入口: main/sidepanel/sidepanel.js
+// 本文件由 tools/build.js 自动生成，请勿直接编辑。
+// 源码指纹：da4ff3aa608562fd    模块数：15
+// 入口：main/sidepanel/sidepanel.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
-// ==== main/Script/core/color.js ====
+// ---------- main/Script/core/color.js ----------
 /**
- * 配色方案配置
- * 所有配色相关的常量和配置集中管理
+ * 配色方案配置：集中维护内置方案的色值、悬停/激活派生色与粒子光晕参数。
+ * 自定义配色按主色动态生成配置，缺少配置时回退到蓝色方案。
  */
 const COLOR_SCHEME_NAMES = {
     'green': '林绿色',
@@ -361,7 +361,11 @@ function getColorConfig(scheme, customColors) {
     return COLOR_SCHEME_CONFIGS[scheme] || COLOR_SCHEME_CONFIGS['green'];
 }
 
-// ==== main/Script/core/proxy.js ====
+// ---------- main/Script/core/proxy.js ----------
+/**
+ * 本地代理客户端的端口配置与请求封装：端口存于 localStorage，未配置时回落到直连。
+ * 配置端口后，proxiedFetch 会将请求改写为 http://127.0.0.1:<port>/proxy?url=...。
+ */
 const ProxyManager = (function () {
     var proxyPort = null;
 
@@ -433,7 +437,7 @@ const ProxyManager = (function () {
             }
 
             // 使用 /health 端点做真实连通性检测：
-            // no-cors 模式得到的是 opaque 响应（无法读取状态码），会把失败误判为成功
+            // no-cors 模式得到的是 opaque 响应（无法读取状态码），会把失败误判为成功。
             var testUrl = 'http://127.0.0.1:' + port + '/health';
             var timer = setTimeout(function () {
                 reject(new Error('代理连接超时 (' + timeout + 'ms)，请确认代理服务正在运行'));
@@ -474,10 +478,9 @@ const ProxyManager = (function () {
     };
 })();
 
-// ==== main/Script/core/widgets/WidgetBase.js ====
+// ---------- main/Script/core/widgets/WidgetBase.js ----------
 /**
- * OOOInterface 小组件基类
- * 所有小组件继承此基类，实现 render() 与 destroy()
+ * OOOInterface 小组件基类：所有小组件继承此基类，实现 render() 与 destroy()。
  */
 // [bundled] import { … } from '../proxy.js'
 
@@ -539,7 +542,7 @@ class WidgetBase {
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
             return resp;
         } catch (err) {
-            // 直连失败（CORS 拦截/网络错误）时，若已配置代理则走代理
+            // 直连失败（CORS 拦截/网络错误）时，若已配置代理则走代理。
             if (typeof ProxyManager !== 'undefined' && ProxyManager.isProxyEnabled()) {
                 const proxied = await ProxyManager.proxiedFetch(url, options);
                 if (!proxied.ok) throw new Error('HTTP ' + proxied.status);
@@ -645,12 +648,10 @@ class WidgetBase {
     }
 }
 
-// ==== main/Script/core/widgets/ClockWidget.js ====
+// ---------- main/Script/core/widgets/ClockWidget.js ----------
 /**
- * 大时钟小组件
- * 纯客户端，本地时间，每秒刷新
- * - 正方形：垂直布局（时间在上，日期在下）
- * - 长方形：横向布局（时间在左，日期在右）
+ * 大时钟小组件：纯客户端，使用本地时间，每秒刷新。
+ * 正方形为垂直布局，长方形为横向布局。
  */
 // [bundled] import { … } from './WidgetBase.js'
 
@@ -688,7 +689,7 @@ class ClockWidget extends WidgetBase {
         const dateText = weekdays[now.getDay()] + ' ' + (now.getMonth() + 1) + '月' + now.getDate() + '日';
 
         if (this.isRect) {
-            // 长方形：时间 + 秒
+            // 长方形布局额外显示秒。
             const ss = String(now.getSeconds()).padStart(2, '0');
             this.timeEl.textContent = hh + ':' + mm + ':' + ss;
         } else {
@@ -698,14 +699,11 @@ class ClockWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/core/widgets/CalendarWidget.js ====
+// ---------- main/Script/core/widgets/CalendarWidget.js ----------
 /**
- * 日历小组件
- * 纯客户端，本地时间，农历转换（1900-2100 查表算法，无网络依赖）
- * - 小尺寸：当天日期（大号数字）+ 星期 + 农历
- * - 大尺寸：左侧为小尺寸同款（日期/星期/农历），右侧为本月迷你日历
- * - 超大尺寸：大号本月日历（周一起始、含翻月导航与每日农历标注，标题点击回到今天）
- * 每日零点自动刷新（日期/星期/农历跨天更新）
+ * 日历小组件：纯客户端、本地时间，农历按 1900-2100 查表转换，无网络依赖。
+ * 正方形显示当天日期、星期与农历；长方形附本月迷你日历；超大尺寸为本月大日历（周一起始，可翻月）。
+ * 每日零点自动刷新。
  */
 // [bundled] import { … } from './WidgetBase.js'
 
@@ -714,7 +712,7 @@ class CalendarWidget extends WidgetBase {
         super(config);
         this.type = 'calendar';
         this.now = new Date();
-        // 超大尺寸的翻月视图（默认本月）
+        // 超大尺寸的翻月视图（默认本月）。
         this.viewYear = this.now.getFullYear();
         this.viewMonth = this.now.getMonth();
     }
@@ -735,7 +733,7 @@ class CalendarWidget extends WidgetBase {
     }
 
     afterMount() {
-        // 每天零点后自动刷新（跨天更新日期/星期/农历）
+        // 每天零点后自动刷新（跨天更新日期/星期/农历）。
         this.scheduleMidnightRefresh();
     }
 
@@ -746,7 +744,7 @@ class CalendarWidget extends WidgetBase {
             if (!this.element || !this.element.parentNode) return; // 组件已销毁，跳过刷新
             const prev = this.now;
             this.now = new Date();
-            // 若翻月视图仍停留在“昨天”所在月份，自动跟随到今天所在月份
+            // 若翻月视图仍停留在“昨天”所在月份，自动跟随到今天所在月份。
             if (this.viewYear === prev.getFullYear() && this.viewMonth === prev.getMonth()) {
                 this.viewYear = this.now.getFullYear();
                 this.viewMonth = this.now.getMonth();
@@ -758,7 +756,7 @@ class CalendarWidget extends WidgetBase {
 
     // ---------- 布局构建 ----------
 
-    // “今天”信息区（小尺寸同款）：月份年份 / 大号日期 / 星期 / 农历
+    // “今天”信息区（与小尺寸一致）：月份年份、大号日期、星期与农历。
     buildTodayInfo(parent) {
         const monthEl = document.createElement('div');
         monthEl.className = 'widget-calendar-month';
@@ -784,13 +782,13 @@ class CalendarWidget extends WidgetBase {
     }
 
     buildRectLayout() {
-        // 左侧：小尺寸同款
+        // 左侧：与小尺寸一致的信息区。
         this.leftEl = document.createElement('div');
         this.leftEl.className = 'widget-calendar-left';
         this.info = this.buildTodayInfo(this.leftEl);
         this.element.appendChild(this.leftEl);
 
-        // 右侧：本月迷你日历
+        // 右侧：本月迷你日历。
         this.rightEl = document.createElement('div');
         this.rightEl.className = 'widget-calendar-right';
         this.miniHeadEl = document.createElement('div');
@@ -803,7 +801,7 @@ class CalendarWidget extends WidgetBase {
     }
 
     buildSuperLayout() {
-        // 顶栏：上月 / 年月标题 / 下月
+        // 顶栏：上月、年月标题与下月。
         this.superHeadEl = document.createElement('div');
         this.superHeadEl.className = 'widget-calendar-super-head';
 
@@ -823,18 +821,18 @@ class CalendarWidget extends WidgetBase {
         this.superHeadEl.appendChild(this.nextBtn);
         this.element.appendChild(this.superHeadEl);
 
-        // 星期表头
+        // 星期表头。
         this.gridHeadEl = document.createElement('div');
         this.gridHeadEl.className = 'widget-calendar-grid-head';
         this.element.appendChild(this.gridHeadEl);
 
-        // 日期网格
+        // 日期网格。
         this.gridBodyEl = document.createElement('div');
         this.gridBodyEl.className = 'widget-calendar-grid';
         this.element.appendChild(this.gridBodyEl);
     }
 
-    // 导航箭头（内联 SVG，无字体依赖，与页面返回按钮风格一致）
+    // 导航箭头（内联 SVG，无字体依赖，与页面返回按钮风格一致）。
     buildNavButton(dir, label) {
         const btn = document.createElement('button');
         btn.className = 'widget-calendar-nav';
@@ -847,7 +845,7 @@ class CalendarWidget extends WidgetBase {
         svg.setAttribute('height', '18');
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('fill', 'currentColor');
-        // Material Design chevron_left / chevron_right
+        // Material Design 的 chevron_left / chevron_right。
         path.setAttribute('d', dir === 'prev'
             ? 'M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z'
             : 'M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z');
@@ -858,7 +856,7 @@ class CalendarWidget extends WidgetBase {
 
     // ---------- 渲染 ----------
 
-    // 更新显示（跨天/翻月后调用）
+    // 更新显示（跨天/翻月后调用）。
     update() {
         if (this.isSuper) {
             this.renderSuper();
@@ -877,7 +875,7 @@ class CalendarWidget extends WidgetBase {
         }
     }
 
-    // 本月迷你日历（大尺寸右侧）
+    // 本月迷你日历（大尺寸右侧）。
     renderMini() {
         this.miniHeadEl.innerHTML = '';
         this.miniBodyEl.innerHTML = '';
@@ -909,7 +907,7 @@ class CalendarWidget extends WidgetBase {
         }
     }
 
-    // 大号本月日历（超大尺寸）
+    // 大号本月日历（超大尺寸）。
     renderSuper() {
         this.superTitleEl.textContent = this.viewYear + '年' + (this.viewMonth + 1) + '月';
         this.gridHeadEl.innerHTML = '';
@@ -929,18 +927,18 @@ class CalendarWidget extends WidgetBase {
         const now = this.now;
         const isCurrentMonth = this.viewYear === now.getFullYear() && this.viewMonth === now.getMonth();
 
-        // 上月补位日（弱化显示）
+        // 上月补位日（弱化显示）。
         for (let i = 0; i < leading; i++) {
             this.gridBodyEl.appendChild(this.buildSuperCell(prevDaysInMonth - leading + 1 + i, true, false));
         }
 
-        // 本月日期
+        // 本月日期。
         for (let d = 1; d <= daysInMonth; d++) {
             const isToday = isCurrentMonth && d === now.getDate();
             this.gridBodyEl.appendChild(this.buildSuperCell(d, false, isToday));
         }
 
-        // 下月补位日（补足最后一周）
+        // 下月补位日（补足最后一周）。
         const total = leading + daysInMonth;
         const trailing = total % 7 === 0 ? 0 : 7 - (total % 7);
         for (let i = 1; i <= trailing; i++) {
@@ -948,7 +946,7 @@ class CalendarWidget extends WidgetBase {
         }
     }
 
-    // 构造单个日期格（超大尺寸）
+    // 构造单个日期格（超大尺寸）。
     buildSuperCell(dayNum, isOtherMonth, isToday) {
         const cell = document.createElement('div');
         cell.className = 'widget-calendar-cell';
@@ -960,7 +958,7 @@ class CalendarWidget extends WidgetBase {
         numEl.textContent = String(dayNum);
         cell.appendChild(numEl);
 
-        // 本月日期显示农历：初一显示月份名（含闰月前缀）
+        // 本月日期显示农历：初一显示月份名（含闰月前缀）。
         if (!isOtherMonth) {
             const lunar = CalendarWidget.solarToLunar(this.viewYear, this.viewMonth + 1, dayNum);
             const label = lunar.lunarDay === 1
@@ -974,7 +972,7 @@ class CalendarWidget extends WidgetBase {
         return cell;
     }
 
-    // 翻月导航
+    // 翻月导航。
     changeMonth(delta) {
         let m = this.viewMonth + delta;
         let y = this.viewYear;
@@ -985,7 +983,7 @@ class CalendarWidget extends WidgetBase {
         this.renderSuper();
     }
 
-    // 回到今天
+    // 回到今天。
     goToday() {
         this.now = new Date();
         this.viewYear = this.now.getFullYear();
@@ -995,30 +993,30 @@ class CalendarWidget extends WidgetBase {
 
     // ---------- 农历转换（1900-2100 查表） ----------
 
-    // 农历月天数（含大小月）
+    // 农历月天数（含大小月）。
     static monthDays(y, m) {
         return (LUNAR_INFO[y - 1899] & (0x10000 >> m)) ? 30 : 29;
     }
 
-    // 农历闰月（0 = 无闰月）
+    // 农历闰月（0 表示无闰月）。
     static leapMonth(y) {
         return LUNAR_INFO[y - 1899] & 0xf;
     }
 
-    // 农历闰月天数
+    // 农历闰月天数。
     static leapDays(y) {
         const l = CalendarWidget.leapMonth(y);
         return l > 0 ? ((LUNAR_INFO[y - 1899] & 0x10000) ? 30 : 29) : 0;
     }
 
-    // 农历年总天数
+    // 农历年总天数。
     static lunarYearDays(y) {
         let sum = 0;
         for (let i = 1; i <= 12; i++) sum += CalendarWidget.monthDays(y, i);
         return sum + CalendarWidget.leapDays(y);
     }
 
-    // 公历转农历（y/m/d 为公历年月日）
+    // 公历转农历（y/m/d 为公历年月日）。
     static solarToLunar(y, m, d) {
         let offset = (Date.UTC(y, m - 1, d) - Date.UTC(1900, 0, 31)) / 86400000;
         let i, temp = 0;
@@ -1055,7 +1053,7 @@ class CalendarWidget extends WidgetBase {
         return { lunarYear, lunarMonth: i, lunarDay: offset + 1, isLeap };
     }
 
-    // 格式化农历（返回月份名 / 日名 / 完整串）
+    // 格式化农历（返回月份名、日名与完整串）。
     static formatLunar(date) {
         const l = CalendarWidget.solarToLunar(date.getFullYear(), date.getMonth() + 1, date.getDate());
         const monthName = (l.isLeap ? '闰' : '') + LUNAR_MONTH_NAMES[l.lunarMonth - 1];
@@ -1072,7 +1070,7 @@ class CalendarWidget extends WidgetBase {
     }
 }
 
-/* ---------- 农历查表数据（1899-2100，索引 = 年份 - 1899） ---------- */
+// ---------- 农历查表数据（1899-2100，索引 = 年份 - 1899） ----------
 const LUNAR_INFO = [
     0x0AB50, 0x04BD8, 0x04AE0, 0x0A570, 0x054D5, 0x0D260, 0x0D950, 0x16554, 0x056A0, 0x09AD0,
     0x055D2, 0x04AE0, 0x0A5B6, 0x0A4D0, 0x0D250, 0x1D255, 0x0B540, 0x0D6A0, 0x0ADA2, 0x095B0,
@@ -1103,15 +1101,10 @@ const LUNAR_DAY_NAMES = ['初一', '初二', '初三', '初四', '初五', '初�
 const WEEKDAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
 const WEEKDAY_HEADER = ['一', '二', '三', '四', '五', '六', '日'];
 
-// ==== main/Script/core/widgets/WeatherWidget.js ====
+// ---------- main/Script/core/widgets/WeatherWidget.js ----------
 /**
- * 天气小组件
- * 数据源：Open-Meteo（免费无 Key）
- * - 定位优先（navigator.geolocation），失败回退到配置城市（默认南昌）
- * - 每 30 分钟刷新一次
- * - 天气图标使用 Material Symbols
- * - 正方形：垂直布局（图标+温度居中，城市/描述下方）
- * - 长方形：横向布局（左图标+温度，右城市+详情）
+ * 天气小组件：数据来自 Open-Meteo（免费无 Key），定位优先，失败回退到配置城市（默认南昌），每 30 分钟刷新。
+ * 正方形为垂直布局，长方形为横向布局；天气图标使用 Material Symbols。
  */
 // [bundled] import { … } from './WidgetBase.js'
 
@@ -1120,14 +1113,14 @@ class WeatherWidget extends WidgetBase {
         super(config);
         this.type = 'weather';
         this.city = (this.data && this.data.city) || '南昌';
-        // 仅当缓存坐标对应的城市与当前城市一致时才复用，避免改城市后仍用旧坐标
+        // 仅当缓存坐标对应的城市与当前城市一致时才复用，避免改城市后仍用旧坐标。
         const coordsMatch = !!(this.data && this.data.coordsCity === this.city);
         this.coords = (coordsMatch && this.data && this.data.lat && this.data.lon)
             ? { lat: this.data.lat, lon: this.data.lon }
             : null;
         this.lastUpdate = (this.data && this.data.lastUpdate) || 0;
         this.cachedWeather = (this.data && this.data.cached) || null;
-        // 城市变更后旧缓存天气失效，强制重新获取
+        // 城市变更后旧缓存天气失效，强制重新获取。
         if (!coordsMatch && this.cachedWeather) {
             this.cachedWeather = null;
             this.lastUpdate = 0;
@@ -1171,7 +1164,7 @@ class WeatherWidget extends WidgetBase {
     }
 
     buildRectangleLayout() {
-        // 左侧：图标 + 温度
+        // 左侧：图标与温度。
         this.leftPanel = document.createElement('div');
         this.leftPanel.className = 'widget-weather-left';
 
@@ -1184,7 +1177,7 @@ class WeatherWidget extends WidgetBase {
         this.leftPanel.appendChild(this.iconEl);
         this.leftPanel.appendChild(this.tempEl);
 
-        // 右侧：城市 + 描述 + 湿度 + 风速
+        // 右侧：城市、描述、湿度与风速。
         this.rightPanel = document.createElement('div');
         this.rightPanel.className = 'widget-weather-right';
 
@@ -1239,7 +1232,7 @@ class WeatherWidget extends WidgetBase {
             return;
         }
 
-        // 解析坐标：留空/“当前位置”→ 浏览器定位；命名城市 → 地理编码
+        // 解析坐标：留空或“当前位置”走浏览器定位，命名城市走地理编码。
         if (!this.coords) {
             const resolved = await this.resolveCoords();
             if (!resolved) {
@@ -1286,7 +1279,7 @@ class WeatherWidget extends WidgetBase {
     }
 
     applyWeather(w) {
-        // 兼容旧缓存：Material Icons 图标名 → Material Symbols 图标名（历史数据仅 wb_sunny 需要转换）
+        // 兼容旧缓存：把 Material Icons 图标名转换为 Material Symbols 图标名（旧数据中仅 wb_sunny 需要转换）。
         const iconFix = { 'wb_sunny': 'sunny' };
         if (iconFix[w.icon]) w.icon = iconFix[w.icon];
         if (!w.icon) w.icon = 'sunny'; // 兜底：缓存缺图标字段时使用默认
@@ -1313,7 +1306,7 @@ class WeatherWidget extends WidgetBase {
         });
     }
 
-    // 解析坐标：未配置城市或“当前位置”走浏览器定位，命名城市走地理编码
+    // 解析坐标：未配置城市或“当前位置”走浏览器定位，命名城市走地理编码。
     async resolveCoords() {
         if (!this.city || this.city === '当前位置') {
             const located = await this.tryGeolocate();
@@ -1321,13 +1314,13 @@ class WeatherWidget extends WidgetBase {
                 this.city = '当前位置';
                 return located;
             }
-            // 定位失败回退到默认城市南昌
+            // 定位失败回退到默认城市南昌。
             return { lat: 28.68, lon: 115.8575 };
         }
         return this.geocodeCity(this.city);
     }
 
-    // 使用 Open-Meteo 地理编码接口把城市名解析为经纬度
+    // 使用 Open-Meteo 地理编码接口把城市名解析为经纬度。
     async geocodeCity(name) {
         try {
             const url = 'https://geocoding-api.open-meteo.com/v1/search'
@@ -1385,9 +1378,9 @@ class WeatherWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/core/widgets/TasksWidget.js ====
+// ---------- main/Script/core/widgets/TasksWidget.js ----------
 /**
- * 任务小组件（仅本地 localStorage）
+ * 任务小组件：数据仅保存在本地 localStorage。
  */
 // [bundled] import { … } from './WidgetBase.js'
 
@@ -1440,7 +1433,7 @@ class TasksWidget extends WidgetBase {
     }
 
     afterMount() {
-        // 在 header 右侧插入导出 / 导入按钮
+        // 在头部右侧插入导出与导入按钮。
         this._addHeaderActions();
     }
 
@@ -1556,7 +1549,7 @@ class TasksWidget extends WidgetBase {
         input.click();
     }
 
-    // ─── 任务操作 ───
+    // ---------- 任务操作 ----------
 
     addTask() {
         const text = this.inputEl.value.trim();
@@ -1584,7 +1577,7 @@ class TasksWidget extends WidgetBase {
         this.renderList();
     }
 
-    // ─── 渲染 ───
+    // ---------- 渲染 ----------
 
     renderList() {
         const done = this.tasks.filter(t => t.done).length;
@@ -1636,11 +1629,10 @@ class TasksWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/core/widgets/AiAgentWidget.js ====
+// ---------- main/Script/core/widgets/AiAgentWidget.js ----------
 /**
- * AI Agent 小组件
- * 本地接口：http://127.0.0.1:{port}
- * 交互：消息列表（可滚动）+ 输入框 + 流式响应 + 停止按钮
+ * AI Agent 小组件：连接本地接口 http://127.0.0.1:{port}。
+ * 交互为消息列表、输入框、流式响应与停止按钮。
  */
 // [bundled] import { … } from './WidgetBase.js'
 
@@ -1661,7 +1653,7 @@ class AiAgentWidget extends WidgetBase {
     buildContent() {
         this.element.classList.add('widget-ai');
 
-        // 头部：标题 + 连接状态
+        // 头部：标题与连接状态。
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'widget-ai-header';
         this.headerEl.innerHTML = '<span>SI Agent</span>';
@@ -1678,7 +1670,7 @@ class AiAgentWidget extends WidgetBase {
 
         this.element.appendChild(this.headerEl);
 
-        // 无配置时显示配置提示
+        // 无配置时显示配置提示。
         if (!this.port) {
             this.renderNoConfig();
             return;
@@ -1737,7 +1729,7 @@ class AiAgentWidget extends WidgetBase {
         this.element.appendChild(this.messagesEl);
         this.element.appendChild(this.inputRow);
 
-        // 恢复历史消息
+        // 恢复历史消息。
         this.messages.forEach(m => this.appendMessage(m.role, m.content, false));
 
         // 事件
@@ -1822,7 +1814,7 @@ class AiAgentWidget extends WidgetBase {
         };
 
         try {
-            // messages 已包含刚加入的用户消息，直接传递
+            // messages 已包含刚加入的用户消息，直接传递。
             const payload = {
                 messages: this.messages
             };
@@ -1838,7 +1830,7 @@ class AiAgentWidget extends WidgetBase {
                 throw new Error('HTTP ' + resp.status);
             }
 
-            // 尝试流式读取；失败则回退整段 JSON
+            // 尝试流式读取；失败则回退整段 JSON。
             try {
                 const reader = resp.body.getReader();
                 const decoder = new TextDecoder('utf-8');
@@ -1847,7 +1839,7 @@ class AiAgentWidget extends WidgetBase {
                     const { done, value } = await reader.read();
                     if (done) break;
                     buffer += decoder.decode(value, { stream: true });
-                    // 简单增量处理：新增长度追加
+                    // 简单增量处理：按新增长度追加。
                     const newLen = buffer.length;
                     if (newLen > fullText.length) {
                         fullText = buffer.slice(0, newLen);
@@ -1857,7 +1849,7 @@ class AiAgentWidget extends WidgetBase {
                     }
                 }
             } catch (streamErr) {
-                // 非流式响应：整段 JSON { reply: "..." }
+                // 非流式响应：整段 JSON { reply: "..." }。
                 const data = JSON.parse(await resp.text());
                 fullText = data.reply || data.content || data.message || JSON.stringify(data);
                 aiMsg.textContent = fullText;
@@ -1866,7 +1858,7 @@ class AiAgentWidget extends WidgetBase {
             finish(true);
         } catch (err) {
             if (err.name === 'AbortError') {
-                // 用户点击停止：保留已生成内容
+                // 用户点击停止：保留已生成内容。
                 if (fullText.trim()) {
                     this.messages.push({ role: 'assistant', content: fullText.trim() });
                     this.persist();
@@ -1885,7 +1877,11 @@ class AiAgentWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/core/widgets/EmailWidget.js ====
+// ---------- main/Script/core/widgets/EmailWidget.js ----------
+/**
+ * 邮箱小组件：展示 Gmail 或自定义邮件 API 的最近邮件列表。
+ * Gmail 使用 OAuth 只读接口，未连接时显示连接提示。
+ */
 // [bundled] import { … } from './WidgetBase.js'
 
 class EmailWidget extends WidgetBase {
@@ -1993,7 +1989,7 @@ class EmailWidget extends WidgetBase {
     async fetchGmail() {
         if (!this.googleToken) return;
         try {
-            // 获取最近 20 封邮件的元数据
+            // 获取最近 20 封邮件的元数据。
             const listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20', {
                 headers: { Authorization: 'Bearer ' + this.googleToken }
             });
@@ -2001,7 +1997,7 @@ class EmailWidget extends WidgetBase {
             const listData = await listRes.json();
             const messages = listData.messages || [];
 
-            // 批量获取邮件头
+            // 批量获取邮件头。
             const emails = [];
             for (const msg of messages) {
                 try {
@@ -2162,7 +2158,7 @@ class EmailWidget extends WidgetBase {
                     const token = params.get('access_token');
                     if (!token) throw new Error('未获取到 access_token');
 
-                    // 获取用户邮箱
+                    // 获取用户邮箱。
                     const meRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
                         headers: { Authorization: 'Bearer ' + token }
                     });
@@ -2205,11 +2201,10 @@ class EmailWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/core/widgets/UpgradeToolWidget.js ====
+// ---------- main/Script/core/widgets/UpgradeToolWidget.js ----------
 /**
- * 升级工具小组件
- * 支持小/大/超大三种尺寸，通过 OUA 后端接口检查更新
- * 挂载后自动检查一次；超大尺寸底部有手动检查按钮
+ * 升级工具小组件：通过 OUA 后端接口检查更新。
+ * 挂载后自动检查一次；超大尺寸底部提供手动检查按钮。
  */
 // [bundled] import { … } from './WidgetBase.js'
 
@@ -2233,7 +2228,7 @@ class UpgradeToolWidget extends WidgetBase {
         this._isSquare = (this.size === 'square');
         this._isSuper = (this.size === 'super');
 
-        // 先构建布局（创建 DOM 元素），再加载数据
+        // 先构建布局并创建 DOM 元素，再加载数据。
         if (this._isSquare) {
             this._buildSquareLayout();
         } else if (this.size === 'rectangle') {
@@ -2242,11 +2237,11 @@ class UpgradeToolWidget extends WidgetBase {
             this._buildSuperLayout();
         }
 
-        // 布局渲染后自动检查一次
+        // 布局渲染后自动检查一次。
         this._loadData();
     }
 
-    /* -------- 布局 -------- */
+    // ---------- 布局 ----------
 
     _buildSquareLayout() {
         // 上方：本地版本
@@ -2373,7 +2368,7 @@ class UpgradeToolWidget extends WidgetBase {
         dirRow.appendChild(copyBtn);
         this._content.appendChild(dirRow);
 
-        // 版本分支 | 数据来源
+        // 版本分支与数据来源。
         const infoRow1 = document.createElement('div');
         infoRow1.className = 'widget-upgrade-tool-grid-row';
         infoRow1.appendChild(this._makeCell('版本分支', 'branch'));
@@ -2435,7 +2430,7 @@ class UpgradeToolWidget extends WidgetBase {
         return cell;
     }
 
-    /* -------- 数据加载 -------- */
+    // ---------- 数据加载 ----------
 
     async _loadData() {
         if (this.isChecking) return;
@@ -2521,7 +2516,7 @@ class UpgradeToolWidget extends WidgetBase {
         if (!raw || raw === '未设置') return raw || '—';
         const parts = raw.split(/[\\/]/).filter(Boolean);
         if (parts.length <= 2) return raw;
-        // 保留根目录前缀（C:\ 或 /home/ 等），后面最多显示两段，超出用 …
+        // 保留根目录前缀（如 C:\ 或 /home/），后面最多显示两段，超出部分用省略号表示。
         const prefix = parts[0];
         const middle = parts.slice(1, -2);
         const suffix = parts.slice(-2);
@@ -2557,15 +2552,11 @@ class UpgradeToolWidget extends WidgetBase {
     }
 }
 
-// ==== main/Script/core/settings-defaults.js ====
-// 出厂默认设置：主页面与侧边栏共用的唯一来源（Stage 9）。
-//
-// 主页面的 OOOInterface 与侧边栏面板此前各存一份，侧边栏那份是主页面的子集，
-// 两边靠注释约定“保持一致”，实际已经漂移过一次（语言表少了 es）。改到这里之后
-// 只有一份，不会再漂。
-//
-// 注意：本对象只读。使用方一律先深拷贝再改（JSON.parse(JSON.stringify(...))），
-// 或经 mergeSettings 合并，切勿就地修改。
+// ---------- main/Script/core/settings-defaults.js ----------
+/**
+ * 出厂默认设置：主页面与侧边栏面板共用的唯一来源。
+ * 本对象只读，使用方一律先深拷贝再改，或经 mergeSettings 合并，切勿就地修改。
+ */
 
 const DEFAULT_SETTINGS = {
     font: 'Sans Flex',
@@ -2608,16 +2599,21 @@ const DEFAULT_SETTINGS = {
     activeCustomColorIndex: -1,
     contextMenuStyle: 'default',
     hideInfoPopup: { enabled: false, type: null, timestamp: null },
-    // 底部铭牌功能：双击 / 右键分别对应的动作（settings 打开设置 / audio 播放音效 / none 无）
+    // 底部铭牌功能：双击 / 右键分别对应的动作（settings 打开设置 / audio 播放音效 / none 无）。
     badgeDblClickAction: 'settings',
     badgeContextMenuAction: 'settings',
-    // OCP 播控：开启后，OCP 开始播放过一次即可 hover 底部铭牌呼出媒体播控
+    // OCP 播控：开启后，OCP 开始播放过一次即可 hover 底部铭牌呼出媒体播控。
     ocpPlayerEnabled: false,
     bingRefreshEveryTime: true,
     bingRefreshInterval: 0,
     quickAccessSidebar: true,
     showQuickLinkIcons: true,
-    // 固定侧边栏：主开关（false = 恢复 hover 控制）；开启主开关时子开关自动跟随
+    // 聚焦搜索：聚焦搜索框时放大、上移并压暗（高级视觉效果下改为模糊）背景，
+    // 搜索历史/热搜与搜索框拼成一张卡片。缩放比例 1.0~1.5，默认 1.2。
+    focusSearch: false,
+    focusSearchWallpaper: true,
+    focusSearchScale: 1.2,
+    // 固定侧边栏：主开关（false = 恢复 hover 控制）；开启主开关时子开关自动跟随。
     fixSidebarEnabled: false,
     fixSidebarHomepage: false,
     fixSidebarWallpaper: false,
@@ -2630,7 +2626,7 @@ const DEFAULT_SETTINGS = {
     wallpaperBadgeLive: false,
     wallpaperBadgeLiveHomepage: true,
     // 侧边栏面板功能：默认全部关闭（主开关与内部各开关均关闭，
-    // 由用户按需逐项开启；开启后点击工具栏图标打开侧边栏，关闭则新建标签页）
+    // 由用户按需逐项开启；开启后点击工具栏图标打开侧边栏，关闭则新建标签页）。
     sidePanelEnabled: false,
     sidePanelShowWidgets: false,
     sidePanelShowQuickLinks: false,
@@ -2639,14 +2635,14 @@ const DEFAULT_SETTINGS = {
     sidePanelWallpaperEnabled: false,
     sidePanelWallpaperSync: false,
     sidePanelWallpaperUrl: '',
-    // 侧边栏各区域独立配置（与主页面保持一致关闭时生效）
+    // 侧边栏各区域独立配置（与主页面保持一致关闭时生效）。
     sidePanelWidgetsSync: false,
     sidePanelWidgetPanel: { widgets: [] },
     sidePanelQuickLinksSync: false,
     sidePanelQuickLinks: [],
     sidePanelSearchSync: false,
     sidePanelSearchBoxHeight: 50,
-    // 内置页打开：开启后侧边栏搜索/访问的网页用 iframe 在面板内展示
+    // 内置页打开：开启后侧边栏搜索/访问的网页用 iframe 在面板内展示。
     sidePanelBuiltinOpen: false,
     widgetPanel: {
         enabled: true,
@@ -2654,8 +2650,10 @@ const DEFAULT_SETTINGS = {
     },
     statusBarEnabled: false,
     showStatusBarSeconds: false,
+    // 网络滚动更新：启动时按 sup-list 白名单与远程版本号决定是否加载线上新版页面。
+    onlineRollingUpdate: false,
     hideNotifications: false,
-    // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）
+    // 简洁视觉效果：主开关，关闭时自动关闭全部子开关（隐藏弹窗/禁止提示/隐藏铭牌）。
     simpleVisualMode: false,
     hiddenBadge: false,
     contextMenuCustomItems: [],
@@ -2667,22 +2665,16 @@ const DEFAULT_SETTINGS = {
     customThemes: []             // 用户导入的自定义主题 [{key, name, designer, version, data}]
 };
 
-// ==== main/Script/core/storage-sync.js ====
-// 主页面与侧边栏面板共用的 chrome.storage 同步白名单（Stage 9）。
-//
-// 语义：只有这个列表里的键发生变化时，另一侧才需要重新应用设置。
-// 它是一道**门控**，不是权限清单——多一个键只是多一次无害的重算，
-// 少一个键才会导致界面陈旧（这是真实的 bug 类别）。
-//
-// 因此这里取两侧原有列表的**并集**：以侧边栏那份为准，其中多出的
-// 'wallpaper' / 'wallpaperUrl' 是主页面原先漏掉的——主页面换了壁纸时，
-// 侧边栏此前不会被触发重应用。补上后两边行为一致。
-//
-// 不在列表中的键（小组件数据、壁纸缓存等）变化不触发重应用；
-// 自身回写又因内容一致被跳过，以此避免两个页面之间的同步风暴。
+// ---------- main/Script/core/storage-sync.js ----------
+/**
+ * 主页面与侧边栏面板共用的 chrome.storage 同步白名单：只有列表内的键变化时才触发重应用。
+ * 列表取两侧并集（含 'wallpaper' / 'wallpaperUrl'），少一个键会让界面陈旧，多一个键只是无害重算。
+ * 不在表内的键（小组件数据、壁纸缓存等）不触发，自身回写因内容一致被跳过，避免同步风暴。
+ */
 
 const SYNC_KEYS = [
-    'quickLinks', 'showQuickLinkIcons', 'enhancedDisplay', 'dynamicBlur', 'colorScheme',
+    'quickLinks', 'showQuickLinkIcons', 'focusSearch', 'focusSearchWallpaper', 'focusSearchScale',
+    'enhancedDisplay', 'dynamicBlur', 'colorScheme',
     'themeColorScheme', 'customColors', 'activeCustomColorIndex', 'customPrimaryColor', 'customSecondaryColor',
     'customGradientEnabled', 'customGradientStart', 'customGradientEnd', 'font',
     'sidePanelEnabled', 'sidePanelShowWidgets', 'sidePanelShowQuickLinks', 'sidePanelShowSearch',
@@ -2694,15 +2686,11 @@ const SYNC_KEYS = [
     'widgetPanel', 'wallpaper', 'wallpaperUrl'
 ];
 
-// ==== main/Script/core/widgets/widget-types.js ====
-// 小组件类型表与尺寸辅助函数：主页面与侧边栏面板共用（Stage 9）。
-//
-// 数据以主页面那份为准——它是侧边栏那份的**超集**（多一个 icon 字段，
-// 侧边栏不使用该字段，多出来无害）。此前两份靠注释约定"保持一致"，
-// 属于同一类漂移风险。
-//
-// 三个辅助函数此前两侧各写了一份，逻辑逐字等价，此处合并为纯函数；
-// 主页面的同名实例方法改为委托到这里（方法名与模块绑定不冲突）。
+// ---------- main/Script/core/widgets/widget-types.js ----------
+/**
+ * 小组件类型表与尺寸辅助函数，主页面与侧边栏面板共用。
+ * 类型数据以主页面那份为准（含侧边栏不使用的 icon 字段），避免两份配置不一致。
+ */
 
 const WIDGET_TYPES = {
     'clock':    { name: '大时钟', icon: 'schedule',        defaultSize: 'square', allowSquare: true,  allowSuper: false },
@@ -2714,7 +2702,7 @@ const WIDGET_TYPES = {
     'upgrade-tool': { name: '升级工具', icon: 'system_update', defaultSize: 'square', allowSquare: true,  allowSuper: true  },
 };
 
-// 某类型允许的尺寸列表；未知类型按最宽松处理
+// 某类型允许的尺寸列表；未知类型按最宽松处理。
 function getWidgetAllowedSizes(type) {
     const meta = WIDGET_TYPES[type];
     if (!meta) return ['square', 'rectangle', 'super'];
@@ -2725,7 +2713,7 @@ function getWidgetAllowedSizes(type) {
     return sizes;
 }
 
-// 把尺寸规范到该类型允许的取值：非法值回落到 defaultSize，再不行取最后一个
+// 把尺寸规范到该类型允许的取值：非法值回落到 defaultSize，再不行取最后一个。
 function normalizeWidgetSize(type, size) {
     const allowed = getWidgetAllowedSizes(type);
     if (allowed.indexOf(size) >= 0) return size;
@@ -2734,21 +2722,17 @@ function normalizeWidgetSize(type, size) {
     return allowed[allowed.length - 1] || 'rectangle';
 }
 
-// 尺寸的中文展示名
+// 尺寸的中文展示名。
 function getWidgetSizeLabel(type, size) {
     const s = normalizeWidgetSize(type, size);
     return s === 'rectangle' ? '大' : s === 'super' ? '超大' : '小';
 }
 
-// ==== main/Script/core/translate-shared.js ====
-// 翻译语言表与解析函数：主页面与侧边栏面板共用（Stage 9）。
-//
-// 此前两侧各存一份表，注释都写着"与主页面保持一致"，实际已经漂移：
-// 侧边栏那份少了 es（西班牙语），导致面板里 /t es 解析不出来。
-// 这里以主页面那份（超集）为准，两侧从此同源。
-//
-// 表只是数据，两处的翻译引擎（Google / Microsoft 直连与代理回退）实现
-// 并不相同，本次**不合并**，仍各留各的。
+// ---------- main/Script/core/translate-shared.js ----------
+/**
+ * 翻译语言表与语言对解析函数，主页面与侧边栏面板共用同一份数据来源。
+ * 只共享语言数据；两侧的翻译引擎（Google / Microsoft 直连与代理回退）实现不同，仍各自保留。
+ */
 
 const TRANSLATE_LANGUAGES = [
     { key: 'auto', label: '自动检测', aliases: ['auto', 'a', '自动'], g: 'auto', m: 'auto-detect' },
@@ -2768,14 +2752,14 @@ const TRANSLATE_LANGUAGES = [
     { key: 'ar', label: '阿拉伯语', aliases: ['ar', '阿'], g: 'ar', m: 'ar' }
 ];;
 
-// 把 'sc' / 'zh-cn' / '简体' 之类的写法解析成语言表条目；认不出返回 null
+// 把 'sc' / 'zh-cn' / '简体' 之类的写法解析成语言表条目，认不出返回 null。
 function resolveTranslateLanguage(rawCode) {
     const code = (rawCode || '').toLowerCase().trim();
     if (!code) return null;
     return TRANSLATE_LANGUAGES.find(entry => entry.key === code || entry.aliases.includes(code)) || null;
 }
 
-// 解析语言对文本：'sc-jp'（省略源语言则为 'jp'，默认源语言 auto）
+// 解析语言对文本：'sc-jp'（省略源语言则为 'jp'，默认源语言 auto）。
 function resolveLanguagePair(pairText) {
     const parts = (pairText || '').toLowerCase().split('-').filter(Boolean);
     if (parts.length === 0) return null;
@@ -2794,16 +2778,15 @@ function resolveLanguagePair(pairText) {
     return { raw: fromEntry.key + '-' + toEntry.key, from: fromEntry, to: toEntry };
 }
 
-// ==== main/sidepanel/sidepanel.js ====
+// ---------- main/sidepanel/sidepanel.js ----------
 /**
- * OOOInterface 侧边栏面板（Chrome Side Panel）
- * 复用主页面的设置数据（chrome.storage.local 的 oooInterfaceSettings）、
- * DOM 结构与类名，同步主页面的外观状态（高级视觉效果/配色/壁纸），
- * 并按"侧边栏功能"设置渲染：小组件、快速访问链接、底部搜索框与引擎切换。
+ * OOOInterface 侧边栏面板（Chrome Side Panel）：复用主页面的设置数据、DOM 结构与类名，
+ * 同步外观状态（高级视觉效果、配色、壁纸），并按侧边栏功能设置渲染小组件、
+ * 快速访问链接、底部搜索框与引擎切换。
  */
 
-// color.js 的 getColorConfig：本文件内还有一个同名包装函数（负责补充 themeColorScheme/自定义配色分支），
-// 故以别名导入，避免与本文件内的函数声明重名。
+// 本文件另有一个同名 getColorConfig 包装函数（补充 themeColorScheme 与自定义配色分支），
+// 故以别名导入，避免与本地函数声明重名。
 const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig as getColorConfigBase }
 // [bundled] import { … +1 个改名绑定 } from '../Script/core/color.js'
 // [bundled] import { … } from '../Script/core/proxy.js'
@@ -2814,35 +2797,33 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
 // [bundled] import { … } from '../Script/core/widgets/AiAgentWidget.js'
 // [bundled] import { … } from '../Script/core/widgets/EmailWidget.js'
 // [bundled] import { … } from '../Script/core/widgets/UpgradeToolWidget.js'
-// 出厂默认设置：与主页面共用同一来源（Stage 9）
+// 出厂默认设置：与主页面共用 settings-defaults.js 中的默认值。
 // [bundled] import { … } from '../Script/core/settings-defaults.js'
 // [bundled] import { … } from '../Script/core/storage-sync.js'
-// 小组件类型表与尺寸辅助函数：与主页面共用同一来源（Stage 9）
+// 小组件类型表与尺寸辅助函数：与主页面共用 widget-types.js。
 // [bundled] import { … } from '../Script/core/widgets/widget-types.js'
-// 翻译语言表与解析函数：与主页面共用同一来源（Stage 9）
+// 翻译语言表与解析函数：与主页面共用 translate-shared.js。
 // [bundled] import { … } from '../Script/core/translate-shared.js'
 
 (function () {
     'use strict';
 
-    // 出厂预设设置：由 settings-defaults.js 提供，与主页面同源（Stage 9）。
-    // 此前这里只抄了本面板用到的一个子集，靠注释约定“与主页面保持一致”，
-    // 实际已漂移；现在改为共用全集，多余默认键无害——本面板保存时整体回写，
-    // 且 mergeSettings 会保留全部已存键，不会因此在两个页面间丢设置。
+    // 默认设置取自 settings-defaults.js，与主页面同源。本面板保存时整体回写，
+    // mergeSettings 会保留全部已存键，因此多出的默认键无害，也不会在两个页面间丢设置。
 
     var settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
     var isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    // 记录上次渲染的小组件配置，避免无关设置变化时重建小组件
+    // 记录上次渲染的小组件配置，避免无关设置变化时重建小组件。
     var lastWidgetsJson = null;
     var widgetInstances = [];
 
-    // 内置页浏览器状态：是否展示、自有历史栈（iframe 跨域无法读取其历史，故自行维护）
+    // 内置页浏览器状态：是否展示、自有历史栈（iframe 跨域无法读取其历史，故自行维护）。
     var browserOpen = false;
     var browserHistory = [];
     var browserIndex = -1;
     var browserCloseTimer = null;
 
-    // 主页面 app 的轻量替身：小组件仅依赖这三个方法（均有 typeof 守卫）
+    // 主页面 app 的轻量替身：小组件仅依赖这三个方法（均有 typeof 守卫）。
     var panelOOO = {
         settings: settings,
         saveWidgetData: saveWidgetData,
@@ -2852,17 +2833,15 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     };
 
-    // ========== 设置读取 ==========
+    // ---------- 设置读取 ----------
 
     function mergeSettings(saved) {
-        // 完整保留已存的全部设置键（面板保存时会整体回写，若只保留白名单键会清掉
-        // 主页面的壁纸/小组件等其余设置），默认值仅用于补缺。
-        //
-        // 注意：这里**故意不与**主页面 SettingsMixin.mergeSettings 合并。那个版本是
-        // 逐键白名单合并，带类型校验、旧数据迁移和取值 clamp，且只复制它认识的键；
-        // 本面板需要的是「原样全量保留」，两者契约不同。若把这里换成主页那版，面板
-        // 回写时会把主页的非默认设置冲回默认值；反过来则会让主页丢掉全部校验与迁移。
-        // 共用的只是 DEFAULT_SETTINGS 这份默认值（settings-defaults.js）。
+        // 完整保留已存的全部设置键：面板保存时会整体回写，若只保留白名单键，
+        // 会清掉主页面的壁纸、小组件等其余设置；默认值仅用于补缺。
+        // 这里有意不复用主页面 SettingsMixin.mergeSettings：那版按白名单逐键合并，
+        // 带类型校验、旧数据迁移与取值 clamp，只复制它认识的键；本面板需要「原样全量
+        // 保留」，两者契约不同。互换会让面板回写把主页的非默认设置冲回默认值，或让
+        // 主页丢掉全部校验与迁移。共用的只有 settings-defaults.js 的 DEFAULT_SETTINGS。
         return Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), saved || {});
     }
 
@@ -2886,7 +2865,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
         settings = mergeSettings(saved);
         panelOOO.settings = settings;
-        // 与主页面 loadSettings 一致：高级视觉效果自动启用标志由两项状态派生
+        // 与主页面 loadSettings 一致：高级视觉效果自动启用标志由两项状态派生。
     }
 
     function saveSettings() {
@@ -2907,7 +2886,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // ========== 提示浮层（小组件 saveWidgetData/showNotification 的面板版） ==========
+    // ---------- 提示浮层（小组件 saveWidgetData/showNotification 的面板版） ----------
 
     function showPanelToast(message) {
         var toast = document.getElementById('qa-panel-toast');
@@ -2925,7 +2904,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }, 2200);
     }
 
-    // ========== 配色方案（与主页面 getColorConfig/applyColorScheme 逻辑一致） ==========
+    // ---------- 配色方案（与主页面逻辑一致） ----------
 
     function getColorConfig() {
         var scheme = settings.colorScheme || 'green';
@@ -2973,16 +2952,16 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         body.style.setProperty('--scheme-accent-hover', colorConfig.accentHover);
         body.style.setProperty('--scheme-accent-active', colorConfig.accentActive);
 
-        // 侧边栏图标配色（与主页面 updateSidebarIconColors 一致）
+        // 侧边栏图标配色（与主页面 updateSidebarIconColors 一致）。
         var container = document.getElementById('quick-access-sidebar-container');
         if (container) {
             container.style.setProperty('--sidebar-icon-bg', colorConfig.sidebarIcon);
-            // 面板中侧边栏常驻显示（主页面由 hover/固定逻辑添加 visible，这里始终可见）
+            // 面板中侧边栏常驻显示（主页面由 hover/固定逻辑添加 visible，这里始终可见）。
             container.classList.add('visible');
         }
     }
 
-    // ========== 字体（与主页面 applyFont 逻辑一致） ==========
+    // ---------- 字体（与主页面逻辑一致） ----------
 
     function loadCustomFonts() {
         var promises = (settings.customFonts || []).map(function (font) {
@@ -3051,7 +3030,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // ========== 壁纸（与主页面 getWallpaperUrl 解析一致） ==========
+    // ---------- 壁纸（与主页面解析一致） ----------
 
     function resolveMainWallpaperUrl() {
         if (settings.wallpaper === 'default') {
@@ -3073,12 +3052,12 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         var url = null;
         if (settings.sidePanelWallpaperEnabled) {
             if (settings.sidePanelWallpaperSync) {
-                // 与主页面保持一致
+                // 与主页面保持一致。
                 url = resolveMainWallpaperUrl();
             } else if (settings.sidePanelWallpaperUrl) {
                 url = settings.sidePanelWallpaperUrl;
             } else {
-                // 未填地址时使用默认壁纸
+                // 未填地址时使用默认壁纸。
                 url = '../images/back.png';
             }
         }
@@ -3087,11 +3066,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         document.body.classList.toggle('qa-has-wallpaper', !!url);
     }
 
-    // ========== 小组件（与主页面小组件面板同一套组件与配置） ==========
-    //
-    // 类型表 getWidgetAllowedSizes / normalizeWidgetSize 已提取到
-    // ../Script/core/widgets/widget-types.js，与主页面共用（Stage 9）。
-    // 此处只是本地副本删除，两个函数的调用点保持不变。
+    // ---------- 小组件（与主页面共用组件与配置） ----------
 
     function createWidgetInstance(config) {
         var baseConfig = {
@@ -3113,7 +3088,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // 小组件数据保存：写入解析后的数据源并整体回写 storage（供主页面同步）
+    // 小组件数据保存：写入解析后的数据源并整体回写 storage（供主页面同步）。
     function saveWidgetData(widgetId, data) {
         var widgets = getWidgetsSource();
         if (!Array.isArray(widgets)) return;
@@ -3140,7 +3115,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             empty.className = 'widget-panel-empty';
             empty.textContent = '暂无小组件';
             grid.appendChild(empty);
-            // 空态引导：一键直达主页面的小组件管理
+            // 空态引导：一键直达主页面的小组件管理。
             var emptyCta = document.createElement('button');
             emptyCta.className = 'widget-panel-empty-cta';
             emptyCta.textContent = '去添加小组件';
@@ -3164,12 +3139,11 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         syncWidgetCardHeights();
     }
 
-    // 与主页面小组件面板保持同一观感：主页面为 2 列、网格宽 240px
-    //（单列/正方形卡片 116px、间距 8px）。侧边栏铺满可用宽度，列数按宽度动态计算：
-    // 面板越宽列数越多（3 列、4 列……），单列始终保持基准 116px 附近，
-    // 再把整块网格按 zoom 等比缩放以铺满宽度（窄面板时缩放 <1，保证内容不溢出）。
-    var WIDGET_COL_BASE = 116;   // 主页面单列（正方形卡片）宽度
-    var WIDGET_GAP = 8;          // 网格间距，与 widget-panel.css 一致
+    // 与主页面小组件面板保持同一观感（2 列、网格宽 240px、单列 116px、间距 8px）。
+    // 侧边栏铺满可用宽度，列数随面板宽度动态增加，单列保持基准 116px 附近，
+    // 再把整块网格按 zoom 等比缩放铺满宽度（窄面板时缩放 < 1，保证内容不溢出）。
+    var WIDGET_COL_BASE = 116; // 主页面单列（正方形卡片）宽度
+    var WIDGET_GAP = 8; // 网格间距，与 widget-panel.css 一致
     var lastWidgetScale = null;
     var currentWidgetColumns = 2;
 
@@ -3177,8 +3151,8 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         var grid = document.getElementById('qa-widgets-grid');
         var scrollEl = document.getElementById('qa-widgets-scroll');
         if (!grid || !scrollEl) return;
-        // 无小组件时不做缩放：空状态提示须按正常字号显示
-        //（否则 zoom 会把提示文字放大数倍，呈现为"报错"般的大字）
+        // 无小组件时不做缩放：空状态提示须按正常字号显示，
+        // 否则 zoom 会把提示文字放大数倍，呈现为“报错”般的大字。
         if (!getWidgetsSource().length) {
             if (lastWidgetScale !== 'empty') {
                 lastWidgetScale = 'empty';
@@ -3191,14 +3165,14 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             }
             return;
         }
-        // 外框（滚动视口）的可视宽度 = 网格目标宽度
+        // 外框（滚动视口）的可视宽度 = 网格目标宽度。
         var visualWidth = scrollEl.clientWidth;
         if (!(visualWidth > 0)) return;
         // 列数：只在可用宽度真正放得下下一列时才加列（向下取整）。
-        // 首列没有前置间距，故分子要补一个间距：(宽度 + 间距) / (列宽 + 间距)；
-        // 未加列时下面的 zoom 会把当前卡片等比放大铺满整宽，即"正常缩放"
+        // 首列没有前置间距，故分子要补一个间距：（宽度 + 间距）/（列宽 + 间距）；
+        // 未加列时下面的 zoom 会把当前卡片等比放大铺满整宽，即“正常缩放”。
         var cols = Math.max(2, Math.floor((visualWidth + WIDGET_GAP) / (WIDGET_COL_BASE + WIDGET_GAP)));
-        // 该列数下网格的"设计宽度"（未缩放）：N 列 + N-1 个间距
+        // 该列数下网格的“设计宽度”（未缩放）：N 列 + N-1 个间距。
         var localWidth = cols * WIDGET_COL_BASE + (cols - 1) * WIDGET_GAP;
         var scale = Math.round((visualWidth / localWidth) * 10000) / 10000;
         if (lastWidgetScale === scale && currentWidgetColumns === cols) return;
@@ -3211,7 +3185,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
     }
 
     // 行高 = 列宽（与主页面 syncWidgetCardHeights 一致）。
-    // 网格宽度 = N 列 × 116 + 间距、各列为 1fr，故列宽恒为基准 116px（缩放前的布局值）
+    // 网格宽度 = N 列 × 116 + 间距、各列为 1fr，故列宽恒为基准 116px（缩放前的布局值）。
     function syncWidgetCardHeights() {
         var grid = document.getElementById('qa-widgets-grid');
         if (!grid) return;
@@ -3219,7 +3193,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         grid.style.gridAutoRows = WIDGET_COL_BASE + 'px';
     }
 
-    // ========== 数据源解析（与主页面保持一致 / 侧边栏独立配置） ==========
+    // ---------- 数据源解析（跟随主页面或侧边栏独立配置） ----------
 
     function getQuickLinksSource() {
         if (settings.sidePanelQuickLinksSync) {
@@ -3240,7 +3214,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         return settings.sidePanelWidgetPanel.widgets;
     }
 
-    // ========== 快速访问链接渲染（与主页面 renderQuickAccessSidebar 完全一致） ==========
+    // ---------- 快速访问链接渲染（与主页面一致） ----------
 
     function extractDomain(url) {
         try {
@@ -3296,7 +3270,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
                 var tryFallback = false;
 
                 if (link._favicon !== undefined && link._favicon !== null) {
-                    // _favicon 为空字符串表示之前已检测为无图标，直接用字母占位，不再重试
+                    // _favicon 为空字符串表示之前已检测为无图标，直接用字母占位，不再重试。
                     if (link._favicon !== '') {
                         faviconUrl = link._favicon;
                     }
@@ -3319,7 +3293,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
                         this.style.display = 'none';
                         var letter = this.parentElement.querySelector('.quick-access-sidebar-link-letter');
                         if (letter) letter.style.display = 'flex';
-                        // 仅在从未检测过时写入缓存，避免每次渲染重复回写设置
+                        // 仅在从未检测过时写入缓存，避免每次渲染重复回写设置。
                         if (link._favicon === undefined && domain) {
                             cacheFavicon(link, index, domain, null);
                         }
@@ -3363,7 +3337,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             });
         }
 
-        // 根据设置显示/隐藏图标（与主页面一致：类开关 + 内联兜底）
+        // 根据设置显示/隐藏图标（与主页面一致：类开关 + 内联兜底）。
         var containerEl = document.getElementById('quick-access-sidebar-container');
         if (containerEl) {
             containerEl.classList.toggle('no-icons', !settings.showQuickLinkIcons);
@@ -3377,12 +3351,279 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // ========== 底部搜索框与引擎切换 ==========
-    //
-    // 与主页面的 oooEngineLocked（script.js / SearchMixin.js）不是一回事，**不要合并**：
-    //   oooEngineLocked    = 主页面用户是否「锁定」了搜索引擎（锁定后不再跟随默认引擎）
-    //   oooSidePanelEngine = 本面板当前选中的搜索引擎
-    // 两者语义不同、可各自独立取值。
+    // ---------- 快速编辑浮层（Alt+Shift+O） ----------
+    // 面板打开时快捷键不再直接写入链接，而是弹出本浮层编辑当前展示的那份列表：
+    // 同步开启时改 quickLinks，独立配置时改 sidePanelQuickLinks，与 getQuickLinksSource 一致。
+
+    var quickEditIndex = -1; // 正在编辑的链接下标，-1 表示列表视图
+    var panelWindowId = null;
+
+    function isQuickEditOpen() {
+        var overlay = document.getElementById('qa-quick-edit');
+        return !!(overlay && !overlay.hidden);
+    }
+
+    function getQuickLinkTargetKey() {
+        return settings.sidePanelQuickLinksSync ? 'quickLinks' : 'sidePanelQuickLinks';
+    }
+
+    function renderQuickEditList() {
+        var list = document.getElementById('qa-quick-edit-list');
+        if (!list) return;
+        list.innerHTML = '';
+
+        var quickLinks = getQuickLinksSource();
+        if (quickLinks.length === 0) {
+            var emptyMsg = document.createElement('div');
+            emptyMsg.className = 'quick-links-empty';
+            emptyMsg.textContent = '暂无快速访问链接';
+            list.appendChild(emptyMsg);
+            return;
+        }
+
+        quickLinks.forEach(function (link, index) {
+            if (index === quickEditIndex) {
+                list.appendChild(buildQuickEditForm(link, index));
+                return;
+            }
+            list.appendChild(buildQuickEditRow(link, index));
+        });
+    }
+
+    function buildQuickEditRow(link, index) {
+        var item = document.createElement('div');
+        item.className = 'quick-link-menu-item qa-quick-edit-item';
+
+        var info = document.createElement('div');
+        info.className = 'quick-link-menu-info';
+        info.title = '点击编辑';
+
+        var nameEl = document.createElement('div');
+        nameEl.className = 'quick-link-menu-name';
+        nameEl.textContent = link.name;
+
+        var urlEl = document.createElement('div');
+        urlEl.className = 'quick-link-menu-url';
+        urlEl.textContent = link.url;
+
+        info.appendChild(nameEl);
+        info.appendChild(urlEl);
+        info.addEventListener('click', function () {
+            quickEditIndex = index;
+            renderQuickEditList();
+        });
+
+        var deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-link-menu-btn';
+        deleteBtn.type = 'button';
+        deleteBtn.textContent = '×';
+        deleteBtn.title = '删除';
+        deleteBtn.addEventListener('click', function (event) {
+            event.stopPropagation();
+            deleteQuickLinkFromEdit(index);
+        });
+
+        item.appendChild(info);
+        item.appendChild(deleteBtn);
+        return item;
+    }
+
+    function buildQuickEditForm(link, index) {
+        var form = document.createElement('div');
+        form.className = 'qa-quick-edit-form';
+
+        var nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'setting-input';
+        nameInput.placeholder = '网站名称';
+        nameInput.value = link.name;
+        nameInput.setAttribute('aria-label', '网站名称');
+
+        var urlInput = document.createElement('input');
+        urlInput.type = 'text';
+        urlInput.className = 'setting-input';
+        urlInput.placeholder = '网站地址';
+        urlInput.value = link.url;
+        urlInput.setAttribute('aria-label', '网站地址');
+
+        var actions = document.createElement('div');
+        actions.className = 'qa-quick-edit-form-actions';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'qa-quick-edit-cancel';
+        cancelBtn.textContent = '取消';
+        cancelBtn.addEventListener('click', function () {
+            quickEditIndex = -1;
+            renderQuickEditList();
+        });
+
+        var save = function () {
+            saveQuickLinkEdit(index, nameInput.value, urlInput.value);
+        };
+
+        var saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'settings-menu-confirm-primary';
+        saveBtn.textContent = '确定';
+        saveBtn.addEventListener('click', save);
+
+        nameInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') urlInput.focus();
+        });
+        urlInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') save();
+        });
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(saveBtn);
+        form.appendChild(nameInput);
+        form.appendChild(urlInput);
+        form.appendChild(actions);
+
+        // 进入编辑态立即聚焦并全选名称，便于直接整体替换。
+        setTimeout(function () {
+            nameInput.focus();
+            nameInput.select();
+        }, 0);
+        return form;
+    }
+
+    function saveQuickLinkEdit(index, rawName, rawUrl) {
+        var quickLinks = getQuickLinksSource();
+        var link = quickLinks[index];
+        if (!link) return;
+
+        var name = (rawName || '').trim();
+        var url = (rawUrl || '').trim();
+        if (!name || !url) {
+            showPanelToast('名称和地址不能为空');
+            return;
+        }
+
+        // 地址变化后旧图标缓存不再可信，清掉让侧边栏重新探测。
+        if (link.url !== url) delete link._favicon;
+        link.name = name;
+        link.url = url;
+        saveSettings();
+
+        quickEditIndex = -1;
+        renderQuickAccessSidebar();
+        renderQuickEditList();
+        showPanelToast('快速访问链接已更新');
+    }
+
+    function deleteQuickLinkFromEdit(index) {
+        var quickLinks = getQuickLinksSource();
+        if (!quickLinks[index]) return;
+        quickLinks.splice(index, 1);
+        saveSettings();
+
+        quickEditIndex = -1;
+        renderQuickAccessSidebar();
+        renderQuickEditList();
+        showPanelToast('快速访问链接已删除');
+    }
+
+    function addCurrentPageFromQuickEdit() {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+            showPanelToast('当前环境不支持添加');
+            return;
+        }
+
+        var request;
+        try {
+            request = chrome.runtime.sendMessage({
+                type: 'add-active-page-to-quick-links',
+                targetKey: getQuickLinkTargetKey()
+            });
+        } catch (e) {
+            showPanelToast('添加失败，请稍后再试');
+            return;
+        }
+        if (!request || typeof request.then !== 'function') return;
+
+        request.then(function (response) {
+            var status = response && response.status;
+            if (status === 'added') {
+                showPanelToast('已添加当前网页');
+                return;
+            }
+            if (status === 'duplicate') {
+                showPanelToast('该网页已在快速访问链接中');
+                return;
+            }
+            if (status === 'invalid') {
+                showPanelToast('当前页面无法添加');
+                return;
+            }
+            showPanelToast('添加失败，请稍后再试');
+        }).catch(function () {
+            showPanelToast('添加失败，请稍后再试');
+        });
+    }
+
+    function openQuickEdit() {
+        var overlay = document.getElementById('qa-quick-edit');
+        if (!overlay) return;
+        quickEditIndex = -1;
+        renderQuickEditList();
+        overlay.hidden = false;
+        // 一次性强制回流，确保重复打开时入场动画从头播放。
+        void overlay.offsetWidth;
+        overlay.classList.add('open');
+
+        var closeBtn = document.getElementById('qa-quick-edit-close');
+        if (closeBtn) closeBtn.focus();
+    }
+
+    function closeQuickEdit() {
+        var overlay = document.getElementById('qa-quick-edit');
+        if (!overlay || overlay.hidden) return;
+        overlay.classList.remove('open');
+        overlay.hidden = true;
+        quickEditIndex = -1;
+    }
+
+    function toggleQuickEdit() {
+        if (isQuickEditOpen()) {
+            closeQuickEdit();
+            return;
+        }
+        openQuickEdit();
+    }
+
+    // 面板自身窗口 ID 用于忽略其他窗口面板收到的转发消息。
+    function initPanelWindowId() {
+        try {
+            if (!chrome.windows || !chrome.windows.getCurrent) return;
+            chrome.windows.getCurrent().then(function (win) {
+                if (win && typeof win.id === 'number') panelWindowId = win.id;
+            }).catch(function () { });
+        } catch (e) {
+            // 拿不到窗口 ID 时按本窗口处理。
+        }
+    }
+
+    // 后台统一入口转发来的开关消息：命令、页面兜底与面板兜底共用一次节流。
+    function initQuickEditMessages() {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.onMessage) return;
+        chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+            if (!message || message.type !== 'open-quick-link-editor') return;
+            if (typeof message.windowId === 'number' && typeof panelWindowId === 'number'
+                && message.windowId !== panelWindowId) {
+                return;
+            }
+            toggleQuickEdit();
+            sendResponse({ handled: true });
+        });
+    }
+
+    // ---------- 底部搜索框与引擎切换 ----------
+
+    // 与主页面的 oooEngineLocked（script.js / SearchMixin.js）语义不同，不要合并：
+    // oooEngineLocked 表示主页面用户是否「锁定」搜索引擎（锁定后不再跟随默认引擎），
+    // oooSidePanelEngine 表示本面板当前选中的搜索引擎，两者可各自独立取值。
 
     var currentEngine = localStorage.getItem('oooSidePanelEngine') === 'bing' ? 'bing' : 'google';
 
@@ -3406,10 +3647,10 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         if (bingBtn) bingBtn.classList.toggle('active', currentEngine === 'bing');
     }
 
-    // ========== “/” 命令系统（网址 / 翻译） ==========
-    // 主页面把这套逻辑实现在 App 类里；面板是独立页面，这里按相同的语法与交互移植一份。
-    // DOM 与样式仍复用主页面：styles.css 中的 search-command-container /
-    // search-command-item / search-mode-chip / search-history-item 等类直接生效。
+    // ---------- “/” 命令系统（网址 / 翻译） ----------
+    // 主页面把这套逻辑放在 App 类中；面板是独立页面，这里按相同的语法与交互实现一份。
+    // DOM 与样式复用主页面：styles.css 中的 search-command-container、search-command-item、
+    // search-mode-chip、search-history-item 等类直接生效。
 
     var searchCommandMode = null;
     var translateSelectedPair = null;
@@ -3439,12 +3680,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         return ['translate', 't', '翻译'].indexOf((word || '').toLowerCase()) !== -1;
     }
 
-    // 语言表与解析函数已提取到 ../Script/core/translate-shared.js，与主页面共用（Stage 9）。
-    // 本地面板此前那份表少了 es（西班牙语），与主页面并不一致；改用共享表后
-    // /t es 也能在面板里解析。下方 resolveTranslateLanguage / resolveLanguagePair
-    // 的调用点保持不变。
-
-    // ---- 翻译语言对 / 网址历史（localStorage，与主页面共用同一份存储） ----
+    // ---------- 翻译语言对与网址历史（localStorage，与主页面共用） ----------
 
     function getTranslateHistory() {
         try {
@@ -3479,7 +3715,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         localStorage.setItem('oooWebCommandHistory', JSON.stringify(list || []));
     }
 
-    // 记录通过命令打开的网址（存主机名用于展示，key 用于去重）
+    // 记录通过命令打开的网址（存主机名用于展示，key 用于去重）。
     function recordWebHistory(urlText) {
         var parsed;
         try {
@@ -3495,7 +3731,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         setWebHistory(list);
     }
 
-    // ---- 翻译引擎（直连优先，配置了本地代理且直连抛错时走代理重试） ----
+    // ---------- 翻译引擎（直连优先，失败时走本地代理） ----------
 
     async function slashFetch(url, options) {
         try {
@@ -3527,7 +3763,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }).join('');
     }
 
-    // Microsoft(Bing) 免费接口：需先从 bing 首页抓取 IG 与防滥用 token
+    // Microsoft（Bing）免费接口：需先从 bing 首页抓取 IG 与防滥用 token。
     async function getBingTranslateAuth(forceRefresh) {
         if (!forceRefresh) {
             try {
@@ -3580,7 +3816,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             }
             throw new Error('Microsoft 翻译结果解析失败');
         } catch (err) {
-            // 凭证失效等情况：强制刷新一次后重试
+            // 凭证失效等情况：强制刷新一次后重试。
             if (!forceNewAuth) {
                 return await fetchBingTranslate(text, fromCode, toCode, true);
             }
@@ -3588,7 +3824,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // 引擎跟随面板当前选择的搜索引擎（与主页面同一套回退策略）
+    // 引擎跟随面板当前选择的搜索引擎（与主页面同一套回退策略）。
     async function translateText(text, fromEntry, toEntry) {
         if (currentEngine === 'bing') {
             try {
@@ -3600,7 +3836,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         return await fetchGoogleTranslate(text, fromEntry.g, toEntry.g);
     }
 
-    // ---- 命令列表 / 模式 chip / 历史面板 UI ----
+    // ---------- 命令列表、模式 chip 与历史面板 ----------
 
     // 统一同步搜索框辅助 UI：
     // - 组件模式（web/translate）激活时：左侧 chip 替代命令文字，下方展示对应历史
@@ -3624,7 +3860,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
 
         if (value.charAt(0) === '/') {
-            // “/别名 + 空格”：把前缀替换为左侧 chip，剩余文本作为参数继续输入
+            // “/别名 + 空格”：把前缀替换为左侧 chip，剩余文本作为参数继续输入。
             var entered = value.match(/^\/(\S+)\s([\s\S]*)$/);
             if (entered && (isWebCommand(entered[1]) || isTranslateCommand(entered[1]))) {
                 var mode = isWebCommand(entered[1]) ? 'web' : 'translate';
@@ -3655,7 +3891,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             return;
         }
 
-        // 只在第一个空格之前提供候选；出现空格说明已进入对应组件模式
+        // 只在第一个空格之前提供候选；出现空格说明已进入对应组件模式。
         var partial = currentInput.slice(1);
         if (/\s/.test(partial)) {
             hideSearchCommandList();
@@ -3745,7 +3981,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         if (input) input.focus();
     }
 
-    // 退出组件模式；clearInput=false 时保留输入框现有内容（如翻译结果）
+    // 退出组件模式；clearInput=false 时保留输入框现有内容（如翻译结果）。
     function exitSearchCommandMode(clearInput) {
         searchCommandMode = null;
         translateSelectedPair = null;
@@ -3759,7 +3995,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
     }
 
     // 模式 chip：由组件模式状态驱动，位于输入框左侧。
-    // 进入模式时放大镜图标收缩隐去、椭圆展开顶入（CSS 过渡联动），退出时反向还原
+    // 进入模式时放大镜图标收缩隐去、椭圆展开顶入（CSS 过渡联动），退出时反向还原。
     function updateSearchModeChip() {
         var chip = document.getElementById('qa-search-mode-chip');
         if (!chip) return;
@@ -3787,7 +4023,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // translate 模式下从输入中锁定语言对：首个空白之前的部分若可解析则锁定，并把它从输入中移除
+    // translate 模式下从输入中锁定语言对：首个空白之前的部分若可解析则锁定，并把它从输入中移除。
     function lockTranslatePairFromInput(value) {
         if (translateSelectedPair || !value) return;
 
@@ -3803,7 +4039,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
     }
 
     // 下方共享下拉面板：命令列表可见时优先；否则按当前组件模式展示使用历史。
-    // 行样式复用原生搜索历史 search-history-item
+    // 行样式复用原生搜索历史 search-history-item。
     function refreshSearchDropdownPanels() {
         var container = document.getElementById('qa-search-command-container');
         if (!container) return;
@@ -3899,9 +4135,9 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // ---- 执行 ----
+    // ---------- 执行 ----------
 
-    // 通过命令打开网址：记录历史；开启「内置页打开」时在面板 iframe 内展示，否则新标签页
+    // 通过命令打开网址：记录历史；开启「内置页打开」时在面板 iframe 内展示，否则新标签页。
     function openExternalUrl(urlText) {
         var url = (urlText || '').trim();
         if (!url) return false;
@@ -3922,7 +4158,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         return true;
     }
 
-    // 翻译模式的回车执行：未锁定语言对时把首词作为语言对兜底解析
+    // 翻译模式的回车执行：未锁定语言对时把首词作为语言对兜底解析。
     async function executeTranslateModeQuery(rawText) {
         var text = (rawText || '').trim();
         if (!text) return;
@@ -3944,7 +4180,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         await runTranslateFlow(text, translateSelectedPair);
     }
 
-    // 统一翻译执行：调用引擎 → 结果输出到搜索框 → 复制 → 记录历史 → 退出模式（保留结果）
+    // 统一翻译执行：调用引擎 → 结果输出到搜索框 → 复制 → 记录历史 → 退出模式（保留结果）。
     async function runTranslateFlow(text, pair) {
         try {
             var result = await translateText(text, pair.from, pair.to);
@@ -3966,7 +4202,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // “/” 命令语法兜底路径（正常流程中前缀在输入空格时已替换为 chip）
+    // “/” 命令语法兜底路径（正常流程中前缀在输入空格时已替换为 chip）。
     async function executeSlashCommand(trimmedQuery) {
         var match = trimmedQuery.slice(1).match(/^(\S*)(?:\s+([\s\S]*))?$/);
         if (!match) return;
@@ -3998,7 +4234,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // 回车提交：分类处理组件模式 / “/” 命令，其余走搜索或直达网址
+    // 回车提交：分类处理组件模式 / “/” 命令，其余走搜索或直达网址。
     function submitSearch(value) {
         var text = (value || '').trim();
         if (!text) return;
@@ -4026,7 +4262,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
 
         if (input) input.value = '';
         var target = resolveBrowserTarget(text);
-        // 开启「内置页打开」时在面板内 iframe 展示，否则新标签页打开
+        // 开启「内置页打开」时在面板内 iframe 展示，否则新标签页打开。
         if (settings.sidePanelBuiltinOpen) {
             openBuiltinPage(target);
         } else {
@@ -4034,7 +4270,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // ========== 内置页浏览器（开启「内置页打开」后，搜索/访问的网页在此以 iframe 展示） ==========
+    // ---------- 内置页浏览器（网页以 iframe 展示） ----------
 
     // 移动端模式：面板窄于阈值时，把发往搜索引擎的「子帧」请求 UA 改为移动端，
     // 使其返回移动版页面。Chrome 不支持为单个 iframe 单独设置 UA，只能通过
@@ -4044,7 +4280,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
     var MOBILE_NARROW_MAX = 520;
     // 标准手机布局宽度：取略大于常见手机视口（Pixel 7 约 412px）的值，给移动版页面
     // 留出布局余量——站点的 min-width / 100vw（含滚动条）等固定宽元素常略超设备视口，
-    // 若视口恰好等于设备宽度，超出的部分会被裁切导致右侧显示不全
+    // 若视口恰好等于设备宽度，超出的部分会被裁切导致右侧显示不全。
     var MOBILE_VIEWPORT_WIDTH = 480;
     var MOBILE_UA_DOMAINS = ['google.com', 'bing.com'];
     var mobileUaRuleEnabled = false;
@@ -4059,7 +4295,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }
     }
 
-    // 依据「功能开关 + 面板宽度」同步移动端 UA 会话规则
+    // 依据「功能开关 + 面板宽度」同步移动端 UA 会话规则。
     function syncMobileUaRule() {
         if (!dnrAvailable()) return;
         var shouldEnable = !!settings.sidePanelBuiltinOpen && window.innerWidth < MOBILE_NARROW_MAX;
@@ -4092,10 +4328,10 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
 
     // 窄屏移动端视口缩放：卡片宽度小于移动端设计宽度时，把 iframe 布局视口固定为
     // MOBILE_VIEWPORT_WIDTH 再等比缩放到卡片内，使移动版页面按标准手机宽度排版，
-    // 避免站点 min-width 造成的横向溢出（超出屏幕边界）
+    // 避免站点 min-width 造成的横向溢出（超出屏幕边界）。
     function applyMobileViewportScale() {
         // 尺寸读取与计算延后到下一帧：load / resize 回调触发时 DOM 布局可能尚未稳定，
-        // 此刻读到的 clientWidth/clientHeight 会导致 scale 偏差、右侧被裁切
+        // 此刻读到的 clientWidth/clientHeight 会导致 scale 偏差、右侧被裁切。
         requestAnimationFrame(function () {
             var card = document.getElementById('qa-browser-card');
             var frame = document.getElementById('qa-browser-frame');
@@ -4107,7 +4343,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             if (scale < 1) {
                 card.classList.add('qa-mobile-mode');
                 frame.style.width = MOBILE_VIEWPORT_WIDTH + 'px';
-                // 视觉高度需等于卡片高度 => 布局高度 = 卡片高度 / scale
+                // 视觉高度需等于卡片高度，故布局高度 = 卡片高度 / scale。
                 frame.style.height = Math.round(cardH / scale) + 'px';
                 frame.style.transform = 'scale(' + scale + ')';
             } else {
@@ -4119,7 +4355,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         });
     }
 
-    // 面板尺寸变化跨越阈值时，若内置页正打开则重新加载当前页，使 UA 立即生效
+    // 面板尺寸变化跨越阈值时，若内置页正打开则重新加载当前页，使 UA 立即生效。
     function handlePanelResize() {
         syncMobileUaRule();
         applyMobileViewportScale();
@@ -4130,19 +4366,19 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         var frame = document.getElementById('qa-browser-frame');
         if (!frame) return;
         var url = browserHistory[browserIndex];
-        // 同一 src 赋值不会触发重载，先清空再回填以强制刷新
+        // 同一 src 赋值不会触发重载，先清空再回填以强制刷新。
         frame.src = 'about:blank';
         setTimeout(function () { frame.src = url; }, 0);
     }
 
-    // 面板卸载时移除会话规则，避免规则残留影响其它页面的 iframe
+    // 面板卸载时移除会话规则，避免规则残留影响其它页面的 iframe。
     function removeMobileUaRule() {
         if (!dnrAvailable()) return;
         mobileUaRuleEnabled = false;
         try { chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [MOBILE_UA_RULE_ID] }); } catch (e) { }
     }
 
-    // 将输入内容解析为地址：网址直连，其余按当前引擎搜索
+    // 将输入内容解析为地址：网址直连，其余按当前引擎搜索。
     function resolveBrowserTarget(text) {
         var value = (text || '').trim();
         if (!value) return '';
@@ -4155,7 +4391,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         var frame = document.getElementById('qa-browser-frame');
         if (frame) {
             // iframe 内容渲染完成后尺寸才稳定，需重算一次视口缩放，
-            // 否则按加载前的卡片尺寸算出的 scale 会与实际不符
+            // 否则按加载前的卡片尺寸算出的 scale 会与实际不符。
             if (!frame._scaleLoadBound) {
                 frame._scaleLoadBound = true;
                 frame.addEventListener('load', function () { applyMobileViewportScale(); });
@@ -4173,7 +4409,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         if (forwardBtn) forwardBtn.disabled = browserIndex >= browserHistory.length - 1;
     }
 
-    // 导航到目标地址并压入自有历史栈；push=false 用于前进/后退回放（不重复入栈）
+    // 导航到目标地址并压入自有历史栈；push=false 用于前进/后退回放（不重复入栈）。
     function browserNavigate(url, push) {
         if (!url) return;
         if (push !== false) {
@@ -4199,7 +4435,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         updateBrowserControls();
     }
 
-    // 打开内置页：展示浏览器视图并播放进入动画，小组件/链接区让位
+    // 打开内置页：展示浏览器视图并播放进入动画，小组件/链接区让位。
     function openBuiltinPage(url) {
         var wrap = document.getElementById('qa-panel-browser');
         if (!wrap) return;
@@ -4208,11 +4444,11 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         document.body.classList.add('qa-browser-open');
         wrap.setAttribute('aria-hidden', 'false');
         applySectionsVisibility();
-        // 防御：与存储同步竞态时可见性可能被旧状态覆盖，稍后再应用一次
+        // 防御：与存储同步竞态时可见性可能被旧状态覆盖，稍后再应用一次。
         setTimeout(applySectionsVisibility, 120);
-        // 视图已显示，按当前卡片尺寸应用窄屏移动端视口缩放
+        // 视图已显示，按当前卡片尺寸应用窄屏移动端视口缩放。
         applyMobileViewportScale();
-        // 先移除再强制回流，确保连续打开时进入动画可重放
+        // 先移除再强制回流，确保连续打开时进入动画可重放。
         wrap.classList.remove('qa-browser-leave');
         wrap.classList.remove('qa-browser-enter');
         void wrap.offsetWidth;
@@ -4220,7 +4456,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         browserNavigate(url, true);
     }
 
-    // 关闭内置页（Home）：播放退出动画后恢复默认视图并清空历史
+    // 关闭内置页（Home）：播放退出动画后恢复默认视图并清空历史。
     function closeBuiltinView() {
         var wrap = document.getElementById('qa-panel-browser');
         if (!wrap || !browserOpen) return;
@@ -4243,14 +4479,14 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         }, 200);
     }
 
-    // ========== 应用全部外观状态 ==========
+    // ---------- 应用全部外观状态 ----------
 
     function applySectionsVisibility() {
         var widgetsSection = document.getElementById('qa-panel-widgets');
-        // 内置页打开时，小组件/链接区让位于浏览器视图
+        // 内置页打开时，小组件/链接区让位于浏览器视图。
         var widgetsVisible = settings.sidePanelShowWidgets && !browserOpen;
         if (widgetsSection) widgetsSection.style.display = widgetsVisible ? '' : 'none';
-        // 间距标记：小组件区可见时，它与链接卡的间距由小组件区底部内边距提供
+        // 间距标记：小组件区可见时，它与链接卡的间距由小组件区底部内边距提供。
         document.body.classList.toggle('qa-hide-widgets', !widgetsVisible);
 
         var sidebar = document.getElementById('quick-access-sidebar');
@@ -4263,21 +4499,21 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         var engines = document.getElementById('qa-engine-buttons');
         if (engines) engines.style.display = (settings.sidePanelShowSearch && settings.sidePanelShowEngineButtons) ? '' : 'none';
 
-        // 搜索框厚度：与主页面保持一致时跟随主页面的搜索框厚度设置
+        // 搜索框厚度：与主页面保持一致时跟随主页面的搜索框厚度设置。
         var thickness = settings.sidePanelSearchSync
             ? (settings.searchBoxHeight || 50)
             : (settings.sidePanelSearchBoxHeight || 50);
         document.body.style.setProperty('--search-box-height', thickness + 'px');
 
         // 高度分配标记：链接区可见时小组件区最多占 50%（链接+搜索至少占 50%）；
-        // 链接区隐藏时小组件可用全部剩余高度
+        // 链接区隐藏时小组件可用全部剩余高度。
         document.body.classList.toggle('qa-hide-links', !linksVisible);
 
-        // 暗色压暗壁纸开关（与主页面共用设置键 wallpaperDarkDim）
+        // 暗色压暗壁纸开关（与主页面共用设置键 wallpaperDarkDim）。
         document.body.classList.toggle('wallpaper-dim-off', !settings.wallpaperDarkDim);
 
         // 未配置引导卡：三个内容区全关（或正被浏览器视图让位）时显示，
-        // 避免新用户打开面板看到纯白空屏
+        // 避免新用户打开面板看到纯白空屏。
         var guide = document.getElementById('qa-guide-card');
         if (guide) {
             var anyContent = (settings.sidePanelShowWidgets || settings.sidePanelShowQuickLinks || settings.sidePanelShowSearch) && !browserOpen;
@@ -4290,12 +4526,12 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         var body = document.body;
         panelOOO.settings = settings;
 
-        // 「内置页打开」被关闭时，收起已打开的内置页，恢复默认视图
+        // 「内置页打开」被关闭时，收起已打开的内置页，恢复默认视图。
         if (!settings.sidePanelBuiltinOpen && browserOpen) {
             closeBuiltinView();
         }
 
-        // 窄面板下启用移动端 UA（仅作用于搜索引擎域名的子帧请求）
+        // 窄面板下启用移动端 UA（仅作用于搜索引擎域名的子帧请求）。
         syncMobileUaRule();
 
         if (settings.dynamicBlur) {
@@ -4315,7 +4551,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
         applyPanelWallpaper();
         applySectionsVisibility();
 
-        // 小组件仅在（解析后的）配置变化时重建，避免无关设置变更导致状态丢失
+        // 小组件仅在（解析后的）配置变化时重建，避免无关设置变更导致状态丢失。
         var widgetsJson = JSON.stringify({ sync: settings.sidePanelWidgetsSync, w: getWidgetsSource() });
         if (widgetsJson !== lastWidgetsJson) {
             lastWidgetsJson = widgetsJson;
@@ -4324,9 +4560,15 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
 
         renderQuickAccessSidebar();
         updateEngineButtons();
+
+        // 浮层开着时同步刷新列表；外部变更可能改变下标，回到列表视图更安全。
+        if (isQuickEditOpen()) {
+            quickEditIndex = -1;
+            renderQuickEditList();
+        }
     }
 
-    // ========== 交互 ==========
+    // ---------- 交互 ----------
 
     function openLink(url) {
         try {
@@ -4350,7 +4592,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
     }
 
     // 小组件区尺寸变化时重算缩放与行高：
-    // 覆盖"面板拖拽调宽"与"设置里显隐切换小组件区"两种情况（后者尺寸从 0 恢复）
+    // 覆盖“面板拖拽调宽”与“设置里显隐切换小组件区”两种情况（后者尺寸从 0 恢复）。
     function initWidgetScaleSync() {
         if (!window.ResizeObserver) return;
         var observer = new ResizeObserver(function () {
@@ -4364,14 +4606,40 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
     }
 
     function initInteractions() {
-        // 引导卡按钮：跳转主页面并直达「侧边栏功能」设置
+        // 引导卡按钮：跳转主页面并直达「侧边栏功能」设置。
         var guideBtn = document.getElementById('qa-guide-open-settings');
         if (guideBtn) guideBtn.addEventListener('click', function () { openMainPage('?openSidePanel=root'); });
+
+        // 快速编辑浮层：关闭按钮、遮罩与 Esc 关闭；“添加当前网页”交给后台写入。
+        var quickEditCloseBtn = document.getElementById('qa-quick-edit-close');
+        if (quickEditCloseBtn) quickEditCloseBtn.addEventListener('click', closeQuickEdit);
+        var quickEditBackdrop = document.getElementById('qa-quick-edit-backdrop');
+        if (quickEditBackdrop) quickEditBackdrop.addEventListener('click', closeQuickEdit);
+        var quickEditAddPageBtn = document.getElementById('qa-quick-edit-add-page');
+        if (quickEditAddPageBtn) quickEditAddPageBtn.addEventListener('click', addCurrentPageFromQuickEdit);
+
+        // 面板聚焦时的快捷键兜底：转发给后台，由后台与 chrome.commands 一起节流，
+        // 避免两路触发各自切换一次而相互抵消。
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && isQuickEditOpen()) {
+                closeQuickEdit();
+                return;
+            }
+            if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
+            if (event.code !== 'KeyO') return;
+            event.preventDefault();
+            try {
+                var result = chrome.runtime.sendMessage({ type: 'shortcut-trigger', windowId: panelWindowId });
+                if (result && typeof result.catch === 'function') result.catch(function () { });
+            } catch (e) {
+                // 扩展上下文失效时忽略。
+            }
+        });
 
         var addBtn = document.getElementById('quick-access-sidebar-add-btn');
         if (addBtn) {
             addBtn.addEventListener('click', function () {
-                // 与主页面一致 → 打开主页面快速链接管理；独立配置 → 打开侧边栏的链接管理子视图
+                // 与主页面一致 → 打开主页面快速链接管理；独立配置 → 打开侧边栏的链接管理子视图。
                 if (settings.sidePanelQuickLinksSync) {
                     openMainPage('?openQuickLinks=1');
                 } else {
@@ -4380,7 +4648,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             });
         }
 
-        // 搜索框：同步 “/” 命令辅助 UI，回车按模式/命令/搜索分流
+        // 搜索框：同步 “/” 命令辅助 UI，回车按模式/命令/搜索分流。
         var searchInput = document.getElementById('qa-search-input');
         if (searchInput) {
             searchInput.addEventListener('input', function () {
@@ -4390,7 +4658,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
                 syncSearchAssistantUI(searchInput.value);
             });
 
-            // ArrowUp/Down 选择命令、Enter 插入命令、Esc/Backspace 退出模式（与主页面一致）
+            // ArrowUp/Down 选择命令、Enter 插入命令、Esc/Backspace 退出模式（与主页面一致）。
             searchInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') {
                     if ((commandListState && commandListState.visible) || searchCommandMode) {
@@ -4407,7 +4675,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
                 }
 
                 // 组件模式下按退格删除 chip：输入为空时才生效；
-                // translate 已锁定语言对时先解锁语言对，再退格彻底退出
+                // translate 已锁定语言对时先解锁语言对，再退格彻底退出。
                 if (e.key === 'Backspace' && searchCommandMode && searchInput.value === '') {
                     e.preventDefault();
                     if (searchCommandMode === 'translate' && translateSelectedPair) {
@@ -4440,7 +4708,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             });
         }
 
-        // 命令候选列表点击：套用对应命令
+        // 命令候选列表点击：套用对应命令。
         var commandListEl = document.getElementById('qa-search-command-list');
         if (commandListEl) {
             commandListEl.addEventListener('click', function (e) {
@@ -4453,7 +4721,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             });
         }
 
-        // 翻译语言对 / 网址历史点击：删除按钮分流清理，行点击套用
+        // 翻译语言对 / 网址历史点击：删除按钮分流清理，行点击套用。
         var historyListEl = document.getElementById('qa-translate-history-list');
         if (historyListEl) {
             historyListEl.addEventListener('click', function (e) {
@@ -4487,7 +4755,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             });
         }
 
-        // 模式 chip 点击退出当前模式
+        // 模式 chip 点击退出当前模式。
         var modeChipEl = document.getElementById('qa-search-mode-chip');
         if (modeChipEl) {
             modeChipEl.addEventListener('click', function () {
@@ -4496,7 +4764,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             });
         }
 
-        // 点击面板其它区域时收起命令列表
+        // 点击面板其它区域时收起命令列表。
         document.addEventListener('click', function (e) {
             var container = document.getElementById('qa-search-command-container');
             if (!container) return;
@@ -4505,7 +4773,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             }
         });
 
-        // 内置页浏览器操作控件：Home（返回默认视图）/ Back / Next / 网址栏
+        // 内置页浏览器操作控件：Home（返回默认视图）/ Back / Next / 网址栏。
         var browserHomeBtn = document.getElementById('qa-browser-home');
         if (browserHomeBtn) browserHomeBtn.addEventListener('click', closeBuiltinView);
         var browserBackBtn = document.getElementById('qa-browser-back');
@@ -4523,7 +4791,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             });
         }
 
-        // 引擎切换按钮
+        // 引擎切换按钮。
         var googleBtn = document.getElementById('qa-google-engine');
         var bingBtn = document.getElementById('qa-bing-engine');
         if (googleBtn) {
@@ -4541,14 +4809,15 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             });
         }
 
-        // 深色模式切换时重新应用配色（与主页面行为一致）
+        // 深色模式切换时重新应用配色（与主页面行为一致）。
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
             isDarkMode = e.matches;
             applyColorScheme();
         });
 
-        // 触发重渲染的门控键表：与主页面共用 storage-sync.js（Stage 9）。
-        // 自己的回写与无关键（小组件数据等）的变化仍被跳过，不会产生同步风暴。
+        // 触发重渲染的门控键表与主页面共用 storage-sync.js：只有 SYNC_KEYS 中
+        // 相关键变化时才重渲染，自身回写与小组件数据等无关键的变化会被跳过，
+        // 不会产生同步风暴。
 
         var syncTimer = null;
         var pendingSyncValue = null;
@@ -4559,7 +4828,7 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             });
         }
 
-        // 主页面设置变更时实时同步
+        // 主页面设置变更时实时同步。
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
             chrome.storage.onChanged.addListener(function (changes, areaName) {
                 if (areaName !== 'local' || !changes.oooInterfaceSettings) return;
@@ -4570,44 +4839,54 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
                 clearTimeout(syncTimer);
                 syncTimer = setTimeout(function () {
                     settings = mergeSettings(pendingSyncValue);
-                                applyAll();
+                    applyAll();
                 }, 150);
             });
         }
     }
 
-    // ========== 启动 ==========
-
-    // ========== 入场动画重放 ==========
-    //
-    // 入场动画写在 sidepanel.css 里，且只能挂在"玻璃元素自身"上：祖先只要带
-    // transform / opacity < 1 就会形成 backdrop root，后代的 backdrop-filter
-    // 随即失效（实测：挂在 .qa-panel-search 上会让搜索框 80px 毛玻璃永久失效）。
-    //
-    // 面板关闭时若 Chrome 复用本页（不重新加载），纯 CSS 动画一辈子只播一次，
-    // 再次打开就没有入场效果；故在"由隐藏转为可见"时重放一次。首次加载不在
-    // 此列——那时 CSS 动画本来就在播，重复触发只会让元素闪一下。
+    // ---------- 入场动画 ----------
+    // 动画规则写在 sidepanel.css，且只能挂在「玻璃元素自身」上：祖先只要带
+    // transform 或 opacity < 1 就会形成 backdrop root，后代的 backdrop-filter
+    // 随即失效（实测挂在 .qa-panel-search 上会让搜索框 80px 毛玻璃永久失效）。
+    // 首次加载时等 applyAll 完成后才加 body.qa-panel-enter，让异步渲染出来的
+    // 小组件卡与链接卡和搜索区同时起跑；动画结束后移除该类，后续设置同步引起的
+    // 局部重渲染不会再播一次。面板由隐藏转为可见时（Chrome 复用本页）重播。
     var ENTRANCE_SELECTOR = [
         '.qa-panel-widgets .widget-card',
+        '.quick-access-sidebar-container',
         '.qa-panel-search .search-container',
         '.qa-panel-search .engine-btn',
         '.widget-panel-empty-cta',
         '.qa-guide-card'
     ].join(',');
 
-    function replayEntranceAnimation() {
-        var els = Array.prototype.slice.call(document.querySelectorAll(ENTRANCE_SELECTOR));
-        if (!els.length) return;
-        els.forEach(function (el) { el.style.animation = 'none'; });
-        void document.body.offsetWidth; // 一次性强制回流，让旧动画被真正取消
-        els.forEach(function (el) { el.style.animation = ''; });
+    var entranceTimer = null;
+
+    // 逐项延迟按 DOM 顺序统一计算，避免各区块各用一套延迟而出现节奏错位；
+    // 只统计可见元素，隐藏区块不占用延迟序号。
+    function playEntranceAnimation() {
+        var body = document.body;
+        var items = Array.prototype.slice.call(document.querySelectorAll(ENTRANCE_SELECTOR))
+            .filter(function (el) { return el.getClientRects().length > 0; });
+        body.classList.remove('qa-panel-enter');
+        items.forEach(function (el, index) {
+            el.style.animationDelay = Math.min(index * 0.05, 0.3) + 's';
+        });
+        void body.offsetWidth; // 一次性强制回流，确保重复打开时动画从头播放
+        body.classList.add('qa-panel-enter');
+        clearTimeout(entranceTimer);
+        entranceTimer = setTimeout(function () {
+            body.classList.remove('qa-panel-enter');
+            items.forEach(function (el) { el.style.animationDelay = ''; });
+        }, 800);
     }
 
     function initEntranceReplay() {
         var wasHidden = document.hidden;
         document.addEventListener('visibilitychange', function () {
             var hidden = document.hidden;
-            if (wasHidden && !hidden) replayEntranceAnimation();
+            if (wasHidden && !hidden) playEntranceAnimation();
             wasHidden = hidden;
         });
     }
@@ -4617,12 +4896,16 @@ const getColorConfigBase = getColorConfig; // [bundled] import { getColorConfig 
             await loadSettings();
             await loadCustomFonts();
         } catch (error) {
-            // 设置加载失败时使用默认设置渲染，保证面板不至于空白
+            // 设置加载失败时使用默认设置渲染，保证面板不至于空白。
             console.error('侧边栏面板: 设置加载失败，使用默认设置:', error);
             settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
             panelOOO.settings = settings;
         }
         applyAll();
+        document.body.classList.remove('qa-panel-booting');
+        playEntranceAnimation();
+        initPanelWindowId();
+        initQuickEditMessages();
         initInteractions();
         initWidgetScaleSync();
         initEntranceReplay();
