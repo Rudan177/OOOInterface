@@ -8487,6 +8487,7 @@ body.focus-search-leaving .engine-buttons {
     flex-direction: column;
     align-items: center;
     gap: 10px;
+    padding: 26px 46px;
     color: var(--time-wall-text-color, #f8fafc);
     text-align: center;
     font-variant-numeric: tabular-nums;
@@ -8500,9 +8501,23 @@ body.focus-search-leaving .engine-buttons {
         visibility 0.45s ease;
 }
 
+/* 磨砂底板：让时间与壁纸之间隔一层模糊配色，浅色与深色壁纸都能读清。 */
+.time-wall-clock::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 30px;
+    background: var(--time-wall-panel-bg, rgba(255, 255, 255, 0.30));
+    border: 1px solid var(--time-wall-panel-border, rgba(255, 255, 255, 0.48));
+    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.16);
+    backdrop-filter: blur(24px) saturate(1.25);
+    -webkit-backdrop-filter: blur(24px) saturate(1.25);
+}
+
 .time-wall-clock-time {
     font-size: clamp(4rem, 13vw, 8.5rem);
-    font-weight: 200;
+    font-weight: 300;
     line-height: 1;
     letter-spacing: 0.02em;
 }
@@ -8517,12 +8532,6 @@ body.focus-search-leaving .engine-buttons {
 body.time-wall-mode .time-wall-clock {
     opacity: 1;
     visibility: visible;
-}
-
-/* 状态栏开启时的入场起点：与状态栏文字同一位置、同一尺度，再过渡到大时钟。 */
-body.time-wall-from-status .time-wall-clock {
-    top: 4px;
-    transform: translate(-50%, 0) scale(0.12);
 }
 
 /* 信息流：时钟缩到顶部，成为独立的顶部时钟。 */

@@ -1726,7 +1726,7 @@ export const WallpaperMixin = {
         this.isScrolled = true;
         // 进入壁纸模式即回到视图层级第 1 层，清掉可能残留的时间墙/信息流标记。
         this.stopTimeWallClock();
-        document.body.classList.remove('time-wall-mode', 'feed-mode', 'time-wall-from-status');
+        document.body.classList.remove('time-wall-mode', 'feed-mode');
         this.viewStage = 1;
 
         // 进入壁纸模式后侧边栏的显隐改由固定配置接管（下面 rAF 里同步），

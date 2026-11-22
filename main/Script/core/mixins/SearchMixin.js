@@ -91,12 +91,14 @@ export const SearchMixin = {
         const now = window.performance && performance.now ? performance.now() : Date.now();
         let gesture = this._scrollGesture;
         if (!gesture || now - gesture.last > SCROLL_GESTURE_GAP_MS) {
-            gesture = this._scrollGesture = { dir: 0, dist: 0, last: now };
+            gesture = this._scrollGesture = { dir: 0, dist: 0, last: now, consumed: false };
         }
         const dir = dy > 0 ? 1 : -1;
         if (gesture.dir !== dir) {
             gesture.dir = dir;
             gesture.dist = 0;
+            // 反向是一次新的意图，允许立即退回上一层。
+            gesture.consumed = false;
         }
         gesture.last = now;
         gesture.dist += Math.abs(dy);
@@ -107,6 +109,11 @@ export const SearchMixin = {
         const wheelTick = Math.abs(
             e.wheelDeltaY != null ? e.wheelDeltaY : (e.wheelDelta || 0)
         ) >= 120;
+
+        // 一次连续滑动只前进一层：进入时间墙后必须松手再滑，才会进入信息流。
+        // 触摸板的惯性滚动会连续发出小位移，没有这道拦截就会一口气滑到底。
+        // 鼠标滚轮的一格是独立动作，仍按一格一层放行。
+        if (gesture.consumed && dir > 0 && !wheelTick) return;
 
         // 累计还不够：不切换模式，也不打断正在进行的动画
         if (gesture.dist < SCROLL_TRIGGER_PX && !wheelTick) return;
@@ -123,6 +130,14 @@ export const SearchMixin = {
             this.advanceViewStage();
         } else {
             this.retreatViewStage();
+        }
+
+        // 标记本次手势已用掉；showWallpaper 可能把累计对象清空，这里补一个已消费的手势。
+        if (this._scrollGesture) {
+            this._scrollGesture.consumed = true;
+            this._scrollGesture.dist = 0;
+        } else {
+            this._scrollGesture = { dir, dist: 0, last: now, consumed: true };
         }
     },
     switchEngine(engine) {

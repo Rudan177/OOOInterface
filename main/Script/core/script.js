@@ -37,6 +37,7 @@ export class OOOInterface {
         // 视图层级：0 首页 / 1 壁纸 / 2 时间墙 / 3 信息流（见 TimeWallMixin）。
         this.viewStage = 0;
         this.timeWallTimer = null;
+        this._clockEntryAnimation = null;
         this.scrollTimeout = null;
         this.isAnimating = false;
         this.infoPopupOpen = false;
