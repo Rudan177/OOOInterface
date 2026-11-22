@@ -1,5 +1,5 @@
 // 本文件由 tools/build.js 自动生成，请勿直接编辑。
-// 源码指纹：052a4241d5336fa0    模块数：49
+// 源码指纹：e2f79a7d3ec81771    模块数：49
 // 入口：main/Script/core/main.js
 // 源码仍在 main/Script/core/** 按 mixin 拆分维护；改完源码后重新构建：
 //     node tools/build.js          （或 node tools/build.js --watch）
@@ -11467,15 +11467,15 @@ const TimeWallMixin = {
         document.body.classList.remove('feed-mode');
         this.startTimeWallClock();
 
-        // 始终从顶部的小时钟连续放大到大时钟，保证放大过程连贯；
-        // 状态栏开启时这条路径从状态栏文字的位置与字号起步。
+        // 始终从顶部的小时钟连续放大到大时钟：时钟锚点固定，只做 scale；
+        // 状态栏开启时起始字号与状态栏文字一致，交接时几乎没有位移。
         if (clock) {
-            this.runClockScaleAnimation(clock, collapsed, 'translate(-50%, -50%) scale(1)', 650);
+            this.runClockScaleAnimation(clock, collapsed, 'translateX(-50%) scale(1)', 650);
         }
         this.updateTimeWallClockContrast();
     },
     /**
-     * 时钟收缩到顶部时的落点：状态栏可见时与状态栏文字对齐，否则落在视口顶部中央。
+     * 时钟收缩到顶部时的字号：状态栏可见时取状态栏字号，否则固定 12px。
      */
     getClockCollapsedMetrics() {
         const statusBar = document.getElementById('status-bar');
@@ -11483,30 +11483,20 @@ const TimeWallMixin = {
             && statusBar
             && statusBar.classList.contains('visible'));
         if (statusBarVisible) {
-            const rect = statusBar.getBoundingClientRect();
-            if (rect.width || rect.height) {
-                return {
-                    centerX: rect.left + rect.width / 2,
-                    centerY: rect.top + rect.height / 2,
-                    fontSize: parseFloat(getComputedStyle(statusBar).fontSize) || 12
-                };
-            }
+            return { fontSize: parseFloat(getComputedStyle(statusBar).fontSize) || 12 };
         }
-        return { centerX: window.innerWidth / 2, centerY: 18, fontSize: 12 };
+        return { fontSize: 12 };
     },
     /**
-     * 时钟处于大时钟终态布局时，到顶部落点的收缩 transform。
+     * 收缩 transform：锚点固定在顶部中央，所以只需要一个 scale，不产生任何位移。
      */
     getClockCollapsedTransform(clock, collapsed) {
         const timeEl = clock.querySelector('.time-wall-clock-time');
-        const rect = clock.getBoundingClientRect();
         const fontSize = timeEl ? (parseFloat(getComputedStyle(timeEl).fontSize) || 120) : 120;
-        if (!rect.width || !rect.height || !fontSize) return null;
+        if (!fontSize) return null;
 
         const scale = Math.max(0.04, collapsed.fontSize / fontSize);
-        const dx = collapsed.centerX - (rect.left + rect.width / 2);
-        const dy = collapsed.centerY - (rect.top + rect.height / 2);
-        return `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(${scale})`;
+        return `translateX(-50%) scale(${scale})`;
     },
     runClockScaleAnimation(clock, collapsed, toTransform, duration) {
         if (typeof clock.animate !== 'function') return;
@@ -11533,18 +11523,12 @@ const TimeWallMixin = {
         this.cancelClockAnimation();
 
         const statusBar = document.getElementById('status-bar');
-        const collapsed = {
-            centerX: window.innerWidth / 2,
-            centerY: 18,
-            fontSize: 12
-        };
-        // 状态栏此时被 time-wall-mode 移出视口，用它的高度与字号推算落点。
+        let fontSize = 12;
         if (this.settings.statusBarEnabled && statusBar) {
-            collapsed.centerY = (statusBar.offsetHeight || 36) / 2;
-            collapsed.fontSize = parseFloat(getComputedStyle(statusBar).fontSize) || 12;
+            fontSize = parseFloat(getComputedStyle(statusBar).fontSize) || 12;
         }
 
-        const collapsedTransform = this.getClockCollapsedTransform(clock, collapsed);
+        const collapsedTransform = this.getClockCollapsedTransform(clock, { fontSize });
         if (!collapsedTransform || currentTransform === 'none') {
             this.finishExitTimeWall();
             return;

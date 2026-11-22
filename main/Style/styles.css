@@ -8476,29 +8476,29 @@ body.focus-search-leaving .engine-buttons {
 
 /* ---------- 时间墙 / 信息流 ---------- */
 
-/* 大时钟与状态栏是两个独立元素：开启状态栏时它从状态栏位置下移放大，
-   进入信息流后缩小停在顶部，因此位置与缩放都用过渡而不是切换显示。 */
+/* 时钟固定锚在顶部中央，日期在上、时间在下；三个状态只改 scale，不移动位置。
+   壁纸 → 时间墙是同一个元素原地放大，时间墙 → 信息流是原地缩小，全程连续。 */
 .time-wall-clock {
     position: fixed;
     left: 50%;
-    top: 32vh;
+    top: 10px;
     z-index: 26;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    padding: 26px 46px;
+    gap: 8px;
+    padding: 22px 44px 26px;
     color: var(--time-wall-text-color, #f8fafc);
     text-align: center;
     font-variant-numeric: tabular-nums;
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    transform: translate(-50%, -50%) scale(1);
-    transition: opacity 0.45s ease,
-        top 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    transform: translateX(-50%) scale(1);
+    transform-origin: top center;
+    transition: opacity 0.4s ease,
         transform 0.65s cubic-bezier(0.4, 0, 0.2, 1),
-        visibility 0.45s ease;
+        visibility 0.4s ease;
 }
 
 /* 磨砂底板：让时间与壁纸之间隔一层模糊配色，浅色与深色壁纸都能读清。 */
@@ -8534,10 +8534,9 @@ body.time-wall-mode .time-wall-clock {
     visibility: visible;
 }
 
-/* 信息流：时钟缩到顶部，成为独立的顶部时钟。 */
+/* 信息流：同一锚点原地缩小，位置不动，只缩小，因此进出天然连贯。 */
 body.feed-mode .time-wall-clock {
-    top: 12px;
-    transform: translate(-50%, 0) scale(0.24);
+    transform: translateX(-50%) scale(0.24);
 }
 
 /* 时间墙覆盖状态栏：时间由大时钟接管，避免顶部出现两份时间。 */
