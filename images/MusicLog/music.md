@@ -71,3 +71,4 @@
 | 20261121 | 丑橘 | 夜踊Yoodori / 洛天依Official | 287s | 1 | Contribute |
 | 20261122 | 勾指起誓 | 洛天依 / ilem | 184s | 1 | Contribute |
 | 20261123 | 譬如我 (枕头下发霉的梦) | 洛天依 / 姜洄 | 154s | 1 | Contribute |
+| 20261124 | 窗 | 张卡斯 / 洛天依Official | 149s | 1 | Contribute |
